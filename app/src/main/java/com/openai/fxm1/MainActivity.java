@@ -11,12 +11,14 @@ import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.Color;
 import android.media.AudioManager;
+import android.media.AudioAttributes;
 import android.media.ToneGenerator;
 import android.media.MediaPlayer;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Base64;
 import android.os.Handler;
 import android.os.Looper;
@@ -39,19 +41,24 @@ public class MainActivity extends Activity {
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, levelsText, contextText;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
-    private Button jarvisTalkButton, jarvisSendButton;
+    private Button jarvisTalkButton, jarvisSendButton, backgroundModeButton;
     private EditText serverUrlInput, jarvisInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
-    private TextView jarvisStatusText, jarvisChatText;
+    private TextView jarvisStatusText, jarvisChatText, backgroundStatusText;
     private Switch autoTradingSwitch;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
-    private View topCard, tfCard, modeCard, signalCard, jarvisCard, tradingCard, metricsCard, riskCard, journalCard;
+    private View topCard, tfCard, modeCard, signalCard, jarvisCard, backgroundCard, tradingCard, metricsCard, riskCard, journalCard;
 
     private SpeechRecognizer jarvisSpeechRecognizer;
     private TextToSpeech jarvisTts;
     private MediaPlayer jarvisPlayer;
     private boolean jarvisListening = false;
     private boolean jarvisStartAfterPermission = false;
+    private boolean jarvisStartupAfterPermission = false;
+    private boolean jarvisTtsReady = false;
+    private boolean jarvisAutoListenAfterSpeech = false;
+    private boolean jarvisStartupDone = false;
+    private String pendingJarvisSpeech = null;
     private final String jarvisSessionId = UUID.randomUUID().toString();
 
     private static final int C_BG = Color.rgb(7, 8, 22);
@@ -153,12 +160,15 @@ public class MainActivity extends Activity {
         jarvisInput = findViewById(R.id.jarvisInput);
         jarvisStatusText = findViewById(R.id.jarvisStatusText);
         jarvisChatText = findViewById(R.id.jarvisChatText);
+        backgroundModeButton = findViewById(R.id.backgroundModeButton);
+        backgroundStatusText = findViewById(R.id.backgroundStatusText);
 
         topCard = findViewById(R.id.topCard);
         tfCard = findViewById(R.id.tfCard);
         modeCard = findViewById(R.id.modeCard);
         signalCard = findViewById(R.id.signalCard);
         jarvisCard = findViewById(R.id.jarvisCard);
+        backgroundCard = findViewById(R.id.backgroundCard);
         tradingCard = findViewById(R.id.tradingCard);
         metricsCard = findViewById(R.id.metricsCard);
         riskCard = findViewById(R.id.riskCard);
@@ -204,7 +214,7 @@ public class MainActivity extends Activity {
         maxDriftSpinner.setAdapter(driftAdapter);
         maxDriftSpinner.setSelection(prefs.getInt("maxdrift_pos", 1));
 
-        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+        analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
         setTradingControlsOffline();
 
         saveKeyButton.setOnClickListener(v -> {
@@ -217,6 +227,14 @@ public class MainActivity extends Activity {
         });
 
         analyzeButton.setOnClickListener(v -> {
+            if (monitoring) {
+                stopMonitoring();
+            } else {
+                startMonitoring();
+            }
+        });
+
+        backgroundModeButton.setOnClickListener(v -> {
             if (monitoring) {
                 stopMonitoring();
             } else {
@@ -319,7 +337,12 @@ public class MainActivity extends Activity {
             forceAutoOff("EMERGENCY STOP: отправка новых сигналов остановлена.");
             sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
             monitoring = false;
-            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+            analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+            if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+            if (backgroundStatusText != null) {
+                backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
+                backgroundStatusText.setTextColor(C_RED);
+            }
             addJournal("EMERGENCY STOP на телефоне");
             Toast.makeText(this, "STOP: фоновый мониторинг и AUTO выключены", Toast.LENGTH_LONG).show();
         });
@@ -365,18 +388,135 @@ public class MainActivity extends Activity {
     }
 
     private void initJarvisVoice() {
-        jarvisTts = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                jarvisTts.setLanguage(new Locale("ru", "RU"));
-                jarvisTts.setPitch(0.88f);
-                jarvisTts.setSpeechRate(0.96f);
-            }
-        });
+        jarvisStatusText.setText("JARVIS: запускаю голосовую систему…");
+        jarvisChatText.setText("JARVIS: Инициализация голосового ассистента.");
 
-        jarvisStatusText.setText("JARVIS: READY · AI через сервер / локальный режим без сервера");
-        jarvisChatText.setText(
-                "JARVIS: Системы готовы. Если рынок решит вести себя прилично, я непременно сообщу."
-        );
+        jarvisTts = new TextToSpeech(this, status -> {
+            if (status != TextToSpeech.SUCCESS) {
+                jarvisStatusText.setText("JARVIS: системный голос TTS недоступен");
+                beginJarvisAutonomousStartup();
+                return;
+            }
+
+            int languageResult = jarvisTts.setLanguage(new Locale("ru", "RU"));
+            jarvisTts.setPitch(0.88f);
+            jarvisTts.setSpeechRate(0.96f);
+
+            try {
+                jarvisTts.setAudioAttributes(
+                        new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build()
+                );
+            } catch (Exception ignored) { }
+
+            jarvisTts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                @Override public void onStart(String utteranceId) { }
+
+                @Override public void onDone(String utteranceId) {
+                    runOnUiThread(() -> {
+                        if (jarvisAutoListenAfterSpeech && hasMicrophonePermission()) {
+                            jarvisAutoListenAfterSpeech = false;
+                            new Handler(Looper.getMainLooper()).postDelayed(
+                                    MainActivity.this::startJarvisListening,
+                                    250L
+                            );
+                        }
+                    });
+                }
+
+                @Override public void onError(String utteranceId) {
+                    runOnUiThread(() -> jarvisStatusText.setText(
+                            "JARVIS: ошибка системного голосового движка"
+                    ));
+                }
+            });
+
+            jarvisTtsReady = true;
+
+            if (languageResult != TextToSpeech.LANG_MISSING_DATA &&
+                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED) {
+                jarvisStatusText.setText("JARVIS: VOICE READY");
+            } else {
+                jarvisStatusText.setText(
+                        "JARVIS: VOICE READY · русский голос ограничен системным TTS"
+                );
+            }
+
+            if (pendingJarvisSpeech != null && jarvisTtsReady) {
+                String queued = pendingJarvisSpeech;
+                pendingJarvisSpeech = null;
+                speakJarvisLocal(queued);
+            }
+
+            beginJarvisAutonomousStartup();
+        });
+    }
+
+    private boolean hasMicrophonePermission() {
+        return Build.VERSION.SDK_INT < 23 ||
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void beginJarvisAutonomousStartup() {
+        if (jarvisStartupDone) return;
+
+        if (!hasMicrophonePermission()) {
+            jarvisStartupAfterPermission = true;
+            jarvisStatusText.setText("JARVIS: нужен доступ к микрофону");
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 5002);
+            return;
+        }
+
+        runJarvisWelcomeAndListen();
+    }
+
+    private void runJarvisWelcomeAndListen() {
+        if (jarvisStartupDone) return;
+        jarvisStartupDone = true;
+
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String savedKey = p.getString("apikey", "").trim();
+
+        // Автономный запуск фона: только если API key уже сохранён.
+        if (!savedKey.isEmpty() && !p.getBoolean("bg_running", false)) {
+            startMonitoring();
+        }
+
+        boolean bg = p.getBoolean("bg_running", false) || monitoring;
+        String symbol = String.valueOf(symbolSpinner.getSelectedItem());
+        String tf = selectedEntryTimeframe();
+        String signal = p.getString("bg_signal", signalText.getText().toString());
+        if (signal == null || signal.trim().isEmpty()) signal = "WAIT";
+
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        String greeting;
+        if (hour < 6) greeting = "Доброй ночи.";
+        else if (hour < 12) greeting = "Доброе утро.";
+        else if (hour < 18) greeting = "Добрый день.";
+        else greeting = "Добрый вечер.";
+
+        String report = greeting +
+                " JARVIS на связи. " +
+                "Текущий инструмент " + symbol +
+                ", таймфрейм " + tf +
+                ", последний сигнал " + signal + ". " +
+                (bg
+                        ? "Фоновый мониторинг активен; приложение можно свернуть. "
+                        : (savedKey.isEmpty()
+                            ? "Фоновый мониторинг пока не запущен: сначала нужен Twelve Data API key. "
+                            : "Фоновый мониторинг сейчас остановлен. ")) +
+                (serverConnected && mt5Connected
+                        ? "Сервер и MT5 подключены. "
+                        : "Торговый сервер или MT5 пока не подключены. ") +
+                "Что будем делать?";
+
+        appendJarvisLine("JARVIS", report);
+        jarvisStatusText.setText("JARVIS: говорю…");
+        jarvisAutoListenAfterSpeech = true;
+        speakJarvisLocal(report);
     }
 
     private void startJarvisListening() {
@@ -448,7 +588,7 @@ public class MainActivity extends Activity {
         try {
             jarvisSpeechRecognizer.startListening(intent);
         } catch (Exception e) {
-            jarvisStatusText.setText("JARVIS: микрофон пока недоступен");
+            jarvisStatusText.setText("JARVIS: микрофон недоступен. Проверьте разрешение «Микрофон» в настройках приложения.");
         }
     }
 
@@ -546,7 +686,12 @@ public class MainActivity extends Activity {
             forceAutoOff("JARVIS: EMERGENCY STOP");
             sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
             monitoring = false;
-            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+            analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+            if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+            if (backgroundStatusText != null) {
+                backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
+                backgroundStatusText.setTextColor(C_RED);
+            }
             return "Emergency Stop выполнен. Мониторинг и автоматическая торговля отключены.";
         }
 
@@ -613,9 +758,30 @@ public class MainActivity extends Activity {
     }
 
     private void speakJarvisLocal(String text) {
-        if (jarvisTts == null) return;
-        String spoken = text.replaceAll("\\[[^\\]]*\\]", "");
-        jarvisTts.speak(spoken, TextToSpeech.QUEUE_FLUSH, null, "jarvis_reply");
+        if (text == null || text.trim().isEmpty()) return;
+
+        String spoken = text.replaceAll("\\[[^\\]]*\\]", "").trim();
+
+        if (jarvisTts == null || !jarvisTtsReady) {
+            pendingJarvisSpeech = spoken;
+            return;
+        }
+
+        jarvisStatusText.setText("JARVIS: говорю…");
+        jarvisAutoListenAfterSpeech = hasMicrophonePermission();
+
+        int result = jarvisTts.speak(
+                spoken,
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                "jarvis_reply_" + System.currentTimeMillis()
+        );
+
+        if (result == TextToSpeech.ERROR) {
+            jarvisStatusText.setText(
+                    "JARVIS: системный TTS не смог воспроизвести голос"
+            );
+        }
     }
 
     private void playJarvisAudio(String audioBase64, String fallbackText) {
@@ -641,6 +807,13 @@ public class MainActivity extends Activity {
                 mp.release();
                 jarvisPlayer = null;
                 file.delete();
+
+                if (hasMicrophonePermission()) {
+                    new Handler(Looper.getMainLooper()).postDelayed(
+                            MainActivity.this::startJarvisListening,
+                            250L
+                    );
+                }
             });
             jarvisPlayer.setOnErrorListener((mp, what, extra) -> {
                 try { mp.release(); } catch (Exception ignored) { }
@@ -661,13 +834,34 @@ public class MainActivity extends Activity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == 5002) {
-            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-            if (granted && jarvisStartAfterPermission) {
-                jarvisStartAfterPermission = false;
-                startJarvisListening();
+            boolean granted =
+                    grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED;
+
+            if (granted) {
+                jarvisStatusText.setText("JARVIS: микрофон подключён");
+
+                if (jarvisStartupAfterPermission) {
+                    jarvisStartupAfterPermission = false;
+                    jarvisStartAfterPermission = false;
+                    runJarvisWelcomeAndListen();
+                } else if (jarvisStartAfterPermission) {
+                    jarvisStartAfterPermission = false;
+                    startJarvisListening();
+                }
             } else {
                 jarvisStartAfterPermission = false;
-                jarvisStatusText.setText("JARVIS: без доступа к микрофону голосовой ввод недоступен");
+                jarvisStartupAfterPermission = false;
+                jarvisStatusText.setText(
+                        "JARVIS: доступ к микрофону запрещён. Разрешите «Микрофон» в настройках приложения."
+                );
+
+                String warning =
+                        "Голосовой ввод отключён, потому что Android не дал доступ к микрофону. " +
+                        "Текстовый диалог остаётся доступен.";
+                appendJarvisLine("JARVIS", warning);
+                jarvisAutoListenAfterSpeech = false;
+                speakJarvisLocal(warning);
             }
         }
     }
@@ -691,6 +885,7 @@ public class MainActivity extends Activity {
         styleCard(modeCard, C_CARD_2);
         styleCard(signalCard, C_CARD);
         styleCard(jarvisCard, C_CARD_2);
+        styleCard(backgroundCard, C_CARD_2);
         styleCard(tradingCard, C_CARD);
         styleCard(metricsCard, C_CARD);
         styleCard(riskCard, C_CARD);
@@ -699,6 +894,7 @@ public class MainActivity extends Activity {
         stylePrimaryButton(saveKeyButton);
         stylePrimaryButton(analyzeButton);
         stylePrimaryButton(jarvisTalkButton);
+        stylePrimaryButton(backgroundModeButton);
         styleOutlineButton(jarvisSendButton, C_PURPLE);
         styleOutlineButton(serverCheckButton, C_PURPLE);
         styleOutlineButton(closeAllButton, C_PURPLE);
@@ -1065,7 +1261,12 @@ public class MainActivity extends Activity {
         requestNotificationPermissionIfNeeded();
 
         monitoring = true;
-        analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
+        analyzeButton.setText("ОСТАНОВИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+        if (backgroundModeButton != null) backgroundModeButton.setText("■  ОСТАНОВИТЬ ФОН");
+        if (backgroundStatusText != null) {
+            backgroundStatusText.setText("●  ФОН: АКТИВЕН · можно свернуть приложение");
+            backgroundStatusText.setTextColor(C_GREEN);
+        }
         statusText.setText(
                 "Фоновый мониторинг запущен · " +
                 selectedEntryTimeframe() +
@@ -1080,7 +1281,12 @@ public class MainActivity extends Activity {
     private void stopMonitoring() {
         monitoring = false;
         sendBackgroundCommand(MonitoringService.ACTION_STOP);
-        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+        analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+        if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+        if (backgroundStatusText != null) {
+            backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
+            backgroundStatusText.setTextColor(C_MUTED);
+        }
         statusText.setText("Мониторинг остановлен.");
     }
 
@@ -1109,7 +1315,24 @@ public class MainActivity extends Activity {
 
         if (running != monitoring) {
             monitoring = running;
-            analyzeButton.setText(running ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
+            analyzeButton.setText(
+                    running
+                            ? "ОСТАНОВИТЬ ФОНОВЫЙ МОНИТОРИНГ"
+                            : "ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ"
+            );
+            if (backgroundModeButton != null) {
+                backgroundModeButton.setText(
+                        running ? "■  ОСТАНОВИТЬ ФОН" : "▶  ВКЛЮЧИТЬ ФОН"
+                );
+            }
+            if (backgroundStatusText != null) {
+                backgroundStatusText.setText(
+                        running
+                                ? "●  ФОН: АКТИВЕН · можно свернуть приложение"
+                                : "○  ФОН: ВЫКЛЮЧЕН"
+                );
+                backgroundStatusText.setTextColor(running ? C_GREEN : C_MUTED);
+            }
         }
 
         if (!running) return;
