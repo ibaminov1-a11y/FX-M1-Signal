@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.view.View;
 import android.widget.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -45,7 +44,11 @@ public class MainActivity extends Activity {
         analyzeButton = findViewById(R.id.analyzeButton);
         saveKeyButton = findViewById(R.id.saveKeyButton);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, symbols);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                symbols
+        );
         symbolSpinner.setAdapter(adapter);
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
@@ -69,7 +72,10 @@ public class MainActivity extends Activity {
             return;
         }
 
-        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("apikey", key).apply();
+        getSharedPreferences("fxm1", MODE_PRIVATE)
+                .edit()
+                .putString("apikey", key)
+                .apply();
 
         analyzeButton.setEnabled(false);
         statusText.setText("Загружаю M1 / M5 / M15 / H1…");
@@ -111,20 +117,24 @@ public class MainActivity extends Activity {
         conn.setRequestMethod("GET");
 
         int code = conn.getResponseCode();
-        InputStream is = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
-        String body = readAll(is);
+        InputStream is = code >= 200 && code < 300
+                ? conn.getInputStream()
+                : conn.getErrorStream();
 
+        String body = readAll(is);
         JSONObject root = new JSONObject(body);
+
         if (root.has("status") && "error".equalsIgnoreCase(root.optString("status"))) {
             throw new Exception(root.optString("message", "API error"));
         }
+
         JSONArray vals = root.optJSONArray("values");
         if (vals == null || vals.length() < 30) {
             throw new Exception("Недостаточно свечей для " + interval);
         }
 
         List<Candle> list = new ArrayList<>();
-        // API отдаёт последние свечи сверху; переворачиваем в хронологический порядок.
+
         for (int i = vals.length() - 1; i >= 0; i--) {
             JSONObject o = vals.getJSONObject(i);
             list.add(new Candle(
@@ -134,19 +144,29 @@ public class MainActivity extends Activity {
                     o.getDouble("close")
             ));
         }
+
         return list;
     }
 
     private String readAll(InputStream is) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        BufferedReader br = new BufferedReader(
+                new InputStreamReader(is, StandardCharsets.UTF_8)
+        );
         StringBuilder sb = new StringBuilder();
         String line;
-        while ((line = br.readLine()) != null) sb.append(line);
+
+        while ((line = br.readLine()) != null) {
+            sb.append(line);
+        }
+
         return sb.toString();
     }
 
-    private Analysis analyze(String symbol, List<Candle> m1, List<Candle> m5,
-                             List<Candle> m15, List<Candle> h1) {
+    private Analysis analyze(String symbol,
+                             List<Candle> m1,
+                             List<Candle> m5,
+                             List<Candle> m15,
+                             List<Candle> h1) {
 
         int sH1 = trendScore(h1);
         int sM15 = trendScore(m15);
@@ -155,53 +175,148 @@ public class MainActivity extends Activity {
         int structure = structureScore(m1);
         int breakout = breakoutScore(m1);
 
-        int raw = sH1 * 9 + sM15 * 8 + sM5 * 7 + sM1 * 8 + structure * 10 + breakout * 12;
-
-        String signal = raw > 16 ? "BUY" : raw < -16 ? "SELL" : "WAIT";
-        int confidence = Math.max(50, Math.min(88, 50 + (int)(Math.abs(raw) * 0.85)));
-
         Candle last = m1.get(m1.size() - 1);
         double entry = last.close;
         double atr = atr(m1, 14);
-        if (atr <= 0) atr = Math.max(0.0001, last.high - last.low);
 
-        double slDist = atr * 1.2;
-        double sl = 0, tp1 = 0, tp2 = 0;
+        if (atr <= 0) {
+            atr = Math.max(minStopDistance(symbol), last.high - last.low);
+        }
+
+        boolean buySetup =
+                sH1 >= 0 &&
+                sM15 >= 0 &&
+                sM5 > 0 &&
+                sM1 > 0 &&
+                structure >= 0 &&
+                breakout > 0;
+
+        boolean sellSetup =
+                sH1 <= 0 &&
+                sM15 <= 0 &&
+                sM5 < 0 &&
+                sM1 < 0 &&
+                structure <= 0 &&
+                breakout < 0;
+
+        String signal = buySetup ? "BUY" : sellSetup ? "SELL" : "WAIT";
+
+        int quality = setupQuality(
+                signal, sH1, sM15, sM5, sM1, structure, breakout
+        );
+
+        double slDist = Math.max(atr * 1.8, minStopDistance(symbol));
+
+        double sl = 0;
+        double tp1 = 0;
+        double tp2 = 0;
 
         if ("BUY".equals(signal)) {
             sl = entry - slDist;
-            tp1 = entry + slDist;
-            tp2 = entry + slDist * 1.8;
+            tp1 = entry + slDist * 1.5;
+            tp2 = entry + slDist * 2.0;
         } else if ("SELL".equals(signal)) {
             sl = entry + slDist;
-            tp1 = entry - slDist;
-            tp2 = entry - slDist * 1.8;
+            tp1 = entry - slDist * 1.5;
+            tp2 = entry - slDist * 2.0;
         }
 
-        String reason = breakout > 0 ? "M1: пробой/импульс вверх"
-                : breakout < 0 ? "M1: пробой/импульс вниз"
-                : "M1: чистого пробоя нет";
+        String reason;
+        if (breakout > 0) {
+            reason = "M1: подтверждён пробой/импульс вверх";
+        } else if (breakout < 0) {
+            reason = "M1: подтверждён пробой/импульс вниз";
+        } else {
+            reason = "M1: подтверждённого пробоя нет";
+        }
 
-        String context = "H1 " + arrow(sH1) +
+        String filter;
+        if ("BUY".equals(signal)) {
+            filter = "Фильтр: старшие ТФ не против BUY";
+        } else if ("SELL".equals(signal)) {
+            filter = "Фильтр: старшие ТФ не против SELL";
+        } else {
+            filter = "Фильтр: условия для входа не совпали";
+        }
+
+        String context =
+                "H1 " + arrow(sH1) +
                 "   M15 " + arrow(sM15) +
                 "   M5 " + arrow(sM5) +
                 "   M1 " + arrow(sM1) +
                 "\nСтруктура M1: " + arrow(structure) +
-                "\n" + reason;
+                "\n" + reason +
+                "\n" + filter +
+                "\nATR M1: " + fmt(atr);
 
-        return new Analysis(symbol, signal, confidence, entry, sl, tp1, tp2, context);
+        return new Analysis(
+                symbol, signal, quality, entry, sl, tp1, tp2, context
+        );
+    }
+
+    private int setupQuality(String signal,
+                             int h1,
+                             int m15,
+                             int m5,
+                             int m1,
+                             int structure,
+                             int breakout) {
+
+        if ("WAIT".equals(signal)) {
+            int alignment = Math.abs(h1 + m15 + m5 + m1);
+            int q = 25 + alignment * 7;
+
+            if (structure != 0) q += 5;
+            if (breakout != 0) q += 8;
+
+            return Math.min(59, q);
+        }
+
+        int direction = "BUY".equals(signal) ? 1 : -1;
+        int q = 60;
+
+        if (h1 == direction) q += 8;
+        if (m15 == direction) q += 8;
+        if (m5 == direction) q += 6;
+        if (m1 == direction) q += 6;
+        if (structure == direction) q += 5;
+
+        if (breakout == direction * 2) {
+            q += 7;
+        } else if (breakout == direction) {
+            q += 4;
+        }
+
+        return Math.min(100, q);
+    }
+
+    private double minStopDistance(String symbol) {
+        if (symbol.startsWith("XAU/")) {
+            return 1.00;
+        }
+
+        if (symbol.contains("JPY")) {
+            return 0.050;
+        }
+
+        return 0.00050;
     }
 
     private int trendScore(List<Candle> c) {
         double ema9 = ema(c, 9);
         double ema21 = ema(c, 21);
+
         int s = ema9 > ema21 ? 1 : ema9 < ema21 ? -1 : 0;
 
         int n = c.size();
         double recentStart = c.get(Math.max(0, n - 10)).close;
         double recentEnd = c.get(n - 1).close;
-        if (recentEnd > recentStart) s++;
-        else if (recentEnd < recentStart) s--;
+
+        if (recentEnd > recentStart) {
+            s++;
+        } else if (recentEnd < recentStart) {
+            s--;
+        }
 
         if (s > 0) return 1;
         if (s < 0) return -1;
@@ -211,29 +326,46 @@ public class MainActivity extends Activity {
     private double ema(List<Candle> c, int period) {
         double alpha = 2.0 / (period + 1.0);
         double e = c.get(0).close;
+
         for (int i = 1; i < c.size(); i++) {
             e = alpha * c.get(i).close + (1 - alpha) * e;
         }
+
         return e;
     }
 
     private int structureScore(List<Candle> c) {
         int n = c.size();
-        if (n < 10) return 0;
+
+        if (n < 10) {
+            return 0;
+        }
+
         Candle a = c.get(n - 6);
         Candle b = c.get(n - 1);
-        if (b.high > a.high && b.low > a.low) return 1;
-        if (b.high < a.high && b.low < a.low) return -1;
+
+        if (b.high > a.high && b.low > a.low) {
+            return 1;
+        }
+
+        if (b.high < a.high && b.low < a.low) {
+            return -1;
+        }
+
         return 0;
     }
 
     private int breakoutScore(List<Candle> c) {
         int n = c.size();
-        if (n < 30) return 0;
+
+        if (n < 30) {
+            return 0;
+        }
 
         Candle last = c.get(n - 1);
         double resistance = -Double.MAX_VALUE;
         double support = Double.MAX_VALUE;
+
         for (int i = n - 22; i < n - 2; i++) {
             resistance = Math.max(resistance, c.get(i).high);
             support = Math.min(support, c.get(i).low);
@@ -242,22 +374,40 @@ public class MainActivity extends Activity {
         double a = atr(c, 14);
         double body = Math.abs(last.close - last.open);
 
-        if (last.close > resistance) return body > a * 0.35 ? 2 : 1;
-        if (last.close < support) return body > a * 0.35 ? -2 : -1;
+        if (last.close > resistance) {
+            return body > a * 0.50 ? 2 : 1;
+        }
+
+        if (last.close < support) {
+            return body > a * 0.50 ? -2 : -1;
+        }
+
         return 0;
     }
 
     private double atr(List<Candle> c, int period) {
-        if (c.size() < period + 1) return 0;
+        if (c.size() < period + 1) {
+            return 0;
+        }
+
         double sum = 0;
         int start = c.size() - period;
+
         for (int i = start; i < c.size(); i++) {
             Candle cur = c.get(i);
             Candle prev = c.get(i - 1);
-            double tr = Math.max(cur.high - cur.low,
-                    Math.max(Math.abs(cur.high - prev.close), Math.abs(cur.low - prev.close)));
+
+            double tr = Math.max(
+                    cur.high - cur.low,
+                    Math.max(
+                            Math.abs(cur.high - prev.close),
+                            Math.abs(cur.low - prev.close)
+                    )
+            );
+
             sum += tr;
         }
+
         return sum / period;
     }
 
@@ -270,45 +420,87 @@ public class MainActivity extends Activity {
         statusText.setText(a.symbol + " · данные Twelve Data");
         signalText.setText(a.signal);
 
-        if ("BUY".equals(a.signal)) signalText.setTextColor(Color.rgb(20, 120, 70));
-        else if ("SELL".equals(a.signal)) signalText.setTextColor(Color.rgb(190, 45, 45));
-        else signalText.setTextColor(Color.DKGRAY);
+        if ("BUY".equals(a.signal)) {
+            signalText.setTextColor(Color.rgb(20, 120, 70));
+        } else if ("SELL".equals(a.signal)) {
+            signalText.setTextColor(Color.rgb(190, 45, 45));
+        } else {
+            signalText.setTextColor(Color.DKGRAY);
+        }
 
-        confidenceText.setText("Уверенность модели: " + a.confidence + "%");
+        confidenceText.setText("Качество сетапа: " + a.quality + "/100");
 
         if ("WAIT".equals(a.signal)) {
-            levelsText.setText("Entry: " + fmt(a.entry) +
-                    "\nSL: —\nTP1: —\nTP2: —");
+            levelsText.setText(
+                    "Entry: " + fmt(a.entry) +
+                    "\nSL: —" +
+                    "\nTP1: —" +
+                    "\nTP2: —"
+            );
         } else {
-            levelsText.setText("Entry: " + fmt(a.entry) +
+            levelsText.setText(
+                    "Entry: " + fmt(a.entry) +
                     "\nSL: " + fmt(a.sl) +
-                    "\nTP1: " + fmt(a.tp1) +
-                    "\nTP2: " + fmt(a.tp2));
+                    "\nTP1: " + fmt(a.tp1) + "  (1.5R)" +
+                    "\nTP2: " + fmt(a.tp2) + "  (2.0R)"
+            );
         }
+
         contextText.setText(a.context);
     }
 
     private String fmt(double x) {
-        if (x == 0) return "—";
-        if (x >= 100) return String.format(Locale.US, "%.3f", x);
+        if (x == 0) {
+            return "—";
+        }
+
+        if (x >= 100) {
+            return String.format(Locale.US, "%.3f", x);
+        }
+
         return String.format(Locale.US, "%.5f", x);
     }
 
     static class Candle {
-        final double open, high, low, close;
+        final double open;
+        final double high;
+        final double low;
+        final double close;
+
         Candle(double open, double high, double low, double close) {
-            this.open = open; this.high = high; this.low = low; this.close = close;
+            this.open = open;
+            this.high = high;
+            this.low = low;
+            this.close = close;
         }
     }
 
     static class Analysis {
-        final String symbol, signal, context;
-        final int confidence;
-        final double entry, sl, tp1, tp2;
-        Analysis(String symbol, String signal, int confidence, double entry,
-                 double sl, double tp1, double tp2, String context) {
-            this.symbol = symbol; this.signal = signal; this.confidence = confidence;
-            this.entry = entry; this.sl = sl; this.tp1 = tp1; this.tp2 = tp2;
+        final String symbol;
+        final String signal;
+        final String context;
+        final int quality;
+        final double entry;
+        final double sl;
+        final double tp1;
+        final double tp2;
+
+        Analysis(String symbol,
+                 String signal,
+                 int quality,
+                 double entry,
+                 double sl,
+                 double tp1,
+                 double tp2,
+                 String context) {
+
+            this.symbol = symbol;
+            this.signal = signal;
+            this.quality = quality;
+            this.entry = entry;
+            this.sl = sl;
+            this.tp1 = tp1;
+            this.tp2 = tp2;
             this.context = context;
         }
     }
