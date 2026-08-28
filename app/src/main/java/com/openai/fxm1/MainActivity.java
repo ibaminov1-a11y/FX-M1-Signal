@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.os.SystemClock;
 import android.widget.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -21,7 +22,18 @@ public class MainActivity extends Activity {
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, levelsText, contextText;
     private Button analyzeButton, saveKeyButton;
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    private static final long BUTTON_COOLDOWN_MS = 15000L;
+    private static final long CACHE_M1_MS = 15000L;
+    private static final long CACHE_M5_MS = 2 * 60 * 1000L;
+    private static final long CACHE_M15_MS = 7 * 60 * 1000L;
+    private static final long CACHE_H1_MS = 30 * 60 * 1000L;
+
+    private long lastAnalyzeClickMs = 0L;
+
+    private final Map<String, CacheItem> cache = new HashMap<>();
 
     private final String[] symbols = {
             "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
@@ -72,39 +84,109 @@ public class MainActivity extends Activity {
             return;
         }
 
+        long now = SystemClock.elapsedRealtime();
+        long elapsed = now - lastAnalyzeClickMs;
+
+        if (lastAnalyzeClickMs > 0 && elapsed < BUTTON_COOLDOWN_MS) {
+            long seconds = (BUTTON_COOLDOWN_MS - elapsed + 999) / 1000;
+            Toast.makeText(
+                    this,
+                    "Подождите " + seconds + " сек. перед повторным анализом",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        lastAnalyzeClickMs = now;
+
         getSharedPreferences("fxm1", MODE_PRIVATE)
                 .edit()
                 .putString("apikey", key)
                 .apply();
 
         analyzeButton.setEnabled(false);
-        statusText.setText("Загружаю M1 / M5 / M15 / H1…");
+        statusText.setText("Обновляю рынок…");
         signalText.setText("…");
         confidenceText.setText("Анализ рынка");
 
         executor.execute(() -> {
             try {
-                List<Candle> m1 = fetch(symbol, "1min", key, 120);
-                List<Candle> m5 = fetch(symbol, "5min", key, 100);
-                List<Candle> m15 = fetch(symbol, "15min", key, 100);
-                List<Candle> h1 = fetch(symbol, "1h", key, 100);
+                FetchResult r1 = getSeries(symbol, "1min", key, 120, CACHE_M1_MS);
+                FetchResult r5 = getSeries(symbol, "5min", key, 100, CACHE_M5_MS);
+                FetchResult r15 = getSeries(symbol, "15min", key, 100, CACHE_M15_MS);
+                FetchResult r60 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
 
-                Analysis a = analyze(symbol, m1, m5, m15, h1);
-                runOnUiThread(() -> showAnalysis(a));
+                Analysis a = analyze(
+                        symbol,
+                        r1.data,
+                        r5.data,
+                        r15.data,
+                        r60.data
+                );
+
+                int freshRequests =
+                        (r1.fromCache ? 0 : 1) +
+                        (r5.fromCache ? 0 : 1) +
+                        (r15.fromCache ? 0 : 1) +
+                        (r60.fromCache ? 0 : 1);
+
+                int cachedRequests = 4 - freshRequests;
+
+                runOnUiThread(() ->
+                        showAnalysis(a, freshRequests, cachedRequests)
+                );
+
+            } catch (RateLimitException e) {
+                runOnUiThread(() -> {
+                    analyzeButton.setEnabled(true);
+                    signalText.setText("WAIT");
+                    signalText.setTextColor(Color.DKGRAY);
+                    statusText.setText("Лимит Twelve Data на эту минуту исчерпан.");
+                    confidenceText.setText("Подождите около 60 секунд и повторите.");
+                    levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
+                    contextText.setText(
+                            "Приложение работает нормально.\n" +
+                            "Сработало ограничение бесплатного API."
+                    );
+                });
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     analyzeButton.setEnabled(true);
                     signalText.setText("ERROR");
                     signalText.setTextColor(Color.DKGRAY);
-                    statusText.setText("Ошибка: " + e.getMessage());
-                    confidenceText.setText("Проверьте API key и интернет.");
+                    statusText.setText("Ошибка: " + safeMessage(e));
+                    confidenceText.setText("Проверьте интернет и API key.");
                     levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
                 });
             }
         });
     }
 
-    private List<Candle> fetch(String symbol, String interval, String key, int outputsize) throws Exception {
+    private FetchResult getSeries(String symbol,
+                                  String interval,
+                                  String key,
+                                  int outputsize,
+                                  long maxAgeMs) throws Exception {
+
+        String cacheKey = symbol + "|" + interval;
+        CacheItem cached = cache.get(cacheKey);
+        long now = System.currentTimeMillis();
+
+        if (cached != null && now - cached.savedAtMs <= maxAgeMs) {
+            return new FetchResult(cached.data, true);
+        }
+
+        List<Candle> data = fetch(symbol, interval, key, outputsize);
+        cache.put(cacheKey, new CacheItem(data, now));
+
+        return new FetchResult(data, false);
+    }
+
+    private List<Candle> fetch(String symbol,
+                               String interval,
+                               String key,
+                               int outputsize) throws Exception {
+
         String url = "https://api.twelvedata.com/time_series?symbol=" +
                 URLEncoder.encode(symbol, "UTF-8") +
                 "&interval=" + URLEncoder.encode(interval, "UTF-8") +
@@ -117,6 +199,7 @@ public class MainActivity extends Activity {
         conn.setRequestMethod("GET");
 
         int code = conn.getResponseCode();
+
         InputStream is = code >= 200 && code < 300
                 ? conn.getInputStream()
                 : conn.getErrorStream();
@@ -124,11 +207,22 @@ public class MainActivity extends Activity {
         String body = readAll(is);
         JSONObject root = new JSONObject(body);
 
-        if (root.has("status") && "error".equalsIgnoreCase(root.optString("status"))) {
-            throw new Exception(root.optString("message", "API error"));
+        if (root.has("status") &&
+                "error".equalsIgnoreCase(root.optString("status"))) {
+
+            String message = root.optString("message", "API error");
+
+            if (message.toLowerCase(Locale.US).contains("api credits") ||
+                    message.toLowerCase(Locale.US).contains("current minute") ||
+                    message.toLowerCase(Locale.US).contains("rate limit")) {
+                throw new RateLimitException(message);
+            }
+
+            throw new Exception(message);
         }
 
         JSONArray vals = root.optJSONArray("values");
+
         if (vals == null || vals.length() < 30) {
             throw new Exception("Недостаточно свечей для " + interval);
         }
@@ -137,6 +231,7 @@ public class MainActivity extends Activity {
 
         for (int i = vals.length() - 1; i >= 0; i--) {
             JSONObject o = vals.getJSONObject(i);
+
             list.add(new Candle(
                     o.getDouble("open"),
                     o.getDouble("high"),
@@ -149,9 +244,12 @@ public class MainActivity extends Activity {
     }
 
     private String readAll(InputStream is) throws IOException {
+        if (is == null) return "";
+
         BufferedReader br = new BufferedReader(
                 new InputStreamReader(is, StandardCharsets.UTF_8)
         );
+
         StringBuilder sb = new StringBuilder();
         String line;
 
@@ -160,6 +258,11 @@ public class MainActivity extends Activity {
         }
 
         return sb.toString();
+    }
+
+    private String safeMessage(Exception e) {
+        String m = e.getMessage();
+        return m == null || m.trim().isEmpty() ? "неизвестная ошибка" : m;
     }
 
     private Analysis analyze(String symbol,
@@ -202,10 +305,19 @@ public class MainActivity extends Activity {
         String signal = buySetup ? "BUY" : sellSetup ? "SELL" : "WAIT";
 
         int quality = setupQuality(
-                signal, sH1, sM15, sM5, sM1, structure, breakout
+                signal,
+                sH1,
+                sM15,
+                sM5,
+                sM1,
+                structure,
+                breakout
         );
 
-        double slDist = Math.max(atr * 1.8, minStopDistance(symbol));
+        double slDist = Math.max(
+                atr * 1.8,
+                minStopDistance(symbol)
+        );
 
         double sl = 0;
         double tp1 = 0;
@@ -222,6 +334,7 @@ public class MainActivity extends Activity {
         }
 
         String reason;
+
         if (breakout > 0) {
             reason = "M1: подтверждён пробой/импульс вверх";
         } else if (breakout < 0) {
@@ -231,6 +344,7 @@ public class MainActivity extends Activity {
         }
 
         String filter;
+
         if ("BUY".equals(signal)) {
             filter = "Фильтр: старшие ТФ не против BUY";
         } else if ("SELL".equals(signal)) {
@@ -250,7 +364,14 @@ public class MainActivity extends Activity {
                 "\nATR M1: " + fmt(atr);
 
         return new Analysis(
-                symbol, signal, quality, entry, sl, tp1, tp2, context
+                symbol,
+                signal,
+                quality,
+                entry,
+                sl,
+                tp1,
+                tp2,
+                context
         );
     }
 
@@ -415,9 +536,20 @@ public class MainActivity extends Activity {
         return s > 0 ? "↑" : s < 0 ? "↓" : "→";
     }
 
-    private void showAnalysis(Analysis a) {
+    private void showAnalysis(Analysis a,
+                              int freshRequests,
+                              int cachedRequests) {
+
         analyzeButton.setEnabled(true);
-        statusText.setText(a.symbol + " · данные Twelve Data");
+
+        statusText.setText(
+                a.symbol +
+                " · Twelve Data · API " +
+                freshRequests +
+                " · кэш " +
+                cachedRequests
+        );
+
         signalText.setText(a.signal);
 
         if ("BUY".equals(a.signal)) {
@@ -428,7 +560,9 @@ public class MainActivity extends Activity {
             signalText.setTextColor(Color.DKGRAY);
         }
 
-        confidenceText.setText("Качество сетапа: " + a.quality + "/100");
+        confidenceText.setText(
+                "Качество сетапа: " + a.quality + "/100"
+        );
 
         if ("WAIT".equals(a.signal)) {
             levelsText.setText(
@@ -467,7 +601,11 @@ public class MainActivity extends Activity {
         final double low;
         final double close;
 
-        Candle(double open, double high, double low, double close) {
+        Candle(double open,
+               double high,
+               double low,
+               double close) {
+
             this.open = open;
             this.high = high;
             this.low = low;
@@ -502,6 +640,32 @@ public class MainActivity extends Activity {
             this.tp1 = tp1;
             this.tp2 = tp2;
             this.context = context;
+        }
+    }
+
+    static class CacheItem {
+        final List<Candle> data;
+        final long savedAtMs;
+
+        CacheItem(List<Candle> data, long savedAtMs) {
+            this.data = data;
+            this.savedAtMs = savedAtMs;
+        }
+    }
+
+    static class FetchResult {
+        final List<Candle> data;
+        final boolean fromCache;
+
+        FetchResult(List<Candle> data, boolean fromCache) {
+            this.data = data;
+            this.fromCache = fromCache;
+        }
+    }
+
+    static class RateLimitException extends Exception {
+        RateLimitException(String message) {
+            super(message);
         }
     }
 }
