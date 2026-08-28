@@ -174,6 +174,15 @@ def assistant_core(session_id, message, context, want_voice=True):
     return reply, audio_b64
 
 
+@app.get("/")
+def root():
+    return jsonify({
+        "ok": True,
+        "service": "FX M1 JARVIS AI Server",
+        "message": "Server is running. Use /health for status."
+    })
+
+
 @app.get("/health")
 def health():
     return jsonify({

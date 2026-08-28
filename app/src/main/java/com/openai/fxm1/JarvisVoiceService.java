@@ -63,7 +63,7 @@ public class JarvisVoiceService extends Service {
 
         String server = normalizeServerUrl(prefs().getString("server_url", ""));
         if (server.isEmpty()) {
-            updateNotification("JARVIS · сначала укажите AI-сервер", false);
+            updateNotification("JARVIS · AI-сервер не настроен", false);
             stopSelf();
             return START_NOT_STICKY;
         }

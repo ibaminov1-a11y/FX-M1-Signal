@@ -40,7 +40,7 @@ public class MainActivity extends Activity {
 
     private Spinner symbolSpinner, entryTimeframeSpinner, signalModeSpinner;
     private EditText apiKeyInput;
-    private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText;
+    private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
     private Button jarvisTalkButton, jarvisSendButton, jarvisMuteButton, backgroundModeButton;
     private EditText serverUrlInput, jarvisInput;
@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
     private boolean jarvisAutoListenAfterSpeech = false;
     private boolean jarvisStartupDone = false;
     private boolean jarvisMuted = false;
+    private boolean jarvisServerWarningShown = false;
     private String pendingJarvisSpeech = null;
     private final String jarvisSessionId = UUID.randomUUID().toString();
 
@@ -140,6 +141,7 @@ public class MainActivity extends Activity {
         entryTimeframeSpinner = findViewById(R.id.entryTimeframeSpinner);
         signalModeSpinner = findViewById(R.id.signalModeSpinner);
         apiKeyInput = findViewById(R.id.apiKeyInput);
+        apiKeyLabel = findViewById(R.id.apiKeyLabel);
         statusText = findViewById(R.id.statusText);
         signalText = findViewById(R.id.signalText);
         confidenceText = findViewById(R.id.confidenceText);
@@ -203,6 +205,7 @@ public class MainActivity extends Activity {
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
         apiKeyInput.setText(prefs.getString("apikey", ""));
         serverUrlInput.setText(prefs.getString("server_url", ""));
+        setApiKeyEditMode(prefs.getString("apikey", "").trim().isEmpty());
 
         ArrayAdapter<String> riskAdapter = darkSpinnerAdapter(
                 new String[]{"0.25%", "0.50%", "1.00%"}
@@ -226,8 +229,23 @@ public class MainActivity extends Activity {
         setTradingControlsOffline();
 
         saveKeyButton.setOnClickListener(v -> {
+            boolean editing = apiKeyInput.getVisibility() == View.VISIBLE;
+
+            if (!editing) {
+                setApiKeyEditMode(true);
+                apiKeyInput.requestFocus();
+                return;
+            }
+
             String key = apiKeyInput.getText().toString().trim();
+            if (key.isEmpty()) {
+                Toast.makeText(this, "Введите Twelve Data API key", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             prefs.edit().putString("apikey", key).apply();
+            setApiKeyEditMode(false);
+
             if (getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false)) {
                 sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
             }
@@ -572,9 +590,12 @@ public class MainActivity extends Activity {
 
         final String base = normalizeServerUrl(serverUrlInput.getText().toString());
         if (base.isEmpty()) {
-            jarvisStatusText.setText("JARVIS: сначала укажите адрес AI-сервера.");
-            appendJarvisLine("JARVIS",
-                    "Русский голос теперь работает через серверный STT/TTS. Укажите адрес сервера.");
+            jarvisStatusText.setText("JARVIS: AI-сервер не подключён.");
+            if (!jarvisServerWarningShown) {
+                appendJarvisLine("JARVIS",
+                        "Для русского голоса нужен AI-сервер. Укажите его адрес ниже и нажмите «ПРОВЕРИТЬ СЕРВЕР».");
+                jarvisServerWarningShown = true;
+            }
             return;
         }
 
@@ -1377,6 +1398,14 @@ public class MainActivity extends Activity {
         journalText.setText(updated);
     }
 
+    private void setApiKeyEditMode(boolean editing) {
+        if (apiKeyLabel != null) {
+            apiKeyLabel.setVisibility(editing ? View.VISIBLE : View.GONE);
+        }
+        apiKeyInput.setVisibility(editing ? View.VISIBLE : View.GONE);
+        saveKeyButton.setText(editing ? "СОХРАНИТЬ API KEY" : "ИЗМЕНИТЬ API KEY");
+    }
+
     private void startMonitoring() {
         String key = apiKeyInput.getText().toString().trim();
 
@@ -1495,6 +1524,7 @@ public class MainActivity extends Activity {
     private void syncUiFromBackgroundService() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         boolean bgRunning = p.getBoolean("bg_running", false);
+        boolean bgPaused = p.getBoolean("bg_paused", false);
 
         analyzeButton.setText(
                 monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ"
@@ -1503,10 +1533,16 @@ public class MainActivity extends Activity {
             backgroundModeButton.setText(bgRunning ? "■  ОСТАНОВИТЬ ФОН" : "▶  ВКЛЮЧИТЬ ФОН");
         }
         if (backgroundStatusText != null) {
-            backgroundStatusText.setText(
-                    bgRunning ? "●  ФОН: АКТИВЕН · можно свернуть приложение" : "○  ФОН: ВЫКЛЮЧЕН"
-            );
-            backgroundStatusText.setTextColor(bgRunning ? C_GREEN : C_MUTED);
+            if (!bgRunning) {
+                backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
+                backgroundStatusText.setTextColor(C_MUTED);
+            } else if (bgPaused) {
+                backgroundStatusText.setText("●  ФОН: АКТИВЕН · МОНИТОРИНГ НА ПАУЗЕ");
+                backgroundStatusText.setTextColor(C_YELLOW);
+            } else {
+                backgroundStatusText.setText("●  ФОН: АКТИВЕН · можно свернуть приложение");
+                backgroundStatusText.setTextColor(C_GREEN);
+            }
         }
 
         if (p.getBoolean("stop_all_requested", false)) {

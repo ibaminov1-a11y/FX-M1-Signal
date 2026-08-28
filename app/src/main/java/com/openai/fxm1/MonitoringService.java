@@ -23,6 +23,9 @@ public class MonitoringService extends Service {
     public static final String ACTION_EMERGENCY = "com.openai.fxm1.action.EMERGENCY_STOP";
     public static final String ACTION_REFRESH = "com.openai.fxm1.action.REFRESH_MONITORING";
     public static final String ACTION_STOP_ALL = "com.openai.fxm1.action.STOP_ALL";
+    public static final String ACTION_PAUSE = "com.openai.fxm1.action.PAUSE_BACKGROUND";
+    public static final String ACTION_RESUME = "com.openai.fxm1.action.RESUME_BACKGROUND";
+    public static final String ACTION_POWER_OFF = "com.openai.fxm1.action.POWER_OFF_BACKGROUND";
 
     private static final int NOTIFICATION_ID = 4101;
     private static final int SIGNAL_NOTIFICATION_ID = 4102;
@@ -43,6 +46,7 @@ public class MonitoringService extends Service {
 
     private volatile boolean running = false;
     private volatile boolean analyzing = false;
+    private volatile boolean paused = false;
 
     private final String[] symbols = {
             "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
@@ -54,6 +58,10 @@ public class MonitoringService extends Service {
         @Override
         public void run() {
             if (!running) return;
+            if (paused) {
+                scheduleNext(1000L);
+                return;
+            }
             if (!analyzing) analyzeOnce();
             else scheduleNext(1000L);
         }
@@ -73,6 +81,44 @@ public class MonitoringService extends Service {
             stopMonitoring(false);
             return START_NOT_STICKY;
         }
+        if (ACTION_PAUSE.equals(action)) {
+            paused = true;
+            prefs().edit()
+                    .putBoolean("bg_paused", true)
+                    .putString("bg_status", "Мониторинг на паузе")
+                    .apply();
+            updateNotification(
+                    currentSymbol() + " · " + currentTf() + " · " + currentMode(),
+                    "ПАУЗА · фон остаётся активным",
+                    prefs().getString("state_signal", "WAIT"),
+                    prefs().getInt("state_quality", -1)
+            );
+            return START_STICKY;
+        }
+
+        if (ACTION_RESUME.equals(action)) {
+            paused = false;
+            prefs().edit()
+                    .putBoolean("bg_paused", false)
+                    .putString("bg_status", "Мониторинг работает")
+                    .apply();
+            handler.removeCallbacks(tick);
+            handler.post(tick);
+            updateNotification(
+                    currentSymbol() + " · " + currentTf() + " · " + currentMode(),
+                    "Мониторинг продолжен",
+                    prefs().getString("state_signal", "WAIT"),
+                    prefs().getInt("state_quality", -1)
+            );
+            return START_STICKY;
+        }
+
+        if (ACTION_POWER_OFF.equals(action)) {
+            prefs().edit().putBoolean("bg_paused", false).apply();
+            stopMonitoring(false);
+            return START_NOT_STICKY;
+        }
+
 
         if (ACTION_EMERGENCY.equals(action)) {
             emergencyStop();
@@ -122,7 +168,9 @@ public class MonitoringService extends Service {
         }
 
         running = true;
+        paused = false;
         p.edit().putBoolean("bg_running", true)
+                .putBoolean("bg_paused", false)
                 .putString("bg_status", "Фоновый мониторинг работает")
                 .apply();
 
@@ -152,7 +200,8 @@ public class MonitoringService extends Service {
         handler.removeCallbacks(tick);
         prefs().edit()
                 .putBoolean("bg_running", false)
-                .putString("bg_status", emergency ? "EMERGENCY STOP" : "Мониторинг остановлен")
+                .putBoolean("bg_paused", false)
+                .putString("bg_status", emergency ? "EMERGENCY STOP" : "Фон полностью выключен")
                 .apply();
 
         stopForeground(STOP_FOREGROUND_REMOVE);
@@ -331,11 +380,11 @@ public class MonitoringService extends Service {
     private void saveAnalysis(Analysis a, int fresh, int cached) {
         SharedPreferences p = prefs();
         String tf = currentTf();
-        String oldSignal = p.getString("bg_signal", "WAIT");
-        String oldSymbol = p.getString("bg_symbol", "");
-        String oldTf = p.getString("bg_tf", "");
+        String oldSignal = p.getString("state_signal", "WAIT");
+        String oldSymbol = p.getString("state_symbol", "");
+        String oldTf = p.getString("state_tf", "");
         long now = System.currentTimeMillis();
-        long signalSince = p.getLong("bg_signal_since_ms", 0L);
+        long signalSince = p.getLong("state_signal_since_ms", 0L);
 
         if (!a.signal.equals(oldSignal) ||
                 !a.symbol.equals(oldSymbol) ||
@@ -535,21 +584,21 @@ public class MonitoringService extends Service {
                 openJarvisIntent()
         ).build();
 
-        Notification.Action bgOffAction = new Notification.Action.Builder(
-                android.R.drawable.ic_media_pause,
-                "ФОН OFF",
-                serviceActionIntent(ACTION_STOP, 101)
+        Notification.Action pausePlayAction = new Notification.Action.Builder(
+                paused ? android.R.drawable.ic_media_play : android.R.drawable.ic_media_pause,
+                paused ? "ПРОДОЛЖИТЬ" : "ПАУЗА",
+                serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101)
         ).build();
 
-        Notification.Action stopAllAction = new Notification.Action.Builder(
+        Notification.Action powerAction = new Notification.Action.Builder(
                 android.R.drawable.ic_lock_power_off,
-                "STOP ALL",
-                serviceActionIntent(ACTION_STOP_ALL, 102)
+                "ВЫКЛЮЧИТЬ",
+                serviceActionIntent(ACTION_POWER_OFF, 102)
         ).build();
 
         return new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(android.R.drawable.stat_notify_sync)
-                .setContentTitle("FX M1 Bot · работает в фоне")
+                .setContentTitle(paused ? "FX M1 Bot · ПАУЗА" : "FX M1 Bot · работает в фоне")
                 .setContentText(title + " · " + status)
                 .setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1, 2))
                 .setOngoing(true)
@@ -557,8 +606,8 @@ public class MonitoringService extends Service {
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentIntent(openAppIntent())
                 .addAction(jarvisAction)
-                .addAction(bgOffAction)
-                .addAction(stopAllAction)
+                .addAction(pausePlayAction)
+                .addAction(powerAction)
                 .build();
     }
 
