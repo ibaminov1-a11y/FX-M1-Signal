@@ -12,7 +12,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="FX M1 Bot · V5"
+            android:text="FX M1 Bot · V5.1"
             android:textSize="28sp"
             android:textStyle="bold" />
 
@@ -20,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="M1 вход · H1/M15/M5 фильтр · MT5 control"
+            android:text="M1 вход · режимы сигнала · MT5 execution"
             android:textSize="14sp" />
 
         <Spinner
@@ -44,6 +44,19 @@
             android:layout_height="50dp"
             android:layout_marginTop="8dp"
             android:text="Сохранить API key" />
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Режим сигнала"
+            android:textSize="14sp" />
+
+        <Spinner
+            android:id="@+id/signalModeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp" />
 
         <Button
             android:id="@+id/analyzeButton"
@@ -135,6 +148,27 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+
+        <TextView
+            android:id="@+id/priceCompareText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="API Price: —&#10;MT5 Bid/Ask: — / —&#10;Разница: —&#10;EXECUTION PRICE: MT5"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Макс. отклонение MT5 от сигнала"
+            android:textSize="14sp" />
+
+        <Spinner
+            android:id="@+id/maxDriftSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp" />
+
         <TextView
             android:id="@+id/accountText"
             android:layout_width="match_parent"
@@ -219,7 +253,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:text="V5: автоторговля заблокирована, пока не подключены сервер + MT5 DEMO. Реальный счёт в этой версии не допускается."
+            android:text="V5.1: сигнал формируется по выбранному режиму. Исполнение после подключения сервера проверяется по котировке MT5 DEMO, а не по цене Twelve Data."
             android:textSize="13sp" />
 
     </LinearLayout>

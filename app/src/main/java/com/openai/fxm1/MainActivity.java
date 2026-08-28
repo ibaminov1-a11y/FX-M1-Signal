@@ -23,14 +23,14 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
 
-    private Spinner symbolSpinner;
+    private Spinner symbolSpinner, signalModeSpinner;
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, levelsText, contextText;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
     private EditText serverUrlInput;
-    private TextView serverStatusText, accountText, positionsText, journalText;
+    private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
     private Switch autoTradingSwitch;
-    private Spinner riskSpinner, maxPositionsSpinner;
+    private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
@@ -47,6 +47,10 @@ public class MainActivity extends Activity {
     private boolean mt5Connected = false;
     private boolean demoAccount = false;
     private boolean suppressAutoSwitch = false;
+
+    private double lastApiPrice = Double.NaN;
+    private double lastMt5Bid = Double.NaN;
+    private double lastMt5Ask = Double.NaN;
 
     private final Map<String, String> lastSentSignal = new HashMap<>();
 
@@ -78,6 +82,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         symbolSpinner = findViewById(R.id.symbolSpinner);
+        signalModeSpinner = findViewById(R.id.signalModeSpinner);
         apiKeyInput = findViewById(R.id.apiKeyInput);
         statusText = findViewById(R.id.statusText);
         signalText = findViewById(R.id.signalText);
@@ -92,9 +97,11 @@ public class MainActivity extends Activity {
         accountText = findViewById(R.id.accountText);
         positionsText = findViewById(R.id.positionsText);
         journalText = findViewById(R.id.journalText);
+        priceCompareText = findViewById(R.id.priceCompareText);
         autoTradingSwitch = findViewById(R.id.autoTradingSwitch);
         riskSpinner = findViewById(R.id.riskSpinner);
         maxPositionsSpinner = findViewById(R.id.maxPositionsSpinner);
+        maxDriftSpinner = findViewById(R.id.maxDriftSpinner);
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
 
@@ -105,7 +112,15 @@ public class MainActivity extends Activity {
         );
         symbolSpinner.setAdapter(adapter);
 
+        ArrayAdapter<String> modeAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"CONSERVATIVE", "NORMAL", "AGGRESSIVE"}
+        );
+        signalModeSpinner.setAdapter(modeAdapter);
+
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
         apiKeyInput.setText(prefs.getString("apikey", ""));
         serverUrlInput.setText(prefs.getString("server_url", ""));
 
@@ -124,6 +139,14 @@ public class MainActivity extends Activity {
         );
         maxPositionsSpinner.setAdapter(maxPosAdapter);
         maxPositionsSpinner.setSelection(prefs.getInt("maxpos_pos", 0));
+
+        ArrayAdapter<String> driftAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"0.03%", "0.05%", "0.10%", "0.20%"}
+        );
+        maxDriftSpinner.setAdapter(driftAdapter);
+        maxDriftSpinner.setSelection(prefs.getInt("maxdrift_pos", 1));
 
         analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
         setTradingControlsOffline();
@@ -160,6 +183,24 @@ public class MainActivity extends Activity {
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
 
+
+        signalModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt("signal_mode_pos", position).apply();
+                lastSentSignal.clear();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
+        maxDriftSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt("maxdrift_pos", position).apply();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
         autoTradingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (suppressAutoSwitch) return;
 
@@ -170,8 +211,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V5 разрешает только DEMO.");
-                    Toast.makeText(this, "V5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V5.1 разрешает только DEMO.");
+                    Toast.makeText(this, "V5.1 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 addJournal("AUTO TRADING включён · DEMO");
@@ -197,6 +238,9 @@ public class MainActivity extends Activity {
         serverStatusText.setText("SERVER: NOT CONNECTED\nMT5: OFFLINE");
         accountText.setText("Счёт: —\nБаланс: —\nEquity: —");
         positionsText.setText("Открытые позиции: —\nТекущий P/L: —");
+        lastMt5Bid = Double.NaN;
+        lastMt5Ask = Double.NaN;
+        updatePriceComparison();
         closeAllButton.setEnabled(false);
         forceAutoOff(null);
     }
@@ -269,6 +313,10 @@ public class MainActivity extends Activity {
                     addJournal(serverOk && mt5Ok
                             ? "Связь с MT5 установлена · " + accountType
                             : "Сервер ответил, MT5 пока не готов");
+
+                    if (serverOk && mt5Ok) {
+                        refreshMt5Quote((String) symbolSpinner.getSelectedItem());
+                    }
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
@@ -312,6 +360,10 @@ public class MainActivity extends Activity {
                 payload.put("risk_pct", Double.parseDouble(risk.replace("%", "")));
                 payload.put("max_positions", Integer.parseInt(maxPositions));
                 payload.put("mode", "DEMO");
+                payload.put("signal_mode", selectedSignalMode());
+                payload.put("api_entry", a.entry);
+                payload.put("max_price_drift_pct", selectedMaxDriftPct());
+                payload.put("execution_price_source", "MT5");
 
                 JSONObject response = httpJson("POST", base + "/signal", payload);
                 boolean accepted = response.optBoolean("accepted", false);
@@ -655,6 +707,76 @@ public class MainActivity extends Activity {
                 : m;
     }
 
+
+    private String selectedSignalMode() {
+        Object selected = signalModeSpinner.getSelectedItem();
+        return selected == null ? "NORMAL" : selected.toString();
+    }
+
+    private double selectedMaxDriftPct() {
+        Object selected = maxDriftSpinner.getSelectedItem();
+        if (selected == null) return 0.05;
+        try {
+            return Double.parseDouble(selected.toString().replace("%", ""));
+        } catch (Exception ignored) {
+            return 0.05;
+        }
+    }
+
+    private void refreshMt5Quote(String symbol) {
+        if (!serverConnected || !mt5Connected) {
+            lastMt5Bid = Double.NaN;
+            lastMt5Ask = Double.NaN;
+            updatePriceComparison();
+            return;
+        }
+
+        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
+        if (base.isEmpty()) return;
+
+        executor.execute(() -> {
+            try {
+                String url = base + "/quote?symbol=" + URLEncoder.encode(symbol, "UTF-8");
+                JSONObject root = httpJson("GET", url, null);
+                double bid = root.optDouble("bid", Double.NaN);
+                double ask = root.optDouble("ask", Double.NaN);
+
+                runOnUiThread(() -> {
+                    lastMt5Bid = bid;
+                    lastMt5Ask = ask;
+                    updatePriceComparison();
+                });
+            } catch (Exception ignored) {
+                runOnUiThread(() -> {
+                    lastMt5Bid = Double.NaN;
+                    lastMt5Ask = Double.NaN;
+                    updatePriceComparison();
+                });
+            }
+        });
+    }
+
+    private void updatePriceComparison() {
+        String api = Double.isNaN(lastApiPrice) ? "—" : fmt(lastApiPrice);
+        String bid = Double.isNaN(lastMt5Bid) ? "—" : fmt(lastMt5Bid);
+        String ask = Double.isNaN(lastMt5Ask) ? "—" : fmt(lastMt5Ask);
+
+        String diff = "—";
+        if (!Double.isNaN(lastApiPrice) && lastApiPrice != 0 &&
+                !Double.isNaN(lastMt5Bid) && !Double.isNaN(lastMt5Ask)) {
+            double mid = (lastMt5Bid + lastMt5Ask) / 2.0;
+            double pct = Math.abs(mid - lastApiPrice) / lastApiPrice * 100.0;
+            diff = String.format(Locale.US, "%.4f%%", pct);
+        }
+
+        priceCompareText.setText(
+                "API Price: " + api +
+                "\nMT5 Bid/Ask: " + bid + " / " + ask +
+                "\nРазница: " + diff +
+                "\nEXECUTION PRICE: MT5"
+        );
+    }
+
     private Analysis analyze(String symbol,
                              List<Candle> m1,
                              List<Candle> m5,
@@ -679,21 +801,72 @@ public class MainActivity extends Activity {
             );
         }
 
-        boolean buySetup =
-                sH1 >= 0 &&
-                sM15 >= 0 &&
-                sM5 > 0 &&
-                sM1 > 0 &&
-                structure >= 0 &&
-                breakout > 0;
+        String mode = selectedSignalMode();
 
-        boolean sellSetup =
-                sH1 <= 0 &&
-                sM15 <= 0 &&
-                sM5 < 0 &&
-                sM1 < 0 &&
-                structure <= 0 &&
-                breakout < 0;
+        boolean buySetup;
+        boolean sellSetup;
+
+        if ("CONSERVATIVE".equals(mode)) {
+            buySetup =
+                    sH1 >= 0 &&
+                    sM15 >= 0 &&
+                    sM5 > 0 &&
+                    sM1 > 0 &&
+                    structure >= 0 &&
+                    breakout > 0;
+
+            sellSetup =
+                    sH1 <= 0 &&
+                    sM15 <= 0 &&
+                    sM5 < 0 &&
+                    sM1 < 0 &&
+                    structure <= 0 &&
+                    breakout < 0;
+
+        } else if ("AGGRESSIVE".equals(mode)) {
+            int buyVotes = 0;
+            int sellVotes = 0;
+
+            if (sH1 > 0) buyVotes++; else if (sH1 < 0) sellVotes++;
+            if (sM15 > 0) buyVotes++; else if (sM15 < 0) sellVotes++;
+            if (sM5 > 0) buyVotes++; else if (sM5 < 0) sellVotes++;
+            if (sM1 > 0) buyVotes++; else if (sM1 < 0) sellVotes++;
+            if (structure > 0) buyVotes++; else if (structure < 0) sellVotes++;
+
+            buySetup =
+                    sM1 > 0 &&
+                    sM5 >= 0 &&
+                    breakout >= 0 &&
+                    buyVotes >= 3 &&
+                    sellVotes <= 1;
+
+            sellSetup =
+                    sM1 < 0 &&
+                    sM5 <= 0 &&
+                    breakout <= 0 &&
+                    sellVotes >= 3 &&
+                    buyVotes <= 1;
+
+        } else {
+            // NORMAL: старшие ТФ и M1 должны смотреть в одну сторону.
+            // Подтверждённый пробой желателен, но не обязателен.
+            // Противоположный пробой блокирует вход.
+            buySetup =
+                    sH1 >= 0 &&
+                    sM15 > 0 &&
+                    sM5 > 0 &&
+                    sM1 > 0 &&
+                    structure >= 0 &&
+                    breakout >= 0;
+
+            sellSetup =
+                    sH1 <= 0 &&
+                    sM15 < 0 &&
+                    sM5 < 0 &&
+                    sM1 < 0 &&
+                    structure <= 0 &&
+                    breakout <= 0;
+        }
 
         String signal = buySetup
                 ? "BUY"
@@ -743,15 +916,16 @@ public class MainActivity extends Activity {
         String filter;
 
         if ("BUY".equals(signal)) {
-            filter = "Фильтр: старшие ТФ не против BUY";
+            filter = "Фильтр: " + mode + " разрешил BUY";
         } else if ("SELL".equals(signal)) {
-            filter = "Фильтр: старшие ТФ не против SELL";
+            filter = "Фильтр: " + mode + " разрешил SELL";
         } else {
-            filter = "Фильтр: условия для входа не совпали";
+            filter = "Фильтр: " + mode + " · условия для входа не совпали";
         }
 
         String context =
-                "H1 " + arrow(sH1) +
+                "Режим: " + mode +
+                "\nH1 " + arrow(sH1) +
                 "   M15 " + arrow(sM15) +
                 "   M5 " + arrow(sM5) +
                 "   M1 " + arrow(sM1) +
@@ -991,6 +1165,10 @@ public class MainActivity extends Activity {
         }
 
         contextText.setText(a.context);
+
+        lastApiPrice = a.entry;
+        updatePriceComparison();
+        refreshMt5Quote(a.symbol);
     }
 
     private String fmt(double x) {
