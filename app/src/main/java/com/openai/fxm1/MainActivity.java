@@ -1,6 +1,10 @@
 package com.openai.fxm1;
 
 import android.app.Activity;
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -8,6 +12,12 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.media.MediaPlayer;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
+import android.util.Base64;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.*;
@@ -29,11 +39,20 @@ public class MainActivity extends Activity {
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, levelsText, contextText;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
-    private EditText serverUrlInput;
+    private Button jarvisTalkButton, jarvisSendButton;
+    private EditText serverUrlInput, jarvisInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
+    private TextView jarvisStatusText, jarvisChatText;
     private Switch autoTradingSwitch;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
-    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard;
+    private View topCard, tfCard, modeCard, signalCard, jarvisCard, tradingCard, metricsCard, riskCard, journalCard;
+
+    private SpeechRecognizer jarvisSpeechRecognizer;
+    private TextToSpeech jarvisTts;
+    private MediaPlayer jarvisPlayer;
+    private boolean jarvisListening = false;
+    private boolean jarvisStartAfterPermission = false;
+    private final String jarvisSessionId = UUID.randomUUID().toString();
 
     private static final int C_BG = Color.rgb(7, 8, 22);
     private static final int C_CARD = Color.rgb(17, 18, 39);
@@ -48,6 +67,15 @@ public class MainActivity extends Activity {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
+    private final Handler serviceUiHandler = new Handler(Looper.getMainLooper());
+
+    private final Runnable serviceUiRunnable = new Runnable() {
+        @Override
+        public void run() {
+            syncUiFromBackgroundService();
+            serviceUiHandler.postDelayed(this, 1000L);
+        }
+    };
 
     private static final long CACHE_M1_MS = 18000L;
     private static final long CACHE_M5_MS = 2 * 60 * 1000L;
@@ -120,11 +148,17 @@ public class MainActivity extends Activity {
         maxDriftSpinner = findViewById(R.id.maxDriftSpinner);
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
+        jarvisTalkButton = findViewById(R.id.jarvisTalkButton);
+        jarvisSendButton = findViewById(R.id.jarvisSendButton);
+        jarvisInput = findViewById(R.id.jarvisInput);
+        jarvisStatusText = findViewById(R.id.jarvisStatusText);
+        jarvisChatText = findViewById(R.id.jarvisChatText);
 
         topCard = findViewById(R.id.topCard);
         tfCard = findViewById(R.id.tfCard);
         modeCard = findViewById(R.id.modeCard);
         signalCard = findViewById(R.id.signalCard);
+        jarvisCard = findViewById(R.id.jarvisCard);
         tradingCard = findViewById(R.id.tradingCard);
         metricsCard = findViewById(R.id.metricsCard);
         riskCard = findViewById(R.id.riskCard);
@@ -146,6 +180,7 @@ public class MainActivity extends Activity {
         signalModeSpinner.setAdapter(modeAdapter);
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        symbolSpinner.setSelection(prefs.getInt("symbol_pos", 0));
         entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
         apiKeyInput.setText(prefs.getString("apikey", ""));
@@ -175,6 +210,9 @@ public class MainActivity extends Activity {
         saveKeyButton.setOnClickListener(v -> {
             String key = apiKeyInput.getText().toString().trim();
             prefs.edit().putString("apikey", key).apply();
+            if (monitoring) {
+                sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
+            }
             Toast.makeText(this, "API key сохранён", Toast.LENGTH_SHORT).show();
         });
 
@@ -205,6 +243,21 @@ public class MainActivity extends Activity {
         });
 
 
+        symbolSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt("symbol_pos", position).apply();
+                lastSentSignal.clear();
+                lastAlertSignal.clear();
+
+                if (monitoring) {
+                    sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
+                }
+            }
+
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
         entryTimeframeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -214,8 +267,7 @@ public class MainActivity extends Activity {
 
                 if (monitoring) {
                     statusText.setText("Таймфрейм изменён на " + selectedEntryTimeframe() + " · обновляю…");
-                    monitorHandler.removeCallbacks(monitorRunnable);
-                    scheduleNext(500L);
+                    sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
                 }
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
@@ -226,6 +278,9 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 prefs.edit().putInt("signal_mode_pos", position).apply();
                 lastSentSignal.clear();
+                if (monitoring) {
+                    sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
+                }
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
@@ -248,29 +303,385 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V5.3 разрешает только DEMO.");
-                    Toast.makeText(this, "V5.3 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V5.5 разрешает только DEMO.");
+                    Toast.makeText(this, "V5.5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
+                prefs.edit().putBoolean("auto_trading", true).apply();
                 addJournal("AUTO TRADING включён · DEMO");
             } else {
+                prefs.edit().putBoolean("auto_trading", false).apply();
                 addJournal("AUTO TRADING выключен");
             }
         });
 
         emergencyStopButton.setOnClickListener(v -> {
             forceAutoOff("EMERGENCY STOP: отправка новых сигналов остановлена.");
-            stopMonitoring();
+            sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
+            monitoring = false;
+            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
             addJournal("EMERGENCY STOP на телефоне");
-            Toast.makeText(this, "STOP: мониторинг и AUTO выключены", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "STOP: фоновый мониторинг и AUTO выключены", Toast.LENGTH_LONG).show();
         });
 
         closeAllButton.setOnClickListener(v -> sendCloseAll());
+
+        initJarvisVoice();
+
+        jarvisTalkButton.setOnClickListener(v -> startJarvisListening());
+        jarvisSendButton.setOnClickListener(v -> {
+            String message = jarvisInput.getText().toString().trim();
+            if (!message.isEmpty()) {
+                jarvisInput.setText("");
+                sendJarvisMessage(message);
+            }
+        });
+
+        jarvisInput.setOnEditorActionListener((v, actionId, event) -> {
+            String message = jarvisInput.getText().toString().trim();
+            if (!message.isEmpty()) {
+                jarvisInput.setText("");
+                sendJarvisMessage(message);
+                return true;
+            }
+            return false;
+        });
+
+        handleJarvisIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleJarvisIntent(intent);
+    }
+
+    private void handleJarvisIntent(Intent intent) {
+        if (intent != null && intent.getBooleanExtra("open_jarvis", false)) {
+            intent.removeExtra("open_jarvis");
+            new Handler(Looper.getMainLooper()).postDelayed(this::startJarvisListening, 350L);
+        }
+    }
+
+    private void initJarvisVoice() {
+        jarvisTts = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                jarvisTts.setLanguage(new Locale("ru", "RU"));
+                jarvisTts.setPitch(0.88f);
+                jarvisTts.setSpeechRate(0.96f);
+            }
+        });
+
+        jarvisStatusText.setText("JARVIS: READY · AI через сервер / локальный режим без сервера");
+        jarvisChatText.setText(
+                "JARVIS: Системы готовы. Если рынок решит вести себя прилично, я непременно сообщу."
+        );
+    }
+
+    private void startJarvisListening() {
+        if (Build.VERSION.SDK_INT >= 23 &&
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            jarvisStartAfterPermission = true;
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 5002);
+            return;
+        }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            jarvisStatusText.setText("JARVIS: распознавание речи недоступно на устройстве");
+            return;
+        }
+
+        if (jarvisSpeechRecognizer == null) {
+            jarvisSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            jarvisSpeechRecognizer.setRecognitionListener(new RecognitionListener() {
+                @Override public void onReadyForSpeech(Bundle params) {
+                    jarvisListening = true;
+                    jarvisTalkButton.setText("СЛУШАЮ…");
+                    jarvisStatusText.setText("JARVIS: слушаю.");
+                }
+
+                @Override public void onBeginningOfSpeech() { }
+                @Override public void onRmsChanged(float rmsdB) { }
+                @Override public void onBufferReceived(byte[] buffer) { }
+                @Override public void onEndOfSpeech() {
+                    jarvisListening = false;
+                    jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
+                    jarvisStatusText.setText("JARVIS: думаю…");
+                }
+
+                @Override public void onError(int error) {
+                    jarvisListening = false;
+                    jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
+                    jarvisStatusText.setText("JARVIS: не расслышал. Попробуйте ещё раз.");
+                }
+
+                @Override public void onResults(Bundle results) {
+                    jarvisListening = false;
+                    jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
+
+                    ArrayList<String> matches =
+                            results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+
+                    if (matches == null || matches.isEmpty()) {
+                        jarvisStatusText.setText("JARVIS: фраза не распознана");
+                        return;
+                    }
+
+                    String message = matches.get(0).trim();
+                    jarvisInput.setText("");
+                    sendJarvisMessage(message);
+                }
+
+                @Override public void onPartialResults(Bundle partialResults) { }
+                @Override public void onEvent(int eventType, Bundle params) { }
+            });
+        }
+
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU");
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ru-RU");
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Говорите");
+
+        try {
+            jarvisSpeechRecognizer.startListening(intent);
+        } catch (Exception e) {
+            jarvisStatusText.setText("JARVIS: микрофон пока недоступен");
+        }
+    }
+
+    private void sendJarvisMessage(String message) {
+        appendJarvisLine("ВЫ", message);
+
+        String localCommandReply = handleSafeLocalJarvisCommand(message);
+        if (localCommandReply != null) {
+            deliverJarvisReply(localCommandReply, null);
+            return;
+        }
+
+        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
+        if (base.isEmpty()) {
+            deliverJarvisReply(localJarvisReply(message), null);
+            return;
+        }
+
+        jarvisStatusText.setText("JARVIS: думаю…");
+
+        final JSONObject payload = new JSONObject();
+        try {
+            payload.put("session_id", jarvisSessionId);
+            payload.put("message", message);
+
+            JSONObject context = new JSONObject();
+            context.put("symbol", String.valueOf(symbolSpinner.getSelectedItem()));
+            context.put("entry_timeframe", selectedEntryTimeframe());
+            context.put("signal_mode", selectedSignalMode());
+            context.put("signal", signalText.getText().toString());
+            context.put("quality", confidenceText.getText().toString());
+            context.put("levels", levelsText.getText().toString());
+            context.put("market_context", contextText.getText().toString());
+            context.put("monitor_status", statusText.getText().toString());
+            context.put("server_connected", serverConnected);
+            context.put("mt5_connected", mt5Connected);
+            context.put("account", accountText.getText().toString());
+            context.put("positions", positionsText.getText().toString());
+            context.put("auto_trading", autoTradingSwitch.isChecked());
+            context.put("risk", String.valueOf(riskSpinner.getSelectedItem()));
+            context.put("max_positions", String.valueOf(maxPositionsSpinner.getSelectedItem()));
+            payload.put("context", context);
+            payload.put("voice", true);
+        } catch (Exception e) {
+            deliverJarvisReply("У меня возникла небольшая проблема с контекстом. Редкий случай, но технически возможный.", null);
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                JSONObject response = httpJson("POST", base + "/assistant", payload);
+                boolean ok = response.optBoolean("ok", false);
+                if (!ok) throw new Exception(response.optString("error", "AI server error"));
+
+                String reply = response.optString("reply", "").trim();
+                String audioB64 = response.optString("audio_base64", null);
+
+                if (reply.isEmpty()) reply = "Я получил ответ, но, что несколько неловко, без текста.";
+
+                final String finalReply = reply;
+                final String finalAudio = audioB64;
+
+                runOnUiThread(() -> deliverJarvisReply(finalReply, finalAudio));
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    String fallback = localJarvisReply(message);
+                    appendJarvisLine(
+                            "JARVIS",
+                            fallback + "\n[AI-сервер недоступен: " + safeMessage(e) + "]"
+                    );
+                    jarvisStatusText.setText("JARVIS: LOCAL MODE");
+                    speakJarvisLocal(fallback);
+                });
+            }
+        });
+    }
+
+    private String handleSafeLocalJarvisCommand(String raw) {
+        String q = raw.toLowerCase(new Locale("ru", "RU"));
+
+        if (q.contains("останови мониторинг") || q.contains("остановить мониторинг")) {
+            stopMonitoring();
+            return "Мониторинг остановлен. Рынок переживёт наше отсутствие, полагаю.";
+        }
+
+        if (q.contains("запусти мониторинг") || q.contains("запустить мониторинг")) {
+            startMonitoring();
+            return monitoring
+                    ? "Мониторинг запущен. Наблюдение продолжается."
+                    : "Мониторинг не запущен. Проверьте API key.";
+        }
+
+        if (q.contains("emergency") || q.contains("аварийн") || q.contains("экстренн")) {
+            forceAutoOff("JARVIS: EMERGENCY STOP");
+            sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
+            monitoring = false;
+            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+            return "Emergency Stop выполнен. Мониторинг и автоматическая торговля отключены.";
+        }
+
+        return null;
+    }
+
+    private String localJarvisReply(String raw) {
+        String q = raw.toLowerCase(new Locale("ru", "RU"));
+        String signal = signalText.getText().toString().trim();
+        String symbol = String.valueOf(symbolSpinner.getSelectedItem());
+        String tf = selectedEntryTimeframe();
+
+        if (q.contains("статус") || q.contains("что сейчас") || q.contains("что по рынку")) {
+            return "По " + symbol + " на " + tf + " сейчас " + signal +
+                    ". " + confidenceText.getText().toString() +
+                    ". " + ("WAIT".equals(signal)
+                    ? "Оснований торопиться нет. Рынок, к счастью, не берёт плату за терпение."
+                    : "Сетап сформирован; детали уже на экране.");
+        }
+
+        if (q.contains("почему") && q.contains("wait")) {
+            return "Причина WAIT указана в текущем контексте: " +
+                    contextText.getText().toString() +
+                    ". Входить просто из скуки я бы не рекомендовал.";
+        }
+
+        if (q.contains("позици")) {
+            return positionsText.getText().toString() +
+                    ". Для точных данных нужен подключённый MT5.";
+        }
+
+        if (q.contains("кто ты") || q.contains("что ты умеешь")) {
+            return "Я голосовой интерфейс FX M1 Bot. Локально вижу состояние приложения, а после подключения AI-сервера смогу рассуждать по контексту, помнить разговор и работать с инструментами бота.";
+        }
+
+        return "Сейчас я работаю в локальном режиме. Подключите AI-сервер, и я смогу ответить на этот вопрос с полноценным рассуждением. До тех пор вынужден изображать скромность.";
+    }
+
+    private void deliverJarvisReply(String reply, String audioBase64) {
+        appendJarvisLine("JARVIS", reply);
+        jarvisStatusText.setText("JARVIS: ONLINE");
+
+        if (audioBase64 != null && !audioBase64.trim().isEmpty()) {
+            playJarvisAudio(audioBase64, reply);
+        } else {
+            speakJarvisLocal(reply);
+        }
+    }
+
+    private void appendJarvisLine(String who, String text) {
+        String current = jarvisChatText.getText().toString().trim();
+        String line = who + ": " + text;
+
+        if (current.isEmpty()) {
+            jarvisChatText.setText(line);
+            return;
+        }
+
+        String combined = current + "\n\n" + line;
+        if (combined.length() > 5000) {
+            combined = combined.substring(combined.length() - 5000);
+        }
+        jarvisChatText.setText(combined);
+    }
+
+    private void speakJarvisLocal(String text) {
+        if (jarvisTts == null) return;
+        String spoken = text.replaceAll("\\[[^\\]]*\\]", "");
+        jarvisTts.speak(spoken, TextToSpeech.QUEUE_FLUSH, null, "jarvis_reply");
+    }
+
+    private void playJarvisAudio(String audioBase64, String fallbackText) {
+        try {
+            if (jarvisPlayer != null) {
+                try { jarvisPlayer.stop(); } catch (Exception ignored) { }
+                jarvisPlayer.release();
+                jarvisPlayer = null;
+            }
+
+            byte[] audio = Base64.decode(audioBase64, Base64.DEFAULT);
+            File file = new File(getCacheDir(), "jarvis_reply.mp3");
+
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(audio);
+            fos.flush();
+            fos.close();
+
+            jarvisPlayer = new MediaPlayer();
+            jarvisPlayer.setDataSource(file.getAbsolutePath());
+            jarvisPlayer.setOnPreparedListener(MediaPlayer::start);
+            jarvisPlayer.setOnCompletionListener(mp -> {
+                mp.release();
+                jarvisPlayer = null;
+                file.delete();
+            });
+            jarvisPlayer.setOnErrorListener((mp, what, extra) -> {
+                try { mp.release(); } catch (Exception ignored) { }
+                jarvisPlayer = null;
+                file.delete();
+                speakJarvisLocal(fallbackText);
+                return true;
+            });
+            jarvisPlayer.prepareAsync();
+
+        } catch (Exception e) {
+            speakJarvisLocal(fallbackText);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 5002) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (granted && jarvisStartAfterPermission) {
+                jarvisStartAfterPermission = false;
+                startJarvisListening();
+            } else {
+                jarvisStartAfterPermission = false;
+                jarvisStatusText.setText("JARVIS: без доступа к микрофону голосовой ввод недоступен");
+            }
+        }
     }
 
     private void applyDarkVioletTheme() {
         getWindow().setStatusBarColor(C_BG);
         getWindow().setNavigationBarColor(C_BG);
+
+        int uiFlags = getWindow().getDecorView().getSystemUiVisibility();
+        uiFlags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            uiFlags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        getWindow().getDecorView().setSystemUiVisibility(uiFlags);
 
         View root = findViewById(R.id.rootLayout);
         if (root != null) root.setBackgroundColor(C_BG);
@@ -279,6 +690,7 @@ public class MainActivity extends Activity {
         styleCard(tfCard, C_CARD_2);
         styleCard(modeCard, C_CARD_2);
         styleCard(signalCard, C_CARD);
+        styleCard(jarvisCard, C_CARD_2);
         styleCard(tradingCard, C_CARD);
         styleCard(metricsCard, C_CARD);
         styleCard(riskCard, C_CARD);
@@ -286,12 +698,15 @@ public class MainActivity extends Activity {
 
         stylePrimaryButton(saveKeyButton);
         stylePrimaryButton(analyzeButton);
+        stylePrimaryButton(jarvisTalkButton);
+        styleOutlineButton(jarvisSendButton, C_PURPLE);
         styleOutlineButton(serverCheckButton, C_PURPLE);
         styleOutlineButton(closeAllButton, C_PURPLE);
         styleOutlineButton(emergencyStopButton, C_RED);
 
         styleInput(apiKeyInput);
         styleInput(serverUrlInput);
+        styleInput(jarvisInput);
 
         int[][] states = new int[][]{
                 new int[]{android.R.attr.state_checked},
@@ -317,6 +732,8 @@ public class MainActivity extends Activity {
         journalText.setTextColor(C_MUTED);
         priceCompareText.setTextColor(C_TEXT);
         serverStatusText.setTextColor(C_RED);
+        jarvisStatusText.setTextColor(C_GREEN);
+        jarvisChatText.setTextColor(C_TEXT);
     }
 
     private ArrayAdapter<String> darkSpinnerAdapter(String[] items) {
@@ -405,6 +822,7 @@ public class MainActivity extends Activity {
         suppressAutoSwitch = true;
         autoTradingSwitch.setChecked(false);
         suppressAutoSwitch = false;
+        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("auto_trading", false).apply();
         if (journalMessage != null) addJournal(journalMessage);
     }
 
@@ -636,24 +1054,135 @@ public class MainActivity extends Activity {
             return;
         }
 
-        getSharedPreferences("fxm1", MODE_PRIVATE)
-                .edit()
+        SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        prefs.edit()
                 .putString("apikey", key)
+                .putInt("symbol_pos", symbolSpinner.getSelectedItemPosition())
+                .putInt("entry_tf_pos", entryTimeframeSpinner.getSelectedItemPosition())
+                .putInt("signal_mode_pos", signalModeSpinner.getSelectedItemPosition())
                 .apply();
+
+        requestNotificationPermissionIfNeeded();
 
         monitoring = true;
         analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
-        statusText.setText("Мониторинг запущен · " + selectedEntryTimeframe() + " · обновление каждые " + selectedMonitorLabel() + ".");
+        statusText.setText(
+                "Фоновый мониторинг запущен · " +
+                selectedEntryTimeframe() +
+                " · можно свернуть приложение."
+        );
 
-        monitorHandler.removeCallbacks(monitorRunnable);
-        runAnalysis();
+        Intent intent = new Intent(this, MonitoringService.class);
+        intent.setAction(MonitoringService.ACTION_START);
+        startForegroundService(intent);
     }
 
     private void stopMonitoring() {
         monitoring = false;
-        monitorHandler.removeCallbacks(monitorRunnable);
+        sendBackgroundCommand(MonitoringService.ACTION_STOP);
         analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
         statusText.setText("Мониторинг остановлен.");
+    }
+
+    private void sendBackgroundCommand(String action) {
+        Intent intent = new Intent(this, MonitoringService.class);
+        intent.setAction(action);
+        try {
+            startService(intent);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    5001
+            );
+        }
+    }
+
+    private void syncUiFromBackgroundService() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        boolean running = p.getBoolean("bg_running", false);
+
+        if (running != monitoring) {
+            monitoring = running;
+            analyzeButton.setText(running ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
+        }
+
+        if (!running) return;
+
+        String symbol = p.getString("bg_symbol", "");
+        String tf = p.getString("bg_tf", "");
+        String signal = p.getString("bg_signal", "WAIT");
+        String status = p.getString("bg_status", "Фоновый мониторинг работает");
+        String context = p.getString("bg_context", "");
+        int quality = p.getInt("bg_quality", -1);
+        int fresh = p.getInt("bg_api_count", 0);
+        int cached = p.getInt("bg_cache_count", 0);
+        double entry = Double.longBitsToDouble(p.getLong("bg_entry_bits", Double.doubleToLongBits(Double.NaN)));
+        double sl = Double.longBitsToDouble(p.getLong("bg_sl_bits", Double.doubleToLongBits(Double.NaN)));
+        double tp1 = Double.longBitsToDouble(p.getLong("bg_tp1_bits", Double.doubleToLongBits(Double.NaN)));
+        double tp2 = Double.longBitsToDouble(p.getLong("bg_tp2_bits", Double.doubleToLongBits(Double.NaN)));
+
+        statusText.setText(
+                symbol + " · " + tf +
+                " · BG · API " + fresh +
+                " · кэш " + cached +
+                "\n" + status
+        );
+
+        signalText.setText(signal);
+        if ("BUY".equals(signal)) {
+            signalText.setTextColor(C_GREEN);
+        } else if ("SELL".equals(signal)) {
+            signalText.setTextColor(C_RED);
+        } else {
+            signalText.setTextColor(C_PURPLE);
+        }
+
+        if (quality >= 0) {
+            confidenceText.setText("Качество сетапа: " + quality + "/100");
+        }
+
+        if (!Double.isNaN(entry)) {
+            if ("WAIT".equals(signal)) {
+                levelsText.setText(
+                        "Entry: " + fmt(entry) +
+                        "\nSL: —" +
+                        "\nTP1: —" +
+                        "\nTP2: —"
+                );
+            } else {
+                levelsText.setText(
+                        "Entry: " + fmt(entry) +
+                        "\nSL: " + fmt(sl) +
+                        "\nTP1: " + fmt(tp1) + "  (1.5R)" +
+                        "\nTP2: " + fmt(tp2) + "  (2.0R)"
+                );
+            }
+            lastApiPrice = entry;
+            updatePriceComparison();
+        }
+
+        if (!context.isEmpty()) {
+            contextText.setText(context);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        serviceUiHandler.removeCallbacks(serviceUiRunnable);
+        serviceUiHandler.post(serviceUiRunnable);
+    }
+
+    @Override
+    protected void onPause() {
+        serviceUiHandler.removeCallbacks(serviceUiRunnable);
+        super.onPause();
     }
 
     private void scheduleNext(long delayMs) {
@@ -1452,8 +1981,26 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        monitoring = false;
         monitorHandler.removeCallbacks(monitorRunnable);
+        serviceUiHandler.removeCallbacks(serviceUiRunnable);
+
+        if (jarvisSpeechRecognizer != null) {
+            try { jarvisSpeechRecognizer.destroy(); } catch (Exception ignored) { }
+            jarvisSpeechRecognizer = null;
+        }
+
+        if (jarvisTts != null) {
+            try { jarvisTts.stop(); } catch (Exception ignored) { }
+            try { jarvisTts.shutdown(); } catch (Exception ignored) { }
+            jarvisTts = null;
+        }
+
+        if (jarvisPlayer != null) {
+            try { jarvisPlayer.stop(); } catch (Exception ignored) { }
+            try { jarvisPlayer.release(); } catch (Exception ignored) { }
+            jarvisPlayer = null;
+        }
+
         executor.shutdownNow();
         super.onDestroy();
     }
