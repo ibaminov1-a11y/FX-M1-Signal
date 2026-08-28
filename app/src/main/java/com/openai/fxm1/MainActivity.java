@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
 
     private Spinner symbolSpinner, entryTimeframeSpinner, signalModeSpinner;
     private EditText apiKeyInput;
-    private TextView statusText, signalText, confidenceText, levelsText, contextText;
+    private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
     private Button jarvisTalkButton, jarvisSendButton, backgroundModeButton;
     private EditText serverUrlInput, jarvisInput;
@@ -138,6 +138,7 @@ public class MainActivity extends Activity {
         statusText = findViewById(R.id.statusText);
         signalText = findViewById(R.id.signalText);
         confidenceText = findViewById(R.id.confidenceText);
+        signalAgeText = findViewById(R.id.signalAgeText);
         levelsText = findViewById(R.id.levelsText);
         contextText = findViewById(R.id.contextText);
         analyzeButton = findViewById(R.id.analyzeButton);
@@ -214,7 +215,7 @@ public class MainActivity extends Activity {
         maxDriftSpinner.setAdapter(driftAdapter);
         maxDriftSpinner.setSelection(prefs.getInt("maxdrift_pos", 1));
 
-        analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
         setTradingControlsOffline();
 
         saveKeyButton.setOnClickListener(v -> {
@@ -337,7 +338,7 @@ public class MainActivity extends Activity {
             forceAutoOff("EMERGENCY STOP: отправка новых сигналов остановлена.");
             sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
             monitoring = false;
-            analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
             if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
             if (backgroundStatusText != null) {
                 backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
@@ -569,6 +570,29 @@ public class MainActivity extends Activity {
                     }
 
                     String message = matches.get(0).trim();
+
+                    // Some phones ignore ru-RU and return English recognition.
+                    // Do not silently send a wrong English phrase to JARVIS.
+                    int cyr = 0;
+                    int latin = 0;
+                    for (int i = 0; i < message.length(); i++) {
+                        char ch = message.charAt(i);
+                        if ((ch >= 'А' && ch <= 'я') || ch == 'Ё' || ch == 'ё') cyr++;
+                        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) latin++;
+                    }
+                    if (latin >= 3 && cyr == 0) {
+                        jarvisStatusText.setText(
+                                "JARVIS: телефон распознал речь как английскую. Нужен русский пакет распознавания или серверный STT."
+                        );
+                        appendJarvisLine(
+                                "JARVIS",
+                                "Системный распознаватель телефона вернул английский текст: «" +
+                                message +
+                                "». Я его не отправляю как русскую команду."
+                        );
+                        return;
+                    }
+
                     jarvisInput.setText("");
                     sendJarvisMessage(message);
                 }
@@ -686,7 +710,7 @@ public class MainActivity extends Activity {
             forceAutoOff("JARVIS: EMERGENCY STOP");
             sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
             monitoring = false;
-            analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
             if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
             if (backgroundStatusText != null) {
                 backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
@@ -1261,14 +1285,14 @@ public class MainActivity extends Activity {
         requestNotificationPermissionIfNeeded();
 
         monitoring = true;
-        analyzeButton.setText("ОСТАНОВИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+        analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
         if (backgroundModeButton != null) backgroundModeButton.setText("■  ОСТАНОВИТЬ ФОН");
         if (backgroundStatusText != null) {
             backgroundStatusText.setText("●  ФОН: АКТИВЕН · можно свернуть приложение");
             backgroundStatusText.setTextColor(C_GREEN);
         }
         statusText.setText(
-                "Фоновый мониторинг запущен · " +
+                "Мониторинг запущен · " +
                 selectedEntryTimeframe() +
                 " · можно свернуть приложение."
         );
@@ -1281,7 +1305,7 @@ public class MainActivity extends Activity {
     private void stopMonitoring() {
         monitoring = false;
         sendBackgroundCommand(MonitoringService.ACTION_STOP);
-        analyzeButton.setText("ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ");
+        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
         if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
         if (backgroundStatusText != null) {
             backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
@@ -1317,8 +1341,8 @@ public class MainActivity extends Activity {
             monitoring = running;
             analyzeButton.setText(
                     running
-                            ? "ОСТАНОВИТЬ ФОНОВЫЙ МОНИТОРИНГ"
-                            : "ЗАПУСТИТЬ ФОНОВЫЙ МОНИТОРИНГ"
+                            ? "ОСТАНОВИТЬ МОНИТОРИНГ"
+                            : "ЗАПУСТИТЬ МОНИТОРИНГ"
             );
             if (backgroundModeButton != null) {
                 backgroundModeButton.setText(
@@ -1343,6 +1367,20 @@ public class MainActivity extends Activity {
         String status = p.getString("bg_status", "Фоновый мониторинг работает");
         String context = p.getString("bg_context", "");
         int quality = p.getInt("bg_quality", -1);
+        long signalSinceMs = p.getLong("bg_signal_since_ms", 0L);
+        long lastUpdateMs = p.getLong("bg_last_update_ms", 0L);
+
+        // Never present a signal from another timeframe/symbol as current.
+        String selectedSymbol = (String) symbolSpinner.getSelectedItem();
+        String selectedTf = selectedEntryTimeframe();
+        if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
+            signal = "WAIT";
+            quality = -1;
+            signalSinceMs = 0L;
+            context = "Параметры изменены. Жду новый анализ для " +
+                    selectedSymbol + " · " + selectedTf + ".";
+            status = "Обновляю выбранный инструмент/таймфрейм…";
+        }
         int fresh = p.getInt("bg_api_count", 0);
         int cached = p.getInt("bg_cache_count", 0);
         double entry = Double.longBitsToDouble(p.getLong("bg_entry_bits", Double.doubleToLongBits(Double.NaN)));
@@ -1352,7 +1390,7 @@ public class MainActivity extends Activity {
 
         statusText.setText(
                 symbol + " · " + tf +
-                " · BG · API " + fresh +
+                " · MON · API " + fresh +
                 " · кэш " + cached +
                 "\n" + status
         );
@@ -1366,8 +1404,12 @@ public class MainActivity extends Activity {
             signalText.setTextColor(C_PURPLE);
         }
 
+        updateSignalAgeText(signal, signalSinceMs, lastUpdateMs);
+
         if (quality >= 0) {
             confidenceText.setText("Качество сетапа: " + quality + "/100");
+        } else {
+            confidenceText.setText("Качество сетапа: —");
         }
 
         if (!Double.isNaN(entry)) {
@@ -2133,6 +2175,44 @@ public class MainActivity extends Activity {
                 : "→";
     }
 
+
+    private String formatClock(long ms) {
+        if (ms <= 0L) return "—";
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        return f.format(new Date(ms));
+    }
+
+    private String formatElapsed(long sinceMs) {
+        if (sinceMs <= 0L) return "—";
+        long sec = Math.max(0L, (System.currentTimeMillis() - sinceMs) / 1000L);
+        long h = sec / 3600L;
+        long m = (sec % 3600L) / 60L;
+        long s = sec % 60L;
+        if (h > 0L) return String.format(Locale.US, "%02d:%02d:%02d", h, m, s);
+        return String.format(Locale.US, "%02d:%02d", m, s);
+    }
+
+    private void updateSignalAgeText(String signal, long sinceMs, long updatedMs) {
+        if (signalAgeText == null) return;
+
+        if ("BUY".equals(signal) || "SELL".equals(signal)) {
+            signalAgeText.setText(
+                    "Открыт: " + formatClock(sinceMs) +
+                    "  ·  прошло: " + formatElapsed(sinceMs) +
+                    "\nОбновлено: " + formatClock(updatedMs)
+            );
+            signalAgeText.setTextColor(C_YELLOW);
+        } else {
+            signalAgeText.setText(
+                    updatedMs > 0L
+                            ? "Последнее обновление: " + formatClock(updatedMs) +
+                              "  ·  " + formatElapsed(updatedMs) + " назад"
+                            : "Сигнал ещё не открыт."
+            );
+            signalAgeText.setTextColor(C_MUTED);
+        }
+    }
+
     private void showAnalysis(Analysis a,
                               int freshRequests,
                               int cachedRequests) {
@@ -2160,6 +2240,22 @@ public class MainActivity extends Activity {
                 a.quality +
                 "/100"
         );
+
+        long nowMs = System.currentTimeMillis();
+        SharedPreferences localPrefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String localKey = a.symbol + "|" + selectedEntryTimeframe();
+        String prevKey = localPrefs.getString("local_signal_key", "");
+        String prevSignal = localPrefs.getString("local_signal_value", "WAIT");
+        long localSince = localPrefs.getLong("local_signal_since_ms", 0L);
+        if (!localKey.equals(prevKey) || !a.signal.equals(prevSignal) || localSince <= 0L) {
+            localSince = nowMs;
+            localPrefs.edit()
+                    .putString("local_signal_key", localKey)
+                    .putString("local_signal_value", a.signal)
+                    .putLong("local_signal_since_ms", localSince)
+                    .apply();
+        }
+        updateSignalAgeText(a.signal, localSince, nowMs);
 
         if ("WAIT".equals(a.signal)) {
             levelsText.setText(

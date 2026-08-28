@@ -80,6 +80,15 @@ public class MonitoringService extends Service {
 
         if (ACTION_REFRESH.equals(action)) {
             if (running) {
+                prefs().edit()
+                        .putString("bg_symbol", currentSymbol())
+                        .putString("bg_tf", currentTf())
+                        .putString("bg_signal", "WAIT")
+                        .putInt("bg_quality", -1)
+                        .putLong("bg_signal_since_ms", 0L)
+                        .putString("bg_context", "Параметры изменены. Жду новый анализ.")
+                        .putString("bg_status", "Обновляю настройки…")
+                        .apply();
                 handler.removeCallbacks(tick);
                 handler.post(tick);
                 updateNotification(currentSymbol() + " · " + currentTf() + " · " + currentMode(), "Обновляю настройки…", "WAIT", -1);
@@ -272,6 +281,10 @@ public class MonitoringService extends Service {
             } catch (RateLimitException e) {
                 analyzing = false;
                 prefs().edit()
+                        .putString("bg_signal", "WAIT")
+                        .putInt("bg_quality", -1)
+                        .putLong("bg_signal_since_ms", 0L)
+                        .putString("bg_context", "Нет свежего подтверждения: достигнут лимит Twelve Data. Старый BUY/SELL снят до нового анализа.")
                         .putString("bg_status", "Лимит Twelve Data · повтор через 60 сек")
                         .apply();
                 updateNotification(
@@ -300,10 +313,29 @@ public class MonitoringService extends Service {
     }
 
     private void saveAnalysis(Analysis a, int fresh, int cached) {
-        prefs().edit()
+        SharedPreferences p = prefs();
+        String tf = currentTf();
+        String oldSignal = p.getString("bg_signal", "WAIT");
+        String oldSymbol = p.getString("bg_symbol", "");
+        String oldTf = p.getString("bg_tf", "");
+        long now = System.currentTimeMillis();
+        long signalSince = p.getLong("bg_signal_since_ms", 0L);
+
+        if (!a.signal.equals(oldSignal) ||
+                !a.symbol.equals(oldSymbol) ||
+                !tf.equals(oldTf) ||
+                signalSince <= 0L) {
+            signalSince = now;
+        }
+
+        if ("WAIT".equals(a.signal)) {
+            signalSince = 0L;
+        }
+
+        p.edit()
                 .putBoolean("bg_running", true)
                 .putString("bg_symbol", a.symbol)
-                .putString("bg_tf", currentTf())
+                .putString("bg_tf", tf)
                 .putString("bg_signal", a.signal)
                 .putInt("bg_quality", a.quality)
                 .putString("bg_context", a.context)
@@ -313,7 +345,9 @@ public class MonitoringService extends Service {
                 .putLong("bg_sl_bits", Double.doubleToLongBits(a.sl))
                 .putLong("bg_tp1_bits", Double.doubleToLongBits(a.tp1))
                 .putLong("bg_tp2_bits", Double.doubleToLongBits(a.tp2))
-                .putString("bg_status", "Фоновый мониторинг работает")
+                .putLong("bg_signal_since_ms", signalSince)
+                .putLong("bg_last_update_ms", now)
+                .putString("bg_status", "Мониторинг работает")
                 .apply();
     }
 

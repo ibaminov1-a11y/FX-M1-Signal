@@ -270,6 +270,16 @@
                 android:textColor="#B8B2CB"
                 android:textSize="15sp" />
 
+            <TextView
+                android:id="@+id/signalAgeText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:gravity="center"
+                android:text="Сигнал ещё не открыт."
+                android:textColor="#AAA5C1"
+                android:textSize="12sp" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
