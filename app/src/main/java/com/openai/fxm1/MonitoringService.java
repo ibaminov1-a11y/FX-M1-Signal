@@ -82,7 +82,7 @@ public class MonitoringService extends Service {
             if (running) {
                 handler.removeCallbacks(tick);
                 handler.post(tick);
-                updateNotification("Обновляю настройки…", "WAIT", -1);
+                updateNotification(currentSymbol() + " · " + currentTf() + " · " + currentMode(), "Обновляю настройки…", "WAIT", -1);
             }
             return START_STICKY;
         }
