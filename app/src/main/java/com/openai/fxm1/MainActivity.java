@@ -14,6 +14,7 @@ import android.media.AudioManager;
 import android.media.AudioAttributes;
 import android.media.ToneGenerator;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -52,6 +53,9 @@ public class MainActivity extends Activity {
     private SpeechRecognizer jarvisSpeechRecognizer;
     private TextToSpeech jarvisTts;
     private MediaPlayer jarvisPlayer;
+    private MediaRecorder jarvisRecorder;
+    private File jarvisAudioFile;
+    private boolean jarvisRecording = false;
     private boolean jarvisListening = false;
     private boolean jarvisStartAfterPermission = false;
     private boolean jarvisStartupAfterPermission = false;
@@ -419,7 +423,9 @@ public class MainActivity extends Activity {
     private void handleJarvisIntent(Intent intent) {
         if (intent != null && intent.getBooleanExtra("open_jarvis", false)) {
             intent.removeExtra("open_jarvis");
-            new Handler(Looper.getMainLooper()).postDelayed(this::startJarvisListening, 350L);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (!normalizeServerUrl(serverUrlInput.getText().toString()).isEmpty()) startJarvisListening();
+            }, 500L);
         }
     }
 
@@ -552,99 +558,188 @@ public class MainActivity extends Activity {
     }
 
     private void startJarvisListening() {
+        if (jarvisRecording) {
+            stopJarvisRecordingAndSend();
+            return;
+        }
+
         if (Build.VERSION.SDK_INT >= 23 &&
                 checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             jarvisStartAfterPermission = true;
-            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 5002);
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 7001);
             return;
         }
 
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            jarvisStatusText.setText("JARVIS: распознавание речи недоступно на устройстве");
+        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
+        if (base.isEmpty()) {
+            jarvisStatusText.setText("JARVIS: сначала укажите адрес AI-сервера.");
+            appendJarvisLine("JARVIS",
+                    "Русский голос теперь работает через серверный STT/TTS. Укажите адрес сервера.");
             return;
         }
-
-        if (jarvisSpeechRecognizer == null) {
-            jarvisSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
-            jarvisSpeechRecognizer.setRecognitionListener(new RecognitionListener() {
-                @Override public void onReadyForSpeech(Bundle params) {
-                    jarvisListening = true;
-                    jarvisTalkButton.setText("СЛУШАЮ…");
-                    jarvisStatusText.setText("JARVIS: слушаю.");
-                }
-
-                @Override public void onBeginningOfSpeech() { }
-                @Override public void onRmsChanged(float rmsdB) { }
-                @Override public void onBufferReceived(byte[] buffer) { }
-                @Override public void onEndOfSpeech() {
-                    jarvisListening = false;
-                    jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
-                    jarvisStatusText.setText("JARVIS: думаю…");
-                }
-
-                @Override public void onError(int error) {
-                    jarvisListening = false;
-                    jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
-                    jarvisStatusText.setText("JARVIS: не расслышал. Попробуйте ещё раз.");
-                }
-
-                @Override public void onResults(Bundle results) {
-                    jarvisListening = false;
-                    jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
-
-                    ArrayList<String> matches =
-                            results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-
-                    if (matches == null || matches.isEmpty()) {
-                        jarvisStatusText.setText("JARVIS: фраза не распознана");
-                        return;
-                    }
-
-                    String message = matches.get(0).trim();
-
-                    // Some phones ignore ru-RU and return English recognition.
-                    // Do not silently send a wrong English phrase to JARVIS.
-                    int cyr = 0;
-                    int latin = 0;
-                    for (int i = 0; i < message.length(); i++) {
-                        char ch = message.charAt(i);
-                        if ((ch >= 'А' && ch <= 'я') || ch == 'Ё' || ch == 'ё') cyr++;
-                        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) latin++;
-                    }
-                    if (latin >= 3 && cyr == 0) {
-                        jarvisStatusText.setText(
-                                "JARVIS: телефон распознал речь как английскую. Нужен русский пакет распознавания или серверный STT."
-                        );
-                        appendJarvisLine(
-                                "JARVIS",
-                                "Системный распознаватель телефона вернул английский текст: «" +
-                                message +
-                                "». Я его не отправляю как русскую команду."
-                        );
-                        return;
-                    }
-
-                    jarvisInput.setText("");
-                    sendJarvisMessage(message);
-                }
-
-                @Override public void onPartialResults(Bundle partialResults) { }
-                @Override public void onEvent(int eventType, Bundle params) { }
-            });
-        }
-
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU");
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ru-RU");
-        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Говорите");
 
         try {
-            jarvisSpeechRecognizer.startListening(intent);
-        } catch (Exception e) {
-            jarvisStatusText.setText("JARVIS: микрофон недоступен. Проверьте разрешение «Микрофон» в настройках приложения.");
+            jarvisAudioFile = new File(getCacheDir(), "jarvis_input_" + System.currentTimeMillis() + ".m4a");
+            jarvisRecorder = new MediaRecorder();
+            jarvisRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            jarvisRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            jarvisRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            jarvisRecorder.setAudioEncodingBitRate(64000);
+            jarvisRecorder.setAudioSamplingRate(16000);
+            jarvisRecorder.setOutputFile(jarvisAudioFile.getAbsolutePath());
+            jarvisRecorder.prepare();
+            jarvisRecorder.start();
+
+            jarvisRecording = true;
+            jarvisListening = true;
+            jarvisTalkButton.setText("■ СТОП");
+            jarvisStatusText.setText("JARVIS: слушаю русский через сервер…");
+
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (jarvisRecording) stopJarvisRecordingAndSend();
+            }, 9000L);
+
+        } catch (Exception ex) {
+            jarvisRecording = false;
+            jarvisListening = false;
+            jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
+            jarvisStatusText.setText("JARVIS: не удалось включить микрофон.");
+            appendJarvisLine("JARVIS", "Ошибка микрофона: " + safeMessage(ex));
         }
+    }
+
+    private void stopJarvisRecordingAndSend() {
+        if (!jarvisRecording) return;
+        jarvisRecording = false;
+        jarvisListening = false;
+        jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
+        jarvisStatusText.setText("JARVIS: распознаю русскую речь…");
+
+        try { jarvisRecorder.stop(); } catch (Exception ignored) { }
+        try { jarvisRecorder.release(); } catch (Exception ignored) { }
+        jarvisRecorder = null;
+
+        if (jarvisAudioFile == null || !jarvisAudioFile.exists() || jarvisAudioFile.length() < 512L) {
+            jarvisStatusText.setText("JARVIS: запись получилась пустой.");
+            return;
+        }
+        sendJarvisVoiceFile(jarvisAudioFile);
+    }
+
+    private void sendJarvisVoiceFile(File audioFile) {
+        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
+        if (base.isEmpty()) {
+            jarvisStatusText.setText("JARVIS: AI-сервер не указан.");
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                JSONObject response = httpMultipartVoice(
+                        base + "/voice",
+                        audioFile,
+                        jarvisSessionId,
+                        currentJarvisContext()
+                );
+
+                if (!response.optBoolean("ok", false)) {
+                    throw new Exception(response.optString("error", "Voice server error"));
+                }
+
+                String transcript = response.optString("transcript", "").trim();
+                String reply = response.optString("reply", "").trim();
+                String audioB64 = response.optString("audio_base64", null);
+
+                runOnUiThread(() -> {
+                    if (!transcript.isEmpty()) appendJarvisLine("ВЫ", transcript);
+                    if (reply.isEmpty()) {
+                        jarvisStatusText.setText("JARVIS: ответ сервера пуст.");
+                        return;
+                    }
+                    deliverJarvisReply(reply, audioB64);
+                });
+
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    jarvisStatusText.setText("JARVIS: серверный голос недоступен.");
+                    appendJarvisLine("JARVIS",
+                            "Не удалось обработать голос через AI-сервер: " + safeMessage(ex));
+                });
+            } finally {
+                try { audioFile.delete(); } catch (Exception ignored) { }
+            }
+        });
+    }
+
+    private JSONObject currentJarvisContext() throws Exception {
+        JSONObject context = new JSONObject();
+        context.put("symbol", String.valueOf(symbolSpinner.getSelectedItem()));
+        context.put("entry_timeframe", selectedEntryTimeframe());
+        context.put("signal_mode", selectedSignalMode());
+        context.put("signal", signalText.getText().toString());
+        context.put("quality", confidenceText.getText().toString());
+        context.put("levels", levelsText.getText().toString());
+        context.put("market_context", contextText.getText().toString());
+        context.put("monitor_status", statusText.getText().toString());
+        context.put("background_running",
+                getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false));
+        context.put("server_connected", serverConnected);
+        context.put("mt5_connected", mt5Connected);
+        context.put("account", accountText.getText().toString());
+        context.put("positions", positionsText.getText().toString());
+        context.put("auto_trading", autoTradingSwitch.isChecked());
+        context.put("risk", String.valueOf(riskSpinner.getSelectedItem()));
+        context.put("max_positions", String.valueOf(maxPositionsSpinner.getSelectedItem()));
+        return context;
+    }
+
+    private JSONObject httpMultipartVoice(
+            String urlString, File file, String sessionId, JSONObject context
+    ) throws Exception {
+        String boundary = "----FXM1JARVIS" + System.currentTimeMillis();
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
+        conn.setRequestMethod("POST");
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(90000);
+        conn.setDoOutput(true);
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+        try (DataOutputStream out = new DataOutputStream(conn.getOutputStream())) {
+            writeMultipartText(out, boundary, "session_id", sessionId);
+            writeMultipartText(out, boundary, "context", context.toString());
+
+            out.writeBytes("--" + boundary + "\r\n");
+            out.writeBytes("Content-Disposition: form-data; name=\"audio\"; filename=\"voice.m4a\"\r\n");
+            out.writeBytes("Content-Type: audio/mp4\r\n\r\n");
+
+            try (FileInputStream in = new FileInputStream(file)) {
+                byte[] buffer = new byte[8192];
+                int n;
+                while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+            }
+            out.writeBytes("\r\n--" + boundary + "--\r\n");
+            out.flush();
+        }
+
+        int code = conn.getResponseCode();
+        InputStream input = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
+        String body = readAll(input);
+        conn.disconnect();
+        if (body == null || body.trim().isEmpty()) throw new Exception("HTTP " + code + " · пустой ответ");
+
+        JSONObject obj = new JSONObject(body);
+        if (code < 200 || code >= 300) throw new Exception(obj.optString("error", "HTTP " + code));
+        return obj;
+    }
+
+    private void writeMultipartText(
+            DataOutputStream out, String boundary, String name, String value
+    ) throws Exception {
+        out.writeBytes("--" + boundary + "\r\n");
+        out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
+        out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
+        out.write(value.getBytes(StandardCharsets.UTF_8));
+        out.writeBytes("\r\n");
     }
 
     private void sendJarvisMessage(String message) {
@@ -669,23 +764,7 @@ public class MainActivity extends Activity {
             payload.put("session_id", jarvisSessionId);
             payload.put("message", message);
 
-            JSONObject context = new JSONObject();
-            context.put("symbol", String.valueOf(symbolSpinner.getSelectedItem()));
-            context.put("entry_timeframe", selectedEntryTimeframe());
-            context.put("signal_mode", selectedSignalMode());
-            context.put("signal", signalText.getText().toString());
-            context.put("quality", confidenceText.getText().toString());
-            context.put("levels", levelsText.getText().toString());
-            context.put("market_context", contextText.getText().toString());
-            context.put("monitor_status", statusText.getText().toString());
-            context.put("server_connected", serverConnected);
-            context.put("mt5_connected", mt5Connected);
-            context.put("account", accountText.getText().toString());
-            context.put("positions", positionsText.getText().toString());
-            context.put("auto_trading", autoTradingSwitch.isChecked());
-            context.put("risk", String.valueOf(riskSpinner.getSelectedItem()));
-            context.put("max_positions", String.valueOf(maxPositionsSpinner.getSelectedItem()));
-            payload.put("context", context);
+            payload.put("context", currentJarvisContext());
             payload.put("voice", true);
         } catch (Exception e) {
             deliverJarvisReply("У меня возникла небольшая проблема с контекстом. Редкий случай, но технически возможный.", null);
@@ -1415,125 +1494,83 @@ public class MainActivity extends Activity {
 
     private void syncUiFromBackgroundService() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
-        boolean running = p.getBoolean("bg_running", false);
+        boolean bgRunning = p.getBoolean("bg_running", false);
 
         analyzeButton.setText(
                 monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ"
         );
-
         if (backgroundModeButton != null) {
-            backgroundModeButton.setText(
-                    running ? "■  ОСТАНОВИТЬ ФОН" : "▶  ВКЛЮЧИТЬ ФОН"
-            );
+            backgroundModeButton.setText(bgRunning ? "■  ОСТАНОВИТЬ ФОН" : "▶  ВКЛЮЧИТЬ ФОН");
         }
         if (backgroundStatusText != null) {
             backgroundStatusText.setText(
-                    running
-                            ? "●  ФОН: АКТИВЕН · можно свернуть приложение"
-                            : "○  ФОН: ВЫКЛЮЧЕН"
+                    bgRunning ? "●  ФОН: АКТИВЕН · можно свернуть приложение" : "○  ФОН: ВЫКЛЮЧЕН"
             );
-            backgroundStatusText.setTextColor(running ? C_GREEN : C_MUTED);
+            backgroundStatusText.setTextColor(bgRunning ? C_GREEN : C_MUTED);
         }
 
         if (p.getBoolean("stop_all_requested", false)) {
-            p.edit()
-                    .putBoolean("stop_all_requested", false)
-                    .putBoolean("ui_monitoring", false)
-                    .apply();
+            p.edit().putBoolean("stop_all_requested", false).putBoolean("ui_monitoring", false).apply();
             monitoring = false;
             monitorHandler.removeCallbacks(monitorRunnable);
             analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
         }
 
-        if (!running) return;
+        String symbol = p.getString("state_symbol", "");
+        String tf = p.getString("state_tf", "");
+        if (symbol.isEmpty() || tf.isEmpty()) return;
 
-        String symbol = p.getString("bg_symbol", "");
-        String tf = p.getString("bg_tf", "");
-        String signal = p.getString("bg_signal", "WAIT");
-        String status = p.getString("bg_status", "Фоновый мониторинг работает");
-        String context = p.getString("bg_context", "");
-        int quality = p.getInt("bg_quality", -1);
-        long signalSinceMs = p.getLong("bg_signal_since_ms", 0L);
-        long lastUpdateMs = p.getLong("bg_last_update_ms", 0L);
-
-        // Never present a signal from another timeframe/symbol as current.
         String selectedSymbol = (String) symbolSpinner.getSelectedItem();
         String selectedTf = selectedEntryTimeframe();
-        if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
-            signal = "WAIT";
-            quality = -1;
-            signalSinceMs = 0L;
-            context = "Параметры изменены. Жду новый анализ для " +
-                    selectedSymbol + " · " + selectedTf + ".";
-            status = "Обновляю выбранный инструмент/таймфрейм…";
-        }
-        int fresh = p.getInt("bg_api_count", 0);
-        int cached = p.getInt("bg_cache_count", 0);
-        double entry = Double.longBitsToDouble(p.getLong("bg_entry_bits", Double.doubleToLongBits(Double.NaN)));
-        double sl = Double.longBitsToDouble(p.getLong("bg_sl_bits", Double.doubleToLongBits(Double.NaN)));
-        double tp1 = Double.longBitsToDouble(p.getLong("bg_tp1_bits", Double.doubleToLongBits(Double.NaN)));
-        double tp2 = Double.longBitsToDouble(p.getLong("bg_tp2_bits", Double.doubleToLongBits(Double.NaN)));
 
-        statusText.setText(
-                symbol + " · " + tf +
-                " · MON · API " + fresh +
-                " · кэш " + cached +
-                "\n" + status
-        );
+        String signal = p.getString("state_signal", "WAIT");
+        String context = p.getString("state_context", "");
+        int quality = p.getInt("state_quality", -1);
+        int fresh = p.getInt("state_api_count", 0);
+        int cached = p.getInt("state_cache_count", 0);
+        long since = p.getLong("state_signal_since_ms", 0L);
+        long updated = p.getLong("state_last_update_ms", 0L);
+        String source = p.getString("state_source", bgRunning ? "BG" : "MON");
+
+        if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
+            signalText.setText("WAIT");
+            signalText.setTextColor(C_PURPLE);
+            confidenceText.setText("Качество сетапа: —");
+            updateSignalAgeText("WAIT", 0L, updated);
+            levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
+            contextText.setText("Параметры изменены. Жду новый анализ для " + selectedSymbol + " · " + selectedTf + ".");
+            return;
+        }
+
+        double entry = Double.longBitsToDouble(p.getLong("state_entry_bits", Double.doubleToLongBits(Double.NaN)));
+        double sl = Double.longBitsToDouble(p.getLong("state_sl_bits", Double.doubleToLongBits(Double.NaN)));
+        double tp1 = Double.longBitsToDouble(p.getLong("state_tp1_bits", Double.doubleToLongBits(Double.NaN)));
+        double tp2 = Double.longBitsToDouble(p.getLong("state_tp2_bits", Double.doubleToLongBits(Double.NaN)));
+
+        statusText.setText(symbol + " · " + tf + " · " + source + " · API " + fresh + " · кэш " + cached);
 
         signalText.setText(signal);
-        if ("BUY".equals(signal)) {
-            signalText.setTextColor(C_GREEN);
-        } else if ("SELL".equals(signal)) {
-            signalText.setTextColor(C_RED);
-        } else {
-            signalText.setTextColor(C_PURPLE);
-        }
+        signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
-        updateSignalAgeText(signal, signalSinceMs, lastUpdateMs);
+        confidenceText.setText(quality >= 0 ? "Качество сетапа: " + quality + "/100" : "Качество сетапа: —");
+        updateSignalAgeText(signal, since, updated);
 
-        if (quality >= 0) {
-            confidenceText.setText("Качество сетапа: " + quality + "/100");
+        if ("WAIT".equals(signal)) {
+            levelsText.setText("Entry: " + (Double.isNaN(entry) ? "—" : fmt(entry)) + "\nSL: —\nTP1: —\nTP2: —");
         } else {
-            confidenceText.setText("Качество сетапа: —");
+            levelsText.setText(
+                    "Entry: " + fmt(entry) +
+                    "\nSL: " + fmt(sl) +
+                    "\nTP1: " + fmt(tp1) + "  (1.5R)" +
+                    "\nTP2: " + fmt(tp2) + "  (2.0R)"
+            );
         }
+        contextText.setText(context);
 
         if (!Double.isNaN(entry)) {
-            if ("WAIT".equals(signal)) {
-                levelsText.setText(
-                        "Entry: " + fmt(entry) +
-                        "\nSL: —" +
-                        "\nTP1: —" +
-                        "\nTP2: —"
-                );
-            } else {
-                levelsText.setText(
-                        "Entry: " + fmt(entry) +
-                        "\nSL: " + fmt(sl) +
-                        "\nTP1: " + fmt(tp1) + "  (1.5R)" +
-                        "\nTP2: " + fmt(tp2) + "  (2.0R)"
-                );
-            }
             lastApiPrice = entry;
             updatePriceComparison();
         }
-
-        if (!context.isEmpty()) {
-            contextText.setText(context);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        serviceUiHandler.removeCallbacks(serviceUiRunnable);
-        serviceUiHandler.post(serviceUiRunnable);
-    }
-
-    @Override
-    protected void onPause() {
-        serviceUiHandler.removeCallbacks(serviceUiRunnable);
-        super.onPause();
     }
 
     private void scheduleNext(long delayMs) {
@@ -2299,6 +2336,40 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void publishUnifiedSignalState(
+            Analysis a, int freshRequests, int cachedRequests, String source
+    ) {
+        long now = System.currentTimeMillis();
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String key = a.symbol + "|" + selectedEntryTimeframe();
+        String oldKey = p.getString("state_signal_key", "");
+        String oldSignal = p.getString("state_signal", "WAIT");
+        long since = p.getLong("state_signal_since_ms", 0L);
+
+        if (!key.equals(oldKey) || !a.signal.equals(oldSignal) || since <= 0L) {
+            since = "WAIT".equals(a.signal) ? 0L : now;
+        }
+        if ("WAIT".equals(a.signal)) since = 0L;
+
+        p.edit()
+                .putString("state_signal_key", key)
+                .putString("state_symbol", a.symbol)
+                .putString("state_tf", selectedEntryTimeframe())
+                .putString("state_signal", a.signal)
+                .putInt("state_quality", a.quality)
+                .putString("state_context", a.context)
+                .putLong("state_entry_bits", Double.doubleToLongBits(a.entry))
+                .putLong("state_sl_bits", Double.doubleToLongBits(a.sl))
+                .putLong("state_tp1_bits", Double.doubleToLongBits(a.tp1))
+                .putLong("state_tp2_bits", Double.doubleToLongBits(a.tp2))
+                .putInt("state_api_count", freshRequests)
+                .putInt("state_cache_count", cachedRequests)
+                .putLong("state_signal_since_ms", since)
+                .putLong("state_last_update_ms", now)
+                .putString("state_source", source)
+                .apply();
+    }
+
     private void showAnalysis(Analysis a,
                               int freshRequests,
                               int cachedRequests) {
@@ -2306,11 +2377,11 @@ public class MainActivity extends Activity {
         statusText.setText(
                 a.symbol +
                 " · " + selectedEntryTimeframe() +
-                " · AUTO " + selectedMonitorLabel() +
-                " · API " + freshRequests +
+                " · MON · API " + freshRequests +
                 " · кэш " + cachedRequests
         );
 
+        publishUnifiedSignalState(a, freshRequests, cachedRequests, "MON");
         signalText.setText(a.signal);
 
         if ("BUY".equals(a.signal)) {
@@ -2392,6 +2463,12 @@ public class MainActivity extends Activity {
         if (jarvisSpeechRecognizer != null) {
             try { jarvisSpeechRecognizer.destroy(); } catch (Exception ignored) { }
             jarvisSpeechRecognizer = null;
+        }
+        if (jarvisRecorder != null) {
+            try { if (jarvisRecording) jarvisRecorder.stop(); } catch (Exception ignored) { }
+            try { jarvisRecorder.release(); } catch (Exception ignored) { }
+            jarvisRecorder = null;
+            jarvisRecording = false;
         }
 
         if (jarvisTts != null) {

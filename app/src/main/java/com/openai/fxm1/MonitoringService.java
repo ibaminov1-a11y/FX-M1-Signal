@@ -296,6 +296,12 @@ public class MonitoringService extends Service {
                         .putLong("bg_signal_since_ms", 0L)
                         .putString("bg_context", "Нет свежего подтверждения: достигнут лимит Twelve Data. Старый BUY/SELL снят до нового анализа.")
                         .putString("bg_status", "Лимит Twelve Data · повтор через 60 сек")
+                        .putString("state_signal", "WAIT")
+                        .putInt("state_quality", -1)
+                        .putLong("state_signal_since_ms", 0L)
+                        .putString("state_context", "Нет свежего подтверждения: достигнут лимит Twelve Data. Старый BUY/SELL снят до нового анализа.")
+                        .putLong("state_last_update_ms", System.currentTimeMillis())
+                        .putString("state_source", "BG")
                         .apply();
                 updateNotification(
                         currentSymbol() + " · " + currentTf(),
@@ -358,6 +364,21 @@ public class MonitoringService extends Service {
                 .putLong("bg_signal_since_ms", signalSince)
                 .putLong("bg_last_update_ms", now)
                 .putString("bg_status", "Мониторинг работает")
+                .putString("state_signal_key", a.symbol + "|" + tf)
+                .putString("state_symbol", a.symbol)
+                .putString("state_tf", tf)
+                .putString("state_signal", a.signal)
+                .putInt("state_quality", a.quality)
+                .putString("state_context", a.context)
+                .putInt("state_api_count", fresh)
+                .putInt("state_cache_count", cached)
+                .putLong("state_entry_bits", Double.doubleToLongBits(a.entry))
+                .putLong("state_sl_bits", Double.doubleToLongBits(a.sl))
+                .putLong("state_tp1_bits", Double.doubleToLongBits(a.tp1))
+                .putLong("state_tp2_bits", Double.doubleToLongBits(a.tp2))
+                .putLong("state_signal_since_ms", signalSince)
+                .putLong("state_last_update_ms", now)
+                .putString("state_source", "BG")
                 .apply();
     }
 
@@ -560,10 +581,9 @@ public class MonitoringService extends Service {
     }
 
     private PendingIntent openJarvisIntent() {
-        Intent i = new Intent(this, MainActivity.class);
-        i.putExtra("open_jarvis", true);
-        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        return PendingIntent.getActivity(
+        Intent i = new Intent(this, JarvisVoiceService.class);
+        i.setAction(JarvisVoiceService.ACTION_TALK);
+        return PendingIntent.getForegroundService(
                 this,
                 103,
                 i,

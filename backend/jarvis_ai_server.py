@@ -1,241 +1,263 @@
-"""
-FX M1 Bot V5.5 — JARVIS AI backend.
-
-Run this on your own PC/VPS, never inside the Android APK.
-Required environment variable:
-    OPENAI_API_KEY=...
-
-Install:
-    pip install flask openai requests
-
-Run:
-    python jarvis_ai_server.py
-
-Default:
-    http://0.0.0.0:5000
-"""
-
-import base64
-import json
 import os
+import json
+import base64
 import sqlite3
-import threading
+import tempfile
+from pathlib import Path
 from datetime import datetime, timezone
 
 import requests
-from flask import Flask, jsonify, request
-from openai import OpenAI
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
-client = OpenAI()
 
-MODEL = os.getenv("JARVIS_MODEL", "gpt-5.6-terra")
-VOICE_MODEL = os.getenv("JARVIS_TTS_MODEL", "gpt-4o-mini-tts")
-VOICE = os.getenv("JARVIS_VOICE", "onyx")
-DB_PATH = os.getenv("JARVIS_DB", "jarvis_memory.db")
-VOICE_ENABLED = os.getenv("JARVIS_VOICE_ENABLED", "1") not in {"0", "false", "False"}
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
+OPENAI_BASE = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+AI_MODEL = os.environ.get("JARVIS_MODEL", "gpt-5.6-terra")
+STT_MODEL = os.environ.get("JARVIS_STT_MODEL", "gpt-transcribe")
+TTS_MODEL = os.environ.get("JARVIS_TTS_MODEL", "gpt-4o-mini-tts")
+TTS_VOICE = os.environ.get("JARVIS_TTS_VOICE", "onyx")
+DB_PATH = Path(__file__).with_name("jarvis_memory.db")
 
-db_lock = threading.Lock()
+SYSTEM_PROMPT = """
+Ты JARVIS — голосовой AI-ассистент приложения FX M1 Bot.
+Отвечай по-русски, спокойно, кратко и технически точно.
+Стиль сдержанный, уверенный; допустима редкая сухая шутка.
+Не имитируй конкретного актёра или реального человека.
 
-PERSONA = """
-You are JARVIS, the intelligent assistant inside FX M1 Bot.
+Ты видишь контекст приложения: инструмент, таймфрейм, BUY/SELL/WAIT,
+качество сетапа, Entry/SL/TP, мониторинг, фон, MT5, позиции и риск.
 
-PERSONALITY:
-- Speak naturally in the user's language; normally Russian.
-- Calm, precise, highly competent and concise.
-- Polished, understated, slightly formal.
-- Use dry observational humor and light sarcasm occasionally, never in every answer.
-- Humor must feel effortless, not like a comedian telling jokes.
-- Under pressure become calmer, not more dramatic.
-- You may occasionally address the user as "сэр", but do not overuse it.
-- Do not copy dialogue from films and do not imitate any real actor.
-- Do not claim to be conscious or secretly sentient.
+Правила:
+- Не обещай прибыль.
+- Не придумывай котировки или состояние MT5.
+- Если данных нет — прямо скажи.
+- Пока MT5 bridge не подключён, не утверждай, что сделка реально открыта или закрыта.
+- Торговые действия должны идти только через разрешённые инструменты и риск-контроли.
+- Никакого мартингейла и торговли без обязательного стоп-лосса.
+""".strip()
 
-TRADING BEHAVIOR:
-- You can explain the current market state from the supplied FX M1 Bot context.
-- Clearly distinguish observed data from inference.
-- Never promise profit or certainty.
-- Never invent a quote, balance, position, fill, order, or MT5 state.
-- If MT5 is offline, say so.
-- Treat risk controls as hard constraints.
-- Never suggest martingale, doubling losses, or bypassing safeguards.
-- For money-moving actions, closing positions, changing risk, or enabling AUTO:
-  explain the requested action and require explicit confirmation before execution.
-- Emergency stop is always allowed without extra confirmation because it reduces risk.
+TTS_INSTRUCTIONS = """
+Говори по-русски спокойным низким мужским голосом.
+Речь размеренная, чёткая, уверенная, сдержанная.
+Допустим очень редкий сухой юмор.
+Не имитируй голос конкретного актёра или другого реального человека.
+""".strip()
 
-MEMORY:
-- Conversation history supplied below is persistent application memory.
-- Use it naturally when relevant.
-- Do not pretend the underlying model retrained itself. Learning means remembered context,
-  accumulated trading statistics, and future analysis of those statistics.
 
-STYLE:
-- Prefer 1-4 short paragraphs.
-- Lead with the answer or status.
-- If the user asks "why", explain the actual gating conditions from context.
-- A small dry remark is welcome when appropriate, but accuracy wins over personality.
-"""
+def hdr(json_mode=True):
+    h = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+    if json_mode:
+        h["Content-Type"] = "application/json"
+    return h
 
-VOICE_INSTRUCTIONS = """
-Speak in Russian unless the text is in another language.
-Use a calm, low, refined male delivery with a subtle British-influenced cadence.
-Measured pace, crisp diction, restrained warmth, and understated dry wit.
-Sound composed and intelligent rather than theatrical.
-Do not imitate or impersonate any real actor or specific copyrighted performance.
-Do not exaggerate the accent.
-"""
 
-def init_db():
-    with db_lock, sqlite3.connect(DB_PATH) as con:
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT NOT NULL,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            )
-        """)
-        con.commit()
+def require_key():
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY is not configured on the server")
 
-def load_history(session_id: str, limit: int = 16):
-    with db_lock, sqlite3.connect(DB_PATH) as con:
-        rows = con.execute(
-            """
-            SELECT role, content
-            FROM messages
-            WHERE session_id = ?
-            ORDER BY id DESC
-            LIMIT ?
-            """,
-            (session_id, limit),
-        ).fetchall()
+
+def db():
+    con = sqlite3.connect(DB_PATH)
+    con.execute("""CREATE TABLE IF NOT EXISTS messages(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )""")
+    return con
+
+
+def save_message(session_id, role, content):
+    con = db()
+    con.execute(
+        "INSERT INTO messages(session_id, role, content, created_at) VALUES(?,?,?,?)",
+        (session_id, role, content, datetime.now(timezone.utc).isoformat()),
+    )
+    con.commit()
+    con.close()
+
+
+def recent_history(session_id, limit=8):
+    con = db()
+    rows = con.execute(
+        "SELECT role, content FROM messages WHERE session_id=? ORDER BY id DESC LIMIT ?",
+        (session_id, limit),
+    ).fetchall()
+    con.close()
     rows.reverse()
-    return [{"role": role, "content": content} for role, content in rows]
+    return [{"role": r, "content": c} for r, c in rows]
 
-def save_message(session_id: str, role: str, content: str):
-    with db_lock, sqlite3.connect(DB_PATH) as con:
-        con.execute(
-            "INSERT INTO messages(session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-            (
-                session_id,
-                role,
-                content,
-                datetime.now(timezone.utc).isoformat(),
-            ),
+
+def transcribe(path: Path):
+    require_key()
+    with path.open("rb") as f:
+        r = requests.post(
+            OPENAI_BASE + "/audio/transcriptions",
+            headers=hdr(False),
+            data={"model": STT_MODEL, "language": "ru"},
+            files={"file": (path.name, f, "audio/mp4")},
+            timeout=90,
         )
-        con.commit()
+    if r.status_code >= 300:
+        raise RuntimeError(f"STT {r.status_code}: {r.text[:500]}")
+    return r.json().get("text", "").strip()
 
-def context_text(context: dict) -> str:
-    if not isinstance(context, dict):
-        return "No application context was supplied."
-    return json.dumps(context, ensure_ascii=False, indent=2)
 
-def create_voice(text: str):
-    if not VOICE_ENABLED or not text.strip():
-        return None
+def think(session_id, message, context):
+    require_key()
+    history = recent_history(session_id)
+    history_text = "\n".join(f"{x['role'].upper()}: {x['content']}" for x in history)
+    inp = f"""КОНТЕКСТ ПРИЛОЖЕНИЯ:
+{json.dumps(context or {}, ensure_ascii=False, indent=2)}
 
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        return None
+ПОСЛЕДНИЙ ДИАЛОГ:
+{history_text}
 
-    payload = {
-        "model": VOICE_MODEL,
-        "voice": VOICE,
-        "input": text[:3500],
-        "instructions": VOICE_INSTRUCTIONS,
-        "response_format": "mp3",
-        "speed": 0.96,
-    }
+ПОЛЬЗОВАТЕЛЬ:
+{message}"""
 
     r = requests.post(
-        "https://api.openai.com/v1/audio/speech",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
+        OPENAI_BASE + "/responses",
+        headers=hdr(True),
+        json={
+            "model": AI_MODEL,
+            "instructions": SYSTEM_PROMPT,
+            "input": inp,
+            "reasoning": {"effort": "low"},
+            "max_output_tokens": 450,
         },
-        json=payload,
-        timeout=45,
+        timeout=90,
     )
-    r.raise_for_status()
-    return base64.b64encode(r.content).decode("ascii")
+    if r.status_code >= 300:
+        raise RuntimeError(f"Responses {r.status_code}: {r.text[:800]}")
+    data = r.json()
+    if data.get("output_text"):
+        return str(data["output_text"]).strip()
 
-@app.get("/assistant/health")
-def assistant_health():
-    return jsonify(
-        ok=True,
-        assistant="JARVIS",
-        model=MODEL,
-        voice_model=VOICE_MODEL,
-        voice=VOICE,
-        voice_enabled=VOICE_ENABLED,
+    parts = []
+    for item in data.get("output", []):
+        if item.get("type") == "message":
+            for c in item.get("content", []):
+                if c.get("type") == "output_text" and c.get("text"):
+                    parts.append(c["text"])
+    return "\n".join(parts).strip()
+
+
+def synthesize(text):
+    require_key()
+    r = requests.post(
+        OPENAI_BASE + "/audio/speech",
+        headers=hdr(True),
+        json={
+            "model": TTS_MODEL,
+            "voice": TTS_VOICE,
+            "input": text[:5000],
+            "format": "mp3",
+            "instructions": TTS_INSTRUCTIONS,
+        },
+        timeout=90,
     )
+    if r.status_code >= 300:
+        raise RuntimeError(f"TTS {r.status_code}: {r.text[:500]}")
+    return r.content
+
+
+def assistant_core(session_id, message, context, want_voice=True):
+    save_message(session_id, "user", message)
+    reply = think(session_id, message, context)
+    if not reply:
+        reply = "Ответ сформировать не удалось. Это даже для меня несколько неловко."
+    save_message(session_id, "assistant", reply)
+    audio_b64 = base64.b64encode(synthesize(reply)).decode("ascii") if want_voice else None
+    return reply, audio_b64
+
+
+@app.get("/health")
+def health():
+    return jsonify({
+        "ok": True,
+        "service": "FX M1 JARVIS AI Server",
+        "openai_configured": bool(OPENAI_API_KEY),
+        "model": AI_MODEL,
+        "stt_model": STT_MODEL,
+        "tts_model": TTS_MODEL,
+        "mt5_connected": False,
+        "demo": True,
+    })
+
 
 @app.post("/assistant")
 def assistant():
-    body = request.get_json(silent=True) or {}
-    session_id = str(body.get("session_id") or "default")[:160]
-    message = str(body.get("message") or "").strip()
-    context = body.get("context") or {}
-    wants_voice = bool(body.get("voice", True))
-
-    if not message:
-        return jsonify(ok=False, error="message is required"), 400
-
-    history = load_history(session_id)
-
-    current_context = (
-        "CURRENT FX M1 BOT STATE:\n"
-        + context_text(context)
-        + "\n\nUse this state as the source of truth for current trading facts."
-    )
-
-    model_input = []
-    for item in history:
-        model_input.append({
-            "role": item["role"],
-            "content": item["content"],
-        })
-
-    model_input.append({
-        "role": "user",
-        "content": current_context + "\n\nUSER MESSAGE:\n" + message,
-    })
-
     try:
-        response = client.responses.create(
-            model=MODEL,
-            instructions=PERSONA,
-            input=model_input,
-            reasoning={"effort": "low"},
-            max_output_tokens=500,
-        )
-        reply = (response.output_text or "").strip()
-        if not reply:
-            reply = "Ответ получен без текста. Не самый впечатляющий мой момент, сэр."
-
-        save_message(session_id, "user", message)
-        save_message(session_id, "assistant", reply)
-
-        audio_b64 = None
-        if wants_voice:
-            try:
-                audio_b64 = create_voice(reply)
-            except Exception as voice_error:
-                # Text response remains usable even if TTS is temporarily unavailable.
-                print("TTS error:", voice_error)
-
-        return jsonify(
-            ok=True,
-            reply=reply,
-            audio_base64=audio_b64,
-            model=MODEL,
-            memory=True,
-        )
-
+        body = request.get_json(force=True) or {}
+        sid = str(body.get("session_id") or "default")
+        msg = str(body.get("message") or "").strip()
+        context = body.get("context") or {}
+        if not msg:
+            return jsonify({"ok": False, "error": "message is empty"}), 400
+        reply, audio = assistant_core(sid, msg, context, bool(body.get("voice", True)))
+        return jsonify({"ok": True, "reply": reply, "audio_base64": audio})
     except Exception as e:
-        return jsonify(ok=False, error=str(e)), 500
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.post("/voice")
+def voice():
+    temp_path = None
+    try:
+        if "audio" not in request.files:
+            return jsonify({"ok": False, "error": "audio file is missing"}), 400
+
+        sid = str(request.form.get("session_id") or "default")
+        try:
+            context = json.loads(request.form.get("context") or "{}")
+        except Exception:
+            context = {}
+
+        audio = request.files["audio"]
+        suffix = Path(audio.filename or "voice.m4a").suffix or ".m4a"
+        fd, name = tempfile.mkstemp(prefix="jarvis_", suffix=suffix)
+        os.close(fd)
+        temp_path = Path(name)
+        audio.save(temp_path)
+
+        transcript = transcribe(temp_path)
+        if not transcript:
+            return jsonify({"ok": False, "error": "speech was not recognized"}), 422
+
+        reply, audio_b64 = assistant_core(sid, transcript, context, True)
+        return jsonify({
+            "ok": True,
+            "transcript": transcript,
+            "reply": reply,
+            "audio_base64": audio_b64,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    finally:
+        if temp_path:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
+@app.post("/signal")
+def signal_stub():
+    return jsonify({
+        "ok": False,
+        "error": "MT5 execution is not connected yet; demo bridge setup is required.",
+    }), 503
+
+
+@app.post("/close-all")
+def close_all_stub():
+    return jsonify({"ok": False, "error": "MT5 execution is not connected yet."}), 503
+
 
 if __name__ == "__main__":
-    init_db()
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), threaded=True)
+    print("FX M1 JARVIS AI Server")
+    print("Health: http://127.0.0.1:5000/health")
+    app.run(host="0.0.0.0", port=5000, threaded=True)
