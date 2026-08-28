@@ -1,22 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.TTS_SERVICE" />
-        </intent>
-    </queries>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
-        android:label="FX M1 Bot"
-        android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:usesCleartextTraffic="true"
+        android:theme="@style/AppTheme"
+        android:label="FX M1 JARVIS">
 
         <activity
             android:name=".MainActivity"
@@ -29,17 +24,16 @@
 
         <service
             android:name=".MonitoringService"
+            android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Continuous user-started forex market monitoring with an ongoing notification and user STOP/EMERGENCY controls." />
-        </service>
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name=".JarvisVoiceService"
+            android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
     </application>
+
 </manifest>
