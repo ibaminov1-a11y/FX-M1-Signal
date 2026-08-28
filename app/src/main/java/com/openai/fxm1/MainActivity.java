@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.os.SystemClock;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.*;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -24,21 +28,37 @@ public class MainActivity extends Activity {
     private Button analyzeButton, saveKeyButton;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler monitorHandler = new Handler(Looper.getMainLooper());
 
-    private static final long BUTTON_COOLDOWN_MS = 15000L;
-    private static final long CACHE_M1_MS = 15000L;
+    private static final long MONITOR_INTERVAL_MS = 20000L;
+    private static final long CACHE_M1_MS = 18000L;
     private static final long CACHE_M5_MS = 2 * 60 * 1000L;
     private static final long CACHE_M15_MS = 7 * 60 * 1000L;
     private static final long CACHE_H1_MS = 30 * 60 * 1000L;
 
-    private long lastAnalyzeClickMs = 0L;
+    private boolean monitoring = false;
+    private boolean isAnalyzing = false;
 
     private final Map<String, CacheItem> cache = new HashMap<>();
+    private final Map<String, String> lastAlertSignal = new HashMap<>();
 
     private final String[] symbols = {
             "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
             "EUR/JPY", "GBP/JPY", "EUR/GBP", "EUR/CHF", "AUD/JPY", "CAD/JPY", "CHF/JPY",
             "GBP/CHF", "EUR/AUD", "GBP/AUD", "AUD/NZD", "NZD/JPY", "XAU/USD"
+    };
+
+    private final Runnable monitorRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!monitoring) return;
+
+            if (!isAnalyzing) {
+                runAnalysis();
+            } else {
+                scheduleNext(MONITOR_INTERVAL_MS);
+            }
+        }
     };
 
     @Override
@@ -66,48 +86,71 @@ public class MainActivity extends Activity {
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
         apiKeyInput.setText(prefs.getString("apikey", ""));
 
+        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+
         saveKeyButton.setOnClickListener(v -> {
             String key = apiKeyInput.getText().toString().trim();
             prefs.edit().putString("apikey", key).apply();
             Toast.makeText(this, "API key сохранён", Toast.LENGTH_SHORT).show();
         });
 
-        analyzeButton.setOnClickListener(v -> runAnalysis());
+        analyzeButton.setOnClickListener(v -> {
+            if (monitoring) {
+                stopMonitoring();
+            } else {
+                startMonitoring();
+            }
+        });
     }
 
-    private void runAnalysis() {
-        final String key = apiKeyInput.getText().toString().trim();
-        final String symbol = (String) symbolSpinner.getSelectedItem();
+    private void startMonitoring() {
+        String key = apiKeyInput.getText().toString().trim();
 
         if (key.isEmpty()) {
-            Toast.makeText(this, "Сначала вставьте Twelve Data API key", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        long now = SystemClock.elapsedRealtime();
-        long elapsed = now - lastAnalyzeClickMs;
-
-        if (lastAnalyzeClickMs > 0 && elapsed < BUTTON_COOLDOWN_MS) {
-            long seconds = (BUTTON_COOLDOWN_MS - elapsed + 999) / 1000;
             Toast.makeText(
                     this,
-                    "Подождите " + seconds + " сек. перед повторным анализом",
-                    Toast.LENGTH_SHORT
+                    "Сначала вставьте Twelve Data API key",
+                    Toast.LENGTH_LONG
             ).show();
             return;
         }
-
-        lastAnalyzeClickMs = now;
 
         getSharedPreferences("fxm1", MODE_PRIVATE)
                 .edit()
                 .putString("apikey", key)
                 .apply();
 
-        analyzeButton.setEnabled(false);
-        statusText.setText("Обновляю рынок…");
-        signalText.setText("…");
-        confidenceText.setText("Анализ рынка");
+        monitoring = true;
+        analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
+        statusText.setText("Мониторинг запущен · обновление каждые 20 сек.");
+
+        monitorHandler.removeCallbacks(monitorRunnable);
+        runAnalysis();
+    }
+
+    private void stopMonitoring() {
+        monitoring = false;
+        monitorHandler.removeCallbacks(monitorRunnable);
+        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+        statusText.setText("Мониторинг остановлен.");
+    }
+
+    private void scheduleNext(long delayMs) {
+        monitorHandler.removeCallbacks(monitorRunnable);
+
+        if (monitoring) {
+            monitorHandler.postDelayed(monitorRunnable, delayMs);
+        }
+    }
+
+    private void runAnalysis() {
+        if (!monitoring || isAnalyzing) return;
+
+        final String key = apiKeyInput.getText().toString().trim();
+        final String symbol = (String) symbolSpinner.getSelectedItem();
+
+        isAnalyzing = true;
+        statusText.setText(symbol + " · обновляю рынок…");
 
         executor.execute(() -> {
             try {
@@ -132,34 +175,69 @@ public class MainActivity extends Activity {
 
                 int cachedRequests = 4 - freshRequests;
 
-                runOnUiThread(() ->
-                        showAnalysis(a, freshRequests, cachedRequests)
-                );
+                runOnUiThread(() -> {
+                    isAnalyzing = false;
+                    showAnalysis(a, freshRequests, cachedRequests);
+                    alertIfNewTradeSignal(a);
+                    scheduleNext(MONITOR_INTERVAL_MS);
+                });
 
             } catch (RateLimitException e) {
                 runOnUiThread(() -> {
-                    analyzeButton.setEnabled(true);
+                    isAnalyzing = false;
+
                     signalText.setText("WAIT");
                     signalText.setTextColor(Color.DKGRAY);
                     statusText.setText("Лимит Twelve Data на эту минуту исчерпан.");
-                    confidenceText.setText("Подождите около 60 секунд и повторите.");
+                    confidenceText.setText("Автоповтор примерно через 60 секунд.");
                     levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
                     contextText.setText(
-                            "Приложение работает нормально.\n" +
-                            "Сработало ограничение бесплатного API."
+                            "Мониторинг остаётся включён.\n" +
+                            "Приложение автоматически повторит запрос после паузы."
                     );
+
+                    scheduleNext(60000L);
                 });
+
             } catch (Exception e) {
                 runOnUiThread(() -> {
-                    analyzeButton.setEnabled(true);
+                    isAnalyzing = false;
+
                     signalText.setText("ERROR");
                     signalText.setTextColor(Color.DKGRAY);
                     statusText.setText("Ошибка: " + safeMessage(e));
-                    confidenceText.setText("Проверьте интернет и API key.");
+                    confidenceText.setText("Следующая попытка через 20 секунд.");
                     levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
+
+                    scheduleNext(MONITOR_INTERVAL_MS);
                 });
             }
         });
+    }
+
+    private void alertIfNewTradeSignal(Analysis a) {
+        String oldSignal = lastAlertSignal.get(a.symbol);
+
+        if ("BUY".equals(a.signal) || "SELL".equals(a.signal)) {
+            if (!a.signal.equals(oldSignal)) {
+                lastAlertSignal.put(a.symbol, a.signal);
+
+                ToneGenerator tone = new ToneGenerator(
+                        AudioManager.STREAM_NOTIFICATION,
+                        90
+                );
+                tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 600);
+
+                Toast.makeText(
+                        this,
+                        a.symbol + " · " + a.signal +
+                                " · качество " + a.quality + "/100",
+                        Toast.LENGTH_LONG
+                ).show();
+            }
+        } else {
+            lastAlertSignal.put(a.symbol, "WAIT");
+        }
     }
 
     private FetchResult getSeries(String symbol,
@@ -211,10 +289,11 @@ public class MainActivity extends Activity {
                 "error".equalsIgnoreCase(root.optString("status"))) {
 
             String message = root.optString("message", "API error");
+            String lower = message.toLowerCase(Locale.US);
 
-            if (message.toLowerCase(Locale.US).contains("api credits") ||
-                    message.toLowerCase(Locale.US).contains("current minute") ||
-                    message.toLowerCase(Locale.US).contains("rate limit")) {
+            if (lower.contains("api credits") ||
+                    lower.contains("current minute") ||
+                    lower.contains("rate limit")) {
                 throw new RateLimitException(message);
             }
 
@@ -262,7 +341,9 @@ public class MainActivity extends Activity {
 
     private String safeMessage(Exception e) {
         String m = e.getMessage();
-        return m == null || m.trim().isEmpty() ? "неизвестная ошибка" : m;
+        return m == null || m.trim().isEmpty()
+                ? "неизвестная ошибка"
+                : m;
     }
 
     private Analysis analyze(String symbol,
@@ -283,7 +364,10 @@ public class MainActivity extends Activity {
         double atr = atr(m1, 14);
 
         if (atr <= 0) {
-            atr = Math.max(minStopDistance(symbol), last.high - last.low);
+            atr = Math.max(
+                    minStopDistance(symbol),
+                    last.high - last.low
+            );
         }
 
         boolean buySetup =
@@ -302,7 +386,11 @@ public class MainActivity extends Activity {
                 structure <= 0 &&
                 breakout < 0;
 
-        String signal = buySetup ? "BUY" : sellSetup ? "SELL" : "WAIT";
+        String signal = buySetup
+                ? "BUY"
+                : sellSetup
+                ? "SELL"
+                : "WAIT";
 
         int quality = setupQuality(
                 signal,
@@ -427,7 +515,11 @@ public class MainActivity extends Activity {
         double ema9 = ema(c, 9);
         double ema21 = ema(c, 21);
 
-        int s = ema9 > ema21 ? 1 : ema9 < ema21 ? -1 : 0;
+        int s = ema9 > ema21
+                ? 1
+                : ema9 < ema21
+                ? -1
+                : 0;
 
         int n = c.size();
         double recentStart = c.get(Math.max(0, n - 10)).close;
@@ -458,9 +550,7 @@ public class MainActivity extends Activity {
     private int structureScore(List<Candle> c) {
         int n = c.size();
 
-        if (n < 10) {
-            return 0;
-        }
+        if (n < 10) return 0;
 
         Candle a = c.get(n - 6);
         Candle b = c.get(n - 1);
@@ -479,17 +569,22 @@ public class MainActivity extends Activity {
     private int breakoutScore(List<Candle> c) {
         int n = c.size();
 
-        if (n < 30) {
-            return 0;
-        }
+        if (n < 30) return 0;
 
         Candle last = c.get(n - 1);
         double resistance = -Double.MAX_VALUE;
         double support = Double.MAX_VALUE;
 
         for (int i = n - 22; i < n - 2; i++) {
-            resistance = Math.max(resistance, c.get(i).high);
-            support = Math.min(support, c.get(i).low);
+            resistance = Math.max(
+                    resistance,
+                    c.get(i).high
+            );
+
+            support = Math.min(
+                    support,
+                    c.get(i).low
+            );
         }
 
         double a = atr(c, 14);
@@ -507,9 +602,7 @@ public class MainActivity extends Activity {
     }
 
     private double atr(List<Candle> c, int period) {
-        if (c.size() < period + 1) {
-            return 0;
-        }
+        if (c.size() < period + 1) return 0;
 
         double sum = 0;
         int start = c.size() - period;
@@ -533,18 +626,20 @@ public class MainActivity extends Activity {
     }
 
     private String arrow(int s) {
-        return s > 0 ? "↑" : s < 0 ? "↓" : "→";
+        return s > 0
+                ? "↑"
+                : s < 0
+                ? "↓"
+                : "→";
     }
 
     private void showAnalysis(Analysis a,
                               int freshRequests,
                               int cachedRequests) {
 
-        analyzeButton.setEnabled(true);
-
         statusText.setText(
                 a.symbol +
-                " · Twelve Data · API " +
+                " · AUTO 20с · API " +
                 freshRequests +
                 " · кэш " +
                 cachedRequests
@@ -553,15 +648,21 @@ public class MainActivity extends Activity {
         signalText.setText(a.signal);
 
         if ("BUY".equals(a.signal)) {
-            signalText.setTextColor(Color.rgb(20, 120, 70));
+            signalText.setTextColor(
+                    Color.rgb(20, 120, 70)
+            );
         } else if ("SELL".equals(a.signal)) {
-            signalText.setTextColor(Color.rgb(190, 45, 45));
+            signalText.setTextColor(
+                    Color.rgb(190, 45, 45)
+            );
         } else {
             signalText.setTextColor(Color.DKGRAY);
         }
 
         confidenceText.setText(
-                "Качество сетапа: " + a.quality + "/100"
+                "Качество сетапа: " +
+                a.quality +
+                "/100"
         );
 
         if ("WAIT".equals(a.signal)) {
@@ -584,15 +685,29 @@ public class MainActivity extends Activity {
     }
 
     private String fmt(double x) {
-        if (x == 0) {
-            return "—";
-        }
+        if (x == 0) return "—";
 
         if (x >= 100) {
-            return String.format(Locale.US, "%.3f", x);
+            return String.format(
+                    Locale.US,
+                    "%.3f",
+                    x
+            );
         }
 
-        return String.format(Locale.US, "%.5f", x);
+        return String.format(
+                Locale.US,
+                "%.5f",
+                x
+        );
+    }
+
+    @Override
+    protected void onDestroy() {
+        monitoring = false;
+        monitorHandler.removeCallbacks(monitorRunnable);
+        executor.shutdownNow();
+        super.onDestroy();
     }
 
     static class Candle {
@@ -647,7 +762,9 @@ public class MainActivity extends Activity {
         final List<Candle> data;
         final long savedAtMs;
 
-        CacheItem(List<Candle> data, long savedAtMs) {
+        CacheItem(List<Candle> data,
+                  long savedAtMs) {
+
             this.data = data;
             this.savedAtMs = savedAtMs;
         }
@@ -657,7 +774,9 @@ public class MainActivity extends Activity {
         final List<Candle> data;
         final boolean fromCache;
 
-        FetchResult(List<Candle> data, boolean fromCache) {
+        FetchResult(List<Candle> data,
+                    boolean fromCache) {
+
             this.data = data;
             this.fromCache = fromCache;
         }
