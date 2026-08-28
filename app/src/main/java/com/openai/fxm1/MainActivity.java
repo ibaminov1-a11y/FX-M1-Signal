@@ -3,6 +3,8 @@ package com.openai.fxm1;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -31,6 +33,18 @@ public class MainActivity extends Activity {
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
     private Switch autoTradingSwitch;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
+    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard;
+
+    private static final int C_BG = Color.rgb(7, 8, 22);
+    private static final int C_CARD = Color.rgb(17, 18, 39);
+    private static final int C_CARD_2 = Color.rgb(24, 20, 48);
+    private static final int C_PURPLE = Color.rgb(145, 77, 255);
+    private static final int C_PURPLE_DARK = Color.rgb(78, 37, 153);
+    private static final int C_TEXT = Color.rgb(244, 241, 255);
+    private static final int C_MUTED = Color.rgb(176, 170, 199);
+    private static final int C_GREEN = Color.rgb(66, 214, 122);
+    private static final int C_RED = Color.rgb(255, 72, 87);
+    private static final int C_YELLOW = Color.rgb(255, 193, 61);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
@@ -107,23 +121,26 @@ public class MainActivity extends Activity {
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                symbols
-        );
+        topCard = findViewById(R.id.topCard);
+        tfCard = findViewById(R.id.tfCard);
+        modeCard = findViewById(R.id.modeCard);
+        signalCard = findViewById(R.id.signalCard);
+        tradingCard = findViewById(R.id.tradingCard);
+        metricsCard = findViewById(R.id.metricsCard);
+        riskCard = findViewById(R.id.riskCard);
+        journalCard = findViewById(R.id.journalCard);
+
+        applyDarkVioletTheme();
+
+        ArrayAdapter<String> adapter = darkSpinnerAdapter(symbols);
         symbolSpinner.setAdapter(adapter);
 
-        ArrayAdapter<String> timeframeAdapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
+        ArrayAdapter<String> timeframeAdapter = darkSpinnerAdapter(
                 new String[]{"M1", "M5", "M15", "H1"}
         );
         entryTimeframeSpinner.setAdapter(timeframeAdapter);
 
-        ArrayAdapter<String> modeAdapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
+        ArrayAdapter<String> modeAdapter = darkSpinnerAdapter(
                 new String[]{"CONSERVATIVE", "NORMAL", "AGGRESSIVE"}
         );
         signalModeSpinner.setAdapter(modeAdapter);
@@ -134,25 +151,19 @@ public class MainActivity extends Activity {
         apiKeyInput.setText(prefs.getString("apikey", ""));
         serverUrlInput.setText(prefs.getString("server_url", ""));
 
-        ArrayAdapter<String> riskAdapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
+        ArrayAdapter<String> riskAdapter = darkSpinnerAdapter(
                 new String[]{"0.25%", "0.50%", "1.00%"}
         );
         riskSpinner.setAdapter(riskAdapter);
         riskSpinner.setSelection(prefs.getInt("risk_pos", 1));
 
-        ArrayAdapter<String> maxPosAdapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
+        ArrayAdapter<String> maxPosAdapter = darkSpinnerAdapter(
                 new String[]{"1", "2", "3"}
         );
         maxPositionsSpinner.setAdapter(maxPosAdapter);
         maxPositionsSpinner.setSelection(prefs.getInt("maxpos_pos", 0));
 
-        ArrayAdapter<String> driftAdapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
+        ArrayAdapter<String> driftAdapter = darkSpinnerAdapter(
                 new String[]{"0.03%", "0.05%", "0.10%", "0.20%"}
         );
         maxDriftSpinner.setAdapter(driftAdapter);
@@ -237,8 +248,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V5.2 разрешает только DEMO.");
-                    Toast.makeText(this, "V5.2 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V5.3 разрешает только DEMO.");
+                    Toast.makeText(this, "V5.3 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 addJournal("AUTO TRADING включён · DEMO");
@@ -257,11 +268,130 @@ public class MainActivity extends Activity {
         closeAllButton.setOnClickListener(v -> sendCloseAll());
     }
 
+    private void applyDarkVioletTheme() {
+        getWindow().setStatusBarColor(C_BG);
+        getWindow().setNavigationBarColor(C_BG);
+
+        View root = findViewById(R.id.rootLayout);
+        if (root != null) root.setBackgroundColor(C_BG);
+
+        styleCard(topCard, C_CARD);
+        styleCard(tfCard, C_CARD_2);
+        styleCard(modeCard, C_CARD_2);
+        styleCard(signalCard, C_CARD);
+        styleCard(tradingCard, C_CARD);
+        styleCard(metricsCard, C_CARD);
+        styleCard(riskCard, C_CARD);
+        styleCard(journalCard, C_CARD);
+
+        stylePrimaryButton(saveKeyButton);
+        stylePrimaryButton(analyzeButton);
+        styleOutlineButton(serverCheckButton, C_PURPLE);
+        styleOutlineButton(closeAllButton, C_PURPLE);
+        styleOutlineButton(emergencyStopButton, C_RED);
+
+        styleInput(apiKeyInput);
+        styleInput(serverUrlInput);
+
+        int[][] states = new int[][]{
+                new int[]{android.R.attr.state_checked},
+                new int[]{}
+        };
+        autoTradingSwitch.setThumbTintList(new ColorStateList(
+                states,
+                new int[]{C_PURPLE, Color.rgb(205, 202, 218)}
+        ));
+        autoTradingSwitch.setTrackTintList(new ColorStateList(
+                states,
+                new int[]{Color.rgb(83, 49, 145), Color.rgb(61, 61, 78)}
+        ));
+        autoTradingSwitch.setTextColor(C_TEXT);
+
+        signalText.setTextColor(C_PURPLE);
+        statusText.setTextColor(C_MUTED);
+        confidenceText.setTextColor(C_MUTED);
+        levelsText.setTextColor(C_TEXT);
+        contextText.setTextColor(C_MUTED);
+        accountText.setTextColor(C_TEXT);
+        positionsText.setTextColor(C_TEXT);
+        journalText.setTextColor(C_MUTED);
+        priceCompareText.setTextColor(C_TEXT);
+        serverStatusText.setTextColor(C_RED);
+    }
+
+    private ArrayAdapter<String> darkSpinnerAdapter(String[] items) {
+        return new ArrayAdapter<String>(
+                this,
+                android.R.layout.simple_spinner_item,
+                items
+        ) {
+            @Override
+            public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                view.setTextColor(C_TEXT);
+                view.setTextSize(17f);
+                view.setPadding(dp(8), 0, dp(8), 0);
+                return view;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
+                TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                view.setTextColor(C_TEXT);
+                view.setTextSize(16f);
+                view.setPadding(dp(16), dp(14), dp(16), dp(14));
+                view.setBackgroundColor(C_CARD_2);
+                return view;
+            }
+        };
+    }
+
+    private void styleCard(View view, int fillColor) {
+        if (view == null) return;
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(fillColor);
+        bg.setCornerRadius(dp(14));
+        bg.setStroke(dp(1), Color.rgb(72, 58, 111));
+        view.setBackground(bg);
+        view.setElevation(dp(2));
+    }
+
+    private void stylePrimaryButton(Button button) {
+        GradientDrawable bg = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{Color.rgb(116, 48, 231), Color.rgb(77, 37, 151)}
+        );
+        bg.setCornerRadius(dp(10));
+        bg.setStroke(dp(1), Color.rgb(159, 99, 255));
+        button.setBackground(bg);
+        button.setTextColor(Color.WHITE);
+    }
+
+    private void styleOutlineButton(Button button, int accent) {
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.rgb(13, 13, 30));
+        bg.setCornerRadius(dp(9));
+        bg.setStroke(dp(1), accent);
+        button.setBackground(bg);
+        button.setTextColor(accent);
+    }
+
+    private void styleInput(EditText input) {
+        input.setTextColor(C_TEXT);
+        input.setHintTextColor(Color.rgb(126, 120, 151));
+        input.setBackgroundTintList(ColorStateList.valueOf(C_PURPLE));
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
     private void setTradingControlsOffline() {
         serverConnected = false;
         mt5Connected = false;
         demoAccount = false;
-        serverStatusText.setText("SERVER: NOT CONNECTED\nMT5: OFFLINE");
+        serverStatusText.setText("SERVER: NOT CONNECTED   •   MT5: OFFLINE");
+        serverStatusText.setTextColor(C_RED);
         accountText.setText("Счёт: —\nБаланс: —\nEquity: —");
         positionsText.setText("Открытые позиции: —\nТекущий P/L: —");
         lastMt5Bid = Double.NaN;
@@ -297,7 +427,8 @@ public class MainActivity extends Activity {
 
         getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("server_url", base).apply();
         serverCheckButton.setEnabled(false);
-        serverStatusText.setText("SERVER: CHECKING…\nMT5: …");
+        serverStatusText.setText("SERVER: CHECKING…   •   MT5: …");
+        serverStatusText.setTextColor(C_YELLOW);
 
         executor.execute(() -> {
             try {
@@ -319,7 +450,10 @@ public class MainActivity extends Activity {
 
                     serverStatusText.setText(
                             "SERVER: " + (serverOk ? "CONNECTED" : "ERROR") +
-                            "\nMT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
+                            "   •   MT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
+                    );
+                    serverStatusText.setTextColor(
+                            serverOk && mt5Ok ? C_GREEN : C_RED
                     );
 
                     accountText.setText(
@@ -653,7 +787,7 @@ public class MainActivity extends Activity {
                     isAnalyzing = false;
 
                     signalText.setText("WAIT");
-                    signalText.setTextColor(Color.DKGRAY);
+                    signalText.setTextColor(C_PURPLE);
                     statusText.setText("Лимит Twelve Data на эту минуту исчерпан.");
                     confidenceText.setText("Автоповтор примерно через 60 секунд.");
                     levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
@@ -670,7 +804,7 @@ public class MainActivity extends Activity {
                     isAnalyzing = false;
 
                     signalText.setText("ERROR");
-                    signalText.setTextColor(Color.DKGRAY);
+                    signalText.setTextColor(C_PURPLE);
                     statusText.setText("Ошибка: " + safeMessage(e));
                     confidenceText.setText("Следующая попытка через " + selectedMonitorLabel() + ".");
                     levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
@@ -1262,15 +1396,11 @@ public class MainActivity extends Activity {
         signalText.setText(a.signal);
 
         if ("BUY".equals(a.signal)) {
-            signalText.setTextColor(
-                    Color.rgb(20, 120, 70)
-            );
+            signalText.setTextColor(C_GREEN);
         } else if ("SELL".equals(a.signal)) {
-            signalText.setTextColor(
-                    Color.rgb(190, 45, 45)
-            );
+            signalText.setTextColor(C_RED);
         } else {
-            signalText.setTextColor(Color.DKGRAY);
+            signalText.setTextColor(C_PURPLE);
         }
 
         confidenceText.setText(
