@@ -9,6 +9,7 @@ import android.media.ToneGenerator;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.*;
+import android.view.View;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,7 +26,11 @@ public class MainActivity extends Activity {
     private Spinner symbolSpinner;
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, levelsText, contextText;
-    private Button analyzeButton, saveKeyButton;
+    private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
+    private EditText serverUrlInput;
+    private TextView serverStatusText, accountText, positionsText, journalText;
+    private Switch autoTradingSwitch;
+    private Spinner riskSpinner, maxPositionsSpinner;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
@@ -38,6 +43,12 @@ public class MainActivity extends Activity {
 
     private boolean monitoring = false;
     private boolean isAnalyzing = false;
+    private boolean serverConnected = false;
+    private boolean mt5Connected = false;
+    private boolean demoAccount = false;
+    private boolean suppressAutoSwitch = false;
+
+    private final Map<String, String> lastSentSignal = new HashMap<>();
 
     private final Map<String, CacheItem> cache = new HashMap<>();
     private final Map<String, String> lastAlertSignal = new HashMap<>();
@@ -75,6 +86,17 @@ public class MainActivity extends Activity {
         contextText = findViewById(R.id.contextText);
         analyzeButton = findViewById(R.id.analyzeButton);
         saveKeyButton = findViewById(R.id.saveKeyButton);
+        serverUrlInput = findViewById(R.id.serverUrlInput);
+        serverCheckButton = findViewById(R.id.serverCheckButton);
+        serverStatusText = findViewById(R.id.serverStatusText);
+        accountText = findViewById(R.id.accountText);
+        positionsText = findViewById(R.id.positionsText);
+        journalText = findViewById(R.id.journalText);
+        autoTradingSwitch = findViewById(R.id.autoTradingSwitch);
+        riskSpinner = findViewById(R.id.riskSpinner);
+        maxPositionsSpinner = findViewById(R.id.maxPositionsSpinner);
+        emergencyStopButton = findViewById(R.id.emergencyStopButton);
+        closeAllButton = findViewById(R.id.closeAllButton);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 this,
@@ -85,8 +107,26 @@ public class MainActivity extends Activity {
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
         apiKeyInput.setText(prefs.getString("apikey", ""));
+        serverUrlInput.setText(prefs.getString("server_url", ""));
+
+        ArrayAdapter<String> riskAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"0.25%", "0.50%", "1.00%"}
+        );
+        riskSpinner.setAdapter(riskAdapter);
+        riskSpinner.setSelection(prefs.getInt("risk_pos", 1));
+
+        ArrayAdapter<String> maxPosAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"1", "2", "3"}
+        );
+        maxPositionsSpinner.setAdapter(maxPosAdapter);
+        maxPositionsSpinner.setSelection(prefs.getInt("maxpos_pos", 0));
 
         analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+        setTradingControlsOffline();
 
         saveKeyButton.setOnClickListener(v -> {
             String key = apiKeyInput.getText().toString().trim();
@@ -101,6 +141,274 @@ public class MainActivity extends Activity {
                 startMonitoring();
             }
         });
+
+        serverCheckButton.setOnClickListener(v -> checkServer());
+
+        riskSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt("risk_pos", position).apply();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
+        maxPositionsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt("maxpos_pos", position).apply();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
+        autoTradingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (suppressAutoSwitch) return;
+
+            if (isChecked) {
+                if (!serverConnected || !mt5Connected) {
+                    forceAutoOff("AUTO не включён: сервер/MT5 не подключены.");
+                    Toast.makeText(this, "Сначала подключите сервер и MT5", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (!demoAccount) {
+                    forceAutoOff("AUTO заблокирован: V5 разрешает только DEMO.");
+                    Toast.makeText(this, "V5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                addJournal("AUTO TRADING включён · DEMO");
+            } else {
+                addJournal("AUTO TRADING выключен");
+            }
+        });
+
+        emergencyStopButton.setOnClickListener(v -> {
+            forceAutoOff("EMERGENCY STOP: отправка новых сигналов остановлена.");
+            stopMonitoring();
+            addJournal("EMERGENCY STOP на телефоне");
+            Toast.makeText(this, "STOP: мониторинг и AUTO выключены", Toast.LENGTH_LONG).show();
+        });
+
+        closeAllButton.setOnClickListener(v -> sendCloseAll());
+    }
+
+    private void setTradingControlsOffline() {
+        serverConnected = false;
+        mt5Connected = false;
+        demoAccount = false;
+        serverStatusText.setText("SERVER: NOT CONNECTED\nMT5: OFFLINE");
+        accountText.setText("Счёт: —\nБаланс: —\nEquity: —");
+        positionsText.setText("Открытые позиции: —\nТекущий P/L: —");
+        closeAllButton.setEnabled(false);
+        forceAutoOff(null);
+    }
+
+    private void forceAutoOff(String journalMessage) {
+        suppressAutoSwitch = true;
+        autoTradingSwitch.setChecked(false);
+        suppressAutoSwitch = false;
+        if (journalMessage != null) addJournal(journalMessage);
+    }
+
+    private String normalizeServerUrl(String raw) {
+        String u = raw == null ? "" : raw.trim();
+        while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
+        return u;
+    }
+
+    private void checkServer() {
+        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
+        if (base.isEmpty()) {
+            Toast.makeText(this, "Адрес сервера пока пуст", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            Toast.makeText(this, "Адрес должен начинаться с http:// или https://", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("server_url", base).apply();
+        serverCheckButton.setEnabled(false);
+        serverStatusText.setText("SERVER: CHECKING…\nMT5: …");
+
+        executor.execute(() -> {
+            try {
+                JSONObject root = httpJson("GET", base + "/health", null);
+                boolean serverOk = root.optBoolean("ok", false);
+                boolean mt5Ok = root.optBoolean("mt5_connected", false);
+                String accountType = root.optString("account_type", "UNKNOWN").toUpperCase(Locale.US);
+                double balance = root.optDouble("balance", Double.NaN);
+                double equity = root.optDouble("equity", Double.NaN);
+                int positions = root.optInt("positions", 0);
+                double floating = root.optDouble("floating_pl", 0.0);
+                String currency = root.optString("currency", "USD");
+
+                runOnUiThread(() -> {
+                    serverCheckButton.setEnabled(true);
+                    serverConnected = serverOk;
+                    mt5Connected = mt5Ok;
+                    demoAccount = "DEMO".equals(accountType);
+
+                    serverStatusText.setText(
+                            "SERVER: " + (serverOk ? "CONNECTED" : "ERROR") +
+                            "\nMT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
+                    );
+
+                    accountText.setText(
+                            "Счёт: " + accountType +
+                            "\nБаланс: " + money(balance, currency) +
+                            "\nEquity: " + money(equity, currency)
+                    );
+                    positionsText.setText(
+                            "Открытые позиции: " + positions +
+                            "\nТекущий P/L: " + signedMoney(floating, currency)
+                    );
+                    closeAllButton.setEnabled(serverOk && mt5Ok && demoAccount && positions > 0);
+
+                    if (!serverOk || !mt5Ok || !demoAccount) {
+                        forceAutoOff(null);
+                    }
+                    addJournal(serverOk && mt5Ok
+                            ? "Связь с MT5 установлена · " + accountType
+                            : "Сервер ответил, MT5 пока не готов");
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    serverCheckButton.setEnabled(true);
+                    setTradingControlsOffline();
+                    addJournal("Ошибка сервера: " + safeMessage(e));
+                    Toast.makeText(this, "Сервер пока недоступен", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void maybeSendSignalToServer(Analysis a) {
+        if (!autoTradingSwitch.isChecked() || !serverConnected || !mt5Connected || !demoAccount) {
+            return;
+        }
+
+        if ("WAIT".equals(a.signal)) {
+            lastSentSignal.put(a.symbol, "WAIT");
+            return;
+        }
+
+        String previous = lastSentSignal.get(a.symbol);
+        if (a.signal.equals(previous)) return;
+
+        lastSentSignal.put(a.symbol, a.signal);
+        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
+        final String risk = (String) riskSpinner.getSelectedItem();
+        final String maxPositions = (String) maxPositionsSpinner.getSelectedItem();
+
+        executor.execute(() -> {
+            try {
+                JSONObject payload = new JSONObject();
+                payload.put("symbol", a.symbol);
+                payload.put("signal", a.signal);
+                payload.put("quality", a.quality);
+                payload.put("entry", a.entry);
+                payload.put("sl", a.sl);
+                payload.put("tp1", a.tp1);
+                payload.put("tp2", a.tp2);
+                payload.put("risk_pct", Double.parseDouble(risk.replace("%", "")));
+                payload.put("max_positions", Integer.parseInt(maxPositions));
+                payload.put("mode", "DEMO");
+
+                JSONObject response = httpJson("POST", base + "/signal", payload);
+                boolean accepted = response.optBoolean("accepted", false);
+                String message = response.optString("message", accepted ? "Сигнал принят" : "Сигнал отклонён");
+
+                runOnUiThread(() -> addJournal(
+                        a.symbol + " " + a.signal + " → " + message
+                ));
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    lastSentSignal.put(a.symbol, "WAIT");
+                    addJournal("Не отправлен " + a.symbol + " " + a.signal + ": " + safeMessage(e));
+                });
+            }
+        });
+    }
+
+    private void sendCloseAll() {
+        if (!serverConnected || !mt5Connected || !demoAccount) {
+            Toast.makeText(this, "Нет подключённого DEMO MT5", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
+        closeAllButton.setEnabled(false);
+        forceAutoOff("AUTO выключен перед командой CLOSE ALL.");
+
+        executor.execute(() -> {
+            try {
+                JSONObject payload = new JSONObject();
+                payload.put("mode", "DEMO");
+                JSONObject response = httpJson("POST", base + "/close-all", payload);
+                String message = response.optString("message", "Команда отправлена");
+                runOnUiThread(() -> {
+                    addJournal("CLOSE ALL → " + message);
+                    checkServer();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    addJournal("CLOSE ALL ошибка: " + safeMessage(e));
+                    closeAllButton.setEnabled(true);
+                });
+            }
+        });
+    }
+
+    private JSONObject httpJson(String method, String url, JSONObject payload) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        conn.setConnectTimeout(8000);
+        conn.setReadTimeout(10000);
+        conn.setRequestMethod(method);
+        conn.setRequestProperty("Accept", "application/json");
+
+        if (payload != null) {
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            byte[] bytes = payload.toString().getBytes(StandardCharsets.UTF_8);
+            OutputStream os = conn.getOutputStream();
+            os.write(bytes);
+            os.flush();
+            os.close();
+        }
+
+        int code = conn.getResponseCode();
+        InputStream is = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
+        String body = readAll(is);
+        if (code < 200 || code >= 300) throw new Exception("HTTP " + code + ": " + body);
+        return new JSONObject(body);
+    }
+
+    private String money(double value, String currency) {
+        if (Double.isNaN(value)) return "—";
+        return String.format(Locale.US, "%.2f %s", value, currency);
+    }
+
+    private String signedMoney(double value, String currency) {
+        return String.format(Locale.US, "%+.2f %s", value, currency);
+    }
+
+    private void addJournal(String line) {
+        if (journalText == null) return;
+        String current = journalText.getText().toString();
+        String prefix = new java.text.SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
+        String updated = prefix + " · " + line;
+        if (!current.trim().isEmpty() && !"Журнал пока пуст.".equals(current.trim())) {
+            updated += "\n" + current;
+        }
+        String[] rows = updated.split("\\n");
+        if (rows.length > 8) {
+            StringBuilder limited = new StringBuilder();
+            for (int i = 0; i < 8; i++) {
+                if (i > 0) limited.append("\n");
+                limited.append(rows[i]);
+            }
+            updated = limited.toString();
+        }
+        journalText.setText(updated);
     }
 
     private void startMonitoring() {
@@ -179,6 +487,7 @@ public class MainActivity extends Activity {
                     isAnalyzing = false;
                     showAnalysis(a, freshRequests, cachedRequests);
                     alertIfNewTradeSignal(a);
+                    maybeSendSignalToServer(a);
                     scheduleNext(MONITOR_INTERVAL_MS);
                 });
 
