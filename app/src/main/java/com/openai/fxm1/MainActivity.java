@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
 
-    private Spinner symbolSpinner, signalModeSpinner;
+    private Spinner symbolSpinner, entryTimeframeSpinner, signalModeSpinner;
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, levelsText, contextText;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
@@ -35,11 +35,12 @@ public class MainActivity extends Activity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
 
-    private static final long MONITOR_INTERVAL_MS = 20000L;
     private static final long CACHE_M1_MS = 18000L;
     private static final long CACHE_M5_MS = 2 * 60 * 1000L;
     private static final long CACHE_M15_MS = 7 * 60 * 1000L;
     private static final long CACHE_H1_MS = 30 * 60 * 1000L;
+    private static final long CACHE_H4_MS = 90 * 60 * 1000L;
+    private static final long CACHE_D1_MS = 6 * 60 * 60 * 1000L;
 
     private boolean monitoring = false;
     private boolean isAnalyzing = false;
@@ -71,7 +72,7 @@ public class MainActivity extends Activity {
             if (!isAnalyzing) {
                 runAnalysis();
             } else {
-                scheduleNext(MONITOR_INTERVAL_MS);
+                scheduleNext(selectedMonitorIntervalMs());
             }
         }
     };
@@ -82,6 +83,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         symbolSpinner = findViewById(R.id.symbolSpinner);
+        entryTimeframeSpinner = findViewById(R.id.entryTimeframeSpinner);
         signalModeSpinner = findViewById(R.id.signalModeSpinner);
         apiKeyInput = findViewById(R.id.apiKeyInput);
         statusText = findViewById(R.id.statusText);
@@ -112,6 +114,13 @@ public class MainActivity extends Activity {
         );
         symbolSpinner.setAdapter(adapter);
 
+        ArrayAdapter<String> timeframeAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"M1", "M5", "M15", "H1"}
+        );
+        entryTimeframeSpinner.setAdapter(timeframeAdapter);
+
         ArrayAdapter<String> modeAdapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_spinner_dropdown_item,
@@ -120,6 +129,7 @@ public class MainActivity extends Activity {
         signalModeSpinner.setAdapter(modeAdapter);
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
         apiKeyInput.setText(prefs.getString("apikey", ""));
         serverUrlInput.setText(prefs.getString("server_url", ""));
@@ -184,6 +194,22 @@ public class MainActivity extends Activity {
         });
 
 
+        entryTimeframeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt("entry_tf_pos", position).apply();
+                lastSentSignal.clear();
+                lastAlertSignal.clear();
+
+                if (monitoring) {
+                    statusText.setText("Таймфрейм изменён на " + selectedEntryTimeframe() + " · обновляю…");
+                    monitorHandler.removeCallbacks(monitorRunnable);
+                    scheduleNext(500L);
+                }
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
         signalModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -211,8 +237,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V5.1 разрешает только DEMO.");
-                    Toast.makeText(this, "V5.1 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V5.2 разрешает только DEMO.");
+                    Toast.makeText(this, "V5.2 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 addJournal("AUTO TRADING включён · DEMO");
@@ -361,6 +387,7 @@ public class MainActivity extends Activity {
                 payload.put("max_positions", Integer.parseInt(maxPositions));
                 payload.put("mode", "DEMO");
                 payload.put("signal_mode", selectedSignalMode());
+                payload.put("entry_timeframe", selectedEntryTimeframe());
                 payload.put("api_entry", a.entry);
                 payload.put("max_price_drift_pct", selectedMaxDriftPct());
                 payload.put("execution_price_source", "MT5");
@@ -482,7 +509,7 @@ public class MainActivity extends Activity {
 
         monitoring = true;
         analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
-        statusText.setText("Мониторинг запущен · обновление каждые 20 сек.");
+        statusText.setText("Мониторинг запущен · " + selectedEntryTimeframe() + " · обновление каждые " + selectedMonitorLabel() + ".");
 
         monitorHandler.removeCallbacks(monitorRunnable);
         runAnalysis();
@@ -514,24 +541,102 @@ public class MainActivity extends Activity {
 
         executor.execute(() -> {
             try {
-                FetchResult r1 = getSeries(symbol, "1min", key, 120, CACHE_M1_MS);
-                FetchResult r5 = getSeries(symbol, "5min", key, 100, CACHE_M5_MS);
-                FetchResult r15 = getSeries(symbol, "15min", key, 100, CACHE_M15_MS);
-                FetchResult r60 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
+                String entryTf = selectedEntryTimeframe();
 
-                Analysis a = analyze(
+                FetchResult fast;
+                FetchResult entry;
+                FetchResult higher1;
+                FetchResult higher2;
+
+                String fastLabel;
+                String entryLabel;
+                String higher1Label;
+                String higher2Label;
+
+                if ("M1".equals(entryTf)) {
+                    entry = getSeries(symbol, "1min", key, 120, CACHE_M1_MS);
+                    fast = entry;
+                    higher1 = getSeries(symbol, "5min", key, 100, CACHE_M5_MS);
+                    higher2 = getSeries(symbol, "15min", key, 100, CACHE_M15_MS);
+                    FetchResult h1 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
+
+                    Analysis a = analyzeAdaptive(
+                            symbol,
+                            entryTf,
+                            entry.data, "M1",
+                            higher1.data, "M5",
+                            higher2.data, "M15",
+                            h1.data, "H1"
+                    );
+
+                    int freshRequests =
+                            (entry.fromCache ? 0 : 1) +
+                            (higher1.fromCache ? 0 : 1) +
+                            (higher2.fromCache ? 0 : 1) +
+                            (h1.fromCache ? 0 : 1);
+                    int cachedRequests = 4 - freshRequests;
+
+                    final Analysis result = a;
+                    final int fresh = freshRequests;
+                    final int cached = cachedRequests;
+
+                    runOnUiThread(() -> {
+                        isAnalyzing = false;
+                        showAnalysis(result, fresh, cached);
+                        alertIfNewTradeSignal(result);
+                        maybeSendSignalToServer(result);
+                        scheduleNext(selectedMonitorIntervalMs());
+                    });
+                    return;
+
+                } else if ("M5".equals(entryTf)) {
+                    fast = getSeries(symbol, "1min", key, 120, CACHE_M1_MS);
+                    entry = getSeries(symbol, "5min", key, 120, CACHE_M5_MS);
+                    higher1 = getSeries(symbol, "15min", key, 100, CACHE_M15_MS);
+                    higher2 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
+
+                    fastLabel = "M1";
+                    entryLabel = "M5";
+                    higher1Label = "M15";
+                    higher2Label = "H1";
+
+                } else if ("M15".equals(entryTf)) {
+                    fast = getSeries(symbol, "5min", key, 120, CACHE_M5_MS);
+                    entry = getSeries(symbol, "15min", key, 120, CACHE_M15_MS);
+                    higher1 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
+                    higher2 = getSeries(symbol, "4h", key, 100, CACHE_H4_MS);
+
+                    fastLabel = "M5";
+                    entryLabel = "M15";
+                    higher1Label = "H1";
+                    higher2Label = "H4";
+
+                } else {
+                    fast = getSeries(symbol, "15min", key, 120, CACHE_M15_MS);
+                    entry = getSeries(symbol, "1h", key, 120, CACHE_H1_MS);
+                    higher1 = getSeries(symbol, "4h", key, 100, CACHE_H4_MS);
+                    higher2 = getSeries(symbol, "1day", key, 100, CACHE_D1_MS);
+
+                    fastLabel = "M15";
+                    entryLabel = "H1";
+                    higher1Label = "H4";
+                    higher2Label = "D1";
+                }
+
+                Analysis a = analyzeAdaptive(
                         symbol,
-                        r1.data,
-                        r5.data,
-                        r15.data,
-                        r60.data
+                        entryTf,
+                        fast.data, fastLabel,
+                        entry.data, entryLabel,
+                        higher1.data, higher1Label,
+                        higher2.data, higher2Label
                 );
 
                 int freshRequests =
-                        (r1.fromCache ? 0 : 1) +
-                        (r5.fromCache ? 0 : 1) +
-                        (r15.fromCache ? 0 : 1) +
-                        (r60.fromCache ? 0 : 1);
+                        (fast.fromCache ? 0 : 1) +
+                        (entry.fromCache ? 0 : 1) +
+                        (higher1.fromCache ? 0 : 1) +
+                        (higher2.fromCache ? 0 : 1);
 
                 int cachedRequests = 4 - freshRequests;
 
@@ -540,7 +645,7 @@ public class MainActivity extends Activity {
                     showAnalysis(a, freshRequests, cachedRequests);
                     alertIfNewTradeSignal(a);
                     maybeSendSignalToServer(a);
-                    scheduleNext(MONITOR_INTERVAL_MS);
+                    scheduleNext(selectedMonitorIntervalMs());
                 });
 
             } catch (RateLimitException e) {
@@ -567,10 +672,10 @@ public class MainActivity extends Activity {
                     signalText.setText("ERROR");
                     signalText.setTextColor(Color.DKGRAY);
                     statusText.setText("Ошибка: " + safeMessage(e));
-                    confidenceText.setText("Следующая попытка через 20 секунд.");
+                    confidenceText.setText("Следующая попытка через " + selectedMonitorLabel() + ".");
                     levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
 
-                    scheduleNext(MONITOR_INTERVAL_MS);
+                    scheduleNext(selectedMonitorIntervalMs());
                 });
             }
         });
@@ -708,6 +813,26 @@ public class MainActivity extends Activity {
     }
 
 
+    private String selectedEntryTimeframe() {
+        Object selected = entryTimeframeSpinner.getSelectedItem();
+        return selected == null ? "M5" : selected.toString();
+    }
+
+    private long selectedMonitorIntervalMs() {
+        String tf = selectedEntryTimeframe();
+        if ("M1".equals(tf)) return 20000L;
+        if ("M5".equals(tf)) return 60000L;
+        if ("M15".equals(tf)) return 180000L;
+        return 300000L; // H1
+    }
+
+    private String selectedMonitorLabel() {
+        long sec = selectedMonitorIntervalMs() / 1000L;
+        if (sec < 60) return sec + "с";
+        long min = sec / 60L;
+        return min + "м";
+    }
+
     private String selectedSignalMode() {
         Object selected = signalModeSpinner.getSelectedItem();
         return selected == null ? "NORMAL" : selected.toString();
@@ -777,22 +902,28 @@ public class MainActivity extends Activity {
         );
     }
 
-    private Analysis analyze(String symbol,
-                             List<Candle> m1,
-                             List<Candle> m5,
-                             List<Candle> m15,
-                             List<Candle> h1) {
+    private Analysis analyzeAdaptive(String symbol,
+                                     String entryTf,
+                                     List<Candle> fast,
+                                     String fastLabel,
+                                     List<Candle> entrySeries,
+                                     String entryLabel,
+                                     List<Candle> higher1,
+                                     String higher1Label,
+                                     List<Candle> higher2,
+                                     String higher2Label) {
 
-        int sH1 = trendScore(h1);
-        int sM15 = trendScore(m15);
-        int sM5 = trendScore(m5);
-        int sM1 = trendScore(m1);
-        int structure = structureScore(m1);
-        int breakout = breakoutScore(m1);
+        int sFast = trendScore(fast);
+        int sEntry = trendScore(entrySeries);
+        int sHigher1 = trendScore(higher1);
+        int sHigher2 = trendScore(higher2);
 
-        Candle last = m1.get(m1.size() - 1);
+        int structure = structureScore(entrySeries);
+        int breakout = breakoutScore(entrySeries);
+
+        Candle last = entrySeries.get(entrySeries.size() - 1);
         double entry = last.close;
-        double atr = atr(m1, 14);
+        double atr = atr(entrySeries, 14);
 
         if (atr <= 0) {
             atr = Math.max(
@@ -808,18 +939,18 @@ public class MainActivity extends Activity {
 
         if ("CONSERVATIVE".equals(mode)) {
             buySetup =
-                    sH1 >= 0 &&
-                    sM15 >= 0 &&
-                    sM5 > 0 &&
-                    sM1 > 0 &&
+                    sHigher2 >= 0 &&
+                    sHigher1 > 0 &&
+                    sEntry > 0 &&
+                    sFast >= 0 &&
                     structure >= 0 &&
                     breakout > 0;
 
             sellSetup =
-                    sH1 <= 0 &&
-                    sM15 <= 0 &&
-                    sM5 < 0 &&
-                    sM1 < 0 &&
+                    sHigher2 <= 0 &&
+                    sHigher1 < 0 &&
+                    sEntry < 0 &&
+                    sFast <= 0 &&
                     structure <= 0 &&
                     breakout < 0;
 
@@ -827,43 +958,43 @@ public class MainActivity extends Activity {
             int buyVotes = 0;
             int sellVotes = 0;
 
-            if (sH1 > 0) buyVotes++; else if (sH1 < 0) sellVotes++;
-            if (sM15 > 0) buyVotes++; else if (sM15 < 0) sellVotes++;
-            if (sM5 > 0) buyVotes++; else if (sM5 < 0) sellVotes++;
-            if (sM1 > 0) buyVotes++; else if (sM1 < 0) sellVotes++;
+            if (sHigher2 > 0) buyVotes++; else if (sHigher2 < 0) sellVotes++;
+            if (sHigher1 > 0) buyVotes++; else if (sHigher1 < 0) sellVotes++;
+            if (sEntry > 0) buyVotes++; else if (sEntry < 0) sellVotes++;
+            if (sFast > 0) buyVotes++; else if (sFast < 0) sellVotes++;
             if (structure > 0) buyVotes++; else if (structure < 0) sellVotes++;
 
             buySetup =
-                    sM1 > 0 &&
-                    sM5 >= 0 &&
+                    sEntry > 0 &&
+                    sHigher1 >= 0 &&
                     breakout >= 0 &&
                     buyVotes >= 3 &&
                     sellVotes <= 1;
 
             sellSetup =
-                    sM1 < 0 &&
-                    sM5 <= 0 &&
+                    sEntry < 0 &&
+                    sHigher1 <= 0 &&
                     breakout <= 0 &&
                     sellVotes >= 3 &&
                     buyVotes <= 1;
 
         } else {
-            // NORMAL: старшие ТФ и M1 должны смотреть в одну сторону.
-            // Подтверждённый пробой желателен, но не обязателен.
-            // Противоположный пробой блокирует вход.
+            // NORMAL: таймфрейм входа + два старших ТФ должны смотреть
+            // в одну сторону. Младший ТФ не должен идти явно против.
+            // Пробой желателен, но отсутствие пробоя не блокирует вход.
             buySetup =
-                    sH1 >= 0 &&
-                    sM15 > 0 &&
-                    sM5 > 0 &&
-                    sM1 > 0 &&
+                    sHigher2 >= 0 &&
+                    sHigher1 > 0 &&
+                    sEntry > 0 &&
+                    sFast >= 0 &&
                     structure >= 0 &&
                     breakout >= 0;
 
             sellSetup =
-                    sH1 <= 0 &&
-                    sM15 < 0 &&
-                    sM5 < 0 &&
-                    sM1 < 0 &&
+                    sHigher2 <= 0 &&
+                    sHigher1 < 0 &&
+                    sEntry < 0 &&
+                    sFast <= 0 &&
                     structure <= 0 &&
                     breakout <= 0;
         }
@@ -874,12 +1005,12 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
-        int quality = setupQuality(
+        int quality = setupQualityAdaptive(
                 signal,
-                sH1,
-                sM15,
-                sM5,
-                sM1,
+                sHigher2,
+                sHigher1,
+                sEntry,
+                sFast,
                 structure,
                 breakout
         );
@@ -906,11 +1037,11 @@ public class MainActivity extends Activity {
         String reason;
 
         if (breakout > 0) {
-            reason = "M1: подтверждён пробой/импульс вверх";
+            reason = entryLabel + ": подтверждён пробой/импульс вверх";
         } else if (breakout < 0) {
-            reason = "M1: подтверждён пробой/импульс вниз";
+            reason = entryLabel + ": подтверждён пробой/импульс вниз";
         } else {
-            reason = "M1: подтверждённого пробоя нет";
+            reason = entryLabel + ": подтверждённого пробоя нет";
         }
 
         String filter;
@@ -924,15 +1055,15 @@ public class MainActivity extends Activity {
         }
 
         String context =
-                "Режим: " + mode +
-                "\nH1 " + arrow(sH1) +
-                "   M15 " + arrow(sM15) +
-                "   M5 " + arrow(sM5) +
-                "   M1 " + arrow(sM1) +
-                "\nСтруктура M1: " + arrow(structure) +
+                "Вход: " + entryTf + " · Режим: " + mode +
+                "\n" + higher2Label + " " + arrow(sHigher2) +
+                "   " + higher1Label + " " + arrow(sHigher1) +
+                "   " + entryLabel + " " + arrow(sEntry) +
+                "   " + fastLabel + " " + arrow(sFast) +
+                "\nСтруктура " + entryLabel + ": " + arrow(structure) +
                 "\n" + reason +
                 "\n" + filter +
-                "\nATR M1: " + fmt(atr);
+                "\nATR " + entryLabel + ": " + fmt(atr);
 
         return new Analysis(
                 symbol,
@@ -946,16 +1077,16 @@ public class MainActivity extends Activity {
         );
     }
 
-    private int setupQuality(String signal,
-                             int h1,
-                             int m15,
-                             int m5,
-                             int m1,
-                             int structure,
-                             int breakout) {
+    private int setupQualityAdaptive(String signal,
+                                     int higher2,
+                                     int higher1,
+                                     int entry,
+                                     int fast,
+                                     int structure,
+                                     int breakout) {
 
         if ("WAIT".equals(signal)) {
-            int alignment = Math.abs(h1 + m15 + m5 + m1);
+            int alignment = Math.abs(higher2 + higher1 + entry + fast);
             int q = 25 + alignment * 7;
 
             if (structure != 0) q += 5;
@@ -967,10 +1098,10 @@ public class MainActivity extends Activity {
         int direction = "BUY".equals(signal) ? 1 : -1;
         int q = 60;
 
-        if (h1 == direction) q += 8;
-        if (m15 == direction) q += 8;
-        if (m5 == direction) q += 6;
-        if (m1 == direction) q += 6;
+        if (higher2 == direction) q += 8;
+        if (higher1 == direction) q += 8;
+        if (entry == direction) q += 8;
+        if (fast == direction) q += 4;
         if (structure == direction) q += 5;
 
         if (breakout == direction * 2) {
@@ -1122,10 +1253,10 @@ public class MainActivity extends Activity {
 
         statusText.setText(
                 a.symbol +
-                " · AUTO 20с · API " +
-                freshRequests +
-                " · кэш " +
-                cachedRequests
+                " · " + selectedEntryTimeframe() +
+                " · AUTO " + selectedMonitorLabel() +
+                " · API " + freshRequests +
+                " · кэш " + cachedRequests
         );
 
         signalText.setText(a.signal);
