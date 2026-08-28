@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
-    private Button jarvisTalkButton, jarvisSendButton, backgroundModeButton;
+    private Button jarvisTalkButton, jarvisSendButton, jarvisMuteButton, backgroundModeButton;
     private EditText serverUrlInput, jarvisInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
     private TextView jarvisStatusText, jarvisChatText, backgroundStatusText;
@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
     private boolean jarvisTtsReady = false;
     private boolean jarvisAutoListenAfterSpeech = false;
     private boolean jarvisStartupDone = false;
+    private boolean jarvisMuted = false;
     private String pendingJarvisSpeech = null;
     private final String jarvisSessionId = UUID.randomUUID().toString();
 
@@ -158,6 +159,7 @@ public class MainActivity extends Activity {
         closeAllButton = findViewById(R.id.closeAllButton);
         jarvisTalkButton = findViewById(R.id.jarvisTalkButton);
         jarvisSendButton = findViewById(R.id.jarvisSendButton);
+        jarvisMuteButton = findViewById(R.id.jarvisMuteButton);
         jarvisInput = findViewById(R.id.jarvisInput);
         jarvisStatusText = findViewById(R.id.jarvisStatusText);
         jarvisChatText = findViewById(R.id.jarvisChatText);
@@ -191,6 +193,7 @@ public class MainActivity extends Activity {
         signalModeSpinner.setAdapter(modeAdapter);
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        jarvisMuted = prefs.getBoolean("jarvis_muted", false);
         symbolSpinner.setSelection(prefs.getInt("symbol_pos", 0));
         entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
@@ -221,7 +224,7 @@ public class MainActivity extends Activity {
         saveKeyButton.setOnClickListener(v -> {
             String key = apiKeyInput.getText().toString().trim();
             prefs.edit().putString("apikey", key).apply();
-            if (monitoring) {
+            if (getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false)) {
                 sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
             }
             Toast.makeText(this, "API key сохранён", Toast.LENGTH_SHORT).show();
@@ -236,10 +239,11 @@ public class MainActivity extends Activity {
         });
 
         backgroundModeButton.setOnClickListener(v -> {
-            if (monitoring) {
-                stopMonitoring();
+            SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+            if (p.getBoolean("bg_running", false)) {
+                stopBackgroundMode();
             } else {
-                startMonitoring();
+                startBackgroundMode();
             }
         });
 
@@ -269,7 +273,7 @@ public class MainActivity extends Activity {
                 lastSentSignal.clear();
                 lastAlertSignal.clear();
 
-                if (monitoring) {
+                if (getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false)) {
                     sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
                 }
             }
@@ -297,7 +301,7 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 prefs.edit().putInt("signal_mode_pos", position).apply();
                 lastSentSignal.clear();
-                if (monitoring) {
+                if (getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false)) {
                     sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
                 }
             }
@@ -353,6 +357,37 @@ public class MainActivity extends Activity {
         initJarvisVoice();
 
         jarvisTalkButton.setOnClickListener(v -> startJarvisListening());
+
+        jarvisMuteButton.setText(jarvisMuted ? "🔇 MUTED" : "🔊 ГОЛОС");
+        jarvisMuteButton.setOnClickListener(v -> {
+            jarvisMuted = !jarvisMuted;
+            getSharedPreferences("fxm1", MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("jarvis_muted", jarvisMuted)
+                    .apply();
+
+            if (jarvisMuted) {
+                if (jarvisTts != null) {
+                    try { jarvisTts.stop(); } catch (Exception ignored) { }
+                }
+                if (jarvisPlayer != null) {
+                    try {
+                        if (jarvisPlayer.isPlaying()) jarvisPlayer.stop();
+                    } catch (Exception ignored) { }
+                }
+                jarvisAutoListenAfterSpeech = false;
+                jarvisMuteButton.setText("🔇 MUTED");
+                jarvisStatusText.setText("JARVIS: голос выключен. Текстовый режим активен.");
+            } else {
+                jarvisMuteButton.setText("🔊 ГОЛОС");
+                jarvisStatusText.setText(
+                        jarvisTtsReady
+                                ? "JARVIS: голос включён."
+                                : "JARVIS: голос включён, но системный TTS ещё не готов."
+                );
+                speakJarvisLocal("Голосовой режим включён.");
+            }
+        });
         jarvisSendButton.setOnClickListener(v -> {
             String message = jarvisInput.getText().toString().trim();
             if (!message.isEmpty()) {
@@ -481,12 +516,8 @@ public class MainActivity extends Activity {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         String savedKey = p.getString("apikey", "").trim();
 
-        // Автономный запуск фона: только если API key уже сохранён.
-        if (!savedKey.isEmpty() && !p.getBoolean("bg_running", false)) {
-            startMonitoring();
-        }
-
-        boolean bg = p.getBoolean("bg_running", false) || monitoring;
+        // Фоновый режим теперь независим и никогда не включается автоматически.
+        boolean bg = p.getBoolean("bg_running", false);
         String symbol = String.valueOf(symbolSpinner.getSelectedItem());
         String tf = selectedEntryTimeframe();
         String signal = p.getString("bg_signal", signalText.getText().toString());
@@ -782,6 +813,11 @@ public class MainActivity extends Activity {
     }
 
     private void speakJarvisLocal(String text) {
+        if (jarvisMuted) {
+            jarvisStatusText.setText("JARVIS: MUTED · ответ показан текстом.");
+            return;
+        }
+
         if (text == null || text.trim().isEmpty()) return;
 
         String spoken = text.replaceAll("\\[[^\\]]*\\]", "").trim();
@@ -1280,38 +1316,82 @@ public class MainActivity extends Activity {
                 .putInt("symbol_pos", symbolSpinner.getSelectedItemPosition())
                 .putInt("entry_tf_pos", entryTimeframeSpinner.getSelectedItemPosition())
                 .putInt("signal_mode_pos", signalModeSpinner.getSelectedItemPosition())
+                .putBoolean("ui_monitoring", true)
                 .apply();
-
-        requestNotificationPermissionIfNeeded();
 
         monitoring = true;
         analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
-        if (backgroundModeButton != null) backgroundModeButton.setText("■  ОСТАНОВИТЬ ФОН");
-        if (backgroundStatusText != null) {
-            backgroundStatusText.setText("●  ФОН: АКТИВЕН · можно свернуть приложение");
-            backgroundStatusText.setTextColor(C_GREEN);
-        }
         statusText.setText(
-                "Мониторинг запущен · " +
+                "Мониторинг включён · " +
                 selectedEntryTimeframe() +
-                " · можно свернуть приложение."
+                " · работает в открытом приложении."
         );
 
-        Intent intent = new Intent(this, MonitoringService.class);
-        intent.setAction(MonitoringService.ACTION_START);
-        startForegroundService(intent);
+        monitorHandler.removeCallbacks(monitorRunnable);
+
+        // Если фон уже активен, данные берём из сервиса и не удваиваем Twelve Data запросы.
+        if (!prefs.getBoolean("bg_running", false)) {
+            monitorHandler.post(monitorRunnable);
+        }
     }
 
     private void stopMonitoring() {
         monitoring = false;
-        sendBackgroundCommand(MonitoringService.ACTION_STOP);
+        monitorHandler.removeCallbacks(monitorRunnable);
+        getSharedPreferences("fxm1", MODE_PRIVATE)
+                .edit()
+                .putBoolean("ui_monitoring", false)
+                .apply();
+
         analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-        if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-        if (backgroundStatusText != null) {
-            backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
-            backgroundStatusText.setTextColor(C_MUTED);
+        statusText.setText("Мониторинг в приложении остановлен.");
+    }
+
+    private void startBackgroundMode() {
+        String key = apiKeyInput.getText().toString().trim();
+        if (key.isEmpty()) {
+            Toast.makeText(this, "Сначала сохраните Twelve Data API key", Toast.LENGTH_LONG).show();
+            return;
         }
-        statusText.setText("Мониторинг остановлен.");
+
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        p.edit()
+                .putString("apikey", key)
+                .putInt("symbol_pos", symbolSpinner.getSelectedItemPosition())
+                .putInt("entry_tf_pos", entryTimeframeSpinner.getSelectedItemPosition())
+                .putInt("signal_mode_pos", signalModeSpinner.getSelectedItemPosition())
+                .apply();
+
+        requestNotificationPermissionIfNeeded();
+
+        Intent intent = new Intent(this, MonitoringService.class);
+        intent.setAction(MonitoringService.ACTION_START);
+        startForegroundService(intent);
+
+        backgroundModeButton.setText("■  ОСТАНОВИТЬ ФОН");
+        backgroundStatusText.setText("●  ФОН: ЗАПУСКАЕТСЯ · можно свернуть приложение");
+        backgroundStatusText.setTextColor(C_GREEN);
+
+        // Фоновый сервис становится источником данных, чтобы не удваивать API-кредиты.
+        monitorHandler.removeCallbacks(monitorRunnable);
+    }
+
+    private void stopBackgroundMode() {
+        sendBackgroundCommand(MonitoringService.ACTION_STOP);
+        getSharedPreferences("fxm1", MODE_PRIVATE)
+                .edit()
+                .putBoolean("bg_running", false)
+                .apply();
+
+        backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+        backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
+        backgroundStatusText.setTextColor(C_MUTED);
+
+        // Обычный мониторинг остаётся включённым независимо.
+        if (monitoring) {
+            monitorHandler.removeCallbacks(monitorRunnable);
+            monitorHandler.post(monitorRunnable);
+        }
     }
 
     private void sendBackgroundCommand(String action) {
@@ -1337,26 +1417,32 @@ public class MainActivity extends Activity {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         boolean running = p.getBoolean("bg_running", false);
 
-        if (running != monitoring) {
-            monitoring = running;
-            analyzeButton.setText(
-                    running
-                            ? "ОСТАНОВИТЬ МОНИТОРИНГ"
-                            : "ЗАПУСТИТЬ МОНИТОРИНГ"
+        analyzeButton.setText(
+                monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ"
+        );
+
+        if (backgroundModeButton != null) {
+            backgroundModeButton.setText(
+                    running ? "■  ОСТАНОВИТЬ ФОН" : "▶  ВКЛЮЧИТЬ ФОН"
             );
-            if (backgroundModeButton != null) {
-                backgroundModeButton.setText(
-                        running ? "■  ОСТАНОВИТЬ ФОН" : "▶  ВКЛЮЧИТЬ ФОН"
-                );
-            }
-            if (backgroundStatusText != null) {
-                backgroundStatusText.setText(
-                        running
-                                ? "●  ФОН: АКТИВЕН · можно свернуть приложение"
-                                : "○  ФОН: ВЫКЛЮЧЕН"
-                );
-                backgroundStatusText.setTextColor(running ? C_GREEN : C_MUTED);
-            }
+        }
+        if (backgroundStatusText != null) {
+            backgroundStatusText.setText(
+                    running
+                            ? "●  ФОН: АКТИВЕН · можно свернуть приложение"
+                            : "○  ФОН: ВЫКЛЮЧЕН"
+            );
+            backgroundStatusText.setTextColor(running ? C_GREEN : C_MUTED);
+        }
+
+        if (p.getBoolean("stop_all_requested", false)) {
+            p.edit()
+                    .putBoolean("stop_all_requested", false)
+                    .putBoolean("ui_monitoring", false)
+                    .apply();
+            monitoring = false;
+            monitorHandler.removeCallbacks(monitorRunnable);
+            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
         }
 
         if (!running) return;

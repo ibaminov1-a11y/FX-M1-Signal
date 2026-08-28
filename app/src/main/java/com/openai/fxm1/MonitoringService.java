@@ -22,6 +22,7 @@ public class MonitoringService extends Service {
     public static final String ACTION_STOP = "com.openai.fxm1.action.STOP_MONITORING";
     public static final String ACTION_EMERGENCY = "com.openai.fxm1.action.EMERGENCY_STOP";
     public static final String ACTION_REFRESH = "com.openai.fxm1.action.REFRESH_MONITORING";
+    public static final String ACTION_STOP_ALL = "com.openai.fxm1.action.STOP_ALL";
 
     private static final int NOTIFICATION_ID = 4101;
     private static final int SIGNAL_NOTIFICATION_ID = 4102;
@@ -75,6 +76,15 @@ public class MonitoringService extends Service {
 
         if (ACTION_EMERGENCY.equals(action)) {
             emergencyStop();
+            return START_NOT_STICKY;
+        }
+
+        if (ACTION_STOP_ALL.equals(action)) {
+            prefs().edit()
+                    .putBoolean("stop_all_requested", true)
+                    .putBoolean("auto_trading", false)
+                    .apply();
+            stopMonitoring(false);
             return START_NOT_STICKY;
         }
 
@@ -498,33 +508,36 @@ public class MonitoringService extends Service {
             status = signal + " · качество " + quality + "/100 · " + text;
         }
 
+        Notification.Action jarvisAction = new Notification.Action.Builder(
+                android.R.drawable.ic_btn_speak_now,
+                "JARVIS",
+                openJarvisIntent()
+        ).build();
+
+        Notification.Action bgOffAction = new Notification.Action.Builder(
+                android.R.drawable.ic_media_pause,
+                "ФОН OFF",
+                serviceActionIntent(ACTION_STOP, 101)
+        ).build();
+
+        Notification.Action stopAllAction = new Notification.Action.Builder(
+                android.R.drawable.ic_lock_power_off,
+                "STOP ALL",
+                serviceActionIntent(ACTION_STOP_ALL, 102)
+        ).build();
+
         return new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(android.R.drawable.stat_notify_sync)
                 .setContentTitle("FX M1 Bot · работает в фоне")
                 .setContentText(title + " · " + status)
-                .setStyle(new Notification.BigTextStyle().bigText(
-                        title + "\n" + status +
-                        "\nНажмите уведомление, чтобы открыть приложение."
-                ))
+                .setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1, 2))
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentIntent(openAppIntent())
-                .addAction(
-                        android.R.drawable.ic_btn_speak_now,
-                        "JARVIS",
-                        openJarvisIntent()
-                )
-                .addAction(
-                        android.R.drawable.ic_media_pause,
-                        "СТОП",
-                        serviceActionIntent(ACTION_STOP, 101)
-                )
-                .addAction(
-                        android.R.drawable.ic_lock_power_off,
-                        "EMERGENCY",
-                        serviceActionIntent(ACTION_EMERGENCY, 102)
-                )
+                .addAction(jarvisAction)
+                .addAction(bgOffAction)
+                .addAction(stopAllAction)
                 .build();
     }
 
