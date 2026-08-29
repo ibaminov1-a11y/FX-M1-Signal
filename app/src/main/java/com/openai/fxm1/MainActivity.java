@@ -10,9 +10,10 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.Color;
-import android.media.ToneGenerator;
 import android.os.Handler;
 import android.os.Looper;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.widget.*;
 import android.view.View;
 
