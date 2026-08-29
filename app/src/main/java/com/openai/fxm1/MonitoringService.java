@@ -100,7 +100,7 @@ public class MonitoringService extends Service {
             prefs().edit()
                     .putBoolean("bg_paused", false)
                     .putBoolean("trading_paused", false)
-                    .putString("bg_status", "AUTO · новые входы разрешены")
+                    .putString("bg_status", "PLAY · новые входы разрешены")
                     .apply();
             handler.removeCallbacks(tick);
             handler.post(tick);
@@ -147,7 +147,7 @@ public class MonitoringService extends Service {
                     prefs().edit().putLong("emergency_confirm_until_ms", 0L).apply();
                     updateNotification(
                             currentSymbol() + " · " + currentTf() + " · " + currentMode(),
-                            paused ? "PAUSE · новые входы запрещены" : "AUTO · мониторинг активен",
+                            paused ? "PAUSE · новые входы запрещены" : "MONITORING · анализ активен",
                             prefs().getString("state_signal", "WAIT"),
                             prefs().getInt("state_quality", -1)
                     );
@@ -201,6 +201,7 @@ public class MonitoringService extends Service {
         running = true;
         paused = false;
         p.edit().putBoolean("bg_running", true)
+                .putLong("monitor_stopped_ms", 0L)
                 .putBoolean("bg_paused", false)
                 .putBoolean("trading_paused", false)
                 .putString("bg_status", "Фоновый мониторинг работает")
@@ -240,6 +241,7 @@ public class MonitoringService extends Service {
         running = false;
         handler.removeCallbacks(tick);
         prefs().edit()
+                .putLong("monitor_stopped_ms", System.currentTimeMillis())
                 .putBoolean("bg_running", false)
                 .putBoolean("bg_paused", false)
                 .putBoolean("trading_paused", false)
@@ -659,7 +661,7 @@ public class MonitoringService extends Service {
 
         return new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(android.R.drawable.stat_notify_sync)
-                .setContentTitle(paused ? "FX M1 Bot · PAUSE" : "FX M1 Bot · AUTO")
+                .setContentTitle(paused ? "FX M1 Bot · PAUSE" : "FX M1 Bot · MONITORING")
                 .setContentText(title + " · " + status)
                 .setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1))
                 .setOngoing(true)

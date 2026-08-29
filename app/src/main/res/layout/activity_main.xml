@@ -55,7 +55,7 @@
                 android:paddingTop="4dp"
                 android:paddingRight="9dp"
                 android:paddingBottom="4dp"
-                android:text="V6.2"
+                android:text="V6.3"
                 android:textColor="#B887FF"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -197,51 +197,6 @@
             android:text="●  Мониторинг остановлен."
             android:textColor="#AAA5C1"
             android:textSize="13sp" />
-
-        <!-- EXPLICIT BACKGROUND MODE -->
-        <LinearLayout
-            android:id="@+id/backgroundCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical"
-            android:padding="14dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="ФОНОВЫЙ РЕЖИМ"
-                android:textColor="#A66BFF"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/backgroundStatusText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
-                android:text="○  ФОН: ВЫКЛЮЧЕН"
-                android:textColor="#AAA5C1"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/backgroundModeButton"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="10dp"
-                android:text="▶  ВКЛЮЧИТЬ ФОН"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Когда фон активен, анализ продолжается после сворачивания. PAUSE запрещает новые входы, но сопровождение остаётся активным. EMERGENCY STOP срабатывает двойным нажатием."
-                android:textColor="#8F89A5"
-                android:textSize="11sp" />
-        </LinearLayout>
 
         <!-- SIGNAL CARD -->
         <LinearLayout
@@ -526,7 +481,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:gravity="center"
-            android:text="V6.2 · TRADING ENGINE · BACKGROUND · PAUSE/PLAY · DOUBLE-TAP EMERGENCY"
+            android:text="V6.3 · AUTO BACKGROUND · MT5 BRIDGE · PAUSE/PLAY · DOUBLE-TAP EMERGENCY"
             android:textColor="#6F6983"
             android:textSize="11sp" />
 

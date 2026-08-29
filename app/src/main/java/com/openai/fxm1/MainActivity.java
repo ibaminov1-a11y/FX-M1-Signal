@@ -33,13 +33,11 @@ public class MainActivity extends Activity {
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
-    private Button backgroundModeButton;
     private EditText serverUrlInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
-    private TextView backgroundStatusText;
     private Switch autoTradingSwitch;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
-    private View topCard, tfCard, modeCard, signalCard, backgroundCard, tradingCard, metricsCard, riskCard, journalCard;
+    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard;
 
 
     private static final int C_BG = Color.rgb(7, 8, 22);
@@ -139,14 +137,11 @@ public class MainActivity extends Activity {
         maxDriftSpinner = findViewById(R.id.maxDriftSpinner);
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
-        backgroundModeButton = findViewById(R.id.backgroundModeButton);
-        backgroundStatusText = findViewById(R.id.backgroundStatusText);
 
         topCard = findViewById(R.id.topCard);
         tfCard = findViewById(R.id.tfCard);
         modeCard = findViewById(R.id.modeCard);
         signalCard = findViewById(R.id.signalCard);
-        backgroundCard = findViewById(R.id.backgroundCard);
         tradingCard = findViewById(R.id.tradingCard);
         metricsCard = findViewById(R.id.metricsCard);
         riskCard = findViewById(R.id.riskCard);
@@ -168,6 +163,7 @@ public class MainActivity extends Activity {
         signalModeSpinner.setAdapter(modeAdapter);
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        monitoring = prefs.getBoolean("bg_running", false);
         symbolSpinner.setSelection(prefs.getInt("symbol_pos", 0));
         entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
@@ -193,7 +189,7 @@ public class MainActivity extends Activity {
         maxDriftSpinner.setAdapter(driftAdapter);
         maxDriftSpinner.setSelection(prefs.getInt("maxdrift_pos", 1));
 
-        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+        analyzeButton.setText(monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
         setTradingControlsOffline();
 
         saveKeyButton.setOnClickListener(v -> {
@@ -225,15 +221,6 @@ public class MainActivity extends Activity {
                 stopMonitoring();
             } else {
                 startMonitoring();
-            }
-        });
-
-        backgroundModeButton.setOnClickListener(v -> {
-            SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
-            if (p.getBoolean("bg_running", false)) {
-                stopBackgroundMode();
-            } else {
-                startBackgroundMode();
             }
         });
 
@@ -316,8 +303,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V6.2 разрешает только DEMO.");
-                    Toast.makeText(this, "V6.2 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V6.3 разрешает только DEMO.");
+                    Toast.makeText(this, "V6.3 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -365,7 +352,6 @@ public class MainActivity extends Activity {
         styleCard(tfCard, C_CARD_2);
         styleCard(modeCard, C_CARD_2);
         styleCard(signalCard, C_CARD);
-        styleCard(backgroundCard, C_CARD_2);
         styleCard(tradingCard, C_CARD);
         styleCard(metricsCard, C_CARD);
         styleCard(riskCard, C_CARD);
@@ -373,7 +359,6 @@ public class MainActivity extends Activity {
 
         stylePrimaryButton(saveKeyButton);
         stylePrimaryButton(analyzeButton);
-        stylePrimaryButton(backgroundModeButton);
         styleOutlineButton(serverCheckButton, C_PURPLE);
         styleOutlineButton(closeAllButton, C_PURPLE);
         styleOutlineButton(emergencyStopButton, C_RED);
@@ -641,11 +626,6 @@ public class MainActivity extends Activity {
         monitoring = false;
         monitorHandler.removeCallbacks(monitorRunnable);
         analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-        if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-        if (backgroundStatusText != null) {
-            backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
-            backgroundStatusText.setTextColor(C_RED);
-        }
         addJournal("EMERGENCY STOP · CLOSE ALL запрошен");
         Toast.makeText(this, "EMERGENCY STOP: закрытие позиций и остановка AUTO", Toast.LENGTH_LONG).show();
     }
@@ -744,11 +724,7 @@ public class MainActivity extends Activity {
         String key = apiKeyInput.getText().toString().trim();
 
         if (key.isEmpty()) {
-            Toast.makeText(
-                    this,
-                    "Сначала вставьте Twelve Data API key",
-                    Toast.LENGTH_LONG
-            ).show();
+            Toast.makeText(this, "Сначала вставьте Twelve Data API key", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -759,65 +735,21 @@ public class MainActivity extends Activity {
                 .putInt("entry_tf_pos", entryTimeframeSpinner.getSelectedItemPosition())
                 .putInt("signal_mode_pos", signalModeSpinner.getSelectedItemPosition())
                 .putBoolean("ui_monitoring", true)
+                .putLong("monitor_stopped_ms", 0L)
                 .apply();
 
-        monitoring = true;
-        analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
-        statusText.setText(
-                "Мониторинг включён · " +
-                selectedEntryTimeframe() +
-                " · работает в открытом приложении."
-        );
-
-        monitorHandler.removeCallbacks(monitorRunnable);
-
-        // Если фон уже активен, данные берём из сервиса и не удваиваем Twelve Data запросы.
-        if (!prefs.getBoolean("bg_running", false)) {
-            monitorHandler.post(monitorRunnable);
-        }
-    }
-
-    private void stopMonitoring() {
-        monitoring = false;
-        monitorHandler.removeCallbacks(monitorRunnable);
-        getSharedPreferences("fxm1", MODE_PRIVATE)
-                .edit()
-                .putBoolean("ui_monitoring", false)
-                .apply();
-
-        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-        statusText.setText("Мониторинг в приложении остановлен.");
-    }
-
-    private void startBackgroundMode() {
-        String key = apiKeyInput.getText().toString().trim();
-        if (key.isEmpty()) {
-            Toast.makeText(this, "Сначала сохраните Twelve Data API key", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
-        p.edit()
-                .putString("apikey", key)
-                .putInt("symbol_pos", symbolSpinner.getSelectedItemPosition())
-                .putInt("entry_tf_pos", entryTimeframeSpinner.getSelectedItemPosition())
-                .putInt("signal_mode_pos", signalModeSpinner.getSelectedItemPosition())
-                .apply();
-
-        // Android 13+: сначала получаем право показывать постоянное уведомление.
+        // Один мониторинг = один foreground service. Он продолжает работу после сворачивания APK.
         if (Build.VERSION.SDK_INT >= 33 &&
                 checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestNotificationPermissionIfNeeded();
-            backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-            backgroundStatusText.setText("○  ФОН: НУЖНО РАЗРЕШЕНИЕ НА УВЕДОМЛЕНИЯ");
-            backgroundStatusText.setTextColor(C_YELLOW);
+            statusText.setText("Разрешите уведомления — они нужны Android для постоянного мониторинга.");
             return;
         }
 
-        startBackgroundServiceNow();
+        startUnifiedMonitoringService();
     }
 
-    private void startBackgroundServiceNow() {
+    private void startUnifiedMonitoringService() {
         Intent intent = new Intent(this, MonitoringService.class);
         intent.setAction(MonitoringService.ACTION_START);
 
@@ -828,54 +760,50 @@ public class MainActivity extends Activity {
                 startService(intent);
             }
         } catch (Exception e) {
-            backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-            backgroundStatusText.setText("○  ФОН: ОШИБКА ЗАПУСКА");
-            backgroundStatusText.setTextColor(C_RED);
-            Toast.makeText(this, "Не удалось запустить фон: " + safeMessage(e), Toast.LENGTH_LONG).show();
+            monitoring = false;
+            getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("ui_monitoring", false).apply();
+            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+            statusText.setText("Ошибка запуска мониторинга: " + safeMessage(e));
+            Toast.makeText(this, "Не удалось запустить мониторинг: " + safeMessage(e), Toast.LENGTH_LONG).show();
             return;
         }
 
-        backgroundModeButton.setText("■  ОСТАНОВИТЬ ФОН");
-        backgroundStatusText.setText("●  ФОН: ЗАПУСКАЕТСЯ · можно свернуть приложение");
-        backgroundStatusText.setTextColor(C_GREEN);
+        monitoring = true;
+        analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
+        statusText.setText("Мониторинг запущен · можно свернуть приложение.");
         monitorHandler.removeCallbacks(monitorRunnable);
+    }
+
+    private void stopMonitoring() {
+        monitoring = false;
+        monitorHandler.removeCallbacks(monitorRunnable);
+        long now = System.currentTimeMillis();
+        getSharedPreferences("fxm1", MODE_PRIVATE)
+                .edit()
+                .putBoolean("ui_monitoring", false)
+                .putLong("monitor_stopped_ms", now)
+                .apply();
+
+        sendBackgroundCommand(MonitoringService.ACTION_STOP);
+        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+        statusText.setText("Мониторинг остановлен.");
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         if (requestCode != 5001) return;
 
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startBackgroundServiceNow();
+            startUnifiedMonitoringService();
         } else {
-            backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-            backgroundStatusText.setText("○  ФОН: УВЕДОМЛЕНИЯ ЗАПРЕЩЕНЫ");
-            backgroundStatusText.setTextColor(C_RED);
-            Toast.makeText(
-                    this,
-                    "Разрешите уведомления для FX M1 Bot — без них постоянный фон не запускается.",
-                    Toast.LENGTH_LONG
-            ).show();
-        }
-    }
-
-    private void stopBackgroundMode() {
-        sendBackgroundCommand(MonitoringService.ACTION_STOP);
-        getSharedPreferences("fxm1", MODE_PRIVATE)
-                .edit()
-                .putBoolean("bg_running", false)
-                .apply();
-
-        backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-        backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
-        backgroundStatusText.setTextColor(C_MUTED);
-
-        // Обычный мониторинг остаётся включённым независимо.
-        if (monitoring) {
-            monitorHandler.removeCallbacks(monitorRunnable);
-            monitorHandler.post(monitorRunnable);
+            monitoring = false;
+            getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("ui_monitoring", false).apply();
+            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+            statusText.setText("Мониторинг не запущен: уведомления запрещены.");
+            Toast.makeText(this,
+                    "Разрешите уведомления для FX M1 Bot — Android требует их для постоянного мониторинга.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
@@ -901,26 +829,9 @@ public class MainActivity extends Activity {
     private void syncUiFromBackgroundService() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         boolean bgRunning = p.getBoolean("bg_running", false);
-        boolean bgPaused = p.getBoolean("bg_paused", false);
+        monitoring = bgRunning;
 
-        analyzeButton.setText(
-                monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ"
-        );
-        if (backgroundModeButton != null) {
-            backgroundModeButton.setText(bgRunning ? "■  ОСТАНОВИТЬ ФОН" : "▶  ВКЛЮЧИТЬ ФОН");
-        }
-        if (backgroundStatusText != null) {
-            if (!bgRunning) {
-                backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
-                backgroundStatusText.setTextColor(C_MUTED);
-            } else if (bgPaused) {
-                backgroundStatusText.setText("●  ФОН: PAUSE · НОВЫЕ ВХОДЫ ЗАПРЕЩЕНЫ · СОПРОВОЖДЕНИЕ АКТИВНО");
-                backgroundStatusText.setTextColor(C_YELLOW);
-            } else {
-                backgroundStatusText.setText("●  ФОН: АКТИВЕН · можно свернуть приложение");
-                backgroundStatusText.setTextColor(C_GREEN);
-            }
-        }
+        analyzeButton.setText(bgRunning ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
 
         if (p.getBoolean("stop_all_requested", false)) {
             p.edit().putBoolean("stop_all_requested", false).putBoolean("ui_monitoring", false).apply();
@@ -943,13 +854,13 @@ public class MainActivity extends Activity {
         int cached = p.getInt("state_cache_count", 0);
         long since = p.getLong("state_signal_since_ms", 0L);
         long updated = p.getLong("state_last_update_ms", 0L);
-        String source = p.getString("state_source", bgRunning ? "BG" : "MON");
+        String source = bgRunning ? "LIVE" : "STOP";
 
         if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
             signalText.setText("WAIT");
             signalText.setTextColor(C_PURPLE);
             confidenceText.setText("Качество сетапа: —");
-            updateSignalAgeText("WAIT", 0L, updated);
+            updateSignalAgeText("WAIT", 0L, 0L);
             levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
             contextText.setText("Параметры изменены. Жду новый анализ для " + selectedSymbol + " · " + selectedTf + ".");
             return;
@@ -1728,23 +1639,44 @@ public class MainActivity extends Activity {
         return String.format(Locale.US, "%02d:%02d", m, s);
     }
 
+    private String formatElapsedUntil(long sinceMs, long untilMs) {
+        if (sinceMs <= 0L || untilMs <= 0L) return "—";
+        long sec = Math.max(0L, (untilMs - sinceMs) / 1000L);
+        long h = sec / 3600L;
+        long m = (sec % 3600L) / 60L;
+        long s = sec % 60L;
+        if (h > 0L) return String.format(Locale.US, "%02d:%02d:%02d", h, m, s);
+        return String.format(Locale.US, "%02d:%02d", m, s);
+    }
+
     private void updateSignalAgeText(String signal, long sinceMs, long updatedMs) {
         if (signalAgeText == null) return;
 
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        boolean active = p.getBoolean("bg_running", false);
+        long stoppedAt = p.getLong("monitor_stopped_ms", 0L);
+        long reference = active ? System.currentTimeMillis() : (stoppedAt > 0L ? stoppedAt : System.currentTimeMillis());
+
         if ("BUY".equals(signal) || "SELL".equals(signal)) {
+            String elapsed = active ? formatElapsed(sinceMs) : formatElapsedUntil(sinceMs, reference);
             signalAgeText.setText(
                     "Открыт: " + formatClock(sinceMs) +
-                    "  ·  прошло: " + formatElapsed(sinceMs) +
-                    "\nОбновлено: " + formatClock(updatedMs)
+                    "  ·  прошло: " + elapsed +
+                    "\nОбновлено: " + formatClock(updatedMs) +
+                    (active ? "" : " · мониторинг остановлен")
             );
             signalAgeText.setTextColor(C_YELLOW);
         } else {
-            signalAgeText.setText(
-                    updatedMs > 0L
-                            ? "Последнее обновление: " + formatClock(updatedMs) +
-                              "  ·  " + formatElapsed(updatedMs) + " назад"
-                            : "Сигнал ещё не открыт."
-            );
+            if (updatedMs <= 0L) {
+                signalAgeText.setText(active ? "Ожидаю первый анализ…" : "Мониторинг остановлен.");
+            } else if (active) {
+                signalAgeText.setText(
+                        "Последний анализ: " + formatClock(updatedMs) +
+                        "  ·  " + formatElapsed(updatedMs) + " назад"
+                );
+            } else {
+                signalAgeText.setText("Мониторинг остановлен · последний анализ: " + formatClock(updatedMs));
+            }
             signalAgeText.setTextColor(C_MUTED);
         }
     }
