@@ -2,6 +2,7 @@ package com.openai.fxm1;
 
 import android.app.*;
 import android.content.*;
+import android.graphics.BitmapFactory;
 import android.content.pm.ServiceInfo;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -283,7 +284,8 @@ public class MonitoringService extends Service {
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (nm != null) {
             Notification emergency = new Notification.Builder(this, CHANNEL_SIGNAL)
-                    .setSmallIcon(android.R.drawable.stat_notify_error)
+                    .setSmallIcon(R.drawable.ic_stat_fx)
+                    .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.app_icon))
                     .setContentTitle("FX M1 Bot · EMERGENCY STOP")
                     .setContentText(result)
                     .setStyle(new Notification.BigTextStyle().bigText(
@@ -521,7 +523,8 @@ public class MonitoringService extends Service {
                 " · TP1 " + fmt(a.tp1);
 
         Notification n = new Notification.Builder(this, CHANNEL_SIGNAL)
-                .setSmallIcon(android.R.drawable.stat_notify_more)
+                .setSmallIcon(R.drawable.ic_stat_fx)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.app_icon))
                 .setContentTitle("FX M1 Bot · " + a.signal + " · " + a.symbol)
                 .setContentText("Качество " + a.quality + "/100 · " + levels)
                 .setStyle(new Notification.BigTextStyle().bigText(
@@ -624,10 +627,10 @@ public class MonitoringService extends Service {
 
         NotificationChannel monitor = new NotificationChannel(
                 CHANNEL_MONITOR,
-                "FX Bot · фоновый мониторинг",
+                "FX M1 Bot · мониторинг",
                 NotificationManager.IMPORTANCE_LOW
         );
-        monitor.setDescription("Постоянное уведомление о работе FX M1 Bot в фоне");
+        monitor.setDescription("Мониторинг рынка FX M1 Bot");
         monitor.setShowBadge(false);
 
         NotificationChannel signal = new NotificationChannel(
@@ -642,10 +645,13 @@ public class MonitoringService extends Service {
     }
 
     private Notification buildNotification(String title, String text, String signal, int quality) {
-        String status = text;
-        if (quality >= 0) {
-            status = signal + " · качество " + quality + "/100 · " + text;
-        }
+        String compact = title;
+        if (quality >= 0) compact += " · " + signal + " · " + quality + "/100";
+        else if (signal != null && !signal.trim().isEmpty()) compact += " · " + signal;
+
+        String details = paused
+                ? "PAUSE · новые входы запрещены, анализ продолжается"
+                : text;
 
         Notification.Action pausePlayAction = new Notification.Action.Builder(
                 paused ? android.R.drawable.ic_media_play : android.R.drawable.ic_media_pause,
@@ -654,18 +660,21 @@ public class MonitoringService extends Service {
         ).build();
 
         Notification.Action emergencyAction = new Notification.Action.Builder(
-                android.R.drawable.stat_notify_error,
+                android.R.drawable.stat_sys_warning,
                 "EMERGENCY",
                 serviceActionIntent(ACTION_EMERGENCY, 102)
         ).build();
 
         return new Notification.Builder(this, CHANNEL_MONITOR)
-                .setSmallIcon(android.R.drawable.stat_notify_sync)
-                .setContentTitle(paused ? "FX M1 Bot · PAUSE" : "FX M1 Bot · MONITORING")
-                .setContentText(title + " · " + status)
-                .setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1))
+                .setSmallIcon(R.drawable.ic_stat_fx)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.app_icon))
+                .setContentTitle(paused ? "FX M1 Bot · PAUSE" : "FX M1 Bot")
+                .setContentText(compact)
+                .setSubText("MONITORING")
+                .setStyle(new Notification.BigTextStyle().bigText(compact + "\n" + details))
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
+                .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentIntent(openAppIntent())
                 .addAction(pausePlayAction)

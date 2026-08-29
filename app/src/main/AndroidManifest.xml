@@ -9,6 +9,8 @@
         android:allowBackup="true"
         android:usesCleartextTraffic="true"
         android:label="FX M1 Bot"
+        android:icon="@drawable/app_icon"
+        android:roundIcon="@drawable/app_icon"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 

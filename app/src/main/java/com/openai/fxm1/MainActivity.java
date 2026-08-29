@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
     private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
     private EditText serverUrlInput;
-    private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
+    private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel;
     private Switch autoTradingSwitch;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
     private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard;
@@ -127,6 +127,7 @@ public class MainActivity extends Activity {
         serverUrlInput = findViewById(R.id.serverUrlInput);
         serverCheckButton = findViewById(R.id.serverCheckButton);
         serverStatusText = findViewById(R.id.serverStatusText);
+        serverUrlLabel = findViewById(R.id.serverUrlLabel);
         accountText = findViewById(R.id.accountText);
         positionsText = findViewById(R.id.positionsText);
         journalText = findViewById(R.id.journalText);
@@ -170,6 +171,9 @@ public class MainActivity extends Activity {
         apiKeyInput.setText(prefs.getString("apikey", ""));
         serverUrlInput.setText(prefs.getString("server_url", ""));
         setApiKeyEditMode(prefs.getString("apikey", "").trim().isEmpty());
+        boolean savedServerVerified = prefs.getBoolean("server_verified", false)
+                && !prefs.getString("server_url", "").trim().isEmpty();
+        setServerEditMode(!savedServerVerified);
 
         ArrayAdapter<String> riskAdapter = darkSpinnerAdapter(
                 new String[]{"0.25%", "0.50%", "1.00%"}
@@ -224,7 +228,14 @@ public class MainActivity extends Activity {
             }
         });
 
-        serverCheckButton.setOnClickListener(v -> checkServer());
+        serverCheckButton.setOnClickListener(v -> {
+            if (serverUrlInput.getVisibility() != View.VISIBLE) {
+                setServerEditMode(true);
+                serverUrlInput.requestFocus();
+            } else {
+                checkServer();
+            }
+        });
 
         riskSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -303,8 +314,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V6.3 разрешает только DEMO.");
-                    Toast.makeText(this, "V6.3 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V6.4 разрешает только DEMO.");
+                    Toast.makeText(this, "V6.4 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -484,6 +495,14 @@ public class MainActivity extends Activity {
 
     private String normalizeServerUrl(String raw) {
         String u = raw == null ? "" : raw.trim();
+        if (u.isEmpty()) return "";
+        if (!u.startsWith("http://") && !u.startsWith("https://")) {
+            if (u.matches("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d+$")) {
+                int lastDot = u.lastIndexOf('.');
+                u = u.substring(0, lastDot) + ":" + u.substring(lastDot + 1);
+            }
+            u = "http://" + u;
+        }
         while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
         return u;
     }
@@ -494,12 +513,11 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "Адрес сервера пока пуст", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (!base.startsWith("http://") && !base.startsWith("https://")) {
-            Toast.makeText(this, "Адрес должен начинаться с http:// или https://", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("server_url", base).apply();
+        serverUrlInput.setText(base);
+        getSharedPreferences("fxm1", MODE_PRIVATE).edit()
+                .putString("server_url", base)
+                .putBoolean("server_verified", false)
+                .apply();
         serverCheckButton.setEnabled(false);
         serverStatusText.setText("SERVER: CHECKING…   •   MT5: …");
         serverStatusText.setTextColor(C_YELLOW);
@@ -530,6 +548,14 @@ public class MainActivity extends Activity {
                             serverOk && mt5Ok ? C_GREEN : C_RED
                     );
 
+                    if (serverOk && mt5Ok) {
+                        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("server_verified", true).apply();
+                        setServerEditMode(false);
+                    } else {
+                        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("server_verified", false).apply();
+                        setServerEditMode(true);
+                    }
+
                     accountText.setText(
                             "Счёт: " + accountType +
                             "\nБаланс: " + money(balance, currency) +
@@ -555,6 +581,8 @@ public class MainActivity extends Activity {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     serverCheckButton.setEnabled(true);
+                    getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("server_verified", false).apply();
+                    setServerEditMode(true);
                     setTradingControlsOffline();
                     addJournal("Ошибка сервера: " + safeMessage(e));
                     Toast.makeText(this, "Сервер пока недоступен", Toast.LENGTH_SHORT).show();
@@ -718,6 +746,12 @@ public class MainActivity extends Activity {
         }
         apiKeyInput.setVisibility(editing ? View.VISIBLE : View.GONE);
         saveKeyButton.setText(editing ? "СОХРАНИТЬ API KEY" : "ИЗМЕНИТЬ API KEY");
+    }
+
+    private void setServerEditMode(boolean editing) {
+        if (serverUrlLabel != null) serverUrlLabel.setVisibility(editing ? View.VISIBLE : View.GONE);
+        if (serverUrlInput != null) serverUrlInput.setVisibility(editing ? View.VISIBLE : View.GONE);
+        if (serverCheckButton != null) serverCheckButton.setText(editing ? "ПОДКЛЮЧИТЬ СЕРВЕР" : "ИЗМЕНИТЬ СЕРВЕР");
     }
 
     private void startMonitoring() {
