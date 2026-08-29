@@ -804,10 +804,23 @@ public class MainActivity extends Activity {
                 .putInt("signal_mode_pos", signalModeSpinner.getSelectedItemPosition())
                 .apply();
 
-        requestNotificationPermissionIfNeeded();
+        // Android 13+: сначала получаем право показывать постоянное уведомление.
+        if (Build.VERSION.SDK_INT >= 33 &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestNotificationPermissionIfNeeded();
+            backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+            backgroundStatusText.setText("○  ФОН: НУЖНО РАЗРЕШЕНИЕ НА УВЕДОМЛЕНИЯ");
+            backgroundStatusText.setTextColor(C_YELLOW);
+            return;
+        }
 
+        startBackgroundServiceNow();
+    }
+
+    private void startBackgroundServiceNow() {
         Intent intent = new Intent(this, MonitoringService.class);
         intent.setAction(MonitoringService.ACTION_START);
+
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(intent);
@@ -825,9 +838,27 @@ public class MainActivity extends Activity {
         backgroundModeButton.setText("■  ОСТАНОВИТЬ ФОН");
         backgroundStatusText.setText("●  ФОН: ЗАПУСКАЕТСЯ · можно свернуть приложение");
         backgroundStatusText.setTextColor(C_GREEN);
-
-        // Фоновый сервис становится источником данных, чтобы не удваивать API-кредиты.
         monitorHandler.removeCallbacks(monitorRunnable);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode != 5001) return;
+
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startBackgroundServiceNow();
+        } else {
+            backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+            backgroundStatusText.setText("○  ФОН: УВЕДОМЛЕНИЯ ЗАПРЕЩЕНЫ");
+            backgroundStatusText.setTextColor(C_RED);
+            Toast.makeText(
+                    this,
+                    "Разрешите уведомления для FX M1 Bot — без них постоянный фон не запускается.",
+                    Toast.LENGTH_LONG
+            ).show();
+        }
     }
 
     private void stopBackgroundMode() {
