@@ -10,17 +10,7 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.Color;
-import android.media.AudioManager;
-import android.media.AudioAttributes;
 import android.media.ToneGenerator;
-import android.media.MediaPlayer;
-import android.media.MediaRecorder;
-import android.speech.RecognitionListener;
-import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
-import android.util.Base64;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.*;
@@ -42,30 +32,14 @@ public class MainActivity extends Activity {
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
-    private Button jarvisTalkButton, jarvisSendButton, jarvisMuteButton, backgroundModeButton;
-    private EditText serverUrlInput, jarvisInput;
+    private Button backgroundModeButton;
+    private EditText serverUrlInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText;
-    private TextView jarvisStatusText, jarvisChatText, backgroundStatusText;
+    private TextView backgroundStatusText;
     private Switch autoTradingSwitch;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
-    private View topCard, tfCard, modeCard, signalCard, jarvisCard, backgroundCard, tradingCard, metricsCard, riskCard, journalCard;
+    private View topCard, tfCard, modeCard, signalCard, backgroundCard, tradingCard, metricsCard, riskCard, journalCard;
 
-    private SpeechRecognizer jarvisSpeechRecognizer;
-    private TextToSpeech jarvisTts;
-    private MediaPlayer jarvisPlayer;
-    private MediaRecorder jarvisRecorder;
-    private File jarvisAudioFile;
-    private boolean jarvisRecording = false;
-    private boolean jarvisListening = false;
-    private boolean jarvisStartAfterPermission = false;
-    private boolean jarvisStartupAfterPermission = false;
-    private boolean jarvisTtsReady = false;
-    private boolean jarvisAutoListenAfterSpeech = false;
-    private boolean jarvisStartupDone = false;
-    private boolean jarvisMuted = false;
-    private boolean jarvisServerWarningShown = false;
-    private String pendingJarvisSpeech = null;
-    private final String jarvisSessionId = UUID.randomUUID().toString();
 
     private static final int C_BG = Color.rgb(7, 8, 22);
     private static final int C_CARD = Color.rgb(17, 18, 39);
@@ -103,6 +77,7 @@ public class MainActivity extends Activity {
     private boolean mt5Connected = false;
     private boolean demoAccount = false;
     private boolean suppressAutoSwitch = false;
+    private long emergencyTapMs = 0L;
 
     private double lastApiPrice = Double.NaN;
     private double lastMt5Bid = Double.NaN;
@@ -163,12 +138,6 @@ public class MainActivity extends Activity {
         maxDriftSpinner = findViewById(R.id.maxDriftSpinner);
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
-        jarvisTalkButton = findViewById(R.id.jarvisTalkButton);
-        jarvisSendButton = findViewById(R.id.jarvisSendButton);
-        jarvisMuteButton = findViewById(R.id.jarvisMuteButton);
-        jarvisInput = findViewById(R.id.jarvisInput);
-        jarvisStatusText = findViewById(R.id.jarvisStatusText);
-        jarvisChatText = findViewById(R.id.jarvisChatText);
         backgroundModeButton = findViewById(R.id.backgroundModeButton);
         backgroundStatusText = findViewById(R.id.backgroundStatusText);
 
@@ -176,7 +145,6 @@ public class MainActivity extends Activity {
         tfCard = findViewById(R.id.tfCard);
         modeCard = findViewById(R.id.modeCard);
         signalCard = findViewById(R.id.signalCard);
-        jarvisCard = findViewById(R.id.jarvisCard);
         backgroundCard = findViewById(R.id.backgroundCard);
         tradingCard = findViewById(R.id.tradingCard);
         metricsCard = findViewById(R.id.metricsCard);
@@ -199,7 +167,6 @@ public class MainActivity extends Activity {
         signalModeSpinner.setAdapter(modeAdapter);
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
-        jarvisMuted = prefs.getBoolean("jarvis_muted", false);
         symbolSpinner.setSelection(prefs.getInt("symbol_pos", 0));
         entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
@@ -348,8 +315,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V5.5 разрешает только DEMO.");
-                    Toast.makeText(this, "V5.5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V6.2 разрешает только DEMO.");
+                    Toast.makeText(this, "V6.2 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -361,669 +328,22 @@ public class MainActivity extends Activity {
         });
 
         emergencyStopButton.setOnClickListener(v -> {
-            forceAutoOff("EMERGENCY STOP: отправка новых сигналов остановлена.");
-            sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
-            monitoring = false;
-            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-            if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-            if (backgroundStatusText != null) {
-                backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
-                backgroundStatusText.setTextColor(C_RED);
+            long now = System.currentTimeMillis();
+            if (now - emergencyTapMs > 2500L) {
+                emergencyTapMs = now;
+                Toast.makeText(this, "EMERGENCY STOP: нажмите ещё раз в течение 2,5 сек", Toast.LENGTH_LONG).show();
+                return;
             }
-            addJournal("EMERGENCY STOP на телефоне");
-            Toast.makeText(this, "STOP: фоновый мониторинг и AUTO выключены", Toast.LENGTH_LONG).show();
+            emergencyTapMs = 0L;
+            executeEmergencyStop();
         });
 
         closeAllButton.setOnClickListener(v -> sendCloseAll());
 
-        initJarvisVoice();
+        // UI ticker: обновляет «прошло» каждую секунду без новых API-запросов.
+        serviceUiHandler.removeCallbacks(serviceUiRunnable);
+        serviceUiHandler.post(serviceUiRunnable);
 
-        jarvisTalkButton.setOnClickListener(v -> startJarvisListening());
-
-        jarvisMuteButton.setText(jarvisMuted ? "🔇 MUTED" : "🔊 ГОЛОС");
-        jarvisMuteButton.setOnClickListener(v -> {
-            jarvisMuted = !jarvisMuted;
-            getSharedPreferences("fxm1", MODE_PRIVATE)
-                    .edit()
-                    .putBoolean("jarvis_muted", jarvisMuted)
-                    .apply();
-
-            if (jarvisMuted) {
-                if (jarvisTts != null) {
-                    try { jarvisTts.stop(); } catch (Exception ignored) { }
-                }
-                if (jarvisPlayer != null) {
-                    try {
-                        if (jarvisPlayer.isPlaying()) jarvisPlayer.stop();
-                    } catch (Exception ignored) { }
-                }
-                jarvisAutoListenAfterSpeech = false;
-                jarvisMuteButton.setText("🔇 MUTED");
-                jarvisStatusText.setText("JARVIS: голос выключен. Текстовый режим активен.");
-            } else {
-                jarvisMuteButton.setText("🔊 ГОЛОС");
-                jarvisStatusText.setText(
-                        jarvisTtsReady
-                                ? "JARVIS: голос включён."
-                                : "JARVIS: голос включён, но системный TTS ещё не готов."
-                );
-                speakJarvisLocal("Голосовой режим включён.");
-            }
-        });
-        jarvisSendButton.setOnClickListener(v -> {
-            String message = jarvisInput.getText().toString().trim();
-            if (!message.isEmpty()) {
-                jarvisInput.setText("");
-                sendJarvisMessage(message);
-            }
-        });
-
-        jarvisInput.setOnEditorActionListener((v, actionId, event) -> {
-            String message = jarvisInput.getText().toString().trim();
-            if (!message.isEmpty()) {
-                jarvisInput.setText("");
-                sendJarvisMessage(message);
-                return true;
-            }
-            return false;
-        });
-
-        handleJarvisIntent(getIntent());
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        setIntent(intent);
-        handleJarvisIntent(intent);
-    }
-
-    private void handleJarvisIntent(Intent intent) {
-        if (intent != null && intent.getBooleanExtra("open_jarvis", false)) {
-            intent.removeExtra("open_jarvis");
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (!normalizeServerUrl(serverUrlInput.getText().toString()).isEmpty()) startJarvisListening();
-            }, 500L);
-        }
-    }
-
-    private void initJarvisVoice() {
-        jarvisStatusText.setText("JARVIS: запускаю голосовую систему…");
-        jarvisChatText.setText("JARVIS: Инициализация голосового ассистента.");
-
-        jarvisTts = new TextToSpeech(this, status -> {
-            if (status != TextToSpeech.SUCCESS) {
-                jarvisStatusText.setText("JARVIS: системный голос TTS недоступен");
-                beginJarvisAutonomousStartup();
-                return;
-            }
-
-            int languageResult = jarvisTts.setLanguage(new Locale("ru", "RU"));
-            jarvisTts.setPitch(0.88f);
-            jarvisTts.setSpeechRate(0.96f);
-
-            try {
-                jarvisTts.setAudioAttributes(
-                        new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_ASSISTANT)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                .build()
-                );
-            } catch (Exception ignored) { }
-
-            jarvisTts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                @Override public void onStart(String utteranceId) { }
-
-                @Override public void onDone(String utteranceId) {
-                    runOnUiThread(() -> {
-                        if (jarvisAutoListenAfterSpeech && hasMicrophonePermission()) {
-                            jarvisAutoListenAfterSpeech = false;
-                            new Handler(Looper.getMainLooper()).postDelayed(
-                                    MainActivity.this::startJarvisListening,
-                                    250L
-                            );
-                        }
-                    });
-                }
-
-                @Override public void onError(String utteranceId) {
-                    runOnUiThread(() -> jarvisStatusText.setText(
-                            "JARVIS: ошибка системного голосового движка"
-                    ));
-                }
-            });
-
-            jarvisTtsReady = true;
-
-            if (languageResult != TextToSpeech.LANG_MISSING_DATA &&
-                    languageResult != TextToSpeech.LANG_NOT_SUPPORTED) {
-                jarvisStatusText.setText("JARVIS: VOICE READY");
-            } else {
-                jarvisStatusText.setText(
-                        "JARVIS: VOICE READY · русский голос ограничен системным TTS"
-                );
-            }
-
-            if (pendingJarvisSpeech != null && jarvisTtsReady) {
-                String queued = pendingJarvisSpeech;
-                pendingJarvisSpeech = null;
-                speakJarvisLocal(queued);
-            }
-
-            beginJarvisAutonomousStartup();
-        });
-    }
-
-    private boolean hasMicrophonePermission() {
-        return Build.VERSION.SDK_INT < 23 ||
-                checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
-                        PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void beginJarvisAutonomousStartup() {
-        if (jarvisStartupDone) return;
-
-        if (!hasMicrophonePermission()) {
-            jarvisStartupAfterPermission = true;
-            jarvisStatusText.setText("JARVIS: нужен доступ к микрофону");
-            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 5002);
-            return;
-        }
-
-        runJarvisWelcomeAndListen();
-    }
-
-    private void runJarvisWelcomeAndListen() {
-        if (jarvisStartupDone) return;
-        jarvisStartupDone = true;
-
-        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
-        String savedKey = p.getString("apikey", "").trim();
-
-        // Фоновый режим теперь независим и никогда не включается автоматически.
-        boolean bg = p.getBoolean("bg_running", false);
-        String symbol = String.valueOf(symbolSpinner.getSelectedItem());
-        String tf = selectedEntryTimeframe();
-        String signal = p.getString("bg_signal", signalText.getText().toString());
-        if (signal == null || signal.trim().isEmpty()) signal = "WAIT";
-
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        String greeting;
-        if (hour < 6) greeting = "Доброй ночи.";
-        else if (hour < 12) greeting = "Доброе утро.";
-        else if (hour < 18) greeting = "Добрый день.";
-        else greeting = "Добрый вечер.";
-
-        String report = greeting +
-                " JARVIS на связи. " +
-                "Текущий инструмент " + symbol +
-                ", таймфрейм " + tf +
-                ", последний сигнал " + signal + ". " +
-                (bg
-                        ? "Фоновый мониторинг активен; приложение можно свернуть. "
-                        : (savedKey.isEmpty()
-                            ? "Фоновый мониторинг пока не запущен: сначала нужен Twelve Data API key. "
-                            : "Фоновый мониторинг сейчас остановлен. ")) +
-                (serverConnected && mt5Connected
-                        ? "Сервер и MT5 подключены. "
-                        : "Торговый сервер или MT5 пока не подключены. ") +
-                "Что будем делать?";
-
-        appendJarvisLine("JARVIS", report);
-        jarvisStatusText.setText("JARVIS: говорю…");
-        jarvisAutoListenAfterSpeech = true;
-        speakJarvisLocal(report);
-    }
-
-    private void startJarvisListening() {
-        if (jarvisRecording) {
-            stopJarvisRecordingAndSend();
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT >= 23 &&
-                checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            jarvisStartAfterPermission = true;
-            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 7001);
-            return;
-        }
-
-        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
-        if (base.isEmpty()) {
-            jarvisStatusText.setText("JARVIS: AI-сервер не подключён.");
-            if (!jarvisServerWarningShown) {
-                appendJarvisLine("JARVIS",
-                        "Для русского голоса нужен AI-сервер. Укажите его адрес ниже и нажмите «ПРОВЕРИТЬ СЕРВЕР».");
-                jarvisServerWarningShown = true;
-            }
-            return;
-        }
-
-        try {
-            jarvisAudioFile = new File(getCacheDir(), "jarvis_input_" + System.currentTimeMillis() + ".m4a");
-            jarvisRecorder = new MediaRecorder();
-            jarvisRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            jarvisRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            jarvisRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-            jarvisRecorder.setAudioEncodingBitRate(64000);
-            jarvisRecorder.setAudioSamplingRate(16000);
-            jarvisRecorder.setOutputFile(jarvisAudioFile.getAbsolutePath());
-            jarvisRecorder.prepare();
-            jarvisRecorder.start();
-
-            jarvisRecording = true;
-            jarvisListening = true;
-            jarvisTalkButton.setText("■ СТОП");
-            jarvisStatusText.setText("JARVIS: слушаю русский через сервер…");
-
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (jarvisRecording) stopJarvisRecordingAndSend();
-            }, 9000L);
-
-        } catch (Exception ex) {
-            jarvisRecording = false;
-            jarvisListening = false;
-            jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
-            jarvisStatusText.setText("JARVIS: не удалось включить микрофон.");
-            appendJarvisLine("JARVIS", "Ошибка микрофона: " + safeMessage(ex));
-        }
-    }
-
-    private void stopJarvisRecordingAndSend() {
-        if (!jarvisRecording) return;
-        jarvisRecording = false;
-        jarvisListening = false;
-        jarvisTalkButton.setText("🎙 ГОВОРИТЬ");
-        jarvisStatusText.setText("JARVIS: распознаю русскую речь…");
-
-        try { jarvisRecorder.stop(); } catch (Exception ignored) { }
-        try { jarvisRecorder.release(); } catch (Exception ignored) { }
-        jarvisRecorder = null;
-
-        if (jarvisAudioFile == null || !jarvisAudioFile.exists() || jarvisAudioFile.length() < 512L) {
-            jarvisStatusText.setText("JARVIS: запись получилась пустой.");
-            return;
-        }
-        sendJarvisVoiceFile(jarvisAudioFile);
-    }
-
-    private void sendJarvisVoiceFile(File audioFile) {
-        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
-        if (base.isEmpty()) {
-            jarvisStatusText.setText("JARVIS: AI-сервер не указан.");
-            return;
-        }
-
-        executor.execute(() -> {
-            try {
-                JSONObject response = httpMultipartVoice(
-                        base + "/voice",
-                        audioFile,
-                        jarvisSessionId,
-                        currentJarvisContext()
-                );
-
-                if (!response.optBoolean("ok", false)) {
-                    throw new Exception(response.optString("error", "Voice server error"));
-                }
-
-                String transcript = response.optString("transcript", "").trim();
-                String reply = response.optString("reply", "").trim();
-                String audioB64 = response.optString("audio_base64", null);
-
-                runOnUiThread(() -> {
-                    if (!transcript.isEmpty()) appendJarvisLine("ВЫ", transcript);
-                    if (reply.isEmpty()) {
-                        jarvisStatusText.setText("JARVIS: ответ сервера пуст.");
-                        return;
-                    }
-                    deliverJarvisReply(reply, audioB64);
-                });
-
-            } catch (Exception ex) {
-                runOnUiThread(() -> {
-                    jarvisStatusText.setText("JARVIS: серверный голос недоступен.");
-                    appendJarvisLine("JARVIS",
-                            "Не удалось обработать голос через AI-сервер: " + safeMessage(ex));
-                });
-            } finally {
-                try { audioFile.delete(); } catch (Exception ignored) { }
-            }
-        });
-    }
-
-    private JSONObject currentJarvisContext() throws Exception {
-        JSONObject context = new JSONObject();
-        context.put("symbol", String.valueOf(symbolSpinner.getSelectedItem()));
-        context.put("entry_timeframe", selectedEntryTimeframe());
-        context.put("signal_mode", selectedSignalMode());
-        context.put("signal", signalText.getText().toString());
-        context.put("quality", confidenceText.getText().toString());
-        context.put("levels", levelsText.getText().toString());
-        context.put("market_context", contextText.getText().toString());
-        context.put("monitor_status", statusText.getText().toString());
-        context.put("background_running",
-                getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false));
-        context.put("server_connected", serverConnected);
-        context.put("mt5_connected", mt5Connected);
-        context.put("account", accountText.getText().toString());
-        context.put("positions", positionsText.getText().toString());
-        context.put("auto_trading", autoTradingSwitch.isChecked());
-        context.put("risk", String.valueOf(riskSpinner.getSelectedItem()));
-        context.put("max_positions", String.valueOf(maxPositionsSpinner.getSelectedItem()));
-        return context;
-    }
-
-    private JSONObject httpMultipartVoice(
-            String urlString, File file, String sessionId, JSONObject context
-    ) throws Exception {
-        String boundary = "----FXM1JARVIS" + System.currentTimeMillis();
-        HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
-        conn.setRequestMethod("POST");
-        conn.setConnectTimeout(15000);
-        conn.setReadTimeout(90000);
-        conn.setDoOutput(true);
-        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-
-        try (DataOutputStream out = new DataOutputStream(conn.getOutputStream())) {
-            writeMultipartText(out, boundary, "session_id", sessionId);
-            writeMultipartText(out, boundary, "context", context.toString());
-
-            out.writeBytes("--" + boundary + "\r\n");
-            out.writeBytes("Content-Disposition: form-data; name=\"audio\"; filename=\"voice.m4a\"\r\n");
-            out.writeBytes("Content-Type: audio/mp4\r\n\r\n");
-
-            try (FileInputStream in = new FileInputStream(file)) {
-                byte[] buffer = new byte[8192];
-                int n;
-                while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
-            }
-            out.writeBytes("\r\n--" + boundary + "--\r\n");
-            out.flush();
-        }
-
-        int code = conn.getResponseCode();
-        InputStream input = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
-        String body = readAll(input);
-        conn.disconnect();
-        if (body == null || body.trim().isEmpty()) throw new Exception("HTTP " + code + " · пустой ответ");
-
-        JSONObject obj = new JSONObject(body);
-        if (code < 200 || code >= 300) throw new Exception(obj.optString("error", "HTTP " + code));
-        return obj;
-    }
-
-    private void writeMultipartText(
-            DataOutputStream out, String boundary, String name, String value
-    ) throws Exception {
-        out.writeBytes("--" + boundary + "\r\n");
-        out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
-        out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-        out.write(value.getBytes(StandardCharsets.UTF_8));
-        out.writeBytes("\r\n");
-    }
-
-    private void sendJarvisMessage(String message) {
-        appendJarvisLine("ВЫ", message);
-
-        String localCommandReply = handleSafeLocalJarvisCommand(message);
-        if (localCommandReply != null) {
-            deliverJarvisReply(localCommandReply, null);
-            return;
-        }
-
-        final String base = normalizeServerUrl(serverUrlInput.getText().toString());
-        if (base.isEmpty()) {
-            deliverJarvisReply(localJarvisReply(message), null);
-            return;
-        }
-
-        jarvisStatusText.setText("JARVIS: думаю…");
-
-        final JSONObject payload = new JSONObject();
-        try {
-            payload.put("session_id", jarvisSessionId);
-            payload.put("message", message);
-
-            payload.put("context", currentJarvisContext());
-            payload.put("voice", true);
-        } catch (Exception e) {
-            deliverJarvisReply("У меня возникла небольшая проблема с контекстом. Редкий случай, но технически возможный.", null);
-            return;
-        }
-
-        executor.execute(() -> {
-            try {
-                JSONObject response = httpJson("POST", base + "/assistant", payload);
-                boolean ok = response.optBoolean("ok", false);
-                if (!ok) throw new Exception(response.optString("error", "AI server error"));
-
-                String reply = response.optString("reply", "").trim();
-                String audioB64 = response.optString("audio_base64", null);
-
-                if (reply.isEmpty()) reply = "Я получил ответ, но, что несколько неловко, без текста.";
-
-                final String finalReply = reply;
-                final String finalAudio = audioB64;
-
-                runOnUiThread(() -> deliverJarvisReply(finalReply, finalAudio));
-
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    String fallback = localJarvisReply(message);
-                    appendJarvisLine(
-                            "JARVIS",
-                            fallback + "\n[AI-сервер недоступен: " + safeMessage(e) + "]"
-                    );
-                    jarvisStatusText.setText("JARVIS: LOCAL MODE");
-                    speakJarvisLocal(fallback);
-                });
-            }
-        });
-    }
-
-    private String handleSafeLocalJarvisCommand(String raw) {
-        String q = raw.toLowerCase(new Locale("ru", "RU"));
-
-        if (q.contains("останови мониторинг") || q.contains("остановить мониторинг")) {
-            stopMonitoring();
-            return "Мониторинг остановлен. Рынок переживёт наше отсутствие, полагаю.";
-        }
-
-        if (q.contains("запусти мониторинг") || q.contains("запустить мониторинг")) {
-            startMonitoring();
-            return monitoring
-                    ? "Мониторинг запущен. Наблюдение продолжается."
-                    : "Мониторинг не запущен. Проверьте API key.";
-        }
-
-        if (q.contains("emergency") || q.contains("аварийн") || q.contains("экстренн")) {
-            forceAutoOff("JARVIS: EMERGENCY STOP");
-            sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY);
-            monitoring = false;
-            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-            if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
-            if (backgroundStatusText != null) {
-                backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
-                backgroundStatusText.setTextColor(C_RED);
-            }
-            return "Emergency Stop выполнен. Мониторинг и автоматическая торговля отключены.";
-        }
-
-        return null;
-    }
-
-    private String localJarvisReply(String raw) {
-        String q = raw.toLowerCase(new Locale("ru", "RU"));
-        String signal = signalText.getText().toString().trim();
-        String symbol = String.valueOf(symbolSpinner.getSelectedItem());
-        String tf = selectedEntryTimeframe();
-
-        if (q.contains("статус") || q.contains("что сейчас") || q.contains("что по рынку")) {
-            return "По " + symbol + " на " + tf + " сейчас " + signal +
-                    ". " + confidenceText.getText().toString() +
-                    ". " + ("WAIT".equals(signal)
-                    ? "Оснований торопиться нет. Рынок, к счастью, не берёт плату за терпение."
-                    : "Сетап сформирован; детали уже на экране.");
-        }
-
-        if (q.contains("почему") && q.contains("wait")) {
-            return "Причина WAIT указана в текущем контексте: " +
-                    contextText.getText().toString() +
-                    ". Входить просто из скуки я бы не рекомендовал.";
-        }
-
-        if (q.contains("позици")) {
-            return positionsText.getText().toString() +
-                    ". Для точных данных нужен подключённый MT5.";
-        }
-
-        if (q.contains("кто ты") || q.contains("что ты умеешь")) {
-            return "Я голосовой интерфейс FX M1 Bot. Локально вижу состояние приложения, а после подключения AI-сервера смогу рассуждать по контексту, помнить разговор и работать с инструментами бота.";
-        }
-
-        return "Сейчас я работаю в локальном режиме. Подключите AI-сервер, и я смогу ответить на этот вопрос с полноценным рассуждением. До тех пор вынужден изображать скромность.";
-    }
-
-    private void deliverJarvisReply(String reply, String audioBase64) {
-        appendJarvisLine("JARVIS", reply);
-        jarvisStatusText.setText("JARVIS: ONLINE");
-
-        if (audioBase64 != null && !audioBase64.trim().isEmpty()) {
-            playJarvisAudio(audioBase64, reply);
-        } else {
-            speakJarvisLocal(reply);
-        }
-    }
-
-    private void appendJarvisLine(String who, String text) {
-        String current = jarvisChatText.getText().toString().trim();
-        String line = who + ": " + text;
-
-        if (current.isEmpty()) {
-            jarvisChatText.setText(line);
-            return;
-        }
-
-        String combined = current + "\n\n" + line;
-        if (combined.length() > 5000) {
-            combined = combined.substring(combined.length() - 5000);
-        }
-        jarvisChatText.setText(combined);
-    }
-
-    private void speakJarvisLocal(String text) {
-        if (jarvisMuted) {
-            jarvisStatusText.setText("JARVIS: MUTED · ответ показан текстом.");
-            return;
-        }
-
-        if (text == null || text.trim().isEmpty()) return;
-
-        String spoken = text.replaceAll("\\[[^\\]]*\\]", "").trim();
-
-        if (jarvisTts == null || !jarvisTtsReady) {
-            pendingJarvisSpeech = spoken;
-            return;
-        }
-
-        jarvisStatusText.setText("JARVIS: говорю…");
-        jarvisAutoListenAfterSpeech = hasMicrophonePermission();
-
-        int result = jarvisTts.speak(
-                spoken,
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                "jarvis_reply_" + System.currentTimeMillis()
-        );
-
-        if (result == TextToSpeech.ERROR) {
-            jarvisStatusText.setText(
-                    "JARVIS: системный TTS не смог воспроизвести голос"
-            );
-        }
-    }
-
-    private void playJarvisAudio(String audioBase64, String fallbackText) {
-        try {
-            if (jarvisPlayer != null) {
-                try { jarvisPlayer.stop(); } catch (Exception ignored) { }
-                jarvisPlayer.release();
-                jarvisPlayer = null;
-            }
-
-            byte[] audio = Base64.decode(audioBase64, Base64.DEFAULT);
-            File file = new File(getCacheDir(), "jarvis_reply.mp3");
-
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(audio);
-            fos.flush();
-            fos.close();
-
-            jarvisPlayer = new MediaPlayer();
-            jarvisPlayer.setDataSource(file.getAbsolutePath());
-            jarvisPlayer.setOnPreparedListener(MediaPlayer::start);
-            jarvisPlayer.setOnCompletionListener(mp -> {
-                mp.release();
-                jarvisPlayer = null;
-                file.delete();
-
-                if (hasMicrophonePermission()) {
-                    new Handler(Looper.getMainLooper()).postDelayed(
-                            MainActivity.this::startJarvisListening,
-                            250L
-                    );
-                }
-            });
-            jarvisPlayer.setOnErrorListener((mp, what, extra) -> {
-                try { mp.release(); } catch (Exception ignored) { }
-                jarvisPlayer = null;
-                file.delete();
-                speakJarvisLocal(fallbackText);
-                return true;
-            });
-            jarvisPlayer.prepareAsync();
-
-        } catch (Exception e) {
-            speakJarvisLocal(fallbackText);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == 5002) {
-            boolean granted =
-                    grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED;
-
-            if (granted) {
-                jarvisStatusText.setText("JARVIS: микрофон подключён");
-
-                if (jarvisStartupAfterPermission) {
-                    jarvisStartupAfterPermission = false;
-                    jarvisStartAfterPermission = false;
-                    runJarvisWelcomeAndListen();
-                } else if (jarvisStartAfterPermission) {
-                    jarvisStartAfterPermission = false;
-                    startJarvisListening();
-                }
-            } else {
-                jarvisStartAfterPermission = false;
-                jarvisStartupAfterPermission = false;
-                jarvisStatusText.setText(
-                        "JARVIS: доступ к микрофону запрещён. Разрешите «Микрофон» в настройках приложения."
-                );
-
-                String warning =
-                        "Голосовой ввод отключён, потому что Android не дал доступ к микрофону. " +
-                        "Текстовый диалог остаётся доступен.";
-                appendJarvisLine("JARVIS", warning);
-                jarvisAutoListenAfterSpeech = false;
-                speakJarvisLocal(warning);
-            }
-        }
     }
 
     private void applyDarkVioletTheme() {
@@ -1044,7 +364,6 @@ public class MainActivity extends Activity {
         styleCard(tfCard, C_CARD_2);
         styleCard(modeCard, C_CARD_2);
         styleCard(signalCard, C_CARD);
-        styleCard(jarvisCard, C_CARD_2);
         styleCard(backgroundCard, C_CARD_2);
         styleCard(tradingCard, C_CARD);
         styleCard(metricsCard, C_CARD);
@@ -1053,16 +372,13 @@ public class MainActivity extends Activity {
 
         stylePrimaryButton(saveKeyButton);
         stylePrimaryButton(analyzeButton);
-        stylePrimaryButton(jarvisTalkButton);
         stylePrimaryButton(backgroundModeButton);
-        styleOutlineButton(jarvisSendButton, C_PURPLE);
         styleOutlineButton(serverCheckButton, C_PURPLE);
         styleOutlineButton(closeAllButton, C_PURPLE);
         styleOutlineButton(emergencyStopButton, C_RED);
 
         styleInput(apiKeyInput);
         styleInput(serverUrlInput);
-        styleInput(jarvisInput);
 
         int[][] states = new int[][]{
                 new int[]{android.R.attr.state_checked},
@@ -1088,8 +404,6 @@ public class MainActivity extends Activity {
         journalText.setTextColor(C_MUTED);
         priceCompareText.setTextColor(C_TEXT);
         serverStatusText.setTextColor(C_RED);
-        jarvisStatusText.setTextColor(C_GREEN);
-        jarvisChatText.setTextColor(C_TEXT);
     }
 
     private ArrayAdapter<String> darkSpinnerAdapter(String[] items) {
@@ -1316,6 +630,25 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void executeEmergencyStop() {
+        forceAutoOff("EMERGENCY STOP: AUTO выключен, запрошено закрытие всех позиций.");
+        getSharedPreferences("fxm1", MODE_PRIVATE).edit()
+                .putBoolean("stop_all_requested", true)
+                .putBoolean("trading_paused", false)
+                .apply();
+        sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY_CONFIRMED);
+        monitoring = false;
+        monitorHandler.removeCallbacks(monitorRunnable);
+        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+        if (backgroundModeButton != null) backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+        if (backgroundStatusText != null) {
+            backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН · EMERGENCY STOP");
+            backgroundStatusText.setTextColor(C_RED);
+        }
+        addJournal("EMERGENCY STOP · CLOSE ALL запрошен");
+        Toast.makeText(this, "EMERGENCY STOP: закрытие позиций и остановка AUTO", Toast.LENGTH_LONG).show();
+    }
+
     private void sendCloseAll() {
         if (!serverConnected || !mt5Connected || !demoAccount) {
             Toast.makeText(this, "Нет подключённого DEMO MT5", Toast.LENGTH_SHORT).show();
@@ -1474,7 +807,19 @@ public class MainActivity extends Activity {
 
         Intent intent = new Intent(this, MonitoringService.class);
         intent.setAction(MonitoringService.ACTION_START);
-        startForegroundService(intent);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        } catch (Exception e) {
+            backgroundModeButton.setText("▶  ВКЛЮЧИТЬ ФОН");
+            backgroundStatusText.setText("○  ФОН: ОШИБКА ЗАПУСКА");
+            backgroundStatusText.setTextColor(C_RED);
+            Toast.makeText(this, "Не удалось запустить фон: " + safeMessage(e), Toast.LENGTH_LONG).show();
+            return;
+        }
 
         backgroundModeButton.setText("■  ОСТАНОВИТЬ ФОН");
         backgroundStatusText.setText("●  ФОН: ЗАПУСКАЕТСЯ · можно свернуть приложение");
@@ -1537,7 +882,7 @@ public class MainActivity extends Activity {
                 backgroundStatusText.setText("○  ФОН: ВЫКЛЮЧЕН");
                 backgroundStatusText.setTextColor(C_MUTED);
             } else if (bgPaused) {
-                backgroundStatusText.setText("●  ФОН: АКТИВЕН · МОНИТОРИНГ НА ПАУЗЕ");
+                backgroundStatusText.setText("●  ФОН: PAUSE · НОВЫЕ ВХОДЫ ЗАПРЕЩЕНЫ · СОПРОВОЖДЕНИЕ АКТИВНО");
                 backgroundStatusText.setTextColor(C_YELLOW);
             } else {
                 backgroundStatusText.setText("●  ФОН: АКТИВЕН · можно свернуть приложение");
@@ -2495,29 +1840,6 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         monitorHandler.removeCallbacks(monitorRunnable);
         serviceUiHandler.removeCallbacks(serviceUiRunnable);
-
-        if (jarvisSpeechRecognizer != null) {
-            try { jarvisSpeechRecognizer.destroy(); } catch (Exception ignored) { }
-            jarvisSpeechRecognizer = null;
-        }
-        if (jarvisRecorder != null) {
-            try { if (jarvisRecording) jarvisRecorder.stop(); } catch (Exception ignored) { }
-            try { jarvisRecorder.release(); } catch (Exception ignored) { }
-            jarvisRecorder = null;
-            jarvisRecording = false;
-        }
-
-        if (jarvisTts != null) {
-            try { jarvisTts.stop(); } catch (Exception ignored) { }
-            try { jarvisTts.shutdown(); } catch (Exception ignored) { }
-            jarvisTts = null;
-        }
-
-        if (jarvisPlayer != null) {
-            try { jarvisPlayer.stop(); } catch (Exception ignored) { }
-            try { jarvisPlayer.release(); } catch (Exception ignored) { }
-            jarvisPlayer = null;
-        }
 
         executor.shutdownNow();
         super.onDestroy();

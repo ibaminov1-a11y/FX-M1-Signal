@@ -21,6 +21,7 @@ public class MonitoringService extends Service {
     public static final String ACTION_START = "com.openai.fxm1.action.START_MONITORING";
     public static final String ACTION_STOP = "com.openai.fxm1.action.STOP_MONITORING";
     public static final String ACTION_EMERGENCY = "com.openai.fxm1.action.EMERGENCY_STOP";
+    public static final String ACTION_EMERGENCY_CONFIRMED = "com.openai.fxm1.action.EMERGENCY_CONFIRMED";
     public static final String ACTION_REFRESH = "com.openai.fxm1.action.REFRESH_MONITORING";
     public static final String ACTION_STOP_ALL = "com.openai.fxm1.action.STOP_ALL";
     public static final String ACTION_PAUSE = "com.openai.fxm1.action.PAUSE_BACKGROUND";
@@ -58,10 +59,7 @@ public class MonitoringService extends Service {
         @Override
         public void run() {
             if (!running) return;
-            if (paused) {
-                scheduleNext(1000L);
-                return;
-            }
+            // PAUSE запрещает только НОВЫЕ ВХОДЫ. Рыночный анализ и сопровождение продолжаются.
             if (!analyzing) analyzeOnce();
             else scheduleNext(1000L);
         }
@@ -85,11 +83,12 @@ public class MonitoringService extends Service {
             paused = true;
             prefs().edit()
                     .putBoolean("bg_paused", true)
-                    .putString("bg_status", "Мониторинг на паузе")
+                    .putBoolean("trading_paused", true)
+                    .putString("bg_status", "PAUSE · новые входы запрещены · сопровождение активно")
                     .apply();
             updateNotification(
                     currentSymbol() + " · " + currentTf() + " · " + currentMode(),
-                    "ПАУЗА · фон остаётся активным",
+                    "PAUSE · новые входы запрещены · сопровождение активно",
                     prefs().getString("state_signal", "WAIT"),
                     prefs().getInt("state_quality", -1)
             );
@@ -100,13 +99,14 @@ public class MonitoringService extends Service {
             paused = false;
             prefs().edit()
                     .putBoolean("bg_paused", false)
-                    .putString("bg_status", "Мониторинг работает")
+                    .putBoolean("trading_paused", false)
+                    .putString("bg_status", "AUTO · новые входы разрешены")
                     .apply();
             handler.removeCallbacks(tick);
             handler.post(tick);
             updateNotification(
                     currentSymbol() + " · " + currentTf() + " · " + currentMode(),
-                    "Мониторинг продолжен",
+                    "PLAY · новые входы снова разрешены",
                     prefs().getString("state_signal", "WAIT"),
                     prefs().getInt("state_quality", -1)
             );
@@ -120,9 +120,40 @@ public class MonitoringService extends Service {
         }
 
 
-        if (ACTION_EMERGENCY.equals(action)) {
+        if (ACTION_EMERGENCY_CONFIRMED.equals(action)) {
+            prefs().edit().putLong("emergency_confirm_until_ms", 0L).apply();
             emergencyStop();
             return START_NOT_STICKY;
+        }
+
+        if (ACTION_EMERGENCY.equals(action)) {
+            long now = System.currentTimeMillis();
+            long until = prefs().getLong("emergency_confirm_until_ms", 0L);
+            if (now <= until) {
+                prefs().edit().putLong("emergency_confirm_until_ms", 0L).apply();
+                emergencyStop();
+                return START_NOT_STICKY;
+            }
+            prefs().edit().putLong("emergency_confirm_until_ms", now + 2500L).apply();
+            updateNotification(
+                    currentSymbol() + " · " + currentTf() + " · " + currentMode(),
+                    "EMERGENCY: нажмите ещё раз в течение 2,5 сек",
+                    prefs().getString("state_signal", "WAIT"),
+                    prefs().getInt("state_quality", -1)
+            );
+            handler.postDelayed(() -> {
+                long deadline = prefs().getLong("emergency_confirm_until_ms", 0L);
+                if (deadline > 0L && System.currentTimeMillis() > deadline) {
+                    prefs().edit().putLong("emergency_confirm_until_ms", 0L).apply();
+                    updateNotification(
+                            currentSymbol() + " · " + currentTf() + " · " + currentMode(),
+                            paused ? "PAUSE · новые входы запрещены" : "AUTO · мониторинг активен",
+                            prefs().getString("state_signal", "WAIT"),
+                            prefs().getInt("state_quality", -1)
+                    );
+                }
+            }, 2700L);
+            return START_STICKY;
         }
 
         if (ACTION_STOP_ALL.equals(action)) {
@@ -171,6 +202,7 @@ public class MonitoringService extends Service {
         paused = false;
         p.edit().putBoolean("bg_running", true)
                 .putBoolean("bg_paused", false)
+                .putBoolean("trading_paused", false)
                 .putString("bg_status", "Фоновый мониторинг работает")
                 .apply();
 
@@ -181,14 +213,23 @@ public class MonitoringService extends Service {
                 -1
         );
 
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(
-                    NOTIFICATION_ID,
-                    n,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            );
-        } else {
-            startForeground(NOTIFICATION_ID, n);
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(
+                        NOTIFICATION_ID,
+                        n,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                );
+            } else {
+                startForeground(NOTIFICATION_ID, n);
+            }
+        } catch (Exception e) {
+            p.edit()
+                    .putBoolean("bg_running", false)
+                    .putString("bg_status", "Ошибка запуска фонового сервиса: " + safeMessage(e))
+                    .apply();
+            stopSelf();
+            return;
         }
 
         handler.removeCallbacks(tick);
@@ -201,6 +242,7 @@ public class MonitoringService extends Service {
         prefs().edit()
                 .putBoolean("bg_running", false)
                 .putBoolean("bg_paused", false)
+                .putBoolean("trading_paused", false)
                 .putString("bg_status", emergency ? "EMERGENCY STOP" : "Фон полностью выключен")
                 .apply();
 
@@ -209,23 +251,47 @@ public class MonitoringService extends Service {
     }
 
     private void emergencyStop() {
-        prefs().edit()
+        SharedPreferences p = prefs();
+        p.edit()
                 .putBoolean("auto_trading", false)
-                .putString("bg_status", "EMERGENCY STOP · AUTO OFF")
+                .putBoolean("trading_paused", false)
+                .putBoolean("stop_all_requested", true)
+                .putString("bg_status", "EMERGENCY STOP · CLOSE ALL")
                 .apply();
 
+        final String base = normalizeUrl(p.getString("server_url", ""));
+        executor.execute(() -> {
+            String result = "AUTO остановлен";
+            if (!base.isEmpty()) {
+                try {
+                    JSONObject payload = new JSONObject();
+                    payload.put("mode", "DEMO");
+                    httpJson("POST", base + "/close-all", payload);
+                    result = "CLOSE ALL отправлен в MT5 bridge";
+                } catch (Exception ignored) {
+                    result = "AUTO остановлен · CLOSE ALL не подтверждён";
+                }
+            }
+            final String finalResult = result;
+            handler.post(() -> finishEmergencyStop(finalResult));
+        });
+    }
+
+    private void finishEmergencyStop(String result) {
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (nm != null) {
             Notification emergency = new Notification.Builder(this, CHANNEL_SIGNAL)
                     .setSmallIcon(android.R.drawable.stat_notify_error)
                     .setContentTitle("FX M1 Bot · EMERGENCY STOP")
-                    .setContentText("Фоновый мониторинг и AUTO TRADING остановлены")
+                    .setContentText(result)
+                    .setStyle(new Notification.BigTextStyle().bigText(
+                            result + "\nНовые входы запрещены. Проверьте MT5 перед повторным запуском."
+                    ))
                     .setAutoCancel(true)
                     .setContentIntent(openAppIntent())
                     .build();
             nm.notify(SIGNAL_NOTIFICATION_ID, emergency);
         }
-
         stopMonitoring(true);
     }
 
@@ -469,6 +535,7 @@ public class MonitoringService extends Service {
     }
 
     private void maybeSendToTradingServer(Analysis a, String tf, String mode) {
+        if (paused || prefs().getBoolean("trading_paused", false)) return;
         if (!prefs().getBoolean("auto_trading", false)) return;
         if ("WAIT".equals(a.signal)) return;
 
@@ -578,36 +645,29 @@ public class MonitoringService extends Service {
             status = signal + " · качество " + quality + "/100 · " + text;
         }
 
-        Notification.Action jarvisAction = new Notification.Action.Builder(
-                android.R.drawable.ic_btn_speak_now,
-                "JARVIS",
-                openJarvisIntent()
-        ).build();
-
         Notification.Action pausePlayAction = new Notification.Action.Builder(
                 paused ? android.R.drawable.ic_media_play : android.R.drawable.ic_media_pause,
-                paused ? "ПРОДОЛЖИТЬ" : "ПАУЗА",
+                paused ? "PLAY" : "PAUSE",
                 serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101)
         ).build();
 
-        Notification.Action powerAction = new Notification.Action.Builder(
-                android.R.drawable.ic_lock_power_off,
-                "ВЫКЛЮЧИТЬ",
-                serviceActionIntent(ACTION_POWER_OFF, 102)
+        Notification.Action emergencyAction = new Notification.Action.Builder(
+                android.R.drawable.stat_notify_error,
+                "EMERGENCY",
+                serviceActionIntent(ACTION_EMERGENCY, 102)
         ).build();
 
         return new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(android.R.drawable.stat_notify_sync)
-                .setContentTitle(paused ? "FX M1 Bot · ПАУЗА" : "FX M1 Bot · работает в фоне")
+                .setContentTitle(paused ? "FX M1 Bot · PAUSE" : "FX M1 Bot · AUTO")
                 .setContentText(title + " · " + status)
-                .setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1, 2))
+                .setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1))
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentIntent(openAppIntent())
-                .addAction(jarvisAction)
                 .addAction(pausePlayAction)
-                .addAction(powerAction)
+                .addAction(emergencyAction)
                 .build();
     }
 
@@ -624,17 +684,6 @@ public class MonitoringService extends Service {
         return PendingIntent.getActivity(
                 this,
                 100,
-                i,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-    }
-
-    private PendingIntent openJarvisIntent() {
-        Intent i = new Intent(this, JarvisVoiceService.class);
-        i.setAction(JarvisVoiceService.ACTION_TALK);
-        return PendingIntent.getForegroundService(
-                this,
-                103,
                 i,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
