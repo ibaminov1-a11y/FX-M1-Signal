@@ -34,13 +34,14 @@ public class MainActivity extends Activity {
     private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel;
     private TextView marketStatusText, marketSessionText;
     private SparklineView sparklineView;
+    private QualityBarView qualityBarView;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
     private EditText serverUrlInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel;
     private Switch autoTradingSwitch;
     private TextView autoStatusText;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
-    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard, marketStatusCard;
+    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard, marketStatusCard, positionsCard, bottomNav;
 
 
     private static final int C_BG = Color.rgb(7, 8, 22);
@@ -73,6 +74,8 @@ public class MainActivity extends Activity {
     private static final long CACHE_H1_MS = 30 * 60 * 1000L;
     private static final long CACHE_H4_MS = 90 * 60 * 1000L;
     private static final long CACHE_D1_MS = 6 * 60 * 60 * 1000L;
+    private static final long CACHE_W1_MS = 18 * 60 * 60 * 1000L;
+    private static final long CACHE_MN1_MS = 24 * 60 * 60 * 1000L;
 
     private boolean monitoring = false;
     private boolean isAnalyzing = false;
@@ -146,6 +149,7 @@ public class MainActivity extends Activity {
         marketStatusText = findViewById(R.id.marketStatusText);
         marketSessionText = findViewById(R.id.marketSessionText);
         sparklineView = findViewById(R.id.sparklineView);
+        qualityBarView = findViewById(R.id.qualityBarView);
 
         topCard = findViewById(R.id.topCard);
         tfCard = findViewById(R.id.tfCard);
@@ -156,6 +160,8 @@ public class MainActivity extends Activity {
         riskCard = findViewById(R.id.riskCard);
         journalCard = findViewById(R.id.journalCard);
         marketStatusCard = findViewById(R.id.marketStatusCard);
+        positionsCard = findViewById(R.id.positionsCard);
+        bottomNav = findViewById(R.id.bottomNav);
 
         applyDarkVioletTheme();
         updateMarketStatusUi();
@@ -164,7 +170,7 @@ public class MainActivity extends Activity {
         symbolSpinner.setAdapter(adapter);
 
         ArrayAdapter<String> timeframeAdapter = darkSpinnerAdapter(
-                new String[]{"M1", "M5", "M15", "H1"}
+                new String[]{"M1", "M5", "M15", "H1", "H4", "D1", "W1", "MN1"}
         );
         entryTimeframeSpinner.setAdapter(timeframeAdapter);
 
@@ -324,8 +330,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V6.5 разрешает только DEMO.");
-                    Toast.makeText(this, "V6.5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V6.7 разрешает только DEMO.");
+                    Toast.makeText(this, "V6.7 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -354,7 +360,29 @@ public class MainActivity extends Activity {
         // UI ticker: обновляет «прошло» каждую секунду без новых API-запросов.
         serviceUiHandler.removeCallbacks(serviceUiRunnable);
         serviceUiHandler.post(serviceUiRunnable);
+        setupBottomNavigation();
 
+    }
+
+
+    private void setupBottomNavigation() {
+        View overview = findViewById(R.id.navOverview);
+        View positions = findViewById(R.id.navPositions);
+        View signals = findViewById(R.id.navSignals);
+        View journal = findViewById(R.id.navJournal);
+        View settings = findViewById(R.id.navSettings);
+        if (overview != null) overview.setOnClickListener(v -> scrollToView(topCard));
+        if (positions != null) positions.setOnClickListener(v -> scrollToView(positionsCard));
+        if (signals != null) signals.setOnClickListener(v -> scrollToView(signalCard));
+        if (journal != null) journal.setOnClickListener(v -> scrollToView(journalCard));
+        if (settings != null) settings.setOnClickListener(v -> scrollToView(tradingCard));
+    }
+
+    private void scrollToView(View target) {
+        if (target == null) return;
+        ScrollView root = findViewById(R.id.rootLayout);
+        if (root == null) return;
+        root.post(() -> root.smoothScrollTo(0, Math.max(0, target.getTop() - dp(12))));
     }
 
     private void applyDarkVioletTheme() {
@@ -368,8 +396,6 @@ public class MainActivity extends Activity {
         }
         getWindow().getDecorView().setSystemUiVisibility(uiFlags);
 
-        View root = findViewById(R.id.rootLayout);
-        if (root != null) root.setBackgroundColor(C_BG);
 
         styleCard(topCard, C_CARD);
         styleCard(tfCard, C_CARD_2);
@@ -380,6 +406,8 @@ public class MainActivity extends Activity {
         styleCard(riskCard, C_CARD);
         styleCard(journalCard, C_CARD);
         styleCard(marketStatusCard, C_CARD);
+        styleCard(positionsCard, C_CARD);
+        styleCard(bottomNav, Color.rgb(10, 12, 28));
 
         stylePrimaryButton(saveKeyButton);
         stylePrimaryButton(analyzeButton);
@@ -963,7 +991,7 @@ public class MainActivity extends Activity {
         if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
             signalText.setText("WAIT");
             signalText.setTextColor(C_PURPLE);
-            confidenceText.setText("Качество сетапа: —");
+            confidenceText.setText("Качество сигнала: —");
             updateSignalAgeText("WAIT", 0L, 0L);
             levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
             contextText.setText("Параметры изменены. Жду новый анализ для " + selectedSymbol + " · " + selectedTf + ".");
@@ -980,8 +1008,9 @@ public class MainActivity extends Activity {
         signalText.setText(signal);
         signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
-        confidenceText.setText(quality >= 0 ? "Качество сетапа: " + quality + "/100" : "Качество сетапа: —");
+        confidenceText.setText(quality >= 0 ? "Качество сигнала: " + quality + "/100" : "Качество сигнала: —");
         confidenceText.setTextColor(C_PURPLE);
+        if (qualityBarView != null) { qualityBarView.setQuality(Math.max(0, quality)); qualityBarView.setSignal(signal); }
         updateSignalAgeText(signal, since, updated);
         restoreSparklineFromPrefs(signal);
 
@@ -1092,16 +1121,36 @@ public class MainActivity extends Activity {
                     higher1Label = "H1";
                     higher2Label = "H4";
 
-                } else {
+                } else if ("H1".equals(entryTf)) {
                     fast = getSeries(symbol, "15min", key, 120, CACHE_M15_MS);
                     entry = getSeries(symbol, "1h", key, 120, CACHE_H1_MS);
                     higher1 = getSeries(symbol, "4h", key, 100, CACHE_H4_MS);
                     higher2 = getSeries(symbol, "1day", key, 100, CACHE_D1_MS);
-
-                    fastLabel = "M15";
-                    entryLabel = "H1";
-                    higher1Label = "H4";
-                    higher2Label = "D1";
+                    fastLabel = "M15"; entryLabel = "H1"; higher1Label = "H4"; higher2Label = "D1";
+                } else if ("H4".equals(entryTf)) {
+                    fast = getSeries(symbol, "1h", key, 120, CACHE_H1_MS);
+                    entry = getSeries(symbol, "4h", key, 120, CACHE_H4_MS);
+                    higher1 = getSeries(symbol, "1day", key, 100, CACHE_D1_MS);
+                    higher2 = getSeries(symbol, "1week", key, 100, CACHE_W1_MS);
+                    fastLabel = "H1"; entryLabel = "H4"; higher1Label = "D1"; higher2Label = "W1";
+                } else if ("D1".equals(entryTf)) {
+                    fast = getSeries(symbol, "4h", key, 120, CACHE_H4_MS);
+                    entry = getSeries(symbol, "1day", key, 120, CACHE_D1_MS);
+                    higher1 = getSeries(symbol, "1week", key, 100, CACHE_W1_MS);
+                    higher2 = getSeries(symbol, "1month", key, 100, CACHE_MN1_MS);
+                    fastLabel = "H4"; entryLabel = "D1"; higher1Label = "W1"; higher2Label = "MN1";
+                } else if ("W1".equals(entryTf)) {
+                    fast = getSeries(symbol, "1day", key, 120, CACHE_D1_MS);
+                    entry = getSeries(symbol, "1week", key, 120, CACHE_W1_MS);
+                    higher1 = getSeries(symbol, "1month", key, 100, CACHE_MN1_MS);
+                    higher2 = higher1;
+                    fastLabel = "D1"; entryLabel = "W1"; higher1Label = "MN1"; higher2Label = "MN1";
+                } else {
+                    fast = getSeries(symbol, "1week", key, 120, CACHE_W1_MS);
+                    entry = getSeries(symbol, "1month", key, 120, CACHE_MN1_MS);
+                    higher1 = entry;
+                    higher2 = entry;
+                    fastLabel = "W1"; entryLabel = "MN1"; higher1Label = "MN1"; higher2Label = "MN1";
                 }
 
                 Analysis a = analyzeAdaptive(
@@ -1126,7 +1175,7 @@ public class MainActivity extends Activity {
                     if (sparklineView != null) {
                         List<Double> pts = new ArrayList<>();
                         int from = Math.max(0, entry.data.size() - 30);
-                        for (int i = from; i < entry.data.size(); i++) pts.add(entry.data.get(i).close);
+                        for (int i = from; i < entry.data.size(); i++) { Candle c = entry.data.get(i); pts.add((c.high + c.low + c.close) / 3.0); }
                         sparklineView.setValues(pts);
                         sparklineView.setSignal(a.signal);
                     }
@@ -1368,7 +1417,11 @@ public class MainActivity extends Activity {
         if ("M1".equals(tf)) return 20000L;
         if ("M5".equals(tf)) return 60000L;
         if ("M15".equals(tf)) return 180000L;
-        return 300000L; // H1
+        if ("H1".equals(tf)) return 300000L;
+        if ("H4".equals(tf)) return 900000L;
+        if ("D1".equals(tf)) return 1800000L;
+        if ("W1".equals(tf)) return 3600000L;
+        return 7200000L; // MN1
     }
 
     private String selectedMonitorLabel() {
@@ -1909,10 +1962,11 @@ public class MainActivity extends Activity {
 
         confidenceText.setTextColor(C_PURPLE);
         confidenceText.setText(
-                "Качество сетапа: " +
+                "Качество сигнала: " +
                 a.quality +
                 "/100"
         );
+        if (qualityBarView != null) { qualityBarView.setQuality(a.quality); qualityBarView.setSignal(a.signal); }
 
         long nowMs = System.currentTimeMillis();
         SharedPreferences localPrefs = getSharedPreferences("fxm1", MODE_PRIVATE);
