@@ -33,7 +33,7 @@ public class MonitoringService extends Service {
 
     private static final int NOTIFICATION_ID = 4101;
     private static final int SIGNAL_NOTIFICATION_ID = 4102;
-    private static final String CHANNEL_MONITOR = "fx_monitor_background_v68";
+    private static final String CHANNEL_MONITOR = "fx_monitor_controls_v682";
     private static final String CHANNEL_SIGNAL = "fx_trade_signals";
 
     private static final long CACHE_M1_MS = 18000L;
@@ -647,6 +647,8 @@ public class MonitoringService extends Service {
     }
 
     private String currentSymbol() {
+        String explicit = prefs().getString("selected_symbol", "");
+        if (explicit != null && !explicit.trim().isEmpty()) return explicit.trim();
         int pos = prefs().getInt("symbol_pos", 0);
         pos = Math.max(0, Math.min(pos, symbols.length - 1));
         return symbols[pos];
@@ -690,7 +692,7 @@ public class MonitoringService extends Service {
         NotificationChannel monitor = new NotificationChannel(
                 CHANNEL_MONITOR,
                 "FX M1 Bot · мониторинг",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
         );
         monitor.setDescription("Постоянный мониторинг FX M1 Bot: сигнал, MT5, риск и аварийные действия");
         monitor.setShowBadge(false);
@@ -720,7 +722,6 @@ public class MonitoringService extends Service {
         boolean auto = p.getBoolean("auto_trading", false);
         String risk = p.getString("risk_label", "0.50%");
         if (risk == null || risk.trim().isEmpty() || "null".equals(risk)) risk = "0.50%";
-
         String symbol = currentSymbol();
         String tf = currentTf();
         String mode = currentMode();
@@ -732,50 +733,13 @@ public class MonitoringService extends Service {
         String apiText = Double.isNaN(apiPrice) ? "—" : String.format(Locale.US, "%.5f", apiPrice);
         String updatedText = updatedMs > 0L ? new java.text.SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date(updatedMs)) : "—";
         String core = symbol + " · " + tf + " · " + mode + " · " + signal + " · " + qualityText;
-
-        int signalColor = "BUY".equals(signal) ? Color.rgb(66,214,122)
-                : "SELL".equals(signal) ? Color.rgb(255,72,87)
-                : Color.rgb(166,107,255);
-
-        RemoteViews compact = new RemoteViews(getPackageName(), R.layout.notification_monitoring_compact);
-        compact.setImageViewResource(R.id.notifLogo, R.drawable.app_icon);
-        compact.setTextViewText(R.id.notifTitle, "FX M1 Bot");
-        compact.setTextViewText(R.id.notifCore, core);
-        compact.setTextColor(R.id.notifCore, signalColor);
-        compact.setTextViewText(R.id.notifAccount, "Баланс (" + accountType + ")\n" + balanceText);
-        compact.setTextViewText(R.id.notifPositions, "Открытые позиции\n" + positions);
-        compact.setTextViewText(R.id.notifRisk, "Риск на сделку\n" + risk);
-        compact.setTextViewText(R.id.notifPause, paused ? "▶  PLAY" : "Ⅱ  PAUSE");
-        compact.setOnClickPendingIntent(R.id.notifPause, serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101));
-        compact.setOnClickPendingIntent(R.id.notifEmergency, serviceActionIntent(ACTION_EMERGENCY, 102));
-
-        RemoteViews expanded = new RemoteViews(getPackageName(), R.layout.notification_monitoring_expanded);
-        expanded.setImageViewResource(R.id.notifLogo, R.drawable.app_icon);
-        expanded.setTextViewText(R.id.notifTitle, "FX M1 Bot");
-        expanded.setTextViewText(R.id.notifCore, core);
-        expanded.setTextColor(R.id.notifCore, signalColor);
-        expanded.setTextViewText(R.id.notifAccount, "Баланс (" + accountType + ")\n" + balanceText);
-        expanded.setTextViewText(R.id.notifPositions, "Открытые позиции\n" + positions);
-        expanded.setTextViewText(R.id.notifRisk, "Риск на сделку\n" + risk);
-        expanded.setTextViewText(R.id.notifQuality, "Качество сигнала\n" + qualityText);
-        expanded.setTextColor(R.id.notifQuality, signalColor);
-        expanded.setProgressBar(R.id.notifQualityBar, 100, Math.max(0, quality), false);
-        expanded.setTextViewText(R.id.notifApiPrice, "API Price\n" + apiText);
-        expanded.setTextViewText(R.id.notifLastSignal, "Последний анализ\n" + updatedText);
-        expanded.setTextViewText(R.id.notifConnection,
-                market + " · " + (serverConnected ? "SERVER CONNECTED" : "SERVER OFFLINE") + " · " +
-                        (mt5Connected ? "MT5 CONNECTED" : "MT5 OFFLINE") + " · AUTO " + (auto ? "ON" : "OFF"));
-        expanded.setTextColor(R.id.notifConnection, mt5Connected && serverConnected ? Color.rgb(66,214,122) : Color.rgb(255,159,67));
-        expanded.setTextViewText(R.id.notifPause, paused ? "▶  PLAY" : "Ⅱ  PAUSE");
-        expanded.setOnClickPendingIntent(R.id.notifPause, serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101));
-        expanded.setOnClickPendingIntent(R.id.notifEmergency, serviceActionIntent(ACTION_EMERGENCY, 102));
-
+        int signalColor = "BUY".equals(signal) ? Color.rgb(66,214,122) : "SELL".equals(signal) ? Color.rgb(255,72,87) : Color.rgb(166,107,255);
         PendingIntent pausePi = serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101);
         PendingIntent emergencyPi = serviceActionIntent(ACTION_EMERGENCY, 102);
-
-        String fallbackText = core + " · " + market +
-                " · " + (mt5Connected ? "MT5 CONNECTED" : "MT5 OFFLINE");
-
+        String details = core + "\n" + market + " · " + (serverConnected ? "SERVER CONNECTED" : "SERVER OFFLINE") + " · " + (mt5Connected ? "MT5 CONNECTED" : "MT5 OFFLINE") + "\n" +
+                "Баланс (" + accountType + "): " + balanceText + "   Позиции: " + positions + "\n" +
+                "Риск: " + risk + "   AUTO: " + (auto ? "ON" : "OFF") + "\n" +
+                "API Price: " + apiText + "   Последний анализ: " + updatedText;
         Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(R.drawable.ic_stat_fx)
                 .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.app_icon))
@@ -786,18 +750,14 @@ public class MonitoringService extends Service {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentTitle("FX M1 Bot · " + signal)
-                .setContentText(fallbackText)
+                .setContentText(core)
                 .setSubText(paused ? "PAUSE" : "MONITORING")
                 .setContentIntent(openAppIntent())
-                .setCustomContentView(compact)
-                .setCustomBigContentView(expanded)
-                .addAction(new Notification.Action.Builder(
-                        R.drawable.ic_stat_fx, paused ? "PLAY" : "PAUSE", pausePi).build())
-                .addAction(new Notification.Action.Builder(
-                        R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
-        if (Build.VERSION.SDK_INT >= 24) {
-            b.setStyle(new Notification.DecoratedCustomViewStyle());
-        }
+                .setStyle(new Notification.BigTextStyle().bigText(details))
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, paused ? "PLAY" : "PAUSE", pausePi).build())
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
+        if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+        if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_MAX);
         return b.build();
     }
 

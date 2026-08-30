@@ -12,7 +12,7 @@
 
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" Bot" android:textColor="#F7F4FF" android:textSize="29sp" android:textStyle="bold" />
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V6.8.1" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V6.8.2" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
         </LinearLayout>
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="M1 / M5 / M15 / H1 / H4 / D1 / W1 / MN1   •   MT5 execution" android:textColor="#9892AE" android:textSize="11sp" />
@@ -169,7 +169,7 @@
             <TextView android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⚙\nНастройки" android:textColor="#9791AA" android:textSize="10sp" />
         </LinearLayout>
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V6.8.1 · AUTO BACKGROUND · MT5 BRIDGE · SMART SERVER · MARKET STATUS" android:textColor="#6F6983" android:textSize="9sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V6.8.2 · AUTO BACKGROUND · MT5 BRIDGE · SMART SERVER · MARKET STATUS" android:textColor="#6F6983" android:textSize="9sp" />
 
     </LinearLayout>
 </ScrollView>

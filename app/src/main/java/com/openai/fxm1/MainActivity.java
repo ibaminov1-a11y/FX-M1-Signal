@@ -94,11 +94,13 @@ public class MainActivity extends Activity {
     private final Map<String, CacheItem> cache = new HashMap<>();
     private final Map<String, String> lastAlertSignal = new HashMap<>();
 
-    private final String[] symbols = {
+    private final ArrayList<String> symbolItems = new ArrayList<>(Arrays.asList(
             "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
             "EUR/JPY", "GBP/JPY", "EUR/GBP", "EUR/CHF", "AUD/JPY", "CAD/JPY", "CHF/JPY",
             "GBP/CHF", "EUR/AUD", "GBP/AUD", "AUD/NZD", "NZD/JPY", "XAU/USD"
-    };
+    ));
+    private ArrayAdapter<String> symbolAdapter;
+    private boolean addingCustomSymbol = false;
 
     private final Runnable monitorRunnable = new Runnable() {
         @Override
@@ -166,8 +168,10 @@ public class MainActivity extends Activity {
         applyDarkVioletTheme();
         updateMarketStatusUi();
 
-        ArrayAdapter<String> adapter = darkSpinnerAdapter(symbols);
-        symbolSpinner.setAdapter(adapter);
+        loadCustomSymbols();
+        symbolItems.add("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
+        symbolAdapter = darkSpinnerAdapter(symbolItems.toArray(new String[0]));
+        symbolSpinner.setAdapter(symbolAdapter);
 
         ArrayAdapter<String> timeframeAdapter = darkSpinnerAdapter(
                 new String[]{"M1", "M5", "M15", "H1", "H4", "D1", "W1", "MN1"}
@@ -181,7 +185,9 @@ public class MainActivity extends Activity {
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
         monitoring = prefs.getBoolean("bg_running", false);
-        symbolSpinner.setSelection(prefs.getInt("symbol_pos", 0));
+        String savedSymbol = prefs.getString("selected_symbol", "EUR/USD");
+        int savedSymbolIndex = symbolItems.indexOf(savedSymbol);
+        symbolSpinner.setSelection(savedSymbolIndex >= 0 ? savedSymbolIndex : 0);
         entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
         apiKeyInput.setText(prefs.getString("apikey", ""));
@@ -273,7 +279,12 @@ public class MainActivity extends Activity {
         symbolSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.edit().putInt("symbol_pos", position).apply();
+                String selected = String.valueOf(symbolSpinner.getSelectedItem());
+                if ("＋ ДОБАВИТЬ ИНСТРУМЕНТ".equals(selected)) {
+                    if (!addingCustomSymbol) showAddSymbolDialog();
+                    return;
+                }
+                prefs.edit().putInt("symbol_pos", position).putString("selected_symbol", selected).apply();
                 lastSentSignal.clear();
                 lastAlertSignal.clear();
 
@@ -863,6 +874,7 @@ public class MainActivity extends Activity {
         prefs.edit()
                 .putString("apikey", key)
                 .putInt("symbol_pos", symbolSpinner.getSelectedItemPosition())
+                .putString("selected_symbol", String.valueOf(symbolSpinner.getSelectedItem()))
                 .putInt("entry_tf_pos", entryTimeframeSpinner.getSelectedItemPosition())
                 .putInt("signal_mode_pos", signalModeSpinner.getSelectedItemPosition())
                 .putBoolean("ui_monitoring", true)
@@ -1382,7 +1394,8 @@ public class MainActivity extends Activity {
             Calendar closes = nyBoundary(daysToFriday, 17, 0);
             marketStatusText.setText("MARKET OPEN");
             marketStatusText.setTextColor(C_GREEN);
-            marketSessionText.setText("Открыт: " + tashkentTime(opened) + "\nЗакрытие: " + tashkentTime(closes));
+            marketSessionText.setText("Рынок открыт: " + tashkentTime(opened) + " — " + tashkentTime(closes) +
+                    "\nЗакрытие: " + tashkentTime(closes));
         } else {
             Calendar closed;
             Calendar next;
@@ -1395,8 +1408,69 @@ public class MainActivity extends Activity {
             }
             marketStatusText.setText("MARKET CLOSED");
             marketStatusText.setTextColor(C_RED);
-            marketSessionText.setText("Закрыт с: " + tashkentTime(closed) + "\nСледующее открытие: " + tashkentTime(next));
+            Calendar nextClose = (Calendar) next.clone();
+            nextClose.add(Calendar.DAY_OF_MONTH, 5);
+            marketSessionText.setText("Рынок закрыт: " + tashkentTime(closed) + " — " + tashkentTime(next) +
+                    "\nВоскресенье: закрыт весь день до открытия" +
+                    "\nСледующее открытие: " + tashkentTime(next) +
+                    "\nСледующее закрытие: " + tashkentTime(nextClose));
         }
+    }
+
+    private void loadCustomSymbols() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String raw = p.getString("custom_symbols", "");
+        if (raw == null || raw.trim().isEmpty()) return;
+        for (String x : raw.split("\\|")) {
+            String v = x.trim();
+            if (!v.isEmpty() && !symbolItems.contains(v)) symbolItems.add(v);
+        }
+    }
+
+    private void showAddSymbolDialog() {
+        addingCustomSymbol = true;
+        final EditText input = new EditText(this);
+        input.setHint("Например: BTC/USD, US100, XAG/USD");
+        input.setSingleLine(true);
+        new AlertDialog.Builder(this)
+                .setTitle("Добавить инструмент")
+                .setMessage("Введите символ. Он должен поддерживаться Twelve Data для анализа и MT5 для исполнения.")
+                .setView(input)
+                .setPositiveButton("ДОБАВИТЬ", (d, w) -> {
+                    String v = input.getText().toString().trim().toUpperCase(Locale.US);
+                    if (!v.isEmpty()) {
+                        int addPos = symbolItems.indexOf("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
+                        if (!symbolItems.contains(v)) symbolItems.add(Math.max(0, addPos), v);
+                        saveCustomSymbols();
+                        symbolAdapter = darkSpinnerAdapter(symbolItems.toArray(new String[0]));
+                        symbolSpinner.setAdapter(symbolAdapter);
+                        int pos = symbolItems.indexOf(v);
+                        symbolSpinner.setSelection(pos >= 0 ? pos : 0);
+                    }
+                    addingCustomSymbol = false;
+                })
+                .setNegativeButton("ОТМЕНА", (d, w) -> {
+                    addingCustomSymbol = false;
+                    String saved = getSharedPreferences("fxm1", MODE_PRIVATE).getString("selected_symbol", "EUR/USD");
+                    int pos = symbolItems.indexOf(saved);
+                    symbolSpinner.setSelection(pos >= 0 ? pos : 0);
+                })
+                .show();
+    }
+
+    private void saveCustomSymbols() {
+        HashSet<String> base = new HashSet<>(Arrays.asList(
+                "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
+                "EUR/JPY", "GBP/JPY", "EUR/GBP", "EUR/CHF", "AUD/JPY", "CAD/JPY", "CHF/JPY",
+                "GBP/CHF", "EUR/AUD", "GBP/AUD", "AUD/NZD", "NZD/JPY", "XAU/USD"
+        ));
+        StringBuilder b = new StringBuilder();
+        for (String x : symbolItems) {
+            if (base.contains(x) || x.startsWith("＋")) continue;
+            if (b.length() > 0) b.append('|');
+            b.append(x);
+        }
+        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("custom_symbols", b.toString()).apply();
     }
 
     private String safeMessage(Exception e) {
