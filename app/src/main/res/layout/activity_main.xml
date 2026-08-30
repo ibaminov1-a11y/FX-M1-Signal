@@ -1,624 +1,166 @@
-<?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/rootLayout"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_space_v67"
-    android:fillViewport="true"
-    android:scrollbarStyle="outsideOverlay">
+<?xml version='1.0' encoding='utf-8'?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/rootLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_space_v67" android:fillViewport="true" android:scrollbarStyle="outsideOverlay">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingLeft="12dp"
-        android:paddingTop="46dp"
-        android:paddingRight="12dp"
-        android:paddingBottom="18dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingLeft="12dp" android:paddingTop="46dp" android:paddingRight="12dp" android:paddingBottom="18dp">
 
-        <!-- HEADER -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+        
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="FX "
-                android:textColor="#F7F4FF"
-                android:textSize="29sp"
-                android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FX " android:textColor="#F7F4FF" android:textSize="29sp" android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="M1"
-                android:textColor="#914DFF"
-                android:textSize="29sp"
-                android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="M1" android:textColor="#914DFF" android:textSize="29sp" android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" Bot"
-                android:textColor="#F7F4FF"
-                android:textSize="29sp"
-                android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" Bot" android:textColor="#F7F4FF" android:textSize="29sp" android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="9dp"
-                android:background="#261541"
-                android:paddingLeft="8dp"
-                android:paddingTop="4dp"
-                android:paddingRight="8dp"
-                android:paddingBottom="4dp"
-                android:text="V6.7"
-                android:textColor="#C08CFF"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V6.8.1" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
         </LinearLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:text="M1 / M5 / M15 / H1 / H4 / D1 / W1 / MN1   •   MT5 execution"
-            android:textColor="#9892AE"
-            android:textSize="11sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="M1 / M5 / M15 / H1 / H4 / D1 / W1 / MN1   •   MT5 execution" android:textColor="#9892AE" android:textSize="11sp" />
 
-        <!-- CONFIG TOP ROW -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:baselineAligned="false"
-            android:orientation="horizontal">
+        
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:baselineAligned="false" android:orientation="horizontal">
 
-            <LinearLayout
-                android:id="@+id/topCard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="5dp"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:padding="12dp">
+            <LinearLayout android:id="@+id/topCard" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="198dp" android:layout_marginRight="5dp" android:layout_weight="1" android:orientation="vertical" android:padding="12dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="ИНСТРУМЕНТ"
-                    android:textColor="#A66BFF"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ИНСТРУМЕНТ" android:textColor="#A66BFF" android:textSize="11sp" android:textStyle="bold" />
 
-                <Spinner
-                    android:id="@+id/symbolSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:backgroundTint="#914DFF" />
+                <Spinner android:id="@+id/symbolSpinner" android:layout_width="match_parent" android:layout_height="44dp" android:backgroundTint="#914DFF" />
 
-                <TextView
-                    android:id="@+id/apiKeyLabel"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="API KEY · TWELVE DATA"
-                    android:textColor="#A66BFF"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
+                <TextView android:id="@+id/apiKeyLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="API KEY · TWELVE DATA" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
-                <EditText
-                    android:id="@+id/apiKeyInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="42dp"
-                    android:hint="••••••••••••"
-                    android:inputType="textPassword"
-                    android:singleLine="true"
-                    android:textColor="#F7F4FF"
-                    android:textColorHint="#777087" />
+                <EditText android:id="@+id/apiKeyInput" android:layout_width="match_parent" android:layout_height="42dp" android:hint="••••••••••••" android:inputType="textPassword" android:singleLine="true" android:textColor="#F7F4FF" android:textColorHint="#777087" />
 
-                <Button
-                    android:id="@+id/saveKeyButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:layout_marginTop="6dp"
-                    android:text="СОХРАНИТЬ API KEY"
-                    android:textAllCaps="true"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                <Button android:id="@+id/saveKeyButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp" android:text="СОХРАНИТЬ API KEY" android:textAllCaps="true" android:textSize="11sp" android:textStyle="bold" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/marketStatusCard"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginLeft="5dp"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:padding="12dp">
+            <LinearLayout android:id="@+id/marketStatusCard" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="198dp" android:layout_marginLeft="5dp" android:layout_weight="1" android:orientation="vertical" android:padding="12dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="СТАТУС РЫНКА"
-                    android:textColor="#A66BFF"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="СТАТУС РЫНКА" android:textColor="#A66BFF" android:textSize="11sp" android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/marketStatusText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="MARKET CLOSED"
-                    android:textColor="#FF4857"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                <TextView android:id="@+id/marketStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="MARKET CLOSED" android:textColor="#FF4857" android:textSize="18sp" android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/marketSessionText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Проверка торговой сессии…"
-                    android:textColor="#AAA5C1"
-                    android:textSize="11sp"
-                    android:lineSpacingExtra="2dp" />
+                <TextView android:id="@+id/marketSessionText" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="64dp" android:maxLines="4" android:layout_marginTop="8dp" android:text="Проверка торговой сессии…" android:textColor="#AAA5C1" android:textSize="11sp" android:lineSpacingExtra="2dp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- TF + MODE -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="9dp"
-            android:baselineAligned="false"
-            android:orientation="horizontal">
+        
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="9dp" android:baselineAligned="false" android:orientation="horizontal">
 
-            <LinearLayout
-                android:id="@+id/tfCard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="5dp"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:padding="11dp">
+            <LinearLayout android:id="@+id/tfCard" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="5dp" android:layout_weight="1" android:orientation="vertical" android:padding="11dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="ТАЙМФРЕЙМ ВХОДА"
-                    android:textColor="#A66BFF"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ТАЙМФРЕЙМ ВХОДА" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
-                <Spinner
-                    android:id="@+id/entryTimeframeSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="42dp"
-                    android:backgroundTint="#914DFF" />
+                <Spinner android:id="@+id/entryTimeframeSpinner" android:layout_width="match_parent" android:layout_height="42dp" android:backgroundTint="#914DFF" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/modeCard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:padding="11dp">
+            <LinearLayout android:id="@+id/modeCard" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:orientation="vertical" android:padding="11dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="РЕЖИМ СИГНАЛА"
-                    android:textColor="#A66BFF"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="РЕЖИМ СИГНАЛА" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
-                <Spinner
-                    android:id="@+id/signalModeSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="42dp"
-                    android:backgroundTint="#914DFF" />
+                <Spinner android:id="@+id/signalModeSpinner" android:layout_width="match_parent" android:layout_height="42dp" android:backgroundTint="#914DFF" />
             </LinearLayout>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/analyzeButton"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="9dp"
-            android:text="▶  ЗАПУСТИТЬ МОНИТОРИНГ"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+        <Button android:id="@+id/analyzeButton" android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginTop="9dp" android:text="▶  ЗАПУСТИТЬ МОНИТОРИНГ" android:textSize="14sp" android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="7dp"
-            android:text="●  Мониторинг остановлен."
-            android:textColor="#AAA5C1"
-            android:textSize="11sp" />
+        <TextView android:id="@+id/statusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="●  Мониторинг остановлен." android:textColor="#AAA5C1" android:textSize="11sp" />
 
-        <!-- ACCOUNT OVERVIEW -->
-        <LinearLayout
-            android:id="@+id/metricsCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical"
-            android:padding="13dp">
+        
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="ТЕКУЩИЙ СИГНАЛ" android:textColor="#A66BFF" android:textSize="16sp" android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="СЧЁТ / ИСПОЛНЕНИЕ"
-                android:textColor="#A66BFF"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+        
+        <LinearLayout android:id="@+id/signalCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="vertical" android:padding="13dp">
 
-            <TextView
-                android:id="@+id/accountText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
-                android:text="Счёт: —&#10;Баланс: —&#10;Equity: —"
-                android:textColor="#F7F4FF"
-                android:textSize="14sp"
-                android:lineSpacingExtra="3dp" />
+            <TextView android:id="@+id/signalText" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="WAIT" android:textColor="#A66BFF" android:textSize="36sp" android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/priceCompareText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
-                android:text="API Price: —   •   MT5 Bid/Ask: — / —   •   Δ: —"
-                android:textColor="#AFA8C4"
-                android:textSize="11sp" />
+            <com.openai.fxm1.SparklineView android:id="@+id/sparklineView" android:layout_width="match_parent" android:layout_height="78dp" android:layout_marginTop="2dp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:gravity="center_vertical" android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="МАКС. ОТКЛОНЕНИЕ MT5"
-                    android:textColor="#A66BFF"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
+                <TextView android:id="@+id/confidenceText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Качество сигнала: —" android:textColor="#A66BFF" android:textSize="14sp" />
 
-                <Spinner
-                    android:id="@+id/maxDriftSpinner"
-                    android:layout_width="115dp"
-                    android:layout_height="40dp"
-                    android:backgroundTint="#914DFF" />
+                <com.openai.fxm1.QualityBarView android:id="@+id/qualityBarView" android:layout_width="105dp" android:layout_height="22dp" />
             </LinearLayout>
+
+            <TextView android:id="@+id/signalAgeText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:gravity="center" android:text="Сигнал ещё не открыт." android:textColor="#FF9F43" android:textSize="11sp" android:lineSpacingExtra="2dp" />
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="11dp" android:layout_marginBottom="11dp" android:background="#342B51" />
+
+            <TextView android:id="@+id/levelsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Entry: —&#10;SL: —&#10;TP1: —&#10;TP2: —" android:textColor="#F7F4FF" android:textSize="15sp" android:lineSpacingExtra="4dp" />
+
+            <TextView android:id="@+id/contextText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="11dp" android:text="Контекст появится после анализа." android:textColor="#B8B2CB" android:textSize="12sp" android:lineSpacingExtra="2dp" />
         </LinearLayout>
 
-        <!-- AUTO TRADING -->
-        <LinearLayout
-            android:id="@+id/riskCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical"
-            android:padding="13dp">
+        
+        <LinearLayout android:id="@+id/riskCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
 
-            <Switch
-                android:id="@+id/autoTradingSwitch"
-                android:layout_width="match_parent"
-                android:layout_height="46dp"
-                android:text="AUTO TRADING  •  DEMO ONLY"
-                android:textColor="#F7F4FF"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+            <Switch android:id="@+id/autoTradingSwitch" android:layout_width="match_parent" android:layout_height="46dp" android:text="AUTO TRADING  •  DEMO ONLY" android:textColor="#F7F4FF" android:textSize="15sp" android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/autoStatusText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="AUTO выключен · DEMO ONLY"
-                android:textColor="#B0AAC7"
-                android:textSize="11sp" />
+            <TextView android:id="@+id/autoStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="AUTO выключен · DEMO ONLY" android:textColor="#B0AAC7" android:textSize="11sp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:baselineAligned="false" android:orientation="horizontal">
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="РИСК НА СДЕЛКУ"
-                        android:textColor="#A66BFF"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                    <Spinner
-                        android:id="@+id/riskSpinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:backgroundTint="#914DFF" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="5dp" android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="РИСК НА СДЕЛКУ" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
+                    <Spinner android:id="@+id/riskSpinner" android:layout_width="match_parent" android:layout_height="40dp" android:backgroundTint="#914DFF" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="МАКС. ПОЗИЦИЙ"
-                        android:textColor="#A66BFF"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                    <Spinner
-                        android:id="@+id/maxPositionsSpinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:backgroundTint="#914DFF" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="МАКС. ПОЗИЦИЙ" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
+                    <Spinner android:id="@+id/maxPositionsSpinner" android:layout_width="match_parent" android:layout_height="40dp" android:backgroundTint="#914DFF" />
                 </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-                <Button
-                    android:id="@+id/closeAllButton"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="1"
-                    android:enabled="false"
-                    android:text="ЗАКРЫТЬ ВСЕ"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-                <Button
-                    android:id="@+id/emergencyStopButton"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="1"
-                    android:text="EMERGENCY STOP"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="horizontal">
+                <Button android:id="@+id/closeAllButton" android:layout_width="0dp" android:layout_height="48dp" android:layout_marginRight="5dp" android:layout_weight="1" android:enabled="false" android:text="ЗАКРЫТЬ ВСЕ" android:textSize="11sp" android:textStyle="bold" />
+                <Button android:id="@+id/emergencyStopButton" android:layout_width="0dp" android:layout_height="48dp" android:layout_marginLeft="5dp" android:layout_weight="1" android:text="EMERGENCY STOP" android:textSize="11sp" android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="ТЕКУЩИЙ СИГНАЛ"
-            android:textColor="#A66BFF"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+        <LinearLayout android:id="@+id/metricsCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
 
-        <!-- SIGNAL -->
-        <LinearLayout
-            android:id="@+id/signalCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="vertical"
-            android:padding="13dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="СЧЁТ / ИСПОЛНЕНИЕ" android:textColor="#A66BFF" android:textSize="11sp" android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/signalText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="WAIT"
-                android:textColor="#A66BFF"
-                android:textSize="36sp"
-                android:textStyle="bold" />
+            <TextView android:id="@+id/accountText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Счёт: —&#10;Баланс: —&#10;Equity: —" android:textColor="#F7F4FF" android:textSize="14sp" android:lineSpacingExtra="3dp" />
 
-            <com.openai.fxm1.SparklineView
-                android:id="@+id/sparklineView"
-                android:layout_width="match_parent"
-                android:layout_height="78dp"
-                android:layout_marginTop="2dp" />
+            <TextView android:id="@+id/priceCompareText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="API Price: —   •   MT5 Bid/Ask: — / —   •   Δ: —" android:textColor="#AFA8C4" android:textSize="11sp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:gravity="center_vertical" android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/confidenceText"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Качество сигнала: —"
-                    android:textColor="#A66BFF"
-                    android:textSize="14sp" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="МАКС. ОТКЛОНЕНИЕ MT5" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
-                <com.openai.fxm1.QualityBarView
-                    android:id="@+id/qualityBarView"
-                    android:layout_width="105dp"
-                    android:layout_height="22dp" />
+                <Spinner android:id="@+id/maxDriftSpinner" android:layout_width="115dp" android:layout_height="40dp" android:backgroundTint="#914DFF" />
             </LinearLayout>
-
-            <TextView
-                android:id="@+id/signalAgeText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
-                android:gravity="center"
-                android:text="Сигнал ещё не открыт."
-                android:textColor="#FF9F43"
-                android:textSize="11sp"
-                android:lineSpacingExtra="2dp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="11dp"
-                android:layout_marginBottom="11dp"
-                android:background="#342B51" />
-
-            <TextView
-                android:id="@+id/levelsText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Entry: —&#10;SL: —&#10;TP1: —&#10;TP2: —"
-                android:textColor="#F7F4FF"
-                android:textSize="15sp"
-                android:lineSpacingExtra="4dp" />
-
-            <TextView
-                android:id="@+id/contextText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="11dp"
-                android:text="Контекст появится после анализа."
-                android:textColor="#B8B2CB"
-                android:textSize="12sp"
-                android:lineSpacingExtra="2dp" />
         </LinearLayout>
 
-        <!-- POSITIONS -->
-        <LinearLayout
-            android:id="@+id/positionsCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical"
-            android:padding="13dp">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="ПОЗИЦИИ (MT5)"
-                android:textColor="#A66BFF"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/positionsText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Открытые позиции: —&#10;Текущий P/L: —"
-                android:textColor="#F7F4FF"
-                android:textSize="13sp"
-                android:lineSpacingExtra="3dp" />
+        
+        <LinearLayout android:id="@+id/positionsCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ПОЗИЦИИ (MT5)" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/positionsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Открытые позиции: —&#10;Текущий P/L: —" android:textColor="#F7F4FF" android:textSize="13sp" android:lineSpacingExtra="3dp" />
         </LinearLayout>
 
-        <!-- SYSTEM / TRADING MODULE -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="СОСТОЯНИЕ СИСТЕМЫ / ТОРГОВЫЙ МОДУЛЬ"
-            android:textColor="#A66BFF"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+        
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="СОСТОЯНИЕ СИСТЕМЫ / ТОРГОВЫЙ МОДУЛЬ" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
 
-        <LinearLayout
-            android:id="@+id/tradingCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="vertical"
-            android:padding="13dp">
+        <LinearLayout android:id="@+id/tradingCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="vertical" android:padding="13dp">
 
-            <TextView
-                android:id="@+id/serverStatusText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="SERVER: NOT CONNECTED   •   MT5: OFFLINE"
-                android:textColor="#FF4857"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+            <TextView android:id="@+id/serverStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="SERVER: NOT CONNECTED   •   MT5: OFFLINE" android:textColor="#FF4857" android:textSize="13sp" android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/serverUrlLabel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="АДРЕС СЕРВЕРА"
-                android:textColor="#A66BFF"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+            <TextView android:id="@+id/serverUrlLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="АДРЕС СЕРВЕРА" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
-            <EditText
-                android:id="@+id/serverUrlInput"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:hint="например: 192.168.0.100:8000"
-                android:inputType="textUri"
-                android:singleLine="true"
-                android:textColor="#F7F4FF"
-                android:textColorHint="#7D7792" />
+            <EditText android:id="@+id/serverUrlInput" android:layout_width="match_parent" android:layout_height="44dp" android:hint="например: 192.168.0.100:8000" android:inputType="textUri" android:singleLine="true" android:textColor="#F7F4FF" android:textColorHint="#7D7792" />
 
-            <Button
-                android:id="@+id/serverCheckButton"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="6dp"
-                android:text="ПРОВЕРИТЬ СЕРВЕР"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+            <Button android:id="@+id/serverCheckButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp" android:text="ПРОВЕРИТЬ СЕРВЕР" android:textSize="11sp" android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- JOURNAL -->
-        <LinearLayout
-            android:id="@+id/journalCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical"
-            android:padding="13dp">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="ЖУРНАЛ"
-                android:textColor="#A66BFF"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/journalText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
-                android:text="Журнал пока пуст."
-                android:textColor="#B8B2CB"
-                android:textSize="11sp"
-                android:lineSpacingExtra="2dp" />
+        
+        <LinearLayout android:id="@+id/journalCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ЖУРНАЛ" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/journalText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Журнал пока пуст." android:textColor="#B8B2CB" android:textSize="11sp" android:lineSpacingExtra="2dp" />
         </LinearLayout>
 
-        <!-- BOTTOM NAV -->
-        <LinearLayout
-            android:id="@+id/bottomNav"
-            android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:layout_marginTop="10dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:padding="4dp">
+        
+        <LinearLayout android:id="@+id/bottomNav" android:visibility="gone" android:layout_width="match_parent" android:layout_height="64dp" android:layout_marginTop="10dp" android:gravity="center" android:orientation="horizontal" android:padding="4dp">
 
             <TextView android:id="@+id/navOverview" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⌂\nОбзор" android:textColor="#A66BFF" android:textSize="10sp" />
             <TextView android:id="@+id/navPositions" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="▣\nПозиции" android:textColor="#9791AA" android:textSize="10sp" />
@@ -627,14 +169,7 @@
             <TextView android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⚙\nНастройки" android:textColor="#9791AA" android:textSize="10sp" />
         </LinearLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:gravity="center"
-            android:text="V6.7 · AUTO BACKGROUND · MT5 BRIDGE · SMART SERVER · MARKET STATUS"
-            android:textColor="#6F6983"
-            android:textSize="9sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V6.8.1 · AUTO BACKGROUND · MT5 BRIDGE · SMART SERVER · MARKET STATUS" android:textColor="#6F6983" android:textSize="9sp" />
 
     </LinearLayout>
 </ScrollView>

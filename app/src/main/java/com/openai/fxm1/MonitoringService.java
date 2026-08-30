@@ -33,7 +33,7 @@ public class MonitoringService extends Service {
 
     private static final int NOTIFICATION_ID = 4101;
     private static final int SIGNAL_NOTIFICATION_ID = 4102;
-    private static final String CHANNEL_MONITOR = "fx_monitor_background_v66";
+    private static final String CHANNEL_MONITOR = "fx_monitor_background_v68";
     private static final String CHANNEL_SIGNAL = "fx_trade_signals";
 
     private static final long CACHE_M1_MS = 18000L;
@@ -690,10 +690,13 @@ public class MonitoringService extends Service {
         NotificationChannel monitor = new NotificationChannel(
                 CHANNEL_MONITOR,
                 "FX M1 Bot · мониторинг",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
         );
-        monitor.setDescription("Мониторинг рынка FX M1 Bot");
+        monitor.setDescription("Постоянный мониторинг FX M1 Bot: сигнал, MT5, риск и аварийные действия");
         monitor.setShowBadge(false);
+        monitor.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        monitor.enableVibration(false);
+        monitor.setSound(null, null);
 
         NotificationChannel signal = new NotificationChannel(
                 CHANNEL_SIGNAL,
@@ -767,17 +770,34 @@ public class MonitoringService extends Service {
         expanded.setOnClickPendingIntent(R.id.notifPause, serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101));
         expanded.setOnClickPendingIntent(R.id.notifEmergency, serviceActionIntent(ACTION_EMERGENCY, 102));
 
+        PendingIntent pausePi = serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101);
+        PendingIntent emergencyPi = serviceActionIntent(ACTION_EMERGENCY, 102);
+
+        String fallbackText = core + " · " + market +
+                " · " + (mt5Connected ? "MT5 CONNECTED" : "MT5 OFFLINE");
+
         Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(R.drawable.ic_stat_fx)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.app_icon))
                 .setColor(signalColor)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setCategory(Notification.CATEGORY_SERVICE)
+                .setContentTitle("FX M1 Bot · " + signal)
+                .setContentText(fallbackText)
+                .setSubText(paused ? "PAUSE" : "MONITORING")
                 .setContentIntent(openAppIntent())
                 .setCustomContentView(compact)
-                .setCustomBigContentView(expanded);
-        if (Build.VERSION.SDK_INT >= 24) b.setStyle(new Notification.DecoratedCustomViewStyle());
+                .setCustomBigContentView(expanded)
+                .addAction(new Notification.Action.Builder(
+                        R.drawable.ic_stat_fx, paused ? "PLAY" : "PAUSE", pausePi).build())
+                .addAction(new Notification.Action.Builder(
+                        R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
+        if (Build.VERSION.SDK_INT >= 24) {
+            b.setStyle(new Notification.DecoratedCustomViewStyle());
+        }
         return b.build();
     }
 

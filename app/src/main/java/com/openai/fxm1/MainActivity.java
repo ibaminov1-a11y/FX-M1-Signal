@@ -330,8 +330,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V6.7 разрешает только DEMO.");
-                    Toast.makeText(this, "V6.7 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V6.8.1 разрешает только DEMO.");
+                    Toast.makeText(this, "V6.8.1 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
