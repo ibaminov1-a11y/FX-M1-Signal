@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     private static final int C_GREEN = Color.rgb(66, 214, 122);
     private static final int C_RED = Color.rgb(255, 72, 87);
     private static final int C_YELLOW = Color.rgb(255, 193, 61);
+    private static final int C_ORANGE = Color.rgb(255, 159, 67);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
@@ -203,7 +204,7 @@ public class MainActivity extends Activity {
         maxDriftSpinner.setSelection(prefs.getInt("maxdrift_pos", 1));
 
         analyzeButton.setText(monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
-        setTradingControlsOffline();
+        restoreTradingSnapshotFromPrefs();
 
         saveKeyButton.setOnClickListener(v -> {
             boolean editing = apiKeyInput.getVisibility() == View.VISIBLE;
@@ -503,6 +504,49 @@ public class MainActivity extends Activity {
         suppressAutoSwitch = false;
         getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("auto_trading", false).apply();
         if (journalMessage != null) addJournal(journalMessage);
+    }
+
+    private void restoreTradingSnapshotFromPrefs() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String savedUrl = p.getString("server_url", "").trim();
+        boolean verified = p.getBoolean("server_verified", false) && !savedUrl.isEmpty();
+        boolean mt5 = p.getBoolean("mt5_connected_snapshot", false);
+        String accountType = p.getString("mt5_account_type_snapshot", "UNKNOWN");
+        String currency = p.getString("mt5_currency_snapshot", "USD");
+        double balance = Double.longBitsToDouble(p.getLong("mt5_balance_bits", Double.doubleToLongBits(Double.NaN)));
+        double equity = Double.longBitsToDouble(p.getLong("mt5_equity_bits", Double.doubleToLongBits(Double.NaN)));
+        int positions = p.getInt("mt5_positions_snapshot", 0);
+        double floating = Double.longBitsToDouble(p.getLong("mt5_floating_bits", Double.doubleToLongBits(0.0)));
+
+        if (verified) {
+            serverConnected = true;
+            mt5Connected = mt5;
+            demoAccount = "DEMO".equalsIgnoreCase(accountType);
+            serverStatusText.setText("SERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
+            serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
+            accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
+            positionsText.setText("Открытые позиции: " + positions + "\nТекущий P/L: " + signedMoney(floating, currency));
+            closeAllButton.setEnabled(mt5 && demoAccount && positions > 0);
+            suppressAutoSwitch = true;
+            autoTradingSwitch.setChecked(p.getBoolean("auto_trading", false) && mt5 && demoAccount);
+            suppressAutoSwitch = false;
+        } else {
+            setTradingControlsOffline();
+        }
+    }
+
+    private void restoreSparklineFromPrefs(String signal) {
+        if (sparklineView == null) return;
+        String raw = getSharedPreferences("fxm1", MODE_PRIVATE).getString("state_sparkline", "");
+        if (raw == null || raw.trim().isEmpty()) return;
+        List<Double> points = new ArrayList<>();
+        for (String part : raw.split(",")) {
+            try { points.add(Double.parseDouble(part)); } catch (Exception ignored) {}
+        }
+        if (points.size() >= 2) {
+            sparklineView.setValues(points);
+            sparklineView.setSignal(signal);
+        }
     }
 
     private String normalizeServerUrl(String raw) {
@@ -887,6 +931,7 @@ public class MainActivity extends Activity {
 
     private void syncUiFromBackgroundService() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        if (p.getBoolean("server_verified", false)) restoreTradingSnapshotFromPrefs();
         boolean bgRunning = p.getBoolean("bg_running", false);
         monitoring = bgRunning;
 
@@ -917,7 +962,7 @@ public class MainActivity extends Activity {
 
         if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
             signalText.setText("WAIT");
-            signalText.setTextColor(C_TEXT);
+            signalText.setTextColor(C_PURPLE);
             confidenceText.setText("Качество сетапа: —");
             updateSignalAgeText("WAIT", 0L, 0L);
             levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
@@ -933,10 +978,12 @@ public class MainActivity extends Activity {
         statusText.setText(symbol + " · " + tf + " · " + source + " · API " + fresh + " · кэш " + cached);
 
         signalText.setText(signal);
-        signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_TEXT));
+        signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
         confidenceText.setText(quality >= 0 ? "Качество сетапа: " + quality + "/100" : "Качество сетапа: —");
+        confidenceText.setTextColor(C_PURPLE);
         updateSignalAgeText(signal, since, updated);
+        restoreSparklineFromPrefs(signal);
 
         if ("WAIT".equals(signal)) {
             levelsText.setText("Entry: " + (Double.isNaN(entry) ? "—" : fmt(entry)) + "\nSL: —\nTP1: —\nTP2: —");
@@ -1800,7 +1847,7 @@ public class MainActivity extends Activity {
             } else {
                 signalAgeText.setText("Мониторинг остановлен · последний анализ: " + formatClock(updatedMs));
             }
-            signalAgeText.setTextColor(C_MUTED);
+            signalAgeText.setTextColor(C_ORANGE);
         }
     }
 
@@ -1857,9 +1904,10 @@ public class MainActivity extends Activity {
         } else if ("SELL".equals(a.signal)) {
             signalText.setTextColor(C_RED);
         } else {
-            signalText.setTextColor(C_TEXT);
+            signalText.setTextColor(C_PURPLE);
         }
 
+        confidenceText.setTextColor(C_PURPLE);
         confidenceText.setText(
                 "Качество сетапа: " +
                 a.quality +
