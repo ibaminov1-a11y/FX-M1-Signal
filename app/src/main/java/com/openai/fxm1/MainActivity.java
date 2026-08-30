@@ -34,17 +34,18 @@ public class MainActivity extends Activity {
 
     private Spinner symbolSpinner, entryTimeframeSpinner, signalModeSpinner;
     private EditText apiKeyInput;
-    private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel;
+    private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel, whyWaitText, componentScoresText;
     private TextView marketStatusText, marketSessionText;
     private SparklineView sparklineView;
     private QualityBarView qualityBarView;
-    private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
+    private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton, smartFeaturesButton, syncMt5SymbolsButton, managePositionsButton;
     private EditText serverUrlInput;
-    private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel;
+    private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel, smartStatusText, statsText, signalHistoryText, tradeHistoryText;
+    private View serverInputRow;
     private Switch autoTradingSwitch;
     private TextView autoStatusText;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
-    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard, marketStatusCard, positionsCard, bottomNav;
+    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard, marketStatusCard, positionsCard, smartCard, bottomNav;
     private ScrollView rootLayout;
 
 
@@ -135,12 +136,15 @@ public class MainActivity extends Activity {
         signalAgeText = findViewById(R.id.signalAgeText);
         levelsText = findViewById(R.id.levelsText);
         contextText = findViewById(R.id.contextText);
+        whyWaitText = findViewById(R.id.whyWaitText);
+        componentScoresText = findViewById(R.id.componentScoresText);
         analyzeButton = findViewById(R.id.analyzeButton);
         saveKeyButton = findViewById(R.id.saveKeyButton);
         serverUrlInput = findViewById(R.id.serverUrlInput);
         serverCheckButton = findViewById(R.id.serverCheckButton);
         serverStatusText = findViewById(R.id.serverStatusText);
         serverUrlLabel = findViewById(R.id.serverUrlLabel);
+        serverInputRow = findViewById(R.id.serverInputRow);
         accountText = findViewById(R.id.accountText);
         positionsText = findViewById(R.id.positionsText);
         journalText = findViewById(R.id.journalText);
@@ -152,8 +156,15 @@ public class MainActivity extends Activity {
         maxDriftSpinner = findViewById(R.id.maxDriftSpinner);
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
+        smartFeaturesButton = findViewById(R.id.smartFeaturesButton);
+        syncMt5SymbolsButton = findViewById(R.id.syncMt5SymbolsButton);
+        managePositionsButton = findViewById(R.id.managePositionsButton);
         marketStatusText = findViewById(R.id.marketStatusText);
         marketSessionText = findViewById(R.id.marketSessionText);
+        smartStatusText = findViewById(R.id.smartStatusText);
+        statsText = findViewById(R.id.statsText);
+        signalHistoryText = findViewById(R.id.signalHistoryText);
+        tradeHistoryText = findViewById(R.id.tradeHistoryText);
         sparklineView = findViewById(R.id.sparklineView);
         qualityBarView = findViewById(R.id.qualityBarView);
         rootLayout = findViewById(R.id.rootLayout);
@@ -168,13 +179,15 @@ public class MainActivity extends Activity {
         journalCard = findViewById(R.id.journalCard);
         marketStatusCard = findViewById(R.id.marketStatusCard);
         positionsCard = findViewById(R.id.positionsCard);
+        smartCard = findViewById(R.id.smartCard);
         bottomNav = findViewById(R.id.bottomNav);
 
         applyDarkVioletTheme();
         updateMarketStatusUi();
 
+        loadSyncedMt5Symbols();
         loadCustomSymbols();
-        symbolItems.add("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
+        if (!symbolItems.contains("＋ ДОБАВИТЬ ИНСТРУМЕНТ")) symbolItems.add("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
         symbolAdapter = darkSpinnerAdapter(symbolItems.toArray(new String[0]));
         symbolSpinner.setAdapter(symbolAdapter);
 
@@ -189,6 +202,7 @@ public class MainActivity extends Activity {
         signalModeSpinner.setAdapter(modeAdapter);
 
         SharedPreferences prefs = getSharedPreferences("fxm1", MODE_PRIVATE);
+        FeatureEngine.ensureDefaults(prefs);
         monitoring = prefs.getBoolean("bg_running", false);
         String savedSymbol = prefs.getString("selected_symbol", "EUR/USD");
         int savedSymbolIndex = symbolItems.indexOf(savedSymbol);
@@ -255,21 +269,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        serverCheckButton.setOnClickListener(v -> {
-            if (serverUrlInput.getVisibility() != View.VISIBLE) {
-                setServerEditMode(true);
-                serverUrlInput.requestFocus();
-                if (rootLayout != null) {
-                    rootLayout.postDelayed(() -> {
-                        rootLayout.smoothScrollTo(0, Math.max(0, tradingCard.getTop() - 80));
-                        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                        if (imm != null) imm.showSoftInput(serverUrlInput, InputMethodManager.SHOW_IMPLICIT);
-                    }, 180L);
-                }
-            } else {
-                checkServer();
-            }
-        });
+        serverCheckButton.setOnClickListener(v -> showServerAddressDialog());
 
         riskSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -353,8 +353,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V6.9 разрешает только DEMO.");
-                    Toast.makeText(this, "V6.9 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V7.1 разрешает только DEMO.");
+                    Toast.makeText(this, "V7.1 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -379,6 +379,10 @@ public class MainActivity extends Activity {
         });
 
         closeAllButton.setOnClickListener(v -> sendCloseAll());
+        smartFeaturesButton.setOnClickListener(v -> showSmartFeaturesDialog());
+        syncMt5SymbolsButton.setOnClickListener(v -> syncSymbolsFromMt5());
+        managePositionsButton.setOnClickListener(v -> showPositionsManager());
+        refreshSmartUi();
 
         // UI ticker: обновляет «прошло» каждую секунду без новых API-запросов.
         serviceUiHandler.removeCallbacks(serviceUiRunnable);
@@ -430,6 +434,7 @@ public class MainActivity extends Activity {
         styleCard(journalCard, C_CARD);
         styleCard(marketStatusCard, C_CARD);
         styleCard(positionsCard, C_CARD);
+        styleCard(smartCard, C_CARD);
         styleCard(bottomNav, Color.rgb(10, 12, 28));
 
         stylePrimaryButton(saveKeyButton);
@@ -437,6 +442,9 @@ public class MainActivity extends Activity {
         styleOutlineButton(serverCheckButton, C_PURPLE);
         styleOutlineButton(closeAllButton, C_PURPLE);
         styleOutlineButton(emergencyStopButton, C_RED);
+        styleOutlineButton(smartFeaturesButton, C_PURPLE);
+        styleOutlineButton(syncMt5SymbolsButton, C_PURPLE);
+        styleOutlineButton(managePositionsButton, C_PURPLE);
 
         styleInput(apiKeyInput);
         styleInput(serverUrlInput);
@@ -465,6 +473,11 @@ public class MainActivity extends Activity {
         journalText.setTextColor(C_MUTED);
         priceCompareText.setTextColor(C_TEXT);
         serverStatusText.setTextColor(C_RED);
+        if (whyWaitText != null) whyWaitText.setTextColor(C_ORANGE);
+        if (componentScoresText != null) componentScoresText.setTextColor(C_PURPLE);
+        if (smartStatusText != null) smartStatusText.setTextColor(C_MUTED);
+        if (statsText != null) statsText.setTextColor(C_TEXT);
+        if (signalHistoryText != null) signalHistoryText.setTextColor(C_MUTED);
     }
 
     private ArrayAdapter<String> darkSpinnerAdapter(String[] items) {
@@ -540,6 +553,11 @@ public class MainActivity extends Activity {
         demoAccount = false;
         serverStatusText.setText("SERVER: NOT CONNECTED   •   MT5: OFFLINE");
         serverStatusText.setTextColor(C_RED);
+        if (whyWaitText != null) whyWaitText.setTextColor(C_ORANGE);
+        if (componentScoresText != null) componentScoresText.setTextColor(C_PURPLE);
+        if (smartStatusText != null) smartStatusText.setTextColor(C_MUTED);
+        if (statsText != null) statsText.setTextColor(C_TEXT);
+        if (signalHistoryText != null) signalHistoryText.setTextColor(C_MUTED);
         accountText.setText("Счёт: —\nБаланс: —\nEquity: —");
         positionsText.setText("Открытые позиции: —\nТекущий P/L: —");
         lastMt5Bid = Double.NaN;
@@ -700,6 +718,7 @@ public class MainActivity extends Activity {
 
                     if (serverOk && mt5Ok) {
                         refreshMt5Quote((String) symbolSpinner.getSelectedItem());
+                        refreshStatsAndPositions();
                     }
                 });
             } catch (Exception e) {
@@ -755,14 +774,18 @@ public class MainActivity extends Activity {
                 payload.put("api_entry", a.entry);
                 payload.put("max_price_drift_pct", selectedMaxDriftPct());
                 payload.put("execution_price_source", "MT5");
+                FeatureEngine.applySignalFeatures(payload, getSharedPreferences("fxm1", MODE_PRIVATE), a.why, a.components);
 
                 JSONObject response = httpJson("POST", base + "/signal", payload);
                 boolean accepted = response.optBoolean("accepted", false);
                 String message = response.optString("message", accepted ? "Сигнал принят" : "Сигнал отклонён");
 
-                runOnUiThread(() -> addJournal(
-                        a.symbol + " " + a.signal + " → " + message
-                ));
+                runOnUiThread(() -> {
+                    addJournal(a.symbol + " " + a.signal + " → " + message);
+                    FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), a.signal, a.quality, message);
+                    refreshSmartUi();
+                    refreshStatsAndPositions();
+                });
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     lastSentSignal.put(a.symbol, "WAIT");
@@ -877,9 +900,290 @@ public class MainActivity extends Activity {
     }
 
     private void setServerEditMode(boolean editing) {
-        if (serverUrlLabel != null) serverUrlLabel.setVisibility(editing ? View.VISIBLE : View.GONE);
-        if (serverUrlInput != null) serverUrlInput.setVisibility(editing ? View.VISIBLE : View.GONE);
-        if (serverCheckButton != null) serverCheckButton.setText(editing ? "ПОДКЛЮЧИТЬ СЕРВЕР" : "ИЗМЕНИТЬ СЕРВЕР");
+        // V7.1: the trading module always stays compact. Address editing is dialog-only.
+        if (serverUrlLabel != null) serverUrlLabel.setVisibility(View.GONE);
+        if (serverInputRow != null) serverInputRow.setVisibility(View.GONE);
+        if (serverUrlInput != null) serverUrlInput.setVisibility(View.GONE);
+        boolean verified = getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("server_verified", false);
+        if (serverCheckButton != null) serverCheckButton.setText(verified ? "ИЗМЕНИТЬ СЕРВЕР" : "ПОДКЛЮЧИТЬ СЕРВЕР");
+    }
+
+    private void showServerAddressDialog() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        final EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        input.setText(stripServerScheme(p.getString("server_url", "")));
+        input.setHint("192.168.1.8:8000");
+        input.setTextColor(C_TEXT);
+        input.setHintTextColor(Color.rgb(126, 120, 151));
+        input.setSelectAllOnFocus(false);
+        input.setPadding(dp(10), dp(10), dp(10), dp(10));
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(8), dp(20), dp(8));
+        TextView hint = new TextView(this);
+        hint.setText("http:// добавляется автоматически. Введите только IP:PORT");
+        hint.setTextColor(C_MUTED);
+        hint.setTextSize(12f);
+        box.addView(hint, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        TextView prefix = new TextView(this);
+        prefix.setText("http://");
+        prefix.setTextColor(C_PURPLE);
+        prefix.setTextSize(17f);
+        prefix.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.addView(prefix, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(54)));
+        row.addView(input, new LinearLayout.LayoutParams(0, dp(54), 1f));
+        box.addView(row, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Адрес MT5 Bridge")
+                .setView(box)
+                .setNegativeButton("ОТМЕНА", null)
+                .setPositiveButton("ПОДКЛЮЧИТЬ", null)
+                .create();
+
+        dialog.setOnShowListener(d -> {
+            android.view.Window w = dialog.getWindow();
+            if (w != null) {
+                w.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                w.setGravity(android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL);
+                android.view.WindowManager.LayoutParams lp = w.getAttributes();
+                lp.y = dp(36);
+                w.setAttributes(lp);
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String raw = input.getText().toString().trim();
+                if (raw.isEmpty()) {
+                    input.setError("Например: 192.168.1.8:8000");
+                    return;
+                }
+                String normalized = normalizeServerUrl(raw);
+                p.edit().putString("server_url", normalized).putBoolean("server_verified", false).apply();
+                serverUrlInput.setText(stripServerScheme(normalized));
+                dialog.dismiss();
+                checkServer();
+            });
+            // Do not force the keyboard open. The field stays visible first; keyboard opens on tap.
+            input.clearFocus();
+        });
+        dialog.show();
+    }
+
+    private Switch smartSwitch(String label, boolean checked) {
+        Switch sw = new Switch(this);
+        sw.setText(label);
+        sw.setTextColor(C_TEXT);
+        sw.setTextSize(13f);
+        sw.setChecked(checked);
+        sw.setPadding(0, dp(4), 0, dp(4));
+        return sw;
+    }
+
+    private Spinner smartSpinner(String[] values, int selected) {
+        Spinner sp = new Spinner(this);
+        sp.setAdapter(darkSpinnerAdapter(values));
+        sp.setSelection(Math.max(0, Math.min(selected, values.length - 1)));
+        return sp;
+    }
+
+    private TextView smartLabel(String text) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextColor(C_PURPLE);
+        tv.setTextSize(11f);
+        tv.setPadding(0, dp(7), 0, 0);
+        return tv;
+    }
+
+    private void showSmartFeaturesDialog() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        FeatureEngine.ensureDefaults(p);
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(18), dp(6), dp(18), dp(10));
+        scroll.addView(box);
+
+        box.addView(smartLabel("РЕЖИМ ИСПОЛНЕНИЯ"));
+        String[] execModes = {"SIGNALS_ONLY", "SEMI_AUTO", "FULL_AUTO"};
+        int execSel = Arrays.asList(execModes).indexOf(p.getString("execution_mode", "FULL_AUTO"));
+        Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
+
+        Switch riskM = smartSwitch("Умный риск-менеджер", p.getBoolean("risk_manager_enabled", true)); box.addView(riskM);
+        box.addView(smartLabel("Лимит убытка за день")); Spinner daily = smartSpinner(new String[]{"2%","3%","4%","5%"}, Math.max(0, Math.min(3, Math.round(p.getFloat("daily_loss_limit_pct",3f))-2))); box.addView(daily);
+        box.addView(smartLabel("Макс. просадка equity")); Spinner dd = smartSpinner(new String[]{"3%","5%","7%","10%"}, p.getFloat("max_drawdown_pct",5f)>=10?3:p.getFloat("max_drawdown_pct",5f)>=7?2:p.getFloat("max_drawdown_pct",5f)>=5?1:0); box.addView(dd);
+        box.addView(smartLabel("Стоп после убыточных сделок подряд")); Spinner streak = smartSpinner(new String[]{"2","3","4","5"}, Math.max(0, Math.min(3,p.getInt("max_consecutive_losses",3)-2))); box.addView(streak);
+
+        Switch be = smartSwitch("Break-even (перенос SL в цену входа)", p.getBoolean("break_even_enabled", true)); box.addView(be);
+        Switch trailing = smartSwitch("Trailing stop", p.getBoolean("trailing_enabled", true)); box.addView(trailing);
+        Switch partial = smartSwitch("Частичное закрытие 50% на 1.5R", p.getBoolean("partial_close_enabled", true)); box.addView(partial);
+        Switch spread = smartSwitch("Фильтр спреда", p.getBoolean("spread_filter_enabled", true)); box.addView(spread);
+        box.addView(smartLabel("Максимальный spread")); Spinner spreadSp = smartSpinner(new String[]{"1.5 pips","2.0 pips","3.0 pips","5.0 pips"}, p.getFloat("max_spread_pips",3f)>=5?3:p.getFloat("max_spread_pips",3f)>=3?2:p.getFloat("max_spread_pips",3f)>=2?1:0); box.addView(spreadSp);
+        Switch confirm = smartSwitch("Подтверждать рискованные входы", p.getBoolean("confirm_risky_entries", true)); box.addView(confirm);
+        box.addView(smartLabel("Ручное подтверждение ниже качества")); Spinner quality = smartSpinner(new String[]{"55/100","60/100","65/100","70/100","75/100"}, Math.max(0, Math.min(4,(p.getInt("confirm_below_quality",65)-55)/5))); box.addView(quality);
+        box.addView(smartLabel("Cooldown после закрытия")); Spinner cooldown = smartSpinner(new String[]{"0 мин","5 мин","10 мин","20 мин","30 мин"}, p.getInt("cooldown_minutes",10)>=30?4:p.getInt("cooldown_minutes",10)>=20?3:p.getInt("cooldown_minutes",10)>=10?2:p.getInt("cooldown_minutes",10)>=5?1:0); box.addView(cooldown);
+        Switch multi = smartSwitch("Multi-pair radar (дополнительный обзор watchlist)", p.getBoolean("multi_pair_enabled", false)); box.addView(multi);
+        box.addView(smartLabel("WATCHLIST / ИЗБРАННОЕ через запятую"));
+        EditText watchlistEdit = new EditText(this);
+        watchlistEdit.setSingleLine(true);
+        watchlistEdit.setText(p.getString("watchlist", "EUR/USD,GBP/USD,USD/JPY"));
+        watchlistEdit.setTextColor(C_TEXT); watchlistEdit.setHintTextColor(C_MUTED); watchlistEdit.setHint("EUR/USD,GBP/USD,USD/JPY");
+        box.addView(watchlistEdit, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)));
+        Switch session = smartSwitch("Фильтр торговых сессий", p.getBoolean("session_filter_enabled", false)); box.addView(session);
+        Switch positionManager = smartSwitch("Автосопровождение позиций", p.getBoolean("position_manager_enabled", true)); box.addView(positionManager);
+        Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Умные функции V7.1")
+                .setView(scroll)
+                .setNegativeButton("ОТМЕНА", null)
+                .setPositiveButton("СОХРАНИТЬ", (d,w) -> {
+                    float[] dailyVals={2f,3f,4f,5f}; float[] ddVals={3f,5f,7f,10f}; int[] streakVals={2,3,4,5};
+                    float[] spreadVals={1.5f,2f,3f,5f}; int[] qualityVals={55,60,65,70,75}; int[] cooldownVals={0,5,10,20,30};
+                    long blackout = news.isChecked() ? (System.currentTimeMillis()/1000L + 30*60L) : 0L;
+                    p.edit()
+                            .putString("execution_mode", execModes[exec.getSelectedItemPosition()])
+                            .putBoolean("risk_manager_enabled", riskM.isChecked())
+                            .putFloat("daily_loss_limit_pct", dailyVals[daily.getSelectedItemPosition()])
+                            .putFloat("max_drawdown_pct", ddVals[dd.getSelectedItemPosition()])
+                            .putInt("max_consecutive_losses", streakVals[streak.getSelectedItemPosition()])
+                            .putBoolean("break_even_enabled", be.isChecked())
+                            .putBoolean("trailing_enabled", trailing.isChecked())
+                            .putBoolean("partial_close_enabled", partial.isChecked())
+                            .putBoolean("spread_filter_enabled", spread.isChecked())
+                            .putFloat("max_spread_pips", spreadVals[spreadSp.getSelectedItemPosition()])
+                            .putBoolean("confirm_risky_entries", confirm.isChecked())
+                            .putInt("confirm_below_quality", qualityVals[quality.getSelectedItemPosition()])
+                            .putInt("cooldown_minutes", cooldownVals[cooldown.getSelectedItemPosition()])
+                            .putBoolean("multi_pair_enabled", multi.isChecked())
+                            .putString("watchlist", watchlistEdit.getText().toString().trim())
+                            .putString("favorite_symbols", watchlistEdit.getText().toString().trim())
+                            .putBoolean("session_filter_enabled", session.isChecked())
+                            .putBoolean("position_manager_enabled", positionManager.isChecked())
+                            .putBoolean("manual_news_blackout", news.isChecked())
+                            .putLong("news_blackout_until_epoch", blackout)
+                            .apply();
+                    refreshSmartUi();
+                    if (monitoring) sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
+                })
+                .show();
+    }
+
+    private void refreshSmartUi() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        FeatureEngine.ensureDefaults(p);
+        if (smartStatusText != null) {
+            String radar = p.getString("watchlist_radar", "");
+            String manager = p.getString("position_manager_status", "—");
+            String risk = p.getString("risk_snapshot", "—");
+            smartStatusText.setText(FeatureEngine.featureSummary(p) +
+                    "\nPosition manager: " + manager + " · " + risk +
+                    (radar == null || radar.isEmpty() ? "" : "\nRadar: " + radar));
+        }
+        if (statsText != null) {
+            String snap = p.getString("stats_snapshot", "");
+            if (snap != null && !snap.trim().isEmpty()) statsText.setText("СТАТИСТИКА\n" + snap);
+        }
+        if (signalHistoryText != null) {
+            String h = p.getString("signal_history", "");
+            signalHistoryText.setText(h == null || h.trim().isEmpty() ? "ИСТОРИЯ СИГНАЛОВ: пока пусто" : "ИСТОРИЯ СИГНАЛОВ\n" + h);
+        }
+    }
+
+    private String serverBaseFromPrefs() {
+        return normalizeServerUrl(getSharedPreferences("fxm1", MODE_PRIVATE).getString("server_url", ""));
+    }
+
+    private void refreshStatsAndPositions() {
+        final String base = serverBaseFromPrefs();
+        if (base.isEmpty() || !serverConnected) return;
+        executor.execute(() -> {
+            try {
+                JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
+                JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
+                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-log?limit=20", null);
+                String stText = FeatureEngine.formatStats(st);
+                String posText = FeatureEngine.formatPositions(pos);
+                String logText = FeatureEngine.formatTradeLog(log);
+                runOnUiThread(() -> {
+                    if (statsText != null) statsText.setText("СТАТИСТИКА\n" + stText);
+                    if (positionsText != null) positionsText.setText(posText);
+                    if (tradeHistoryText != null) tradeHistoryText.setText(logText);
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> { if (statsText != null) statsText.setText("СТАТИСТИКА: " + safeMessage(e)); });
+            }
+        });
+    }
+
+    private void syncSymbolsFromMt5() {
+        final String base = serverBaseFromPrefs();
+        if (base.isEmpty() || !serverConnected) {
+            Toast.makeText(this, "Сначала подключите MT5 Bridge", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        syncMt5SymbolsButton.setEnabled(false);
+        executor.execute(() -> {
+            try {
+                JSONObject root = FeatureEngine.httpJson("GET", base + "/symbols", null);
+                JSONArray arr = root.optJSONArray("symbols");
+                final ArrayList<String> incoming = new ArrayList<>();
+                if (arr != null) for (int i=0;i<arr.length();i++) {
+                    JSONObject o=arr.optJSONObject(i); if(o==null) continue;
+                    String name=o.optString("symbol","").trim(); if(!name.isEmpty() && !incoming.contains(name)) incoming.add(name);
+                    if (incoming.size() >= 300) break;
+                }
+                runOnUiThread(() -> {
+                    syncMt5SymbolsButton.setEnabled(true);
+                    if (incoming.isEmpty()) { Toast.makeText(this,"MT5 не вернул символы",Toast.LENGTH_SHORT).show(); return; }
+                    String selected = String.valueOf(symbolSpinner.getSelectedItem());
+                    symbolItems.clear(); symbolItems.addAll(incoming); symbolItems.add("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
+                    getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("mt5_symbols_cache", android.text.TextUtils.join("|", incoming)).apply();
+                    symbolAdapter = darkSpinnerAdapter(symbolItems.toArray(new String[0]));
+                    symbolSpinner.setAdapter(symbolAdapter);
+                    int idx=symbolItems.indexOf(selected); symbolSpinner.setSelection(idx>=0?idx:0);
+                    Toast.makeText(this,"Загружено символов MT5: "+incoming.size(),Toast.LENGTH_LONG).show();
+                });
+            } catch(Exception e) { runOnUiThread(() -> { syncMt5SymbolsButton.setEnabled(true); Toast.makeText(this,"Символы MT5: "+safeMessage(e),Toast.LENGTH_LONG).show(); }); }
+        });
+    }
+
+    private void showPositionsManager() {
+        final String base = serverBaseFromPrefs();
+        if (base.isEmpty() || !serverConnected || !mt5Connected) {
+            Toast.makeText(this, "Сначала подключите MT5", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        executor.execute(() -> {
+            try {
+                JSONObject root = FeatureEngine.httpJson("GET", base + "/positions", null);
+                JSONArray arr = root.optJSONArray("positions");
+                if (arr == null || arr.length()==0) { runOnUiThread(() -> Toast.makeText(this,"Открытых позиций нет",Toast.LENGTH_SHORT).show()); return; }
+                final ArrayList<JSONObject> items=new ArrayList<>(); final ArrayList<String> labels=new ArrayList<>();
+                for(int i=0;i<arr.length();i++){ JSONObject o=arr.optJSONObject(i); if(o==null)continue; items.add(o); labels.add("#"+o.optLong("ticket")+" · "+o.optString("symbol")+" · "+o.optString("side")+" · P/L "+String.format(Locale.US,"%+.2f",o.optDouble("profit",0))); }
+                runOnUiThread(() -> new AlertDialog.Builder(this).setTitle("Позиции MT5").setItems(labels.toArray(new String[0]), (d,which) -> showPositionActions(base,items.get(which))).setNegativeButton("ЗАКРЫТЬ",null).show());
+            } catch(Exception e){ runOnUiThread(() -> Toast.makeText(this,"Позиции: "+safeMessage(e),Toast.LENGTH_LONG).show()); }
+        });
+    }
+
+    private void showPositionActions(String base, JSONObject pos) {
+        String[] actions={"CLOSE POSITION","MOVE SL → BREAK EVEN","PARTIAL CLOSE 50%"};
+        new AlertDialog.Builder(this).setTitle(pos.optString("symbol")+" #"+pos.optLong("ticket")).setItems(actions,(d,which)->{
+            String action=which==0?"close":which==1?"breakeven":"partial";
+            executor.execute(() -> {
+                try{
+                    JSONObject req=new JSONObject(); req.put("ticket",pos.optLong("ticket")); req.put("action",action); if("partial".equals(action))req.put("pct",50);
+                    JSONObject r=FeatureEngine.httpJson("POST",base+"/position-action",req);
+                    runOnUiThread(() -> { addJournal("Позиция #"+pos.optLong("ticket")+" · "+action+" → "+r.optString("message")); refreshStatsAndPositions(); });
+                }catch(Exception e){ runOnUiThread(() -> Toast.makeText(this,"Действие: "+safeMessage(e),Toast.LENGTH_LONG).show()); }
+            });
+        }).setNegativeButton("ОТМЕНА",null).show();
     }
 
     private void startMonitoring() {
@@ -1013,6 +1317,8 @@ public class MainActivity extends Activity {
 
         String signal = p.getString("state_signal", "WAIT");
         String context = p.getString("state_context", "");
+        String why = p.getString("state_why", "");
+        String components = p.getString("state_components", "");
         int quality = p.getInt("state_quality", -1);
         int fresh = p.getInt("state_api_count", 0);
         int cached = p.getInt("state_cache_count", 0);
@@ -1027,6 +1333,8 @@ public class MainActivity extends Activity {
             updateSignalAgeText("WAIT", 0L, 0L);
             levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
             contextText.setText("Параметры изменены. Жду новый анализ для " + selectedSymbol + " · " + selectedTf + ".");
+            if (whyWaitText != null) whyWaitText.setText("ПОЧЕМУ WAIT: жду новый анализ");
+            if (componentScoresText != null) componentScoresText.setText("КОМПОНЕНТЫ КАЧЕСТВА: —");
             return;
         }
 
@@ -1057,6 +1365,9 @@ public class MainActivity extends Activity {
             );
         }
         contextText.setText(context);
+        if (whyWaitText != null) whyWaitText.setText(("WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "ПОЧЕМУ ВХОД: ") + (why == null || why.isEmpty() ? "—" : why));
+        if (componentScoresText != null) componentScoresText.setText("КОМПОНЕНТЫ КАЧЕСТВА: " + (components == null || components.isEmpty() ? "—" : components));
+        refreshSmartUi();
 
         if (!Double.isNaN(entry)) {
             lastApiPrice = entry;
@@ -1302,7 +1613,7 @@ public class MainActivity extends Activity {
                                int outputsize) throws Exception {
 
         String url = "https://api.twelvedata.com/time_series?symbol=" +
-                URLEncoder.encode(symbol, "UTF-8") +
+                URLEncoder.encode(FeatureEngine.analysisSymbol(symbol), "UTF-8") +
                 "&interval=" + URLEncoder.encode(interval, "UTF-8") +
                 "&outputsize=" + outputsize +
                 "&apikey=" + URLEncoder.encode(key, "UTF-8");
@@ -1451,6 +1762,22 @@ public class MainActivity extends Activity {
         return v + " (TASH)";
     }
 
+    private void loadSyncedMt5Symbols() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String raw = p.getString("mt5_symbols_cache", "");
+        if (raw == null || raw.trim().isEmpty()) return;
+        ArrayList<String> cached = new ArrayList<>();
+        for (String x : raw.split("\\|")) {
+            String v = x.trim();
+            if (!v.isEmpty() && !cached.contains(v)) cached.add(v);
+            if (cached.size() >= 500) break;
+        }
+        if (!cached.isEmpty()) {
+            symbolItems.clear();
+            symbolItems.addAll(cached);
+        }
+    }
+
     private void loadCustomSymbols() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         String raw = p.getString("custom_symbols", "");
@@ -1567,7 +1894,7 @@ public class MainActivity extends Activity {
 
         executor.execute(() -> {
             try {
-                String url = base + "/quote?symbol=" + URLEncoder.encode(symbol, "UTF-8");
+                String url = base + "/quote?symbol=" + URLEncoder.encode(FeatureEngine.analysisSymbol(symbol), "UTF-8");
                 JSONObject root = httpJson("GET", url, null);
                 double bid = root.optDouble("bid", Double.NaN);
                 double ask = root.optDouble("ask", Double.NaN);
@@ -1771,6 +2098,26 @@ public class MainActivity extends Activity {
                 "\n" + filter +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
+        int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);
+        int entryScore = sEntry == 0 ? 6 : 18;
+        int fastScore = (sEntry != 0 && sFast == sEntry) ? 15 : (sFast == 0 ? 8 : 3);
+        int structureScorePart = structure == 0 ? 5 : 15;
+        int breakoutScorePart = Math.abs(breakout) >= 2 ? 20 : (Math.abs(breakout) == 1 ? 14 : 4);
+        String components = "HTF " + htfScore + "/20 · Entry " + entryScore + "/20 · Fast " + fastScore + "/15 · Structure " + structureScorePart + "/15 · Breakout " + breakoutScorePart + "/20";
+
+        ArrayList<String> whyParts = new ArrayList<>();
+        if (sHigher1 != 0 && sHigher2 != 0 && sHigher1 != sHigher2) whyParts.add("старшие ТФ расходятся");
+        if (sEntry == 0) whyParts.add(entryLabel + " без направления");
+        if (sEntry != 0 && sFast != 0 && sFast != sEntry) whyParts.add(fastLabel + " против входа");
+        if (structure == 0) whyParts.add("структура не подтверждена");
+        if (breakout == 0) whyParts.add("нет подтверждённого пробоя");
+        String why;
+        if ("WAIT".equals(signal)) {
+            why = whyParts.isEmpty() ? "условия режима " + mode + " не совпали одновременно" : android.text.TextUtils.join("; ", whyParts);
+        } else {
+            why = signal + " открыт: направление ТФ согласовано; структура/фильтр разрешили вход; качество " + quality + "/100";
+        }
+
         return new Analysis(
                 symbol,
                 signal,
@@ -1779,7 +2126,9 @@ public class MainActivity extends Activity {
                 sl,
                 tp1,
                 tp2,
-                context
+                context,
+                why,
+                components
         );
     }
 
@@ -2034,6 +2383,8 @@ public class MainActivity extends Activity {
                 .putString("state_signal", a.signal)
                 .putInt("state_quality", a.quality)
                 .putString("state_context", a.context)
+                .putString("state_why", a.why)
+                .putString("state_components", a.components)
                 .putLong("state_entry_bits", Double.doubleToLongBits(a.entry))
                 .putLong("state_sl_bits", Double.doubleToLongBits(a.sl))
                 .putLong("state_tp1_bits", Double.doubleToLongBits(a.tp1))
@@ -2109,6 +2460,10 @@ public class MainActivity extends Activity {
         }
 
         contextText.setText(a.context);
+        if (whyWaitText != null) whyWaitText.setText(("WAIT".equals(a.signal) ? "ПОЧЕМУ WAIT: " : "ПОЧЕМУ ВХОД: ") + a.why);
+        if (componentScoresText != null) componentScoresText.setText("КОМПОНЕНТЫ КАЧЕСТВА: " + a.components);
+        FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), a.signal, a.quality, "analysis");
+        refreshSmartUi();
 
         lastApiPrice = a.entry;
         updatePriceComparison();
@@ -2164,6 +2519,8 @@ public class MainActivity extends Activity {
         final String symbol;
         final String signal;
         final String context;
+        final String why;
+        final String components;
         final int quality;
         final double entry;
         final double sl;
@@ -2177,7 +2534,9 @@ public class MainActivity extends Activity {
                  double sl,
                  double tp1,
                  double tp2,
-                 String context) {
+                 String context,
+                 String why,
+                 String components) {
 
             this.symbol = symbol;
             this.signal = signal;
@@ -2187,6 +2546,8 @@ public class MainActivity extends Activity {
             this.tp1 = tp1;
             this.tp2 = tp2;
             this.context = context;
+            this.why = why;
+            this.components = components;
         }
     }
 

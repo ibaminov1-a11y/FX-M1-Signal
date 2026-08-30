@@ -30,10 +30,13 @@ public class MonitoringService extends Service {
     public static final String ACTION_PAUSE = "com.openai.fxm1.action.PAUSE_BACKGROUND";
     public static final String ACTION_RESUME = "com.openai.fxm1.action.RESUME_BACKGROUND";
     public static final String ACTION_POWER_OFF = "com.openai.fxm1.action.POWER_OFF_BACKGROUND";
+    public static final String ACTION_APPROVE_TRADE = "com.openai.fxm1.action.APPROVE_TRADE";
+    public static final String ACTION_REJECT_TRADE = "com.openai.fxm1.action.REJECT_TRADE";
 
     private static final int NOTIFICATION_ID = 4101;
     private static final int SIGNAL_NOTIFICATION_ID = 4102;
-    private static final String CHANNEL_MONITOR = "fx_monitor_controls_v69";
+    private static final int APPROVAL_NOTIFICATION_ID = 4103;
+    private static final String CHANNEL_MONITOR = "fx_monitor_controls_v71";
     private static final String CHANNEL_SIGNAL = "fx_trade_signals";
 
     private static final long CACHE_M1_MS = 18000L;
@@ -70,6 +73,20 @@ public class MonitoringService extends Service {
         }
     };
 
+    // Keeps the foreground association and notification alive even on long H4/D1/W1/MN1 intervals.
+    private final Runnable notificationWatchdog = new Runnable() {
+        @Override
+        public void run() {
+            if (!running) return;
+            updateNotification(
+                    currentSymbol() + " · " + currentTf() + " · " + currentMode(),
+                    paused ? "PAUSE · сопровождение активно" : "MONITORING · foreground active",
+                    prefs().getString("state_signal", "WAIT"),
+                    prefs().getInt("state_quality", -1));
+            handler.postDelayed(this, 15000L);
+        }
+    };
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -79,6 +96,18 @@ public class MonitoringService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? ACTION_START : intent.getAction();
+
+        if (ACTION_APPROVE_TRADE.equals(action)) {
+            approvePendingTrade();
+            return START_STICKY;
+        }
+        if (ACTION_REJECT_TRADE.equals(action)) {
+            prefs().edit().remove("pending_trade_json").apply();
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm != null) nm.cancel(APPROVAL_NOTIFICATION_ID);
+            FeatureEngine.appendSignalHistory(prefs(), currentSymbol(), currentTf(), prefs().getString("state_signal", "WAIT"), prefs().getInt("state_quality", -1), "manual SKIP");
+            return START_STICKY;
+        }
 
         if (ACTION_STOP.equals(action)) {
             stopMonitoring(false);
@@ -194,6 +223,7 @@ public class MonitoringService extends Service {
 
     private void startMonitoring() {
         SharedPreferences p = prefs();
+        FeatureEngine.ensureDefaults(p);
         String key = p.getString("apikey", "").trim();
         if (key.isEmpty()) {
             p.edit().putBoolean("bg_running", false)
@@ -204,11 +234,11 @@ public class MonitoringService extends Service {
         }
 
         running = true;
-        paused = false;
+        paused = p.getBoolean("bg_paused", false);
         p.edit().putBoolean("bg_running", true)
                 .putLong("monitor_stopped_ms", 0L)
-                .putBoolean("bg_paused", false)
-                .putBoolean("trading_paused", false)
+                .putBoolean("bg_paused", paused)
+                .putBoolean("trading_paused", paused)
                 .putString("bg_status", "Фоновый мониторинг работает")
                 .apply();
 
@@ -240,11 +270,14 @@ public class MonitoringService extends Service {
 
         handler.removeCallbacks(tick);
         handler.post(tick);
+        handler.removeCallbacks(notificationWatchdog);
+        handler.postDelayed(notificationWatchdog, 15000L);
     }
 
     private void stopMonitoring(boolean emergency) {
         running = false;
         handler.removeCallbacks(tick);
+        handler.removeCallbacks(notificationWatchdog);
         prefs().edit()
                 .putLong("monitor_stopped_ms", System.currentTimeMillis())
                 .putBoolean("bg_running", false)
@@ -424,6 +457,8 @@ public class MonitoringService extends Service {
                 saveSparkline(sparkSeries);
                 saveAnalysis(a, fresh, cached);
                 refreshMt5Snapshot();
+                manageOpenPositions();
+                updateWatchlistRadar(key, tf);
                 updateNotification(
                         a.symbol + " · " + tf + " · " + mode,
                         "API " + fresh + " · кэш " + cached,
@@ -516,6 +551,8 @@ public class MonitoringService extends Service {
                 .putString("bg_signal", a.signal)
                 .putInt("bg_quality", a.quality)
                 .putString("bg_context", a.context)
+                .putString("bg_why", a.why)
+                .putString("bg_components", a.components)
                 .putInt("bg_api_count", fresh)
                 .putInt("bg_cache_count", cached)
                 .putLong("bg_entry_bits", Double.doubleToLongBits(a.entry))
@@ -531,6 +568,8 @@ public class MonitoringService extends Service {
                 .putString("state_signal", a.signal)
                 .putInt("state_quality", a.quality)
                 .putString("state_context", a.context)
+                .putString("state_why", a.why)
+                .putString("state_components", a.components)
                 .putInt("state_api_count", fresh)
                 .putInt("state_cache_count", cached)
                 .putLong("state_entry_bits", Double.doubleToLongBits(a.entry))
@@ -541,6 +580,7 @@ public class MonitoringService extends Service {
                 .putLong("state_last_update_ms", now)
                 .putString("state_source", "BG")
                 .apply();
+        FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "BG analysis");
     }
 
     private void notifyTradeSignalIfNew(Analysis a) {
@@ -558,28 +598,43 @@ public class MonitoringService extends Service {
     }
 
     private void maybeSendToTradingServer(Analysis a, String tf, String mode) {
+        SharedPreferences p = prefs();
         if (!isForexMarketOpen()) {
-            prefs().edit().putString("bg_status", "MARKET CLOSED · торговля заблокирована").apply();
+            p.edit().putString("bg_status", "MARKET CLOSED · торговля заблокирована").apply();
+            FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "SKIP: MARKET CLOSED");
             return;
         }
-        if (paused || prefs().getBoolean("trading_paused", false)) return;
-        if (!prefs().getBoolean("auto_trading", false)) return;
+        if (paused || p.getBoolean("trading_paused", false)) return;
+        if (!p.getBoolean("auto_trading", false)) return;
         if ("WAIT".equals(a.signal)) return;
 
-        final String base = normalizeUrl(prefs().getString("server_url", ""));
+        if (p.getBoolean("session_filter_enabled", false)) {
+            String session = FeatureEngine.currentSession();
+            String allowed = p.getString("allowed_sessions", "LONDON,NEW_YORK");
+            boolean sessionAllowed = false;
+            if (allowed != null) {
+                if (session.contains("+")) {
+                    for (String part : session.split("\\+")) if (allowed.contains(part)) sessionAllowed = true;
+                } else sessionAllowed = allowed.contains(session);
+            }
+            if (!sessionAllowed) {
+                FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "SKIP: session " + session);
+                return;
+            }
+        }
+
+        final String base = normalizeUrl(p.getString("server_url", ""));
         if (base.isEmpty()) return;
 
         try {
             JSONObject health = httpJson("GET", base + "/health", null);
-            if (!health.optBoolean("ok", false)) return;
-            if (!health.optBoolean("mt5_connected", false)) return;
+            if (!health.optBoolean("ok", false) || !health.optBoolean("mt5_connected", false)) return;
             if (!"DEMO".equalsIgnoreCase(health.optString("account_type", ""))) return;
 
-            int riskPos = prefs().getInt("risk_pos", 1);
+            int riskPos = p.getInt("risk_pos", 1);
             double[] risks = {0.25, 0.50, 1.00};
-
-            int maxPos = prefs().getInt("maxpos_pos", 0) + 1;
-            int driftPos = prefs().getInt("maxdrift_pos", 1);
+            int maxPos = p.getInt("maxpos_pos", 0) + 1;
+            int driftPos = p.getInt("maxdrift_pos", 1);
             double[] drifts = {0.03, 0.05, 0.10, 0.20};
 
             JSONObject payload = new JSONObject();
@@ -595,14 +650,116 @@ public class MonitoringService extends Service {
             payload.put("mode", "DEMO");
             payload.put("signal_mode", mode);
             payload.put("entry_timeframe", tf);
+            payload.put("timeframe", tf);
             payload.put("api_entry", a.entry);
             payload.put("max_price_drift_pct", drifts[Math.max(0, Math.min(driftPos, drifts.length - 1))]);
             payload.put("execution_price_source", "MT5");
+            FeatureEngine.applySignalFeatures(payload, p, a.why, a.components);
 
-            httpJson("POST", base + "/signal", payload);
+            JSONObject response = httpJson("POST", base + "/signal", payload);
+            boolean accepted = response.optBoolean("accepted", false);
+            String message = response.optString("message", accepted ? "DEMO order opened" : "signal rejected");
+            FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, message);
+            p.edit().putString("last_execution_result", message).apply();
 
-        } catch (Exception ignored) {
+            if (response.optBoolean("pending_approval", false)) {
+                p.edit().putString("pending_trade_json", payload.toString()).apply();
+                notifyApprovalRequired(a, message);
+            }
+        } catch (Exception e) {
+            FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "ERROR: " + safeMessage(e));
         }
+    }
+
+    private void approvePendingTrade() {
+        SharedPreferences p = prefs();
+        final String raw = p.getString("pending_trade_json", "");
+        final String base = normalizeUrl(p.getString("server_url", ""));
+        if (raw == null || raw.trim().isEmpty() || base.isEmpty()) return;
+        executor.execute(() -> {
+            try {
+                JSONObject payload = new JSONObject(raw);
+                payload.put("manual_approved", true);
+                JSONObject response = httpJson("POST", base + "/signal", payload);
+                String message = response.optString("message", "approval processed");
+                FeatureEngine.appendSignalHistory(p, payload.optString("symbol"), payload.optString("entry_timeframe"), payload.optString("signal"), payload.optInt("quality", -1), "APPROVE: " + message);
+            } catch (Exception e) {
+                FeatureEngine.appendSignalHistory(p, currentSymbol(), currentTf(), prefs().getString("state_signal", "WAIT"), prefs().getInt("state_quality", -1), "APPROVE ERROR: " + safeMessage(e));
+            } finally {
+                p.edit().remove("pending_trade_json").apply();
+                NotificationManager nm = getSystemService(NotificationManager.class);
+                if (nm != null) nm.cancel(APPROVAL_NOTIFICATION_ID);
+            }
+        });
+    }
+
+    private void notifyApprovalRequired(Analysis a, String message) {
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm == null) return;
+        PendingIntent approve = serviceActionIntent(ACTION_APPROVE_TRADE, 201);
+        PendingIntent reject = serviceActionIntent(ACTION_REJECT_TRADE, 202);
+        Notification n = new Notification.Builder(this, CHANNEL_SIGNAL)
+                .setSmallIcon(R.drawable.ic_stat_fx)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.app_icon))
+                .setContentTitle("FX M1 Bot · требуется подтверждение")
+                .setContentText(a.symbol + " · " + a.signal + " · " + a.quality + "/100")
+                .setStyle(new Notification.BigTextStyle().bigText(message + "\n" + a.why))
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setPriority(Notification.PRIORITY_MAX)
+                .setContentIntent(openAppIntent())
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "APPROVE", approve).build())
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "SKIP", reject).build())
+                .setAutoCancel(false)
+                .build();
+        nm.notify(APPROVAL_NOTIFICATION_ID, n);
+    }
+
+    private void manageOpenPositions() {
+        SharedPreferences p = prefs();
+        if (!p.getBoolean("position_manager_enabled", true)) return;
+        String base = normalizeUrl(p.getString("server_url", ""));
+        if (base.isEmpty() || !p.getBoolean("mt5_connected_snapshot", false)) return;
+        try {
+            JSONObject r = FeatureEngine.httpJson("POST", base + "/manage-positions", FeatureEngine.managePayload(p));
+            p.edit().putString("position_manager_status", r.optBoolean("ok", false) ? "ACTIVE" : r.optString("message", "ERROR")).apply();
+            long last = p.getLong("smart_snapshot_ms", 0L);
+            if (System.currentTimeMillis() - last > 60000L) {
+                JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
+                JSONObject rs = FeatureEngine.httpJson("GET", base + "/risk-state?daily_loss_limit_pct=" + p.getFloat("daily_loss_limit_pct",3f) + "&max_drawdown_pct=" + p.getFloat("max_drawdown_pct",5f) + "&max_consecutive_losses=" + p.getInt("max_consecutive_losses",3), null);
+                p.edit().putString("stats_snapshot", FeatureEngine.formatStats(st))
+                        .putString("risk_snapshot", rs.optBoolean("allowed", true) ? "RISK OK" : "RISK BLOCK: " + rs.optJSONArray("blocks"))
+                        .putLong("smart_snapshot_ms", System.currentTimeMillis()).apply();
+            }
+        } catch (Exception e) {
+            p.edit().putString("position_manager_status", "ERROR: " + safeMessage(e)).apply();
+        }
+    }
+
+    private void updateWatchlistRadar(String key, String tf) {
+        SharedPreferences p = prefs();
+        if (!p.getBoolean("multi_pair_enabled", false)) return;
+        long last = p.getLong("watchlist_radar_ms", 0L);
+        if (System.currentTimeMillis() - last < 120000L) return;
+        List<String> items = FeatureEngine.watchlistItems(p);
+        if (items.isEmpty()) return;
+        int idx = p.getInt("watchlist_radar_index", 0);
+        String selected = currentSymbol();
+        String candidate = null;
+        for (int n=0;n<items.size();n++) {
+            String c = items.get((idx+n)%items.size());
+            if (!c.equalsIgnoreCase(selected)) { candidate = c; idx=(idx+n+1)%items.size(); break; }
+        }
+        if (candidate == null) return;
+        try {
+            FetchResult f = getSeries(candidate, "5min", key, 40, CACHE_M5_MS);
+            int trend = trendScore(f.data);
+            String arrow = trend > 0 ? "↑" : trend < 0 ? "↓" : "→";
+            String old = p.getString("watchlist_radar", "");
+            String line = candidate + " " + arrow;
+            p.edit().putString("watchlist_radar", line + (old.isEmpty()?"":" · "+old))
+                    .putLong("watchlist_radar_ms", System.currentTimeMillis())
+                    .putInt("watchlist_radar_index", idx).apply();
+        } catch (Exception ignored) { }
     }
 
     private void refreshMt5Snapshot() {
@@ -624,6 +781,9 @@ public class MonitoringService extends Service {
                     .putString("mt5_currency_snapshot", h.optString("currency", "USD"))
                     .putInt("mt5_positions_snapshot", h.optInt("positions", 0))
                     .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
+                    .putString("bridge_version_snapshot", h.optString("bridge_version", "—"))
+                    .putInt("bridge_uptime_sec", h.optInt("uptime_sec", 0))
+                    .putLong("bridge_heartbeat", h.optLong("heartbeat", 0L))
                     .apply();
         } catch (Exception ignored) {
             p.edit().putBoolean("mt5_connected_snapshot", false).apply();
@@ -683,6 +843,18 @@ public class MonitoringService extends Service {
 
     private SharedPreferences prefs() {
         return getSharedPreferences("fxm1", MODE_PRIVATE);
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        // The service is START_STICKY. Do not start a second service instance from the background.
+        // Keeping bg_running=true lets Android recreate the same foreground service if needed.
+        if (prefs().getBoolean("bg_running", false) && running) {
+            updateNotification(currentSymbol() + " · " + currentTf() + " · " + currentMode(),
+                    paused ? "PAUSE · сопровождение активно" : "MONITORING · приложение свернуто",
+                    prefs().getString("state_signal", "WAIT"), prefs().getInt("state_quality", -1));
+        }
     }
 
     private void createChannels() {
@@ -762,6 +934,11 @@ public class MonitoringService extends Service {
         expanded.setTextViewText(R.id.notifApiPrice, "API Price\n" + apiText);
         expanded.setTextViewText(R.id.notifLastSignal, "Последний анализ\n" + updatedText);
         expanded.setTextViewText(R.id.notifConnection, connection);
+        String smart = (p.getBoolean("risk_manager_enabled", true) ? "Risk ON" : "Risk OFF") +
+                " · BE " + (p.getBoolean("break_even_enabled", true) ? "ON" : "OFF") +
+                " · Trail " + (p.getBoolean("trailing_enabled", true) ? "ON" : "OFF") +
+                " · " + FeatureEngine.currentSession();
+        expanded.setTextViewText(R.id.notifSmart, smart);
         expanded.setTextViewText(R.id.notifPause, paused ? "▶  PLAY" : "Ⅱ  PAUSE");
         expanded.setOnClickPendingIntent(R.id.notifPause, pausePi);
         expanded.setOnClickPendingIntent(R.id.notifEmergency, emergencyPi);
@@ -779,18 +956,31 @@ public class MonitoringService extends Service {
                 .setContentIntent(openAppIntent())
                 .setCustomContentView(compact)
                 .setCustomBigContentView(expanded)
+                .setCustomHeadsUpContentView(compact)
                 .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, paused ? "PLAY" : "PAUSE", pausePi).build())
                 .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
-        if (Build.VERSION.SDK_INT >= 24) b.setStyle(new Notification.DecoratedCustomViewStyle());
+        if (Build.VERSION.SDK_INT >= 24) {
+            b.setStyle(new Notification.DecoratedMediaCustomViewStyle().setShowActionsInCompactView(0, 1));
+        } else {
+            b.setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1));
+        }
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_MAX);
         return b.build();
     }
 
     private void updateNotification(String title, String text, String signal, int quality) {
-        NotificationManager nm = getSystemService(NotificationManager.class);
-        if (nm != null && running) {
-            nm.notify(NOTIFICATION_ID, buildNotification(title, text, signal, quality));
+        if (!running) return;
+        Notification n = buildNotification(title, text, signal, quality);
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else {
+                startForeground(NOTIFICATION_ID, n);
+            }
+        } catch (Exception e) {
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm != null) nm.notify(NOTIFICATION_ID, n);
         }
     }
 
@@ -832,7 +1022,7 @@ public class MonitoringService extends Service {
 
     private List<Candle> fetch(String symbol, String interval, String key, int outputsize) throws Exception {
         String url = "https://api.twelvedata.com/time_series?symbol=" +
-                URLEncoder.encode(symbol, "UTF-8") +
+                URLEncoder.encode(FeatureEngine.analysisSymbol(symbol), "UTF-8") +
                 "&interval=" + URLEncoder.encode(interval, "UTF-8") +
                 "&outputsize=" + outputsize +
                 "&apikey=" + URLEncoder.encode(key, "UTF-8");
@@ -963,7 +1153,27 @@ public class MonitoringService extends Service {
                 "\n" + filter +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
-        return new Analysis(symbol, signal, quality, entry, sl, tp1, tp2, context);
+        int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);
+        int entryScore = sEntry == 0 ? 6 : 18;
+        int fastScore = (sEntry != 0 && sFast == sEntry) ? 15 : (sFast == 0 ? 8 : 3);
+        int structureScorePart = structure == 0 ? 5 : 15;
+        int breakoutScorePart = Math.abs(breakout) >= 2 ? 20 : (Math.abs(breakout) == 1 ? 14 : 4);
+        String components = "HTF " + htfScore + "/20 · Entry " + entryScore + "/20 · Fast " + fastScore + "/15 · Structure " + structureScorePart + "/15 · Breakout " + breakoutScorePart + "/20";
+
+        ArrayList<String> whyParts = new ArrayList<>();
+        if (sHigher1 != 0 && sHigher2 != 0 && sHigher1 != sHigher2) whyParts.add("старшие ТФ расходятся");
+        if (sEntry == 0) whyParts.add(entryLabel + " без направления");
+        if (sEntry != 0 && sFast != 0 && sFast != sEntry) whyParts.add(fastLabel + " против входа");
+        if (structure == 0) whyParts.add("структура не подтверждена");
+        if (breakout == 0) whyParts.add("нет подтверждённого пробоя");
+        String why;
+        if ("WAIT".equals(signal)) {
+            why = whyParts.isEmpty() ? "условия режима " + mode + " не совпали одновременно" : android.text.TextUtils.join("; ", whyParts);
+        } else {
+            why = signal + " открыт: направление ТФ согласовано; структура/фильтр разрешили вход; качество " + quality + "/100";
+        }
+
+        return new Analysis(symbol, signal, quality, entry, sl, tp1, tp2, context, why, components);
     }
 
     private int setupQualityAdaptive(String signal, int higher2, int higher1, int entry, int fast, int structure, int breakout) {
@@ -1131,10 +1341,18 @@ public class MonitoringService extends Service {
 
     @Override
     public void onDestroy() {
-        running = false;
+        boolean shouldRemainStarted = prefs().getBoolean("bg_running", false);
         handler.removeCallbacks(tick);
+        handler.removeCallbacks(notificationWatchdog);
+        running = false;
         executor.shutdownNow();
         super.onDestroy();
+        // START_STICKY handles system recreation. We intentionally do not call stopForeground here
+        // so an unexpected process death cannot explicitly remove the user's monitoring notification.
+        if (!shouldRemainStarted) {
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm != null) nm.cancel(NOTIFICATION_ID);
+        }
     }
 
     @Override
@@ -1153,11 +1371,11 @@ public class MonitoringService extends Service {
     }
 
     static class Analysis {
-        final String symbol, signal, context;
+        final String symbol, signal, context, why, components;
         final int quality;
         final double entry, sl, tp1, tp2;
 
-        Analysis(String symbol, String signal, int quality, double entry, double sl, double tp1, double tp2, String context) {
+        Analysis(String symbol, String signal, int quality, double entry, double sl, double tp1, double tp2, String context, String why, String components) {
             this.symbol = symbol;
             this.signal = signal;
             this.quality = quality;
@@ -1166,6 +1384,8 @@ public class MonitoringService extends Service {
             this.tp1 = tp1;
             this.tp2 = tp2;
             this.context = context;
+            this.why = why;
+            this.components = components;
         }
     }
 

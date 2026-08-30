@@ -12,7 +12,7 @@
 
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" Bot" android:textColor="#F7F4FF" android:textSize="29sp" android:textStyle="bold" />
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V6.9" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V7.1" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
         </LinearLayout>
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="M1 / M5 / M15 / H1 / H4 / D1 / W1 / MN1   •   MT5 execution" android:textColor="#9892AE" android:textSize="11sp" />
@@ -89,6 +89,10 @@
             <TextView android:id="@+id/levelsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Entry: —&#10;SL: —&#10;TP1: —&#10;TP2: —" android:textColor="#F7F4FF" android:textSize="15sp" android:lineSpacingExtra="4dp" />
 
             <TextView android:id="@+id/contextText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="11dp" android:text="Контекст появится после анализа." android:textColor="#B8B2CB" android:textSize="12sp" android:lineSpacingExtra="2dp" />
+
+            <TextView android:id="@+id/whyWaitText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="#181329" android:padding="9dp" android:text="ПОЧЕМУ WAIT: анализ ещё не выполнен" android:textColor="#FFB35C" android:textSize="11sp" android:lineSpacingExtra="2dp" />
+
+            <TextView android:id="@+id/componentScoresText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:background="#17142A" android:padding="9dp" android:text="КОМПОНЕНТЫ КАЧЕСТВА: —" android:textColor="#B47AFF" android:textSize="11sp" android:lineSpacingExtra="2dp" />
         </LinearLayout>
 
         
@@ -139,6 +143,19 @@
             <TextView android:id="@+id/positionsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Открытые позиции: —&#10;Текущий P/L: —" android:textColor="#F7F4FF" android:textSize="13sp" android:lineSpacingExtra="3dp" />
         </LinearLayout>
 
+        <LinearLayout android:id="@+id/smartCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="УМНЫЕ ФУНКЦИИ V7.1" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/smartStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Risk Manager · BE · Trailing · Partial · Spread · Cooldown" android:textColor="#B8B2CB" android:textSize="11sp" android:lineSpacingExtra="2dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="horizontal">
+                <Button android:id="@+id/smartFeaturesButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="НАСТРОИТЬ" android:textSize="10sp" android:textStyle="bold" />
+                <Button android:id="@+id/syncMt5SymbolsButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:layout_marginStart="4dp" android:text="СИМВОЛЫ MT5" android:textSize="10sp" android:textStyle="bold" />
+            </LinearLayout>
+            <TextView android:id="@+id/statsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="СТАТИСТИКА: подключите MT5 Bridge V7.1" android:textColor="#F7F4FF" android:textSize="11sp" android:lineSpacingExtra="2dp" />
+            <TextView android:id="@+id/signalHistoryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:maxLines="6" android:ellipsize="end" android:text="ИСТОРИЯ СИГНАЛОВ: пока пусто" android:textColor="#AFA8C4" android:textSize="10sp" android:lineSpacingExtra="2dp" />
+            <TextView android:id="@+id/tradeHistoryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:maxLines="11" android:ellipsize="end" android:text="ТОРГОВЫЙ ЖУРНАЛ: подключите MT5 Bridge V7.1" android:textColor="#AFA8C4" android:textSize="10sp" android:lineSpacingExtra="2dp" />
+            <Button android:id="@+id/managePositionsButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="8dp" android:text="УПРАВЛЕНИЕ ПОЗИЦИЯМИ" android:textSize="10sp" android:textStyle="bold" />
+        </LinearLayout>
+
         
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="СОСТОЯНИЕ СИСТЕМЫ / ТОРГОВЫЙ МОДУЛЬ" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
 
@@ -146,9 +163,9 @@
 
             <TextView android:id="@+id/serverStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="SERVER: NOT CONNECTED   •   MT5: OFFLINE" android:textColor="#FF4857" android:textSize="13sp" android:textStyle="bold" />
 
-            <TextView android:id="@+id/serverUrlLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="АДРЕС СЕРВЕРА" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
+            <TextView android:id="@+id/serverUrlLabel" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="АДРЕС СЕРВЕРА" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <LinearLayout android:id="@+id/serverInputRow" android:visibility="gone" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
                 <TextView android:layout_width="wrap_content" android:layout_height="match_parent" android:gravity="center_vertical" android:text="http://" android:textColor="#A66BFF" android:textSize="13sp" android:textStyle="bold" />
                 <EditText android:id="@+id/serverUrlInput" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="4dp" android:layout_weight="1" android:hint="192.168.1.8:8000" android:imeOptions="actionDone" android:inputType="textUri" android:singleLine="true" android:textColor="#F7F4FF" android:textColorHint="#7D7792" />
             </LinearLayout>
@@ -172,7 +189,7 @@
             <TextView android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⚙\nНастройки" android:textColor="#9791AA" android:textSize="10sp" />
         </LinearLayout>
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V6.9 · AUTO BACKGROUND · MT5 BRIDGE · SMART SERVER · MARKET STATUS" android:textColor="#6F6983" android:textSize="9sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V7.1 · SMART RISK · POSITION MANAGER · MT5 BRIDGE · SIGNAL HISTORY" android:textColor="#6F6983" android:textSize="9sp" />
 
     </LinearLayout>
 </ScrollView>
