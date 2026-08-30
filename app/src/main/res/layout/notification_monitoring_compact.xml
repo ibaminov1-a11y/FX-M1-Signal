@@ -2,30 +2,24 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#111227"
+    android:background="#101126"
     android:orientation="vertical"
-    android:padding="10dp">
+    android:paddingLeft="8dp"
+    android:paddingTop="6dp"
+    android:paddingRight="8dp"
+    android:paddingBottom="6dp">
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
-        <ImageView android:id="@+id/notifLogo" android:layout_width="52dp" android:layout_height="52dp" android:scaleType="centerCrop" android:src="@drawable/app_icon" />
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:layout_weight="1" android:orientation="vertical">
-            <TextView android:id="@+id/notifTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FX M1 Bot" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" />
-            <TextView android:id="@+id/notifCore" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:maxLines="1" android:text="EUR/USD · M1 · NORMAL · WAIT · 32/100" android:textColor="#EDE9F7" android:textSize="12sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="42dp" android:gravity="center_vertical" android:orientation="horizontal">
+        <ImageView android:id="@+id/notifLogo" android:layout_width="40dp" android:layout_height="40dp" android:scaleType="centerCrop" android:src="@drawable/app_icon" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/notifTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FX M1 Bot · WAIT" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
+            <TextView android:id="@+id/notifCore" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end" android:text="EUR/USD · M1 · NORMAL · 32/100" android:textColor="#DCD6EA" android:textSize="10sp" />
+            <TextView android:id="@+id/notifConnection" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end" android:text="MARKET CLOSED · SERVER CONNECTED · MT5 CONNECTED" android:textColor="#42D67A" android:textSize="9sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="7dp" android:layout_marginBottom="7dp" android:background="#37304F" />
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-        <TextView android:id="@+id/notifAccount" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Баланс (DEMO)\n—" android:textColor="#F5F2FB" android:textSize="11sp" />
-        <View android:layout_width="1dp" android:layout_height="34dp" android:background="#37304F" />
-        <TextView android:id="@+id/notifPositions" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Позиции\n0" android:textColor="#F5F2FB" android:textSize="11sp" />
-        <View android:layout_width="1dp" android:layout_height="34dp" android:background="#37304F" />
-        <TextView android:id="@+id/notifRisk" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Риск\n0.50%" android:textColor="#F5F2FB" android:textSize="11sp" />
-    </LinearLayout>
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp" android:orientation="horizontal">
-        <TextView android:id="@+id/notifPause" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="4dp" android:layout_weight="1" android:background="#211B3A" android:gravity="center" android:text="Ⅱ  PAUSE" android:textColor="#B47AFF" android:textSize="11sp" android:textStyle="bold" />
-        <TextView android:id="@+id/notifEmergency" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="4dp" android:layout_weight="1" android:background="#2A1420" android:gravity="center" android:text="■  EMERGENCY STOP" android:textColor="#FF4857" android:textSize="11sp" android:textStyle="bold" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="32dp" android:layout_marginTop="4dp" android:orientation="horizontal">
+        <TextView android:id="@+id/notifPause" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="4dp" android:layout_weight="1" android:background="#241A43" android:gravity="center" android:text="Ⅱ  PAUSE" android:textColor="#B47AFF" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/notifEmergency" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="4dp" android:layout_weight="1" android:background="#31141F" android:gravity="center" android:text="■  EMERGENCY" android:textColor="#FF4857" android:textSize="10sp" android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

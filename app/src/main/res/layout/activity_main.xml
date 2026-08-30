@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/rootLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_space_v67" android:fillViewport="true" android:scrollbarStyle="outsideOverlay">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/rootLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_cosmic_v69" android:fillViewport="true" android:scrollbarStyle="outsideOverlay">
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingLeft="12dp" android:paddingTop="46dp" android:paddingRight="12dp" android:paddingBottom="18dp">
 
@@ -12,7 +12,7 @@
 
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" Bot" android:textColor="#F7F4FF" android:textSize="29sp" android:textStyle="bold" />
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V6.8.2" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V6.9" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
         </LinearLayout>
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="M1 / M5 / M15 / H1 / H4 / D1 / W1 / MN1   •   MT5 execution" android:textColor="#9892AE" android:textSize="11sp" />
@@ -148,7 +148,10 @@
 
             <TextView android:id="@+id/serverUrlLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="АДРЕС СЕРВЕРА" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
-            <EditText android:id="@+id/serverUrlInput" android:layout_width="match_parent" android:layout_height="44dp" android:hint="например: 192.168.0.100:8000" android:inputType="textUri" android:singleLine="true" android:textColor="#F7F4FF" android:textColorHint="#7D7792" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="wrap_content" android:layout_height="match_parent" android:gravity="center_vertical" android:text="http://" android:textColor="#A66BFF" android:textSize="13sp" android:textStyle="bold" />
+                <EditText android:id="@+id/serverUrlInput" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="4dp" android:layout_weight="1" android:hint="192.168.1.8:8000" android:imeOptions="actionDone" android:inputType="textUri" android:singleLine="true" android:textColor="#F7F4FF" android:textColorHint="#7D7792" />
+            </LinearLayout>
 
             <Button android:id="@+id/serverCheckButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp" android:text="ПРОВЕРИТЬ СЕРВЕР" android:textSize="11sp" android:textStyle="bold" />
         </LinearLayout>
@@ -169,7 +172,7 @@
             <TextView android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⚙\nНастройки" android:textColor="#9791AA" android:textSize="10sp" />
         </LinearLayout>
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V6.8.2 · AUTO BACKGROUND · MT5 BRIDGE · SMART SERVER · MARKET STATUS" android:textColor="#6F6983" android:textSize="9sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V6.9 · AUTO BACKGROUND · MT5 BRIDGE · SMART SERVER · MARKET STATUS" android:textColor="#6F6983" android:textSize="9sp" />
 
     </LinearLayout>
 </ScrollView>

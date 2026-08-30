@@ -17,6 +17,8 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.widget.*;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.content.Context;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -43,6 +45,7 @@ public class MainActivity extends Activity {
     private TextView autoStatusText;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
     private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard, marketStatusCard, positionsCard, bottomNav;
+    private ScrollView rootLayout;
 
 
     private static final int C_BG = Color.rgb(7, 8, 22);
@@ -153,6 +156,7 @@ public class MainActivity extends Activity {
         marketSessionText = findViewById(R.id.marketSessionText);
         sparklineView = findViewById(R.id.sparklineView);
         qualityBarView = findViewById(R.id.qualityBarView);
+        rootLayout = findViewById(R.id.rootLayout);
 
         topCard = findViewById(R.id.topCard);
         tfCard = findViewById(R.id.tfCard);
@@ -192,7 +196,7 @@ public class MainActivity extends Activity {
         entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
         apiKeyInput.setText(prefs.getString("apikey", ""));
-        serverUrlInput.setText(prefs.getString("server_url", ""));
+        serverUrlInput.setText(stripServerScheme(prefs.getString("server_url", "")));
         setApiKeyEditMode(prefs.getString("apikey", "").trim().isEmpty());
         boolean savedServerVerified = prefs.getBoolean("server_verified", false)
                 && !prefs.getString("server_url", "").trim().isEmpty();
@@ -255,6 +259,13 @@ public class MainActivity extends Activity {
             if (serverUrlInput.getVisibility() != View.VISIBLE) {
                 setServerEditMode(true);
                 serverUrlInput.requestFocus();
+                if (rootLayout != null) {
+                    rootLayout.postDelayed(() -> {
+                        rootLayout.smoothScrollTo(0, Math.max(0, tradingCard.getTop() - 80));
+                        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        if (imm != null) imm.showSoftInput(serverUrlInput, InputMethodManager.SHOW_IMPLICIT);
+                    }, 180L);
+                }
             } else {
                 checkServer();
             }
@@ -342,8 +353,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V6.8.1 разрешает только DEMO.");
-                    Toast.makeText(this, "V6.8.1 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V6.9 разрешает только DEMO.");
+                    Toast.makeText(this, "V6.9 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -589,6 +600,14 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String stripServerScheme(String raw) {
+        if (raw == null) return "";
+        String u = raw.trim();
+        if (u.startsWith("http://")) return u.substring(7);
+        if (u.startsWith("https://")) return u.substring(8);
+        return u;
+    }
+
     private String normalizeServerUrl(String raw) {
         String u = raw == null ? "" : raw.trim();
         if (u.isEmpty()) return "";
@@ -609,7 +628,7 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "Адрес сервера пока пуст", Toast.LENGTH_SHORT).show();
             return;
         }
-        serverUrlInput.setText(base);
+        serverUrlInput.setText(stripServerScheme(base));
         getSharedPreferences("fxm1", MODE_PRIVATE).edit()
                 .putString("server_url", base)
                 .putBoolean("server_verified", false)
@@ -1361,10 +1380,12 @@ public class MainActivity extends Activity {
         Calendar ny = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
         int dow = ny.get(Calendar.DAY_OF_WEEK);
         int mins = ny.get(Calendar.HOUR_OF_DAY) * 60 + ny.get(Calendar.MINUTE);
-        int open = 17 * 60;
+        // Standard retail FX weekly window. NY timezone automatically handles DST.
+        int sundayOpen = 17 * 60 + 5;
+        int fridayClose = 16 * 60 + 59;
         if (dow == Calendar.SATURDAY) return false;
-        if (dow == Calendar.SUNDAY) return mins >= open;
-        if (dow == Calendar.FRIDAY) return mins < open;
+        if (dow == Calendar.SUNDAY) return mins >= sundayOpen;
+        if (dow == Calendar.FRIDAY) return mins < fridayClose;
         return true;
     }
 
@@ -1387,35 +1408,47 @@ public class MainActivity extends Activity {
         int dow = ny.get(Calendar.DAY_OF_WEEK);
         int mins = ny.get(Calendar.HOUR_OF_DAY) * 60 + ny.get(Calendar.MINUTE);
         boolean open = isForexMarketOpen();
+
         if (open) {
-            int daysSinceSunday = dow - Calendar.SUNDAY;
-            if (dow == Calendar.SUNDAY && mins < 17 * 60) daysSinceSunday += 7;
-            Calendar opened = nyBoundary(-daysSinceSunday, 17, 0);
+            // Spot FX is normally continuous during the trading week: Sunday 17:00 NY -> Friday 17:00 NY.
+            int daysSinceSunday = (dow - Calendar.SUNDAY + 7) % 7;
+            Calendar opened = nyBoundary(-daysSinceSunday, 17, 5);
             int daysToFriday = (Calendar.FRIDAY - dow + 7) % 7;
-            Calendar closes = nyBoundary(daysToFriday, 17, 0);
+            Calendar closes = nyBoundary(daysToFriday, 16, 59);
             marketStatusText.setText("MARKET OPEN");
             marketStatusText.setTextColor(C_GREEN);
-            marketSessionText.setText("Рынок открыт: " + tashkentTime(opened) + " — " + tashkentTime(closes) +
-                    "\nЗакрытие: " + tashkentTime(closes));
+            marketSessionText.setText(
+                    "Торговая неделя:\n" + shortTashkentTime(opened) + " — " + shortTashkentTime(closes) +
+                    "\nСледующее закрытие: " + shortTashkentTime(closes)
+            );
         } else {
             Calendar closed;
             Calendar next;
-            if (dow == Calendar.FRIDAY && mins >= 17 * 60) {
-                closed = nyBoundary(0,17,0); next = nyBoundary(2,17,0);
+            if (dow == Calendar.FRIDAY && mins >= 16 * 60 + 59) {
+                closed = nyBoundary(0, 16, 59);
+                next = nyBoundary(2, 17, 5);
             } else if (dow == Calendar.SATURDAY) {
-                closed = nyBoundary(-1,17,0); next = nyBoundary(1,17,0);
-            } else { // Sunday before 17:00
-                closed = nyBoundary(-2,17,0); next = nyBoundary(0,17,0);
+                closed = nyBoundary(-1, 16, 59);
+                next = nyBoundary(1, 17, 5);
+            } else { // Sunday before 17:00 NY
+                closed = nyBoundary(-2, 16, 59);
+                next = nyBoundary(0, 17, 5);
             }
             marketStatusText.setText("MARKET CLOSED");
             marketStatusText.setTextColor(C_RED);
-            Calendar nextClose = (Calendar) next.clone();
-            nextClose.add(Calendar.DAY_OF_MONTH, 5);
-            marketSessionText.setText("Рынок закрыт: " + tashkentTime(closed) + " — " + tashkentTime(next) +
-                    "\nВоскресенье: закрыт весь день до открытия" +
-                    "\nСледующее открытие: " + tashkentTime(next) +
-                    "\nСледующее закрытие: " + tashkentTime(nextClose));
+            marketSessionText.setText(
+                    "Выходные:\n" + shortTashkentTime(closed) + " — " + shortTashkentTime(next) +
+                    "\nСледующее открытие: " + shortTashkentTime(next)
+            );
         }
+    }
+
+    private String shortTashkentTime(Calendar source) {
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("EEE dd.MM HH:mm", new Locale("ru"));
+        f.setTimeZone(TimeZone.getTimeZone("Asia/Tashkent"));
+        String v = f.format(source.getTime());
+        if (v.length() > 0) v = Character.toUpperCase(v.charAt(0)) + v.substring(1);
+        return v + " (TASH)";
     }
 
     private void loadCustomSymbols() {
