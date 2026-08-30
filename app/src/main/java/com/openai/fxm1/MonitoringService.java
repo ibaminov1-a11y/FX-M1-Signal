@@ -7,6 +7,8 @@ import android.content.pm.ServiceInfo;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.*;
+import android.widget.RemoteViews;
+import android.graphics.Color;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -394,6 +396,7 @@ public class MonitoringService extends Service {
                 }
 
                 saveAnalysis(a, fresh, cached);
+                refreshMt5Snapshot();
                 updateNotification(
                         a.symbol + " · " + tf + " · " + mode,
                         "API " + fresh + " · кэш " + cached,
@@ -583,6 +586,31 @@ public class MonitoringService extends Service {
         }
     }
 
+    private void refreshMt5Snapshot() {
+        SharedPreferences p = prefs();
+        String base = normalizeUrl(p.getString("server_url", ""));
+        if (base.isEmpty()) return;
+        try {
+            JSONObject h = httpJson("GET", base + "/health", null);
+            boolean ok = h.optBoolean("ok", false);
+            boolean connected = h.optBoolean("mt5_connected", false);
+            double balance = h.optDouble("balance", Double.NaN);
+            double equity = h.optDouble("equity", Double.NaN);
+            double floating = h.optDouble("floating_pl", 0.0);
+            p.edit()
+                    .putBoolean("mt5_connected_snapshot", ok && connected)
+                    .putString("mt5_account_type_snapshot", h.optString("account_type", "—"))
+                    .putLong("mt5_balance_bits", Double.doubleToLongBits(balance))
+                    .putLong("mt5_equity_bits", Double.doubleToLongBits(equity))
+                    .putString("mt5_currency_snapshot", h.optString("currency", "USD"))
+                    .putInt("mt5_positions_snapshot", h.optInt("positions", 0))
+                    .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
+                    .apply();
+        } catch (Exception ignored) {
+            p.edit().putBoolean("mt5_connected_snapshot", false).apply();
+        }
+    }
+
     private void scheduleNext(long delayMs) {
         handler.removeCallbacks(tick);
         if (running) handler.postDelayed(tick, delayMs);
@@ -645,20 +673,57 @@ public class MonitoringService extends Service {
     }
 
     private Notification buildNotification(String title, String text, String signal, int quality) {
-        String compact = title;
-        if (quality >= 0) compact += " · " + signal + " · " + quality + "/100";
-        else if (signal != null && !signal.trim().isEmpty()) compact += " · " + signal;
+        SharedPreferences p = prefs();
+        boolean mt5Connected = p.getBoolean("mt5_connected_snapshot", false);
+        String accountType = p.getString("mt5_account_type_snapshot", "—");
+        String currency = p.getString("mt5_currency_snapshot", "USD");
+        double balance = Double.longBitsToDouble(p.getLong("mt5_balance_bits", Double.doubleToLongBits(Double.NaN)));
+        int positions = p.getInt("mt5_positions_snapshot", 0);
+        boolean auto = p.getBoolean("auto_trading", false);
+        String risk = p.getString("risk_label", "0.50%");
+        if (risk == null || risk.trim().isEmpty() || "null".equals(risk)) risk = "0.50%";
 
-        String details = paused
-                ? "PAUSE · новые входы запрещены, анализ продолжается"
-                : text;
+        String symbol = currentSymbol();
+        String tf = currentTf();
+        String mode = currentMode();
+        String core = symbol + " · " + tf + " · " + mode + " · " + signal + (quality >= 0 ? " · " + quality + "/100" : "");
+        String balanceText = Double.isNaN(balance) ? "—" : String.format(Locale.US, "%.2f %s", balance, currency);
+        String accountLine = "Счёт: " + accountType + " · Баланс: " + balanceText;
+        String positionsLine = "Позиции: " + positions + " · Риск: " + risk + " · AUTO: " + (auto ? "ON" : "OFF");
+        String connectionLine = mt5Connected ? "MT5 CONNECTED" : "MT5 OFFLINE";
+
+        int signalColor = "BUY".equals(signal) ? Color.rgb(66,214,122)
+                : "SELL".equals(signal) ? Color.rgb(255,72,87)
+                : Color.WHITE;
+
+        RemoteViews collapsed = new RemoteViews(getPackageName(), R.layout.notification_monitoring_compact);
+        collapsed.setImageViewResource(R.id.notifLogo, R.drawable.app_icon);
+        collapsed.setTextViewText(R.id.notifTitle, "FX M1 Bot");
+        collapsed.setTextViewText(R.id.notifCore, core);
+        collapsed.setTextColor(R.id.notifCore, signalColor);
+        collapsed.setTextViewText(R.id.notifAccount, accountLine);
+        collapsed.setTextViewText(R.id.notifPositions, positionsLine);
+        collapsed.setTextViewText(R.id.notifPause, paused ? "PLAY" : "PAUSE");
+        collapsed.setOnClickPendingIntent(R.id.notifPause, serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101));
+        collapsed.setOnClickPendingIntent(R.id.notifEmergency, serviceActionIntent(ACTION_EMERGENCY, 102));
+
+        RemoteViews expanded = new RemoteViews(getPackageName(), R.layout.notification_monitoring_expanded);
+        expanded.setImageViewResource(R.id.notifLogo, R.drawable.app_icon);
+        expanded.setTextViewText(R.id.notifTitle, "FX M1 Bot · MONITORING");
+        expanded.setTextViewText(R.id.notifCore, core);
+        expanded.setTextColor(R.id.notifCore, signalColor);
+        expanded.setTextViewText(R.id.notifAccount, accountLine);
+        expanded.setTextViewText(R.id.notifPositions, positionsLine);
+        expanded.setTextViewText(R.id.notifConnection, connectionLine);
+        expanded.setTextViewText(R.id.notifPause, paused ? "PLAY" : "PAUSE");
+        expanded.setOnClickPendingIntent(R.id.notifPause, serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101));
+        expanded.setOnClickPendingIntent(R.id.notifEmergency, serviceActionIntent(ACTION_EMERGENCY, 102));
 
         Notification.Action pausePlayAction = new Notification.Action.Builder(
                 paused ? android.R.drawable.ic_media_play : android.R.drawable.ic_media_pause,
                 paused ? "PLAY" : "PAUSE",
                 serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101)
         ).build();
-
         Notification.Action emergencyAction = new Notification.Action.Builder(
                 android.R.drawable.stat_sys_warning,
                 "EMERGENCY",
@@ -667,11 +732,11 @@ public class MonitoringService extends Service {
 
         return new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(R.drawable.ic_stat_fx)
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.app_icon))
-                .setContentTitle(paused ? "FX M1 Bot · PAUSE" : "FX M1 Bot")
-                .setContentText(compact)
-                .setSubText("MONITORING")
-                .setStyle(new Notification.BigTextStyle().bigText(compact + "\n" + details))
+                .setContentTitle("FX M1 Bot")
+                .setContentText(core)
+                .setCustomContentView(collapsed)
+                .setCustomBigContentView(expanded)
+                .setStyle(new Notification.DecoratedCustomViewStyle())
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)

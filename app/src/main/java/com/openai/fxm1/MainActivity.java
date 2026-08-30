@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
     private EditText serverUrlInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel;
     private Switch autoTradingSwitch;
+    private TextView autoStatusText;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
     private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard;
 
@@ -133,6 +134,7 @@ public class MainActivity extends Activity {
         journalText = findViewById(R.id.journalText);
         priceCompareText = findViewById(R.id.priceCompareText);
         autoTradingSwitch = findViewById(R.id.autoTradingSwitch);
+        autoStatusText = findViewById(R.id.autoStatusText);
         riskSpinner = findViewById(R.id.riskSpinner);
         maxPositionsSpinner = findViewById(R.id.maxPositionsSpinner);
         maxDriftSpinner = findViewById(R.id.maxDriftSpinner);
@@ -240,7 +242,7 @@ public class MainActivity extends Activity {
         riskSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.edit().putInt("risk_pos", position).apply();
+                prefs.edit().putInt("risk_pos", position).putString("risk_label", String.valueOf(riskSpinner.getSelectedItem())).apply();
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
@@ -248,7 +250,7 @@ public class MainActivity extends Activity {
         maxPositionsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.edit().putInt("maxpos_pos", position).apply();
+                prefs.edit().putInt("maxpos_pos", position).putString("maxpos_label", String.valueOf(maxPositionsSpinner.getSelectedItem())).apply();
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
@@ -314,14 +316,16 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V6.4 разрешает только DEMO.");
-                    Toast.makeText(this, "V6.4 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V6.5 разрешает только DEMO.");
+                    Toast.makeText(this, "V6.5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
+                if (autoStatusText != null) { autoStatusText.setText("AUTO включён · DEMO · новые сигналы могут исполняться"); autoStatusText.setTextColor(C_GREEN); }
                 addJournal("AUTO TRADING включён · DEMO");
             } else {
                 prefs.edit().putBoolean("auto_trading", false).apply();
+                if (autoStatusText != null) { autoStatusText.setText("AUTO выключен · DEMO ONLY"); autoStatusText.setTextColor(C_MUTED); }
                 addJournal("AUTO TRADING выключен");
             }
         });
@@ -565,6 +569,15 @@ public class MainActivity extends Activity {
                             "Открытые позиции: " + positions +
                             "\nТекущий P/L: " + signedMoney(floating, currency)
                     );
+                    getSharedPreferences("fxm1", MODE_PRIVATE).edit()
+                            .putBoolean("mt5_connected_snapshot", serverOk && mt5Ok)
+                            .putString("mt5_account_type_snapshot", accountType)
+                            .putLong("mt5_balance_bits", Double.doubleToLongBits(balance))
+                            .putLong("mt5_equity_bits", Double.doubleToLongBits(equity))
+                            .putString("mt5_currency_snapshot", currency)
+                            .putInt("mt5_positions_snapshot", positions)
+                            .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
+                            .apply();
                     closeAllButton.setEnabled(serverOk && mt5Ok && demoAccount && positions > 0);
 
                     if (!serverOk || !mt5Ok || !demoAccount) {
@@ -892,7 +905,7 @@ public class MainActivity extends Activity {
 
         if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
             signalText.setText("WAIT");
-            signalText.setTextColor(C_PURPLE);
+            signalText.setTextColor(C_TEXT);
             confidenceText.setText("Качество сетапа: —");
             updateSignalAgeText("WAIT", 0L, 0L);
             levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
@@ -908,7 +921,7 @@ public class MainActivity extends Activity {
         statusText.setText(symbol + " · " + tf + " · " + source + " · API " + fresh + " · кэш " + cached);
 
         signalText.setText(signal);
-        signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
+        signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_TEXT));
 
         confidenceText.setText(quality >= 0 ? "Качество сетапа: " + quality + "/100" : "Качество сетапа: —");
         updateSignalAgeText(signal, since, updated);
@@ -1694,12 +1707,12 @@ public class MainActivity extends Activity {
         if ("BUY".equals(signal) || "SELL".equals(signal)) {
             String elapsed = active ? formatElapsed(sinceMs) : formatElapsedUntil(sinceMs, reference);
             signalAgeText.setText(
-                    "Открыт: " + formatClock(sinceMs) +
-                    "  ·  прошло: " + elapsed +
-                    "\nОбновлено: " + formatClock(updatedMs) +
+                    "Сигнал " + signal + " с: " + formatClock(sinceMs) +
+                    "\nДлительность сигнала: " + elapsed +
+                    "\nПоследний анализ: " + formatClock(updatedMs) +
                     (active ? "" : " · мониторинг остановлен")
             );
-            signalAgeText.setTextColor(C_YELLOW);
+            signalAgeText.setTextColor("SELL".equals(signal) ? C_RED : C_GREEN);
         } else {
             if (updatedMs <= 0L) {
                 signalAgeText.setText(active ? "Ожидаю первый анализ…" : "Мониторинг остановлен.");
@@ -1768,7 +1781,7 @@ public class MainActivity extends Activity {
         } else if ("SELL".equals(a.signal)) {
             signalText.setTextColor(C_RED);
         } else {
-            signalText.setTextColor(C_PURPLE);
+            signalText.setTextColor(C_TEXT);
         }
 
         confidenceText.setText(
