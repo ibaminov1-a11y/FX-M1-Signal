@@ -33,7 +33,7 @@ public class MonitoringService extends Service {
 
     private static final int NOTIFICATION_ID = 4101;
     private static final int SIGNAL_NOTIFICATION_ID = 4102;
-    private static final String CHANNEL_MONITOR = "fx_monitor_background";
+    private static final String CHANNEL_MONITOR = "fx_monitor_background_v66";
     private static final String CHANNEL_SIGNAL = "fx_trade_signals";
 
     private static final long CACHE_M1_MS = 18000L;
@@ -543,6 +543,10 @@ public class MonitoringService extends Service {
     }
 
     private void maybeSendToTradingServer(Analysis a, String tf, String mode) {
+        if (!isForexMarketOpen()) {
+            prefs().edit().putString("bg_status", "MARKET CLOSED · торговля заблокирована").apply();
+            return;
+        }
         if (paused || prefs().getBoolean("trading_paused", false)) return;
         if (!prefs().getBoolean("auto_trading", false)) return;
         if ("WAIT".equals(a.signal)) return;
@@ -629,6 +633,17 @@ public class MonitoringService extends Service {
         return symbols[pos];
     }
 
+    private boolean isForexMarketOpen() {
+        Calendar ny = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+        int dow = ny.get(Calendar.DAY_OF_WEEK);
+        int mins = ny.get(Calendar.HOUR_OF_DAY) * 60 + ny.get(Calendar.MINUTE);
+        int open = 17 * 60;
+        if (dow == Calendar.SATURDAY) return false;
+        if (dow == Calendar.SUNDAY) return mins >= open;
+        if (dow == Calendar.FRIDAY) return mins < open;
+        return true;
+    }
+
     private String currentTf() {
         int pos = prefs().getInt("entry_tf_pos", 1);
         String[] values = {"M1", "M5", "M15", "H1"};
@@ -686,7 +701,8 @@ public class MonitoringService extends Service {
         String symbol = currentSymbol();
         String tf = currentTf();
         String mode = currentMode();
-        String core = symbol + " · " + tf + " · " + mode + " · " + signal + (quality >= 0 ? " · " + quality + "/100" : "");
+        String market = isForexMarketOpen() ? "MARKET OPEN" : "MARKET CLOSED";
+        String core = symbol + " · " + tf + " · " + mode + " · " + signal + (quality >= 0 ? " · " + quality + "/100" : "") + " · " + market;
         String balanceText = Double.isNaN(balance) ? "—" : String.format(Locale.US, "%.2f %s", balance, currency);
         String accountLine = "Счёт: " + accountType + " · Баланс: " + balanceText;
         String positionsLine = "Позиции: " + positions + " · Риск: " + risk + " · AUTO: " + (auto ? "ON" : "OFF");

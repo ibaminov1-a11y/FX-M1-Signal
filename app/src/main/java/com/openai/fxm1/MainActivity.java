@@ -32,13 +32,15 @@ public class MainActivity extends Activity {
     private Spinner symbolSpinner, entryTimeframeSpinner, signalModeSpinner;
     private EditText apiKeyInput;
     private TextView statusText, signalText, confidenceText, signalAgeText, levelsText, contextText, apiKeyLabel;
+    private TextView marketStatusText, marketSessionText;
+    private SparklineView sparklineView;
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton;
     private EditText serverUrlInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel;
     private Switch autoTradingSwitch;
     private TextView autoStatusText;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
-    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard;
+    private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard, marketStatusCard;
 
 
     private static final int C_BG = Color.rgb(7, 8, 22);
@@ -140,6 +142,9 @@ public class MainActivity extends Activity {
         maxDriftSpinner = findViewById(R.id.maxDriftSpinner);
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
+        marketStatusText = findViewById(R.id.marketStatusText);
+        marketSessionText = findViewById(R.id.marketSessionText);
+        sparklineView = findViewById(R.id.sparklineView);
 
         topCard = findViewById(R.id.topCard);
         tfCard = findViewById(R.id.tfCard);
@@ -149,8 +154,10 @@ public class MainActivity extends Activity {
         metricsCard = findViewById(R.id.metricsCard);
         riskCard = findViewById(R.id.riskCard);
         journalCard = findViewById(R.id.journalCard);
+        marketStatusCard = findViewById(R.id.marketStatusCard);
 
         applyDarkVioletTheme();
+        updateMarketStatusUi();
 
         ArrayAdapter<String> adapter = darkSpinnerAdapter(symbols);
         symbolSpinner.setAdapter(adapter);
@@ -371,6 +378,7 @@ public class MainActivity extends Activity {
         styleCard(metricsCard, C_CARD);
         styleCard(riskCard, C_CARD);
         styleCard(journalCard, C_CARD);
+        styleCard(marketStatusCard, C_CARD);
 
         stylePrimaryButton(saveKeyButton);
         stylePrimaryButton(analyzeButton);
@@ -605,6 +613,10 @@ public class MainActivity extends Activity {
     }
 
     private void maybeSendSignalToServer(Analysis a) {
+        if (!isForexMarketOpen()) {
+            addJournal("MARKET CLOSED · новый ордер заблокирован");
+            return;
+        }
         if (!autoTradingSwitch.isChecked() || !serverConnected || !mt5Connected || !demoAccount) {
             return;
         }
@@ -1064,6 +1076,14 @@ public class MainActivity extends Activity {
 
                 runOnUiThread(() -> {
                     isAnalyzing = false;
+                    if (sparklineView != null) {
+                        List<Double> pts = new ArrayList<>();
+                        int from = Math.max(0, entry.data.size() - 30);
+                        for (int i = from; i < entry.data.size(); i++) pts.add(entry.data.get(i).close);
+                        sparklineView.setValues(pts);
+                        sparklineView.setSignal(a.signal);
+                    }
+                    updateMarketStatusUi();
                     showAnalysis(a, freshRequests, cachedRequests);
                     alertIfNewTradeSignal(a);
                     maybeSendSignalToServer(a);
@@ -1225,6 +1245,62 @@ public class MainActivity extends Activity {
         }
 
         return sb.toString();
+    }
+
+
+    private boolean isForexMarketOpen() {
+        Calendar ny = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+        int dow = ny.get(Calendar.DAY_OF_WEEK);
+        int mins = ny.get(Calendar.HOUR_OF_DAY) * 60 + ny.get(Calendar.MINUTE);
+        int open = 17 * 60;
+        if (dow == Calendar.SATURDAY) return false;
+        if (dow == Calendar.SUNDAY) return mins >= open;
+        if (dow == Calendar.FRIDAY) return mins < open;
+        return true;
+    }
+
+    private Calendar nyBoundary(int dayOffset, int hour, int minute) {
+        Calendar c = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+        c.add(Calendar.DAY_OF_MONTH, dayOffset);
+        c.set(Calendar.HOUR_OF_DAY, hour); c.set(Calendar.MINUTE, minute); c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0);
+        return c;
+    }
+
+    private String tashkentTime(Calendar source) {
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("dd.MM (EEE) HH:mm", new Locale("ru"));
+        f.setTimeZone(TimeZone.getTimeZone("Asia/Tashkent"));
+        return f.format(source.getTime()) + " (TASH)";
+    }
+
+    private void updateMarketStatusUi() {
+        if (marketStatusText == null || marketSessionText == null) return;
+        Calendar ny = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"));
+        int dow = ny.get(Calendar.DAY_OF_WEEK);
+        int mins = ny.get(Calendar.HOUR_OF_DAY) * 60 + ny.get(Calendar.MINUTE);
+        boolean open = isForexMarketOpen();
+        if (open) {
+            int daysSinceSunday = dow - Calendar.SUNDAY;
+            if (dow == Calendar.SUNDAY && mins < 17 * 60) daysSinceSunday += 7;
+            Calendar opened = nyBoundary(-daysSinceSunday, 17, 0);
+            int daysToFriday = (Calendar.FRIDAY - dow + 7) % 7;
+            Calendar closes = nyBoundary(daysToFriday, 17, 0);
+            marketStatusText.setText("MARKET OPEN");
+            marketStatusText.setTextColor(C_GREEN);
+            marketSessionText.setText("Открыт: " + tashkentTime(opened) + "\nЗакрытие: " + tashkentTime(closes));
+        } else {
+            Calendar closed;
+            Calendar next;
+            if (dow == Calendar.FRIDAY && mins >= 17 * 60) {
+                closed = nyBoundary(0,17,0); next = nyBoundary(2,17,0);
+            } else if (dow == Calendar.SATURDAY) {
+                closed = nyBoundary(-1,17,0); next = nyBoundary(1,17,0);
+            } else { // Sunday before 17:00
+                closed = nyBoundary(-2,17,0); next = nyBoundary(0,17,0);
+            }
+            marketStatusText.setText("MARKET CLOSED");
+            marketStatusText.setTextColor(C_RED);
+            marketSessionText.setText("Закрыт с: " + tashkentTime(closed) + "\nСледующее открытие: " + tashkentTime(next));
+        }
     }
 
     private String safeMessage(Exception e) {
