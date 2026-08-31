@@ -2,7 +2,7 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 echo ===============================================
-echo FX M1 Bot V6.3 - MT5 Bridge installer
+echo FX M1 Bot - CURRENT MT5 Bridge installer
 echo ===============================================
 echo.
 where py >nul 2>nul
@@ -16,12 +16,11 @@ if errorlevel 1 (
   )
 )
 
-echo Creating isolated environment...
+if exist .venv rmdir /s /q .venv
 py -3.13 -m venv .venv
 if errorlevel 1 py -m venv .venv
-call .venv\Scripts\activate.bat
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+".venv\Scripts\python.exe" -m pip install --upgrade pip
+".venv\Scripts\python.exe" -m pip install -r requirements.txt
 if errorlevel 1 (
   echo ERROR: Package installation failed.
   pause
@@ -29,7 +28,5 @@ if errorlevel 1 (
 )
 
 echo.
-echo Installation complete.
-echo IMPORTANT: Open MetaTrader 5 and log into a DEMO account first.
-echo Then run START_BRIDGE.bat
+echo Installation complete. Open MT5 DEMO, then run START_BRIDGE_V7_3.bat.
 pause

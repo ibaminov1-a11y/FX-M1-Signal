@@ -10,8 +10,8 @@ android {
         applicationId "com.openai.fxm1"
         minSdk 26
         targetSdk 35
-        versionCode 735
-        versionName "7.3.5"
+        versionCode 740
+        versionName "7.4.0"
     }
 }
 

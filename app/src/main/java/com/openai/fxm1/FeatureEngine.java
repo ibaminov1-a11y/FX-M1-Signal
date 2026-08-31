@@ -228,40 +228,12 @@ public final class FeatureEngine {
     public static String formatPositions(JSONObject root) {
         JSONArray arr = root == null ? null : root.optJSONArray("positions");
         if (arr == null || arr.length() == 0) return "Нет открытых позиций";
-
-        double totalLot = 0.0;
-        double floating = 0.0;
-        double weightedOpen = 0.0;
-        String basketSymbol = "";
-        String basketSide = "";
-        boolean sameBasket = true;
-
-        for (int i = 0; i < arr.length(); i++) {
-            JSONObject p = arr.optJSONObject(i);
-            if (p == null) continue;
-            double v = p.optDouble("volume", 0);
-            totalLot += v;
-            floating += p.optDouble("profit", 0);
-            weightedOpen += p.optDouble("open_price", 0) * v;
-            String sym = p.optString("symbol");
-            String side = p.optString("side");
-            if (basketSymbol.isEmpty()) { basketSymbol = sym; basketSide = side; }
-            else if (!basketSymbol.equals(sym) || !basketSide.equals(side)) sameBasket = false;
-        }
-
         StringBuilder sb = new StringBuilder();
-        sb.append("Открыто: ").append(arr.length())
-                .append(" · Total lot: ").append(String.format(Locale.US, "%.2f", totalLot))
-                .append(" · P/L ").append(String.format(Locale.US, "%+.2f", floating));
-        if (sameBasket && totalLot > 0) {
-            sb.append("\nSCALP basket: ").append(basketSymbol).append(' ').append(basketSide)
-                    .append(" · Avg ").append(String.format(Locale.US, "%.5f", weightedOpen / totalLot));
-        }
-
         for (int i = 0; i < arr.length(); i++) {
             JSONObject p = arr.optJSONObject(i);
             if (p == null) continue;
-            sb.append('\n').append(i + 1).append(") #").append(p.optLong("ticket"))
+            if (sb.length() > 0) sb.append('\n');
+            sb.append('#').append(p.optLong("ticket"))
                     .append(" · ").append(p.optString("symbol"))
                     .append(" · ").append(p.optString("side"))
                     .append(" · ").append(String.format(Locale.US, "%.2f lot", p.optDouble("volume", 0)))

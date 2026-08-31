@@ -590,7 +590,7 @@ public class MonitoringService extends Service {
         lastSignalBySymbol.put(a.symbol, a.signal);
         ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90);
         tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 600);
-        // V6.6.2: one persistent foreground notification only. This avoids OEM
+        // CURRENT: one persistent foreground notification only. This avoids OEM
         // "More notifications" bundles and keeps PAUSE/EMERGENCY on one card.
     }
 
@@ -1022,7 +1022,7 @@ public class MonitoringService extends Service {
             sellSetup = sHigher2 <= 0 && sHigher1 < 0 && sEntry < 0 && sFast <= 0 && structure <= 0 && breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.3.2: SCALP is an early M1 impulse mode. M5/M15 are context only,
+            // CURRENT: SCALP is an early M1 impulse mode. M5/M15 are context only,
             // not hard blockers; otherwise M1 can sit in WAIT for too long.
             int impulse = scalpImpulse(entrySeries);
             boolean m1 = "M1".equals(entryTf);
@@ -1049,7 +1049,7 @@ public class MonitoringService extends Service {
 
         String signal = buySetup ? "BUY" : sellSetup ? "SELL" : "WAIT";
 
-        // V7.3.5: display signal and SCALP execution trigger are separate.
+        // CURRENT: display signal and SCALP execution trigger are separate.
         String executionSignal = signal;
         if ("SCALP".equals(mode) && "M1".equals(entryTf) && "WAIT".equals(signal)) {
             int microDirection = scalpExecutionDirection(entrySeries, atr);
@@ -1160,7 +1160,7 @@ public class MonitoringService extends Service {
         if (rising && up > down * 1.03 && micro > range * 0.018) return 1;
         if (falling && down > up * 1.03 && -micro > range * 0.018) return -1;
 
-        // V7.3.4 SCALP micro-entry: MAIN may still look neutral, but a small fresh
+        // CURRENT SCALP micro-entry: MAIN may still look neutral, but a small fresh
         // directional move can arm a scalp entry. We still require direction + body
         // dominance so a single random tick does not become a trade.
         double microFloor = range * 0.008;

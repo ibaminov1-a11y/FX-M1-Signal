@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.3.5"
+BRIDGE_VERSION = "7.4.0"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -46,7 +46,7 @@ def trading_allowed(info):
     if kind == "REAL" and ALLOW_REAL:
         return True, ""
     if kind == "REAL":
-        return False, "REAL trading is disabled on Bridge V7.2. Set FXM1_ALLOW_REAL=1 only after DEMO validation."
+        return False, f"REAL trading is disabled on Bridge V{BRIDGE_VERSION}. Set FXM1_ALLOW_REAL=1 only after DEMO validation."
     return False, f"Trading blocked for account type {kind}"
 
 
@@ -283,7 +283,9 @@ def send_deal_with_fill_fallback(req):
     return last, attempts
 
 
-def close_position_internal(p, volume=None, comment="FXM1 V7.2 CLOSE"):
+def close_position_internal(p, volume=None, comment=None):
+    if comment is None:
+        comment = f"FXM1 V{BRIDGE_VERSION} CLOSE"
     tick = mt5.symbol_info_tick(p.symbol)
     if tick is None:
         return False, {"message": "No current tick"}
@@ -347,6 +349,7 @@ def health():
             "service": "FX M1 MT5 Bridge",
             "bridge_version": BRIDGE_VERSION,
             "api_version": 7,
+            "build_tag": "AUDITED_FULL_740",
             "mt5_connected": info is not None,
             "account_type": account_type_name(info),
             "real_trading_enabled": bool(ALLOW_REAL),
@@ -520,7 +523,7 @@ def partial_close(ticket):
         volume = safe_float(data.get("volume"), 0.0)
         if volume <= 0:
             volume = float(p.volume) * max(0.01, min(percent, 99.0)) / 100.0
-        ok, result = close_position_internal(p, volume=volume, comment="FXM1 V7.2 PARTIAL")
+        ok, result = close_position_internal(p, volume=volume, comment=f"FXM1 V{BRIDGE_VERSION} PARTIAL")
         return jsonify(ok=ok, bridge_version=BRIDGE_VERSION, **result), (200 if ok else 500)
 
 
@@ -547,7 +550,7 @@ def modify_position(ticket):
             "sl": sl,
             "tp": tp,
             "magic": MAGIC,
-            "comment": "FXM1 V7.2 MODIFY",
+            "comment": f"FXM1 V{BRIDGE_VERSION} MODIFY",
         }
         r = mt5.order_send(req)
         ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
@@ -582,7 +585,7 @@ def breakeven(ticket):
             "sl": float(p.price_open),
             "tp": float(p.tp),
             "magic": MAGIC,
-            "comment": "FXM1 V7.2 BE",
+            "comment": f"FXM1 V{BRIDGE_VERSION} BE",
         }
         r = mt5.order_send(req)
         ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
@@ -732,7 +735,7 @@ def signal():
             # Never let the next tranche exceed the remaining basket risk budget.
             risk_pct = min(risk_pct, max(0.01, basket_risk_cap - basket_risk_pct_used))
 
-        # V7.3.3: Android analysis prices can differ slightly from the broker feed.
+        # CURRENT: Android analysis prices can differ slightly from the broker feed.
         # Preserve the intended SL/TP distance, but anchor execution protection to MT5 Bid/Ask.
         # This prevents invalid stops and wrong-side stops when API Entry != MT5 price.
         info = mt5.symbol_info(symbol)
@@ -770,12 +773,12 @@ def signal():
             "tp": tp,
             "deviation": int(data.get("deviation") or 20),
             "magic": MAGIC,
-            "comment": f"FXM1 V7.3.3 {str(data.get('signal_mode') or 'AUTO')[:10]}",
+            "comment": f"FXM1 V{BRIDGE_VERSION} {str(data.get('signal_mode') or 'AUTO')[:10]}",
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": filling_mode_for(symbol),
         }
 
-        # V7.3.5: enforce broker-valid stop side/distance on the live MT5 quote.
+        # CURRENT: enforce broker-valid stop side/distance on the live MT5 quote.
         sl, tp = normalize_order_stops(symbol, side, tick, sl, tp)
         req["sl"] = sl
         req["tp"] = tp
@@ -978,11 +981,11 @@ def position_action_alias():
             return jsonify(ok=ok, message=result.get('message','close'), **result), (200 if ok else 500)
         if action == 'partial':
             pct = max(1.0, min(float(data.get('pct') or 50.0), 99.0))
-            ok, result = close_position_internal(p, volume=float(p.volume)*pct/100.0, comment='FXM1 V7.3 PARTIAL')
+            ok, result = close_position_internal(p, volume=float(p.volume)*pct/100.0, comment=f'FXM1 V{BRIDGE_VERSION} PARTIAL')
             return jsonify(ok=ok, message=result.get('message','partial'), **result), (200 if ok else 500)
         if action == 'breakeven':
             req = {'action': mt5.TRADE_ACTION_SLTP, 'position': int(ticket), 'symbol': p.symbol,
-                   'sl': float(p.price_open), 'tp': float(p.tp), 'magic': MAGIC, 'comment':'FXM1 V7.3 BE'}
+                   'sl': float(p.price_open), 'tp': float(p.tp), 'magic': MAGIC, 'comment':f'FXM1 V{BRIDGE_VERSION} BE'}
             r = mt5.order_send(req)
             ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
             return jsonify(ok=ok, message=(r.comment if r else str(mt5.last_error())), ticket=ticket), (200 if ok else 500)
@@ -1026,12 +1029,12 @@ def manage_positions_alias():
                 if (direction > 0 and candidate > new_sl) or (direction < 0 and (new_sl == 0 or candidate < new_sl)):
                     new_sl = candidate; do_modify = True
             if do_modify:
-                req={'action':mt5.TRADE_ACTION_SLTP,'position':ticket,'symbol':p.symbol,'sl':new_sl,'tp':float(p.tp),'magic':MAGIC,'comment':'FXM1 V7.3 MANAGER'}
+                req={'action':mt5.TRADE_ACTION_SLTP,'position':ticket,'symbol':p.symbol,'sl':new_sl,'tp':float(p.tp),'magic':MAGIC,'comment':f'FXM1 V{BRIDGE_VERSION} MANAGER'}
                 r=mt5.order_send(req)
                 actions.append({'ticket':ticket,'action':'SL','ok':bool(r and r.retcode==mt5.TRADE_RETCODE_DONE),'r':r_now,'sl':new_sl})
             if bool(cfg.get('partial_close_enabled', True)) and ticket not in _PARTIAL_DONE and r_now >= float(cfg.get('partial_close_at_r',1.5)):
                 pct=max(1.0,min(float(cfg.get('partial_close_pct',50.0)),99.0))
-                ok,res=close_position_internal(p,volume=float(p.volume)*pct/100.0,comment='FXM1 V7.3 AUTO PARTIAL')
+                ok,res=close_position_internal(p,volume=float(p.volume)*pct/100.0,comment=f'FXM1 V{BRIDGE_VERSION} AUTO PARTIAL')
                 if ok: _PARTIAL_DONE.add(ticket)
                 actions.append({'ticket':ticket,'action':'PARTIAL','ok':ok,'r':r_now,'pct':pct})
         live={int(x.ticket) for x in (mt5.positions_get() or [])}

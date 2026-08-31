@@ -41,6 +41,7 @@ public class MainActivity extends Activity {
     private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton, smartFeaturesButton, syncMt5SymbolsButton, managePositionsButton;
     private EditText serverUrlInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel, smartStatusText, statsText, signalHistoryText, tradeHistoryText;
+    private TextView versionBadgeText, smartTitleText, footerVersionText;
     private View serverInputRow;
     private Switch autoTradingSwitch;
     private TextView autoStatusText;
@@ -144,6 +145,10 @@ public class MainActivity extends Activity {
         serverUrlInput = findViewById(R.id.serverUrlInput);
         serverCheckButton = findViewById(R.id.serverCheckButton);
         serverStatusText = findViewById(R.id.serverStatusText);
+        versionBadgeText = findViewById(R.id.versionBadgeText);
+        smartTitleText = findViewById(R.id.smartTitleText);
+        footerVersionText = findViewById(R.id.footerVersionText);
+        applyRuntimeVersionLabels();
         serverUrlLabel = findViewById(R.id.serverUrlLabel);
         serverInputRow = findViewById(R.id.serverInputRow);
         accountText = findViewById(R.id.accountText);
@@ -314,7 +319,7 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (syncingScalpTimeframe) return;
 
-                // Rule V7.3.1: SCALP is an M1 entry mode only.
+                // Rule CURRENT: SCALP is an M1 entry mode only.
                 // Selecting M1 manually NEVER forces SCALP.
                 // Selecting any TF other than M1 while SCALP is active switches mode to NORMAL.
                 if (!"M1".equals(selectedEntryTimeframe()) && "SCALP".equals(selectedSignalMode())) {
@@ -348,7 +353,7 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (syncingScalpTimeframe) return;
 
-                // Rule V7.3.1: choosing SCALP forces entry TF to M1.
+                // Rule CURRENT: choosing SCALP forces entry TF to M1.
                 // Choosing M1 itself does not select SCALP.
                 if ("SCALP".equals(selectedSignalMode()) && !"M1".equals(selectedEntryTimeframe())) {
                     syncingScalpTimeframe = true;
@@ -365,14 +370,14 @@ public class MainActivity extends Activity {
                     prefs.edit().putInt("signal_mode_pos", position).apply();
                 }
 
-                // V7.3.2 DEMO behaviour: SCALP is an automated execution mode.
+                // CURRENT DEMO behaviour: SCALP is an automated execution mode.
                 // If Bridge+MT5 are already connected to a DEMO account, selecting SCALP
                 // arms AUTO immediately so a valid scalp BUY/SELL can actually reach MT5.
                 if ("SCALP".equals(selectedSignalMode()) && serverConnected && mt5Connected && demoAccount) {
                     autoTradingSwitch.setChecked(true);
                 }
 
-                // V7.3.3: SCALP uses a basket. If the old 1-3 limit is still selected,
+                // CURRENT: SCALP uses a basket. If the old 1-3 limit is still selected,
                 // raise the safety cap to 8. User can still choose any value 1..10 manually.
                 if ("SCALP".equals(selectedSignalMode()) && maxPositionsSpinner.getSelectedItemPosition() <= 2) {
                     maxPositionsSpinner.setSelection(7); // 8 positions
@@ -414,8 +419,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V7.3.5 разрешает только DEMO.");
-                    Toast.makeText(this, "V7.3.5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V" + BuildConfig.VERSION_NAME + " разрешает только DEMO.");
+                    Toast.makeText(this, "V" + BuildConfig.VERSION_NAME + " разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -628,6 +633,13 @@ public class MainActivity extends Activity {
         forceAutoOff(null);
     }
 
+    private void applyRuntimeVersionLabels() {
+        String v = BuildConfig.VERSION_NAME;
+        if (versionBadgeText != null) versionBadgeText.setText("V" + v);
+        if (smartTitleText != null) smartTitleText.setText("УМНЫЕ ФУНКЦИИ V" + v);
+        if (footerVersionText != null) footerVersionText.setText("V" + v + " · SCALP · WATCHDOG · SMART RISK · MT5 BRIDGE");
+    }
+
     private void forceAutoOff(String journalMessage) {
         suppressAutoSwitch = true;
         autoTradingSwitch.setChecked(false);
@@ -643,6 +655,7 @@ public class MainActivity extends Activity {
         boolean mt5 = p.getBoolean("mt5_connected_snapshot", false);
         String accountType = p.getString("mt5_account_type_snapshot", "UNKNOWN");
         String currency = p.getString("mt5_currency_snapshot", "USD");
+        String bridgeVersion = p.getString("bridge_version_snapshot", "?");
         double balance = Double.longBitsToDouble(p.getLong("mt5_balance_bits", Double.doubleToLongBits(Double.NaN)));
         double equity = Double.longBitsToDouble(p.getLong("mt5_equity_bits", Double.doubleToLongBits(Double.NaN)));
         int positions = p.getInt("mt5_positions_snapshot", 0);
@@ -652,7 +665,7 @@ public class MainActivity extends Activity {
             serverConnected = true;
             mt5Connected = mt5;
             demoAccount = "DEMO".equalsIgnoreCase(accountType);
-            serverStatusText.setText("SERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
+            serverStatusText.setText("APP V" + BuildConfig.VERSION_NAME + "   •   BRIDGE V" + bridgeVersion + "\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
             accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             positionsText.setText("Открытые позиции: " + positions + "\nТекущий P/L: " + signedMoney(floating, currency));
@@ -730,6 +743,7 @@ public class MainActivity extends Activity {
                 int positions = root.optInt("positions", 0);
                 double floating = root.optDouble("floating_pl", 0.0);
                 String currency = root.optString("currency", "USD");
+                String bridgeVersion = root.optString("bridge_version", "?");
 
                 runOnUiThread(() -> {
                     serverCheckButton.setEnabled(true);
@@ -738,6 +752,7 @@ public class MainActivity extends Activity {
                     demoAccount = "DEMO".equals(accountType);
 
                     serverStatusText.setText(
+                            "APP V" + BuildConfig.VERSION_NAME + "   •   BRIDGE V" + bridgeVersion + "\n" +
                             "SERVER: " + (serverOk ? "CONNECTED" : "ERROR") +
                             "   •   MT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
                     );
@@ -768,6 +783,7 @@ public class MainActivity extends Activity {
                             .putLong("mt5_balance_bits", Double.doubleToLongBits(balance))
                             .putLong("mt5_equity_bits", Double.doubleToLongBits(equity))
                             .putString("mt5_currency_snapshot", currency)
+                            .putString("bridge_version_snapshot", bridgeVersion)
                             .putInt("mt5_positions_snapshot", positions)
                             .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                             .apply();
@@ -777,7 +793,7 @@ public class MainActivity extends Activity {
                         forceAutoOff(null);
                     }
                     addJournal(serverOk && mt5Ok
-                            ? "Связь с MT5 установлена · " + accountType
+                            ? "Связь с MT5 установлена · " + accountType + " · Bridge V" + bridgeVersion
                             : "Сервер ответил, MT5 пока не готов");
 
                     if (serverOk && mt5Ok) {
@@ -1124,7 +1140,7 @@ public class MainActivity extends Activity {
         Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
 
         AlertDialog smartDialog = new AlertDialog.Builder(this)
-                .setTitle("Умные функции V7.3.5")
+                .setTitle("Умные функции V" + BuildConfig.VERSION_NAME)
                 .setView(scroll)
                 .setNegativeButton("ОТМЕНА", null)
                 .setPositiveButton("СОХРАНИТЬ", (d,w) -> {
@@ -2086,7 +2102,7 @@ public class MainActivity extends Activity {
                     breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.3.2: SCALP is an early M1 impulse mode. M5/M15 are context only,
+            // CURRENT: SCALP is an early M1 impulse mode. M5/M15 are context only,
             // not hard blockers; otherwise M1 can sit in WAIT for too long.
             int impulse = scalpImpulse(entrySeries);
             boolean m1 = "M1".equals(entryTf);
@@ -2144,7 +2160,7 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
-        // V7.3.5: display signal and SCALP execution trigger are separate.
+        // CURRENT: display signal and SCALP execution trigger are separate.
         // The card may remain WAIT while a short-lived M1 micro opportunity is executed.
         String executionSignal = signal;
         if ("SCALP".equals(mode) && "M1".equals(entryTf) && "WAIT".equals(signal)) {
@@ -2291,7 +2307,7 @@ public class MainActivity extends Activity {
         if (rising && up > down * 1.03 && micro > range * 0.018) return 1;
         if (falling && down > up * 1.03 && -micro > range * 0.018) return -1;
 
-        // V7.3.4 SCALP micro-entry: MAIN may still look neutral, but a small fresh
+        // CURRENT SCALP micro-entry: MAIN may still look neutral, but a small fresh
         // directional move can arm a scalp entry. We still require direction + body
         // dominance so a single random tick does not become a trade.
         double microFloor = range * 0.008;
