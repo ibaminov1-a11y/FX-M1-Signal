@@ -637,7 +637,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception e) {
-            return "7.4.4";
+            return "7.4.5";
         }
     }
 
@@ -865,16 +865,18 @@ public class MainActivity extends Activity {
                     payload.put("allow_same_symbol_multiple", true);
                     payload.put("basket_risk_pct", basketRiskPct);
                     payload.put("risk_pct", basketRiskPct / Math.max(1, basketMaxPositions));
-                    // V7.4.4: SCALP uses a separate money manager in Bridge.
+                    // V7.4.5: SCALP uses a separate money manager in Bridge.
                     // The percent spinner remains a global safety preference, not a per-scalp cash loss target.
                     payload.put("scalp_money_manager", true);
-                    payload.put("scalp_risk_usd_cap", 5.0);
-                    payload.put("scalp_hard_loss_usd_cap", 10.0);
-                    payload.put("scalp_profit_protect_usd_cap", 3.0);
-                    payload.put("scalp_take_profit_usd_cap", 8.0);
-                    payload.put("scalp_basket_risk_usd_cap", 20.0);
-                    payload.put("basket_add_cooldown_sec", 5);
-                    payload.put("basket_min_progress_sl", 0.04);
+                    payload.put("scalp_risk_usd_cap", 2.0);
+                    payload.put("scalp_hard_loss_usd_cap", 5.0);
+                    payload.put("scalp_profit_protect_usd_cap", 1.5);
+                    payload.put("scalp_take_profit_usd_cap", 3.0);
+                    payload.put("scalp_basket_risk_usd_cap", 16.0);
+                    payload.put("scalp_basket_hard_loss_usd_cap", 10.0);
+                    payload.put("scalp_basket_take_profit_usd_cap", 8.0);
+                    payload.put("basket_add_cooldown_sec", 2);
+                    payload.put("basket_min_progress_sl", 0.0);
                 }
                 payload.put("mode", "DEMO");
                 payload.put("signal_mode", selectedSignalMode());
@@ -2118,7 +2120,7 @@ public class MainActivity extends Activity {
                     breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.4.4: SCALP impulse MUST come from the fast M1 series.
+            // V7.4.5: SCALP impulse MUST come from the fast M1 series.
             // In the M1 analysis mapping entrySeries is M5 context, so using entrySeries here
             // accidentally made the scalper wait for M5. M5/M15 remain context only.
             int impulse = scalpImpulse(fast);
@@ -2177,7 +2179,7 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
-        // V7.4.4: display signal and SCALP execution trigger are separate.
+        // V7.4.5: display signal and SCALP execution trigger are separate.
         // The card may remain WAIT, but the execution trigger reads the actual M1 fast series,
         // not the M5 context series. This is the key fix for micro entries inside WAIT.
         String executionSignal = signal;

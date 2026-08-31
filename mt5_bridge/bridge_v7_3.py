@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.4.4"
+BRIDGE_VERSION = "7.4.5"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -96,21 +96,21 @@ def scalp_money_limits(equity, cfg=None):
     """Money caps for SCALP. Scale down on small accounts, never above requested hard ceilings."""
     cfg = cfg or {}
     eq = max(0.0, float(equity or 0.0))
-    risk_cap = max(0.10, safe_float(cfg.get('scalp_risk_usd_cap'), 5.0))
-    hard_cap = max(risk_cap, safe_float(cfg.get('scalp_hard_loss_usd_cap'), 10.0))
-    protect_cap = max(0.10, safe_float(cfg.get('scalp_profit_protect_usd_cap'), 3.0))
-    trail_cap = max(protect_cap, safe_float(cfg.get('scalp_trail_start_usd_cap'), 5.0))
-    tp_cap = max(protect_cap, safe_float(cfg.get('scalp_take_profit_usd_cap'), 8.0))
-    basket_cap_req = max(risk_cap, safe_float(cfg.get('scalp_basket_risk_usd_cap'), 20.0))
+    risk_cap = max(0.10, safe_float(cfg.get('scalp_risk_usd_cap'), 2.0))
+    hard_cap = max(risk_cap, safe_float(cfg.get('scalp_hard_loss_usd_cap'), 5.0))
+    protect_cap = max(0.10, safe_float(cfg.get('scalp_profit_protect_usd_cap'), 1.5))
+    trail_cap = max(protect_cap, safe_float(cfg.get('scalp_trail_start_usd_cap'), 2.5))
+    tp_cap = max(protect_cap, safe_float(cfg.get('scalp_take_profit_usd_cap'), 3.0))
+    basket_cap_req = max(risk_cap, safe_float(cfg.get('scalp_basket_risk_usd_cap'), 16.0))
 
-    # 0.5% planned risk; 1% emergency loss. Floors keep tiny DEMO accounts usable,
-    # ceilings prevent a large DEMO balance from creating huge scalp lots.
-    planned = min(risk_cap, max(1.0, eq * 0.005))
-    hard_loss = min(hard_cap, max(2.0, eq * 0.010))
-    protect = min(protect_cap, max(0.50, eq * 0.003))
-    trail_start = min(trail_cap, max(1.00, eq * 0.005))
-    take_profit = min(tp_cap, max(1.50, eq * 0.008))
-    basket_risk = min(basket_cap_req, max(planned * 2.0, eq * 0.04))
+    # V7.4.5: true micro-scalp cash sizing. A large DEMO balance must NOT create a large lot.
+    # Small future accounts scale down automatically.
+    planned = min(risk_cap, max(0.50, eq * 0.002))
+    hard_loss = min(hard_cap, max(1.00, eq * 0.005))
+    protect = min(protect_cap, max(0.35, eq * 0.0015))
+    trail_start = min(trail_cap, max(0.60, eq * 0.0025))
+    take_profit = min(tp_cap, max(0.75, eq * 0.003))
+    basket_risk = min(basket_cap_req, max(planned * 8.0, planned))
     return {
         'planned_risk_usd': round(planned, 2),
         'hard_loss_usd': round(hard_loss, 2),
@@ -692,6 +692,8 @@ def signal():
     data = request.get_json(silent=True) or {}
     raw_symbol = data.get("symbol", "")
     side = str(data.get("signal") or data.get("side") or "").upper()
+    if str(data.get("signal_mode") or "").upper() == "SCALP":
+        update_scalp_supervisor_cfg(data)
 
     with LOCK:
         if not ensure_mt5():
@@ -738,21 +740,12 @@ def signal():
         price = float(tick.ask if side == "BUY" else tick.bid)
 
         if basket_mode:
-            # Add only as the basket moves in our favour. This prevents martingale-style averaging down.
-            cooldown = max(3, int(data.get("basket_add_cooldown_sec") or 5))
+            # V7.4.5: independent micro-scalp slots. Each fresh M1 micro trigger may open another
+            # small same-direction slot until max_positions / cash-risk cap is reached.
+            # We no longer require the previous slot to be in profit before allowing the next one.
+            cooldown = max(1, int(data.get("basket_add_cooldown_sec") or 2))
             if latest_time and int(datetime.now().timestamp()) - latest_time < cooldown:
-                return jsonify(accepted=False, message=f"SCALP add cooldown: {cooldown}s", basket_count=len(basket)), 409
-            if basket_avg is not None and basket:
-                first_sl = next((float(p.sl) for p in basket if p.sl and p.sl > 0), 0.0)
-                ref_sl_dist = abs(float(basket_avg) - first_sl) if first_sl > 0 else 0.0
-                min_progress_ratio = max(0.05, safe_float(data.get("basket_min_progress_sl"), 0.04))
-                info0 = mt5.symbol_info(symbol)
-                point0 = float(info0.point) if info0 and info0.point else 0.00001
-                min_progress = max(ref_sl_dist * min_progress_ratio, point0 * 3)
-                favourable = (price >= basket_avg + min_progress) if side == "BUY" else (price <= basket_avg - min_progress)
-                if not favourable:
-                    return jsonify(accepted=False, message="SCALP basket: no favourable progress yet",
-                                   basket_count=len(basket), basket_avg=basket_avg, mt5_price=price, min_progress=min_progress), 409
+                return jsonify(accepted=False, message=f"SCALP slot cooldown: {cooldown}s", basket_count=len(basket)), 409
 
         api_entry = safe_float(data.get("api_entry") or data.get("entry"), 0)
         max_drift = safe_float(data.get("max_price_drift_pct"), 0.05)
@@ -994,6 +987,99 @@ def position_manager():
 _INITIAL_R = {}
 _PARTIAL_DONE = set()
 
+# V7.4.5 Bridge-side SCALP supervisor. It runs independently of Android's 5-second analysis loop.
+_SCALP_SUPERVISOR_CFG = {
+    'scalp_risk_usd_cap': 2.0,
+    'scalp_hard_loss_usd_cap': 5.0,
+    'scalp_profit_protect_usd_cap': 1.5,
+    'scalp_trail_start_usd_cap': 2.5,
+    'scalp_take_profit_usd_cap': 3.0,
+    'scalp_basket_risk_usd_cap': 16.0,
+    'scalp_basket_hard_loss_usd_cap': 10.0,
+    'scalp_basket_take_profit_usd_cap': 8.0,
+    'scalp_max_hold_sec': 90,
+}
+_SCALP_SUPERVISOR_STOP = threading.Event()
+
+def update_scalp_supervisor_cfg(cfg):
+    if not isinstance(cfg, dict):
+        return
+    for key in list(_SCALP_SUPERVISOR_CFG.keys()):
+        if key in cfg:
+            _SCALP_SUPERVISOR_CFG[key] = safe_float(cfg.get(key), _SCALP_SUPERVISOR_CFG[key])
+
+def is_scalp_position(p):
+    if int(getattr(p, 'magic', 0) or 0) != MAGIC:
+        return False
+    c = str(getattr(p, 'comment', '') or '').upper()
+    return 'SCALP' in c
+
+def scalp_supervisor_once():
+    if not ensure_mt5():
+        return
+    account = mt5.account_info()
+    if account is None:
+        return
+    positions = [p for p in (mt5.positions_get() or []) if is_scalp_position(p)]
+    if not positions:
+        return
+    cfg = dict(_SCALP_SUPERVISOR_CFG)
+    limits = scalp_money_limits(float(account.equity), cfg)
+    basket_hard = max(limits['hard_loss_usd'], safe_float(cfg.get('scalp_basket_hard_loss_usd_cap'), 10.0))
+    basket_tp = max(limits['take_profit_usd'], safe_float(cfg.get('scalp_basket_take_profit_usd_cap'), 8.0))
+    basket_pnl = sum(float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0) for p in positions)
+
+    # Basket circuit breaker first: prevents several independent slots from accumulating a large loss.
+    if basket_pnl <= -basket_hard or basket_pnl >= basket_tp:
+        reason = 'BASKET_HARD_LOSS' if basket_pnl <= -basket_hard else 'BASKET_TAKE_PROFIT'
+        for p in list(positions):
+            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP {reason}')
+        return
+
+    for p in list(positions):
+        tick = mt5.symbol_info_tick(p.symbol)
+        if tick is None:
+            continue
+        pnl_usd = float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0)
+        age_sec = max(0, int(datetime.now().timestamp()) - int(getattr(p, 'time', 0) or 0))
+        if pnl_usd <= -limits['hard_loss_usd']:
+            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP HARD_LOSS')
+            continue
+        if pnl_usd >= limits['take_profit_usd']:
+            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP TAKE_PROFIT')
+            continue
+        if age_sec >= max(30, int(safe_float(cfg.get('scalp_max_hold_sec'), 90))) and pnl_usd > 0:
+            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP TIME_PROFIT')
+            continue
+
+        # Profit-lock is broker-side SL, so protection survives even if the phone sleeps.
+        if pnl_usd >= limits['protect_usd']:
+            is_buy = p.type == mt5.POSITION_TYPE_BUY
+            current = float(tick.bid if is_buy else tick.ask)
+            move = current - float(p.price_open)
+            fraction = 0.75 if pnl_usd >= limits['trail_start_usd'] else 0.35
+            candidate = float(p.price_open) + move * fraction
+            side_name = 'BUY' if is_buy else 'SELL'
+            candidate, _ = normalize_order_stops(p.symbol, side_name, tick, candidate, 0.0)
+            old_sl = float(p.sl)
+            improve = (is_buy and candidate > max(old_sl, float(p.price_open))) or \
+                      ((not is_buy) and candidate < float(p.price_open) and (old_sl <= 0 or candidate < old_sl))
+            if improve and candidate > 0:
+                req = {'action': mt5.TRADE_ACTION_SLTP, 'position': int(p.ticket), 'symbol': p.symbol,
+                       'sl': candidate, 'tp': float(p.tp), 'magic': MAGIC,
+                       'comment': f'FXM1 V{BRIDGE_VERSION} SCALP LOCK'}
+                mt5.order_send(req)
+
+def scalp_supervisor_loop():
+    while not _SCALP_SUPERVISOR_STOP.is_set():
+        try:
+            with LOCK:
+                scalp_supervisor_once()
+        except Exception as e:
+            print('SCALP supervisor error:', e)
+        _SCALP_SUPERVISOR_STOP.wait(0.25)
+
+
 @app.get('/trade-log')
 def trade_log_alias():
     days = int(request.args.get('days', '30'))
@@ -1047,6 +1133,8 @@ def position_action_alias():
 @app.post('/manage-positions')
 def manage_positions_alias():
     cfg = request.get_json(silent=True) or {}
+    if bool(cfg.get('scalp_mode', False)):
+        update_scalp_supervisor_cfg(cfg)
     with LOCK:
         if not ensure_mt5():
             return jsonify(ok=False, message=f"MT5 initialize failed: {mt5.last_error()}"), 503
@@ -1071,7 +1159,7 @@ def manage_positions_alias():
             rdist = _INITIAL_R[ticket]
             r_now = direction * (current - float(p.price_open)) / rdist
 
-            # V7.4.4 SCALP Money Manager. Manage by cash P/L, not normal intraday R thresholds.
+            # V7.4.5 SCALP Money Manager. Manage by cash P/L, not normal intraday R thresholds.
             if bool(cfg.get('scalp_mode', False)) and int(getattr(p, 'magic', 0)) == MAGIC:
                 limits = scalp_money_limits(float(account.equity), cfg)
                 age_sec = max(0, int(datetime.now().timestamp()) - int(getattr(p, 'time', 0) or 0))
@@ -1184,4 +1272,6 @@ if __name__ == "__main__":
 
     print(f"FX M1 MT5 Bridge V{BRIDGE_VERSION}: http://{ip}:{port}")
     print("REAL trading:", "ENABLED" if ALLOW_REAL else "DISABLED (safe default)")
+    threading.Thread(target=scalp_supervisor_loop, name="FXM1-ScalpSupervisor", daemon=True).start()
+    print("SCALP supervisor: ACTIVE · 250 ms cash-stop loop")
     app.run(host=host, port=port, debug=False, threaded=True)
