@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.5.3"
+BRIDGE_VERSION = "7.5.5"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -349,9 +349,22 @@ def send_deal_with_fill_fallback(req):
     return last, attempts
 
 
+def safe_mt5_comment(comment, fallback="FXM1 CLOSE"):
+    """Return an ASCII MT5-safe comment short enough for broker validation."""
+    raw = str(comment or fallback)
+    # MT5/brokers may reject long or non-standard comments during order_check.
+    clean = "".join(ch if (32 <= ord(ch) < 127 and ch not in "\r\n\t") else " " for ch in raw)
+    clean = " ".join(clean.split())
+    # Keep a conservative limit below the common 31-char server limit.
+    if len(clean) > 24:
+        clean = clean[:24].rstrip()
+    return clean or fallback
+
+
 def close_position_internal(p, volume=None, comment=None):
     if comment is None:
         comment = f"FXM1 V{BRIDGE_VERSION} CLOSE"
+    comment = safe_mt5_comment(comment)
     tick = mt5.symbol_info_tick(p.symbol)
     if tick is None:
         return False, {"message": "No current tick"}
@@ -1114,7 +1127,7 @@ def scalp_supervisor_once():
     if basket_pnl <= -basket_hard or basket_pnl >= basket_tp:
         reason = 'BASKET_HARD_LOSS' if basket_pnl <= -basket_hard else 'BASKET_TAKE_PROFIT'
         for p in list(positions):
-            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP {reason}')
+            close_position_internal(p, comment=f'FXM1 {reason}')
         return
 
     for p in list(positions):
@@ -1140,7 +1153,7 @@ def scalp_supervisor_once():
             # Once we have shown a green P/L, never intentionally let it rotate through zero.
             lost_green = pnl_usd <= 0.0
             if reversed_from_peak and (downtick or lost_green):
-                ok, close_res = close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP GREEN_CAPTURE')
+                ok, close_res = close_position_internal(p, comment='FXM1 GREEN CAP')
                 if ok:
                     print(f"GREEN_CAPTURE closed ticket={ticket} peak={peak:.4f} current={pnl_usd:.4f}")
                     _SCALP_PEAK_PNL.pop(ticket, None)
@@ -1153,15 +1166,15 @@ def scalp_supervisor_once():
             _SCALP_LAST_PNL[ticket] = pnl_usd
 
         if bool(cfg.get('scalp_hard_stop_enabled', True)) and pnl_usd <= -limits['hard_loss_usd']:
-            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP HARD_LOSS')
+            close_position_internal(p, comment='FXM1 HARD STOP')
             _SCALP_PEAK_PNL.pop(ticket, None)
             continue
         if bool(cfg.get('scalp_cash_tp_enabled', True)) and pnl_usd >= limits['take_profit_usd']:
-            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP TAKE_PROFIT')
+            close_position_internal(p, comment='FXM1 CASH TP')
             _SCALP_PEAK_PNL.pop(ticket, None)
             continue
         if age_sec >= max(30, int(safe_float(cfg.get('scalp_max_hold_sec'), 90))) and pnl_usd > 0:
-            close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP TIME_PROFIT')
+            close_position_internal(p, comment='FXM1 TIME EXIT')
             _SCALP_PEAK_PNL.pop(ticket, None)
             continue
 

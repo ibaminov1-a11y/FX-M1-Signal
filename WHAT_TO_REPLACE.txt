@@ -1,15 +1,17 @@
-FX M1 Bot V7.5.3 — READY REPLACE
+FX M1 Bot V7.5.5 READY REPLACE
 
-Исправление критической ошибки V7.5.2:
-SCALP supervisor падал с NameError: _SCALP_PEAK_PNL is not defined.
+Replace/copy these files into the project:
+- app/build.gradle
+- mt5_bridge/bridge_v7_5_5.py
+- mt5_bridge/bridge_v7_3.py
+- mt5_bridge/START_BRIDGE_V7_5_5.bat
 
-Заменить файлы из архива с сохранением путей.
+IMPORTANT:
+1. Close all old Bridge CMD/Python processes.
+2. Start only START_BRIDGE_V7_5_5.bat.
+3. Confirm APP V7.5.5 and BRIDGE V7.5.5.
 
-ВАЖНО ПОСЛЕ ЗАМЕНЫ:
-1) Закрыть все старые окна Bridge / python.exe, где работали V7.5.1/V7.5.2.
-2) Запускать только mt5_bridge\START_BRIDGE_V7_5_3.bat
-   или вручную: .venv\Scripts\python.exe bridge_v7_5_3.py
-3) В приложении должно быть: APP V7.5.3 • BRIDGE V7.5.3
-4) В CMD не должно быть строки: _SCALP_PEAK_PNL is not defined
-
-GREEN-CAPTURE хранит peak P/L отдельно для каждого MT5 ticket и очищает состояние после закрытия позиции.
+Fix in V7.5.5:
+- MT5 close-order comments are sanitized and shortened.
+- GREEN_CAPTURE no longer sends the broker-rejected long comment.
+- Peak/Hard/Cash-TP close requests use MT5-safe comments.
