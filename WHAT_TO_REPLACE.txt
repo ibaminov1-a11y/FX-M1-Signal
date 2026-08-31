@@ -1,0 +1,14 @@
+FX M1 Bot V7.6.0 BUILD FIX
+
+Скопировать содержимое архива в корень проекта FX-M1-Signal с заменой файлов.
+
+ВАЖНО: здесь добавлены корневые Gradle-файлы и workflow GitHub Actions,
+потому что ошибка "task assembleDebug not found in project :app" означает,
+что Android-модуль не был корректно сконфигурирован в сборке.
+
+После замены в GitHub Actions должны последовательно пройти:
+1) gradle projects
+2) gradle :app:tasks --all (должен показать assembleDebug)
+3) gradle :app:assembleDebug
+
+Версия приложения и Bridge не меняется: V7.6.0.
