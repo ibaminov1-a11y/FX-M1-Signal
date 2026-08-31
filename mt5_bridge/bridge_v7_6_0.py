@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.5.5"
+BRIDGE_VERSION = "7.6.0"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -435,7 +435,7 @@ def health():
             "service": "FX M1 MT5 Bridge",
             "bridge_version": BRIDGE_VERSION,
             "api_version": 7,
-            "build_tag": "AUDITED_FULL_740",
+            "build_tag": "UNIFIED_EXECUTION_760",
             "mt5_connected": info is not None,
             "account_type": account_type_name(info),
             "real_trading_enabled": bool(ALLOW_REAL),
@@ -894,7 +894,7 @@ def signal():
             "tp": tp,
             "deviation": int(data.get("deviation") or 20),
             "magic": MAGIC,
-            "comment": f"FXM1 V{BRIDGE_VERSION} {str(data.get('signal_mode') or 'AUTO')[:10]}",
+            "comment": safe_mt5_comment(f"FXM1 {str(data.get('signal_mode') or 'AUTO')[:8]}", "FXM1 OPEN"),
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": filling_mode_for(symbol),
         }

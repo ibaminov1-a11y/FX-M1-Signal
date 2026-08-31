@@ -608,8 +608,15 @@ public class MonitoringService extends Service {
             FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "SKIP: APP/BRIDGE version mismatch");
             return;
         }
-        String tradeSignal = "SCALP".equals(mode) ? a.executionSignal : a.signal;
-        if ("WAIT".equals(tradeSignal)) return;
+        // V7.6.0: every trading mode uses one explicit execution decision.
+        // The big card may remain WAIT while a mode-specific executable setup exists.
+        // Conversely, if there is no executable setup we log the reason instead of silently returning.
+        String tradeSignal = a.executionSignal;
+        if ("WAIT".equals(tradeSignal)) {
+            FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality,
+                    "SKIP: NO EXECUTION SETUP · " + mode);
+            return;
+        }
 
         if (p.getBoolean("session_filter_enabled", false)) {
             String session = FeatureEngine.currentSession();
@@ -795,7 +802,7 @@ public class MonitoringService extends Service {
                     .putInt("mt5_positions_snapshot", h.optInt("positions", 0))
                     .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                     .putString("bridge_version_snapshot", h.optString("bridge_version", "—"))
-                    .putBoolean("bridge_version_match_snapshot", "7.5.3".equals(h.optString("bridge_version", "—")))
+                    .putBoolean("bridge_version_match_snapshot", "7.5.4".equals(h.optString("bridge_version", "—")))
                     .putInt("bridge_uptime_sec", h.optInt("uptime_sec", 0))
                     .putLong("bridge_heartbeat", h.optLong("heartbeat", 0L))
                     .apply();
@@ -1069,16 +1076,39 @@ public class MonitoringService extends Service {
 
         String signal = buySetup ? "BUY" : sellSetup ? "SELL" : "WAIT";
 
-        // V7.4.6: display signal and SCALP execution trigger are separate.
-        // For M1 SCALP the execution trigger must read fast=M1, while entrySeries=M5 is context.
+        // V7.6.0 unified execution engine. The displayed signal remains deliberately stricter,
+        // while executionSignal expresses whether the selected mode has a tradable setup now.
         String executionSignal = signal;
         double scalpAtr = atr;
-        if ("SCALP".equals(mode) && "M5".equals(entryTf)) {
-            if ("WAIT".equals(signal)) {
-                int microDirection = scalpExecutionDirection(entrySeries, scalpAtr);
-                if (microDirection > 0 && sFast >= 0) executionSignal = "BUY";
-                else if (microDirection < 0 && sFast <= 0) executionSignal = "SELL";
+        if ("WAIT".equals(signal)) {
+            if ("SCALP".equals(mode) && "M5".equals(entryTf)) {
+                int m5Micro = scalpExecutionDirection(entrySeries, scalpAtr);
+                double fastAtr = atr(fast, 14);
+                if (fastAtr <= 0 && fast != null && !fast.isEmpty()) {
+                    Candle f = fast.get(fast.size() - 1);
+                    fastAtr = Math.max(minStopDistance(symbol), f.high - f.low);
+                }
+                int m1Micro = scalpExecutionDirection(fast, fastAtr);
+                // M5 is the anchor; M1 is timing. A breakout is useful but not mandatory.
+                if ((m5Micro > 0 && sFast >= 0) || (sEntry > 0 && structure >= 0 && m1Micro > 0)) executionSignal = "BUY";
+                else if ((m5Micro < 0 && sFast <= 0) || (sEntry < 0 && structure <= 0 && m1Micro < 0)) executionSignal = "SELL";
+            } else if ("NORMAL".equals(mode)) {
+                // Normal: require entry + one higher timeframe, with no direct contradiction
+                // from structure/fast/breakout. This is less brittle than requiring all fields > 0.
+                boolean earlyBuy = sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && structure >= 0 && breakout >= 0
+                        && (sHigher2 >= 0 || sHigher1 > 0);
+                boolean earlySell = sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && structure <= 0 && breakout <= 0
+                        && (sHigher2 <= 0 || sHigher1 < 0);
+                if (earlyBuy) executionSignal = "BUY";
+                else if (earlySell) executionSignal = "SELL";
+            } else if ("AGGRESSIVE".equals(mode)) {
+                int buyVotes = 0, sellVotes = 0;
+                int[] votes = {sHigher1, sEntry, sFast, structure, breakout};
+                for (int v : votes) { if (v > 0) buyVotes++; else if (v < 0) sellVotes++; }
+                if (sEntry > 0 && buyVotes >= 3 && sellVotes <= 1 && sHigher2 >= 0) executionSignal = "BUY";
+                else if (sEntry < 0 && sellVotes >= 3 && buyVotes <= 1 && sHigher2 <= 0) executionSignal = "SELL";
             }
+            // CONSERVATIVE intentionally has no early-entry path.
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
 
@@ -1091,7 +1121,7 @@ public class MonitoringService extends Service {
         double tp1 = 0;
         double tp2 = 0;
 
-        String protectionSignal = "SCALP".equals(mode) ? executionSignal : signal;
+        String protectionSignal = executionSignal;
         if ("BUY".equals(protectionSignal)) {
             sl = entry - slDist;
             tp1 = entry + slDist * tp1R;
@@ -1121,7 +1151,10 @@ public class MonitoringService extends Service {
                 "\nСтруктура " + entryLabel + ": " + arrow(structure) +
                 "\n" + reason +
                 "\n" + filter +
-                ("SCALP".equals(mode) ? "\nSCALP M5: " + executionSignal + " · M1 timing " + arrow(sFast) : "") +
+                ("SCALP".equals(mode) ? "\nSCALP M5 exec: " + executionSignal + " · M1 timing " + arrow(sFast) +
+                        ("WAIT".equals(signal) && !"WAIT".equals(executionSignal) ? " · MICRO ENTRY" : "")
+                        : "\nEXEC " + mode + ": " + executionSignal +
+                        ("WAIT".equals(signal) && !"WAIT".equals(executionSignal) ? " · EARLY ENTRY" : "")) +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
         int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);
