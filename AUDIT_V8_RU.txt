@@ -1,0 +1,43 @@
+FX M1 BOT V8.0 — АУДИТ ЦЕПОЧКИ ОТКРЫТИЯ
+
+Цепочка V8.0:
+MARKET DATA -> SIGNAL ENGINE -> MODE EXECUTION ENGINE -> APP PRECHECK -> POST /signal -> BRIDGE ENTRY GATE -> MT5 LIVE QUOTE -> DRIFT/STOPS/VOLUME/MARGIN -> order_check/order_send -> POSITION MANAGER.
+
+Исправленные дефекты:
+- V7.6.0 MonitoringService записывал bridge_version_match_snapshot через литерал "7.5.4" и блокировал /signal при реальном Bridge 7.6.0.
+- MainActivity и MonitoringService имели два разных источника проверки версии.
+- Foreground MainActivity для non-SCALP отправлял a.signal вместо a.executionSignal.
+- Foreground MainActivity считал защиту non-SCALP по signal, поэтому early execution внутри WAIT мог получить SL/TP = 0.
+- SCALP был жёстко привязан только к M5; V8.0 разрешает M5/M10/M15.
+- V7.6.0 потерял один micro-entry fallback из V7.5.4; он восстановлен.
+- Risk/Spread/Cooldown/News/Quality раньше в основном передавались в payload/рисовались в UI, но /signal не применял их как единый серверный gate. V8.0 применяет их в Bridge до order_send.
+- MT5 comments дополнительно укорочены/sanitized для SLTP modify/BE/manager/lock, чтобы не повторить Invalid comment.
+
+Режимы открытия:
+CONSERVATIVE: только строгий подтверждённый setup, без early-entry.
+NORMAL: основной setup + early-entry при направлении entry/higher и отсутствии прямого противоречия fast/structure/breakout.
+AGGRESSIVE: vote-based execution при достаточном согласовании компонентов.
+SCALP:
+- M5 anchor + M1 timing;
+- M10 anchor (2x M5 aggregation) + M5 timing;
+- M15 anchor + M5 timing;
+- основной signal может оставаться WAIT, executionSignal может быть BUY/SELL при micro-entry.
+
+Bridge safety gates V8.0:
+- account mode / REAL kill switch;
+- max positions / same symbol policy;
+- opposite SCALP basket block;
+- risk-state account gate;
+- spread pips gate;
+- normal-mode cooldown;
+- news blackout;
+- quality gate;
+- price drift;
+- SL/TP broker distance normalization;
+- risk/manual volume normalization;
+- SCALP cash risk hard cap;
+- margin check;
+- filling fallback + MT5 order_check/order_send diagnostics.
+
+Важно по ручным большим lot:
+0.50 / 1.00 / 10.00 добавлены по запросу, но это не обход ограничений. На маленьком счёте Bridge может законно отклонить их по margin или SCALP cash hard-risk cap. Это намеренная защита, особенно перед будущим REAL.

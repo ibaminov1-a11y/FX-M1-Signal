@@ -80,7 +80,7 @@ public class MonitoringService extends Service {
             if (!running) return;
             long now = System.currentTimeMillis();
             long lastOk = prefs().getLong("state_last_success_ms", 0L);
-            if (("M1".equals(currentTf()) || ("M5".equals(currentTf()) && "SCALP".equals(currentMode()))) && lastOk > 0L && now - lastOk > 90000L) {
+            if (("M1".equals(currentTf()) || (isScalpTimeframe(currentTf()) && "SCALP".equals(currentMode()))) && lastOk > 0L && now - lastOk > 90000L) {
                 prefs().edit().putString("bg_status", "WATCHDOG: анализ завис · перезапуск").apply();
                 analyzing = false;
                 handler.removeCallbacks(tick);
@@ -392,6 +392,15 @@ public class MonitoringService extends Service {
                         higher2 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
                         fastLabel = "M1";
                         entryLabel = "M5";
+                        higher1Label = "M15";
+                        higher2Label = "H1";
+                    } else if ("M10".equals(tf)) {
+                        fast = getSeries(symbol, "5min", key, 120, CACHE_M5_MS);
+                        entry = getTenMinuteSeries(symbol, key, 120);
+                        higher1 = getSeries(symbol, "15min", key, 100, CACHE_M15_MS);
+                        higher2 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
+                        fastLabel = "M5";
+                        entryLabel = "M10";
                         higher1Label = "M15";
                         higher2Label = "H1";
                     } else if ("M15".equals(tf)) {
@@ -802,7 +811,7 @@ public class MonitoringService extends Service {
                     .putInt("mt5_positions_snapshot", h.optInt("positions", 0))
                     .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                     .putString("bridge_version_snapshot", h.optString("bridge_version", "—"))
-                    .putBoolean("bridge_version_match_snapshot", "7.5.4".equals(h.optString("bridge_version", "—")))
+                    .putBoolean("bridge_version_match_snapshot", FeatureEngine.appVersionName(this).equals(h.optString("bridge_version", "—")))
                     .putInt("bridge_uptime_sec", h.optInt("uptime_sec", 0))
                     .putLong("bridge_heartbeat", h.optLong("heartbeat", 0L))
                     .apply();
@@ -819,12 +828,17 @@ public class MonitoringService extends Service {
     private long intervalFor(String tf) {
         if ("M1".equals(tf)) return 10000L;
         if ("M5".equals(tf)) return "SCALP".equals(currentMode()) ? 15000L : 60000L;
-        if ("M15".equals(tf)) return 180000L;
+        if ("M10".equals(tf)) return "SCALP".equals(currentMode()) ? 20000L : 120000L;
+        if ("M15".equals(tf)) return "SCALP".equals(currentMode()) ? 30000L : 180000L;
         if ("H1".equals(tf)) return 300000L;
         if ("H4".equals(tf)) return 900000L;
         if ("D1".equals(tf)) return 1800000L;
         if ("W1".equals(tf)) return 3600000L;
         return 7200000L;
+    }
+
+    private boolean isScalpTimeframe(String tf) {
+        return "M5".equals(tf) || "M10".equals(tf) || "M15".equals(tf);
     }
 
     private String currentSymbol() {
@@ -850,7 +864,7 @@ public class MonitoringService extends Service {
 
     private String currentTf() {
         int pos = prefs().getInt("entry_tf_pos", 1);
-        String[] values = {"M1", "M5", "M15", "H1", "H4", "D1", "W1", "MN1"};
+        String[] values = {"M1", "M5", "M10", "M15", "H1", "H4", "D1", "W1", "MN1"};
         pos = Math.max(0, Math.min(pos, values.length - 1));
         return values[pos];
     }
@@ -959,6 +973,20 @@ public class MonitoringService extends Service {
         );
     }
 
+    private FetchResult getTenMinuteSeries(String symbol, String key, int outputsize) throws Exception {
+        FetchResult base = getSeries(symbol, "5min", key, Math.max(80, outputsize * 2), CACHE_M5_MS);
+        List<Candle> src = base.data;
+        ArrayList<Candle> out = new ArrayList<>();
+        int start = src.size() % 2;
+        for (int i = start; i + 1 < src.size(); i += 2) {
+            Candle a = src.get(i), b = src.get(i + 1);
+            out.add(new Candle(a.open, Math.max(a.high, b.high), Math.min(a.low, b.low), b.close));
+        }
+        if (out.size() > outputsize) out = new ArrayList<>(out.subList(out.size() - outputsize, out.size()));
+        if (out.size() < 30) throw new Exception("Недостаточно свечей для M10");
+        return new FetchResult(out, base.fromCache);
+    }
+
     private FetchResult getSeries(String symbol, String interval, String key, int outputsize, long maxAgeMs) throws Exception {
         String cacheKey = symbol + "|" + interval;
         CacheItem cached = cache.get(cacheKey);
@@ -1050,11 +1078,11 @@ public class MonitoringService extends Service {
             sellSetup = sHigher2 <= 0 && sHigher1 < 0 && sEntry < 0 && sFast <= 0 && structure <= 0 && breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.5.0: M5 is the SCALP decision timeframe; M1 is only timing confirmation.
+            // V8.0: SCALP anchor is M5/M10/M15; the faster series is timing confirmation.
             int impulse = scalpImpulse(entrySeries);
-            boolean m5 = "M5".equals(entryTf);
-            buySetup = m5 && impulse > 0 && sEntry >= 0 && sFast >= 0;
-            sellSetup = m5 && impulse < 0 && sEntry <= 0 && sFast <= 0;
+            boolean scalpTf = isScalpTimeframe(entryTf);
+            buySetup = scalpTf && impulse > 0 && sEntry >= 0 && sFast >= 0;
+            sellSetup = scalpTf && impulse < 0 && sEntry <= 0 && sFast <= 0;
 
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;
@@ -1081,17 +1109,17 @@ public class MonitoringService extends Service {
         String executionSignal = signal;
         double scalpAtr = atr;
         if ("WAIT".equals(signal)) {
-            if ("SCALP".equals(mode) && "M5".equals(entryTf)) {
-                int m5Micro = scalpExecutionDirection(entrySeries, scalpAtr);
+            if ("SCALP".equals(mode) && isScalpTimeframe(entryTf)) {
+                int anchorMicro = scalpExecutionDirection(entrySeries, scalpAtr);
                 double fastAtr = atr(fast, 14);
                 if (fastAtr <= 0 && fast != null && !fast.isEmpty()) {
                     Candle f = fast.get(fast.size() - 1);
                     fastAtr = Math.max(minStopDistance(symbol), f.high - f.low);
                 }
-                int m1Micro = scalpExecutionDirection(fast, fastAtr);
-                // M5 is the anchor; M1 is timing. A breakout is useful but not mandatory.
-                if ((m5Micro > 0 && sFast >= 0) || (sEntry > 0 && structure >= 0 && m1Micro > 0)) executionSignal = "BUY";
-                else if ((m5Micro < 0 && sFast <= 0) || (sEntry < 0 && structure <= 0 && m1Micro < 0)) executionSignal = "SELL";
+                int timingMicro = scalpExecutionDirection(fast, fastAtr);
+                // Anchor direction + fast timing; preserve the V7.5.4 fallback so SCALP is not over-restricted.
+                if ((anchorMicro > 0 && sFast >= 0) || (sEntry > 0 && structure >= 0 && timingMicro > 0) || (sEntry > 0 && sFast > 0 && structure > 0)) executionSignal = "BUY";
+                else if ((anchorMicro < 0 && sFast <= 0) || (sEntry < 0 && structure <= 0 && timingMicro < 0) || (sEntry < 0 && sFast < 0 && structure < 0)) executionSignal = "SELL";
             } else if ("NORMAL".equals(mode)) {
                 // Normal: require entry + one higher timeframe, with no direct contradiction
                 // from structure/fast/breakout. This is less brittle than requiring all fields > 0.
@@ -1151,7 +1179,7 @@ public class MonitoringService extends Service {
                 "\nСтруктура " + entryLabel + ": " + arrow(structure) +
                 "\n" + reason +
                 "\n" + filter +
-                ("SCALP".equals(mode) ? "\nSCALP M5 exec: " + executionSignal + " · M1 timing " + arrow(sFast) +
+                ("SCALP".equals(mode) ? "\nSCALP " + entryTf + " exec: " + executionSignal + " · timing " + arrow(sFast) +
                         ("WAIT".equals(signal) && !"WAIT".equals(executionSignal) ? " · MICRO ENTRY" : "")
                         : "\nEXEC " + mode + ": " + executionSignal +
                         ("WAIT".equals(signal) && !"WAIT".equals(executionSignal) ? " · EARLY ENTRY" : "")) +

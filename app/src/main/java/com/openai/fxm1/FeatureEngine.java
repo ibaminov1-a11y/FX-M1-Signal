@@ -1,5 +1,6 @@
 package com.openai.fxm1;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -17,6 +18,14 @@ import java.util.*;
  */
 public final class FeatureEngine {
     private FeatureEngine() {}
+
+    public static String appVersionName(Context context) {
+        try {
+            return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "UNKNOWN";
+        }
+    }
 
     public static void ensureDefaults(SharedPreferences p) {
         if (p.getBoolean("v71_defaults_done", false)) return;

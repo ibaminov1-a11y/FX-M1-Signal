@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.6.0"
+BRIDGE_VERSION = "8.0"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -636,7 +636,7 @@ def modify_position(ticket):
             "sl": sl,
             "tp": tp,
             "magic": MAGIC,
-            "comment": f"FXM1 V{BRIDGE_VERSION} MODIFY",
+            "comment": safe_mt5_comment("FXM1 MODIFY", "FXM1 MODIFY"),
         }
         r = mt5.order_send(req)
         ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
@@ -671,7 +671,7 @@ def breakeven(ticket):
             "sl": float(p.price_open),
             "tp": float(p.tp),
             "magic": MAGIC,
-            "comment": f"FXM1 V{BRIDGE_VERSION} BE",
+            "comment": safe_mt5_comment("FXM1 BE", "FXM1 BE"),
         }
         r = mt5.order_send(req)
         ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
@@ -727,6 +727,95 @@ def position_risk_money(p):
         return abs(min(0.0, float(pnl))) if pnl is not None else None
     except Exception:
         return None
+
+
+def pip_size(info):
+    if info is None or not getattr(info, "point", 0):
+        return None
+    point = float(info.point)
+    return point * 10.0 if int(getattr(info, "digits", 0) or 0) in (3, 5) else point
+
+
+def compute_risk_state(account, daily_limit, dd_limit, streak_limit):
+    now = datetime.now()
+    start = now - timedelta(days=30)
+    deals = mt5.history_deals_get(start, now) or []
+    closing = [d for d in deals if d.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY)]
+    pnl = [float(d.profit)+float(d.commission)+float(d.swap)+float(getattr(d,'fee',0.0) or 0.0) for d in closing]
+    streak = 0
+    for x in reversed(pnl):
+        if x < 0: streak += 1
+        else: break
+    day_start = datetime(now.year, now.month, now.day)
+    day_deals = mt5.history_deals_get(day_start, now) or []
+    day_pl = sum(float(d.profit)+float(d.commission)+float(d.swap)+float(getattr(d,'fee',0.0) or 0.0)
+                 for d in day_deals if d.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY))
+    bal = max(float(account.balance), 1e-9)
+    day_loss_pct = max(0.0, -day_pl / bal * 100.0)
+    dd_pct = max(0.0, (float(account.balance) - float(account.equity)) / bal * 100.0)
+    blocks = []
+    if day_loss_pct >= daily_limit: blocks.append('DAILY_LOSS')
+    if dd_pct >= dd_limit: blocks.append('DRAWDOWN')
+    if streak >= streak_limit: blocks.append('LOSS_STREAK')
+    return {
+        'allowed': not blocks, 'blocks': blocks, 'daily_pl': day_pl,
+        'daily_loss_pct': day_loss_pct, 'drawdown_pct': dd_pct, 'consecutive_losses': streak
+    }
+
+
+def latest_bot_entry_epoch(symbol=None):
+    now = datetime.now()
+    deals = mt5.history_deals_get(now - timedelta(days=7), now) or []
+    latest = 0
+    for d in deals:
+        if int(getattr(d, 'magic', 0) or 0) != MAGIC: continue
+        if getattr(d, 'entry', None) != mt5.DEAL_ENTRY_IN: continue
+        if symbol and getattr(d, 'symbol', None) != symbol: continue
+        latest = max(latest, int(getattr(d, 'time', 0) or 0))
+    return latest
+
+
+def entry_gate(data, account, symbol, tick, info):
+    now_epoch = int(datetime.now().timestamp())
+    execution_mode = str(data.get('execution_mode') or 'FULL_AUTO').upper()
+    if execution_mode == 'SIGNALS_ONLY':
+        return False, 'SIGNALS_ONLY mode: execution blocked', 409, {}
+    if execution_mode == 'SEMI_AUTO' and not bool(data.get('manual_approved', False)):
+        return False, 'SEMI_AUTO: manual approval required', 202, {'pending_approval': True}
+
+    news_until = int(safe_float(data.get('news_blackout_until_epoch'), 0))
+    if news_until > now_epoch:
+        return False, f'NEWS BLACKOUT until {news_until}', 409, {}
+
+    daily = max(0.01, safe_float(data.get('daily_loss_limit_pct'), 3.0))
+    dd = max(0.01, safe_float(data.get('max_drawdown_pct'), 5.0))
+    streak = max(1, int(data.get('max_consecutive_losses') or 3))
+    rs = compute_risk_state(account, daily, dd, streak)
+    if not rs['allowed']:
+        return False, 'RISK BLOCK: ' + ','.join(rs['blocks']), 409, {'risk_state': rs}
+
+    max_spread = safe_float(data.get('max_spread_pips'), 0.0)
+    ps = pip_size(info)
+    if max_spread > 0 and ps:
+        spread_pips = max(0.0, float(tick.ask - tick.bid) / ps)
+        if spread_pips > max_spread:
+            return False, f'SPREAD {spread_pips:.2f} pips > {max_spread:.2f}', 409, {'spread_pips': spread_pips}
+
+    cooldown = max(0, int(data.get('cooldown_sec') or 0))
+    if cooldown > 0 and str(data.get('signal_mode') or '').upper() != 'SCALP':
+        last = latest_bot_entry_epoch(symbol)
+        elapsed = now_epoch - last if last else cooldown
+        if last and elapsed < cooldown:
+            return False, f'COOLDOWN {cooldown-elapsed}s remaining', 409, {'cooldown_remaining_sec': cooldown-elapsed}
+
+    quality = int(data.get('quality') or 0)
+    threshold = max(0, min(int(data.get('confirm_below_quality') or 65), 100))
+    if bool(data.get('confirm_risky_entries', False)) and quality < threshold and not bool(data.get('manual_approved', False)):
+        if execution_mode == 'SEMI_AUTO':
+            return False, f'QUALITY {quality}/{threshold}: approval required', 202, {'pending_approval': True}
+        return False, f'QUALITY GATE {quality}/{threshold}', 409, {}
+
+    return True, '', 200, {'risk_state': rs}
 
 
 def basket_snapshot(positions, symbol, side, equity):
@@ -786,8 +875,13 @@ def signal():
                 return jsonify(accepted=False, message=f"SCALP basket full: {len(basket)}/{max_positions}", basket_count=len(basket)), 409
 
         tick = mt5.symbol_info_tick(symbol)
-        if tick is None:
+        info = mt5.symbol_info(symbol)
+        if tick is None or info is None:
             return jsonify(accepted=False, message="No current MT5 quote"), 503
+
+        gate_ok, gate_message, gate_code, gate_extra = entry_gate(data, account, symbol, tick, info)
+        if not gate_ok:
+            return jsonify(accepted=False, bridge_version=BRIDGE_VERSION, message=gate_message, **gate_extra), gate_code
 
         order_type = mt5.ORDER_TYPE_BUY if side == "BUY" else mt5.ORDER_TYPE_SELL
         price = float(tick.ask if side == "BUY" else tick.bid)
@@ -831,7 +925,6 @@ def signal():
         # CURRENT: Android analysis prices can differ slightly from the broker feed.
         # Preserve the intended SL/TP distance, but anchor execution protection to MT5 Bid/Ask.
         # This prevents invalid stops and wrong-side stops when API Entry != MT5 price.
-        info = mt5.symbol_info(symbol)
         point = float(info.point) if info and info.point else 0.00001
         min_stop = max(point * (int(getattr(info, "trade_stops_level", 0) or 0) + 2), point * 5)
         if api_entry > 0 and sl > 0:
@@ -1193,7 +1286,7 @@ def scalp_supervisor_once():
             if improve and candidate > 0:
                 req = {'action': mt5.TRADE_ACTION_SLTP, 'position': int(p.ticket), 'symbol': p.symbol,
                        'sl': candidate, 'tp': float(p.tp), 'magic': MAGIC,
-                       'comment': f'FXM1 V{BRIDGE_VERSION} SCALP LOCK'}
+                       'comment': safe_mt5_comment('FXM1 SCALP LOCK', 'FXM1 LOCK')}
                 mt5.order_send(req)
 
     live_tickets = {int(x.ticket) for x in positions}
@@ -1256,7 +1349,7 @@ def position_action_alias():
             return jsonify(ok=ok, message=result.get('message','partial'), **result), (200 if ok else 500)
         if action == 'breakeven':
             req = {'action': mt5.TRADE_ACTION_SLTP, 'position': int(ticket), 'symbol': p.symbol,
-                   'sl': float(p.price_open), 'tp': float(p.tp), 'magic': MAGIC, 'comment':f'FXM1 V{BRIDGE_VERSION} BE'}
+                   'sl': float(p.price_open), 'tp': float(p.tp), 'magic': MAGIC, 'comment':safe_mt5_comment('FXM1 BE', 'FXM1 BE')}
             r = mt5.order_send(req)
             ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
             return jsonify(ok=ok, message=(r.comment if r else str(mt5.last_error())), ticket=ticket), (200 if ok else 500)
@@ -1329,7 +1422,7 @@ def manage_positions_alias():
                               (direction < 0 and candidate < (old_sl if old_sl > 0 else float('inf')) and candidate < float(p.price_open))
                     if improve and candidate > 0:
                         req={'action':mt5.TRADE_ACTION_SLTP,'position':ticket,'symbol':p.symbol,'sl':candidate,'tp':float(p.tp),
-                             'magic':MAGIC,'comment':f'FXM1 V{BRIDGE_VERSION} SCALP LOCK'}
+                             'magic':MAGIC,'comment':safe_mt5_comment('FXM1 SCALP LOCK', 'FXM1 LOCK')}
                         rr=mt5.order_send(req)
                         actions.append({'ticket':ticket,'action':'SCALP_LOCK','ok':bool(rr and rr.retcode==mt5.TRADE_RETCODE_DONE),
                                         'pnl_usd':pnl_usd,'sl':candidate,'lock_fraction':lock_fraction,'limits':limits})
@@ -1348,7 +1441,7 @@ def manage_positions_alias():
                 if (direction > 0 and candidate > new_sl) or (direction < 0 and (new_sl == 0 or candidate < new_sl)):
                     new_sl = candidate; do_modify = True
             if do_modify:
-                req={'action':mt5.TRADE_ACTION_SLTP,'position':ticket,'symbol':p.symbol,'sl':new_sl,'tp':float(p.tp),'magic':MAGIC,'comment':f'FXM1 V{BRIDGE_VERSION} MANAGER'}
+                req={'action':mt5.TRADE_ACTION_SLTP,'position':ticket,'symbol':p.symbol,'sl':new_sl,'tp':float(p.tp),'magic':MAGIC,'comment':safe_mt5_comment('FXM1 MANAGER', 'FXM1 MANAGER')}
                 r=mt5.order_send(req)
                 actions.append({'ticket':ticket,'action':'SL','ok':bool(r and r.retcode==mt5.TRADE_RETCODE_DONE),'r':r_now,'sl':new_sl})
             if bool(cfg.get('partial_close_enabled', True)) and ticket not in _PARTIAL_DONE and r_now >= float(cfg.get('partial_close_at_r',1.5)):
@@ -1369,27 +1462,8 @@ def risk_state_alias():
     with LOCK:
         if not ensure_mt5(): return jsonify(ok=False, allowed=False, message='MT5 offline'),503
         ai=mt5.account_info()
-        st_resp = stats()
-        # Flask response may be tuple; derive directly for stable values
-        now=datetime.now(); start=now-timedelta(days=30)
-        deals=mt5.history_deals_get(start,now) or []
-        closing=[d for d in deals if d.entry in (mt5.DEAL_ENTRY_OUT,mt5.DEAL_ENTRY_OUT_BY)]
-        pnl=[float(d.profit)+float(d.commission)+float(d.swap)+float(getattr(d,'fee',0.0) or 0.0) for d in closing]
-        streak=0
-        for x in reversed(pnl):
-            if x<0: streak+=1
-            else: break
-        day_start=datetime(now.year,now.month,now.day)
-        day_deals=mt5.history_deals_get(day_start,now) or []
-        day_pl=sum(float(d.profit)+float(d.commission)+float(d.swap)+float(getattr(d,'fee',0.0) or 0.0) for d in day_deals if d.entry in (mt5.DEAL_ENTRY_OUT,mt5.DEAL_ENTRY_OUT_BY))
-        bal=max(float(ai.balance),1e-9)
-        day_loss_pct=max(0.0,-day_pl/bal*100.0)
-        dd_pct=max(0.0,(float(ai.balance)-float(ai.equity))/bal*100.0)
-        blocks=[]
-        if day_loss_pct>=daily_limit: blocks.append('DAILY_LOSS')
-        if dd_pct>=dd_limit: blocks.append('DRAWDOWN')
-        if streak>=streak_limit: blocks.append('LOSS_STREAK')
-        return jsonify(ok=True, allowed=not blocks, blocks=blocks, daily_pl=day_pl, daily_loss_pct=day_loss_pct, drawdown_pct=dd_pct, consecutive_losses=streak)
+        rs=compute_risk_state(ai, daily_limit, dd_limit, streak_limit)
+        return jsonify(ok=True, **rs)
 
 
 if __name__ == "__main__":

@@ -199,7 +199,7 @@ public class MainActivity extends Activity {
         symbolSpinner.setAdapter(symbolAdapter);
 
         ArrayAdapter<String> timeframeAdapter = darkSpinnerAdapter(
-                new String[]{"M1", "M5", "M15", "H1", "H4", "D1", "W1", "MN1"}
+                new String[]{"M1", "M5", "M10", "M15", "H1", "H4", "D1", "W1", "MN1"}
         );
         entryTimeframeSpinner.setAdapter(timeframeAdapter);
 
@@ -214,7 +214,13 @@ public class MainActivity extends Activity {
         String savedSymbol = prefs.getString("selected_symbol", "EUR/USD");
         int savedSymbolIndex = symbolItems.indexOf(savedSymbol);
         symbolSpinner.setSelection(savedSymbolIndex >= 0 ? savedSymbolIndex : 0);
-        entryTimeframeSpinner.setSelection(prefs.getInt("entry_tf_pos", 1));
+        int savedTfPos = prefs.getInt("entry_tf_pos", 1);
+        if (!prefs.getBoolean("v800_tf_migrated", false)) {
+            // V8.0 inserts M10 at index 2; migrate old M15+ saved indices by +1.
+            if (savedTfPos >= 2) savedTfPos += 1;
+            prefs.edit().putInt("entry_tf_pos", savedTfPos).putBoolean("v800_tf_migrated", true).apply();
+        }
+        entryTimeframeSpinner.setSelection(Math.max(0, Math.min(savedTfPos, 8)));
         signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
         apiKeyInput.setText(prefs.getString("apikey", ""));
         serverUrlInput.setText(stripServerScheme(prefs.getString("server_url", "")));
@@ -320,9 +326,9 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (syncingScalpTimeframe) return;
 
-                // V7.5.0: SCALP is an M5 entry mode.
-                // Selecting another TF while SCALP is active returns mode to NORMAL.
-                if (!"M5".equals(selectedEntryTimeframe()) && "SCALP".equals(selectedSignalMode())) {
+                // V8.0: SCALP anchors are M5 / M10 / M15.
+                // Other TFs return the mode to NORMAL.
+                if (!isScalpTimeframe(selectedEntryTimeframe()) && "SCALP".equals(selectedSignalMode())) {
                     syncingScalpTimeframe = true;
                     signalModeSpinner.setSelection(1); // NORMAL
                     prefs.edit()
@@ -331,7 +337,7 @@ public class MainActivity extends Activity {
                             .apply();
                     syncingScalpTimeframe = false;
                     Toast.makeText(MainActivity.this,
-                            "SCALP работает на M5. Режим переключён на NORMAL.",
+                            "SCALP работает на M5/M10/M15. Режим переключён на NORMAL.",
                             Toast.LENGTH_SHORT).show();
                 } else {
                     prefs.edit().putInt("entry_tf_pos", position).apply();
@@ -353,8 +359,8 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (syncingScalpTimeframe) return;
 
-                // V7.5.0: choosing SCALP forces entry TF to M5.
-                if ("SCALP".equals(selectedSignalMode()) && !"M5".equals(selectedEntryTimeframe())) {
+                // V8.0: choosing SCALP keeps M5/M10/M15; otherwise defaults to M5.
+                if ("SCALP".equals(selectedSignalMode()) && !isScalpTimeframe(selectedEntryTimeframe())) {
                     syncingScalpTimeframe = true;
                     entryTimeframeSpinner.setSelection(1); // M5
                     prefs.edit()
@@ -386,8 +392,8 @@ public class MainActivity extends Activity {
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
 
-        // Normalize old saved SCALP combinations to M5 once at startup.
-        if ("SCALP".equals(selectedSignalMode()) && !"M5".equals(selectedEntryTimeframe())) {
+        // Normalize unsupported saved SCALP combinations to M5 once at startup.
+        if ("SCALP".equals(selectedSignalMode()) && !isScalpTimeframe(selectedEntryTimeframe())) {
             syncingScalpTimeframe = true;
             entryTimeframeSpinner.setSelection(1);
             prefs.edit().putInt("entry_tf_pos", 1).apply();
@@ -849,7 +855,7 @@ public class MainActivity extends Activity {
         }
 
         boolean scalp = "SCALP".equals(selectedSignalMode());
-        String tradeSignal = scalp ? a.executionSignal : a.signal;
+        String tradeSignal = a.executionSignal;
         if ("WAIT".equals(tradeSignal)) {
             lastSentSignal.put(a.symbol, "WAIT");
             return;
@@ -1186,7 +1192,7 @@ public class MainActivity extends Activity {
         Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
 
         box.addView(smartLabel("SCALP LOT (AUTO или ручной лот)"));
-        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10"};
+        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10","0.20","0.50","1.00","10.00"};
         int scalpLotSel = Arrays.asList(scalpLots).indexOf(p.getString("scalp_lot_mode", "AUTO"));
         Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel); box.addView(scalpLot);
 
@@ -1678,6 +1684,17 @@ public class MainActivity extends Activity {
                     higher1Label = "M15";
                     higher2Label = "H1";
 
+                } else if ("M10".equals(entryTf)) {
+                    fast = getSeries(symbol, "5min", key, 120, CACHE_M5_MS);
+                    entry = getTenMinuteSeries(symbol, key, 120);
+                    higher1 = getSeries(symbol, "15min", key, 100, CACHE_M15_MS);
+                    higher2 = getSeries(symbol, "1h", key, 100, CACHE_H1_MS);
+
+                    fastLabel = "M5";
+                    entryLabel = "M10";
+                    higher1Label = "M15";
+                    higher2Label = "H1";
+
                 } else if ("M15".equals(entryTf)) {
                     fast = getSeries(symbol, "5min", key, 120, CACHE_M5_MS);
                     entry = getSeries(symbol, "15min", key, 120, CACHE_M15_MS);
@@ -1810,6 +1827,20 @@ public class MainActivity extends Activity {
         } else {
             lastAlertSignal.put(a.symbol, "WAIT");
         }
+    }
+
+    private FetchResult getTenMinuteSeries(String symbol, String key, int outputsize) throws Exception {
+        FetchResult base = getSeries(symbol, "5min", key, Math.max(80, outputsize * 2), CACHE_M5_MS);
+        List<Candle> src = base.data;
+        ArrayList<Candle> out = new ArrayList<>();
+        int start = src.size() % 2;
+        for (int i = start; i + 1 < src.size(); i += 2) {
+            Candle a = src.get(i), b = src.get(i + 1);
+            out.add(new Candle(a.open, Math.max(a.high, b.high), Math.min(a.low, b.low), b.close));
+        }
+        if (out.size() > outputsize) out = new ArrayList<>(out.subList(out.size() - outputsize, out.size()));
+        if (out.size() < 30) throw new Exception("Недостаточно свечей для M10");
+        return new FetchResult(out, base.fromCache);
     }
 
     private FetchResult getSeries(String symbol,
@@ -2067,6 +2098,10 @@ public class MainActivity extends Activity {
     }
 
 
+    private boolean isScalpTimeframe(String tf) {
+        return "M5".equals(tf) || "M10".equals(tf) || "M15".equals(tf);
+    }
+
     private String selectedEntryTimeframe() {
         Object selected = entryTimeframeSpinner.getSelectedItem();
         return selected == null ? "M5" : selected.toString();
@@ -2076,7 +2111,8 @@ public class MainActivity extends Activity {
         String tf = selectedEntryTimeframe();
         if ("M1".equals(tf)) return 10000L;
         if ("M5".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 15000L : 60000L;
-        if ("M15".equals(tf)) return 180000L;
+        if ("M10".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 20000L : 120000L;
+        if ("M15".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 30000L : 180000L;
         if ("H1".equals(tf)) return 300000L;
         if ("H4".equals(tf)) return 900000L;
         if ("D1".equals(tf)) return 1800000L;
@@ -2213,11 +2249,11 @@ public class MainActivity extends Activity {
                     breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.5.0: M5 is the SCALP decision timeframe; M1 is only a fast timing filter.
+            // V8.0: SCALP anchor is M5/M10/M15; the next faster series is timing confirmation.
             int impulse = scalpImpulse(entrySeries);
-            boolean m5 = "M5".equals(entryTf);
-            buySetup = m5 && impulse > 0 && sEntry >= 0 && sFast >= 0;
-            sellSetup = m5 && impulse < 0 && sEntry <= 0 && sFast <= 0;
+            boolean scalpTf = isScalpTimeframe(entryTf);
+            buySetup = scalpTf && impulse > 0 && sEntry >= 0 && sFast >= 0;
+            sellSetup = scalpTf && impulse < 0 && sEntry <= 0 && sFast <= 0;
 
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;
@@ -2270,14 +2306,33 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
-        // V7.5.0: execution is driven by M5; M1 only confirms that the immediate move is not opposite.
+        // V8.0 unified execution engine: every mode produces one executionSignal.
         String executionSignal = signal;
         double scalpAtr = atr;
-        if ("SCALP".equals(mode) && "M5".equals(entryTf)) {
-            if ("WAIT".equals(signal)) {
-                int microDirection = scalpExecutionDirection(entrySeries, scalpAtr);
-                if (microDirection > 0 && sFast >= 0) executionSignal = "BUY";
-                else if (microDirection < 0 && sFast <= 0) executionSignal = "SELL";
+        if ("WAIT".equals(signal)) {
+            if ("SCALP".equals(mode) && isScalpTimeframe(entryTf)) {
+                int anchorMicro = scalpExecutionDirection(entrySeries, scalpAtr);
+                double fastAtr = atr(fast, 14);
+                if (fastAtr <= 0 && fast != null && !fast.isEmpty()) {
+                    Candle f = fast.get(fast.size() - 1);
+                    fastAtr = Math.max(minStopDistance(symbol), f.high - f.low);
+                }
+                int timingMicro = scalpExecutionDirection(fast, fastAtr);
+                if ((anchorMicro > 0 && sFast >= 0) || (sEntry > 0 && structure >= 0 && timingMicro > 0) || (sEntry > 0 && sFast > 0 && structure > 0)) executionSignal = "BUY";
+                else if ((anchorMicro < 0 && sFast <= 0) || (sEntry < 0 && structure <= 0 && timingMicro < 0) || (sEntry < 0 && sFast < 0 && structure < 0)) executionSignal = "SELL";
+            } else if ("NORMAL".equals(mode)) {
+                boolean earlyBuy = sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && structure >= 0 && breakout >= 0
+                        && (sHigher2 >= 0 || sHigher1 > 0);
+                boolean earlySell = sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && structure <= 0 && breakout <= 0
+                        && (sHigher2 <= 0 || sHigher1 < 0);
+                if (earlyBuy) executionSignal = "BUY";
+                else if (earlySell) executionSignal = "SELL";
+            } else if ("AGGRESSIVE".equals(mode)) {
+                int buyVotes = 0, sellVotes = 0;
+                int[] votes = {sHigher1, sEntry, sFast, structure, breakout};
+                for (int v : votes) { if (v > 0) buyVotes++; else if (v < 0) sellVotes++; }
+                if (sEntry > 0 && buyVotes >= 3 && sellVotes <= 1 && sHigher2 >= 0) executionSignal = "BUY";
+                else if (sEntry < 0 && sellVotes >= 3 && buyVotes <= 1 && sHigher2 <= 0) executionSignal = "SELL";
             }
         }
 
@@ -2304,7 +2359,7 @@ public class MainActivity extends Activity {
         double tp1 = 0;
         double tp2 = 0;
 
-        String protectionSignal = "SCALP".equals(mode) ? executionSignal : signal;
+        String protectionSignal = executionSignal;
         if ("BUY".equals(protectionSignal)) {
             sl = entry - slDist;
             tp1 = entry + slDist * tp1R;
@@ -2331,6 +2386,8 @@ public class MainActivity extends Activity {
             filter = "Фильтр: " + mode + " разрешил BUY";
         } else if ("SELL".equals(signal)) {
             filter = "Фильтр: " + mode + " разрешил SELL";
+        } else if (!"WAIT".equals(executionSignal)) {
+            filter = "Фильтр: " + mode + " · EXEC " + executionSignal + " внутри WAIT";
         } else {
             filter = "Фильтр: " + mode + " · условия для входа не совпали";
         }
@@ -2344,7 +2401,7 @@ public class MainActivity extends Activity {
                 "\nСтруктура " + entryLabel + ": " + arrow(structure) +
                 "\n" + reason +
                 "\n" + filter +
-                ("SCALP".equals(mode) ? "\nSCALP M5: " + executionSignal + " · M1 timing " + arrow(sFast) : "") +
+                ("SCALP".equals(mode) ? "\nSCALP " + entryTf + ": " + executionSignal + " · timing " + arrow(sFast) : "") +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
         int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);

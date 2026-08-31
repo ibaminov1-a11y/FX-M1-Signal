@@ -1,14 +1,44 @@
-FX M1 Bot V7.6.0 BUILD FIX
+FX M1 BOT V8.0 — READY REPLACE
 
-Скопировать содержимое архива в корень проекта FX-M1-Signal с заменой файлов.
+Распаковать содержимое архива В КОРЕНЬ проекта FX-M1-Signal с заменой файлов.
+Корень архива уже содержит app/, mt5_bridge/, .github/.
 
-ВАЖНО: здесь добавлены корневые Gradle-файлы и workflow GitHub Actions,
-потому что ошибка "task assembleDebug not found in project :app" означает,
-что Android-модуль не был корректно сконфигурирован в сборке.
+Основные изменения V8.0:
+1. Исправлен общий стоппер открытия: MonitoringService больше НЕ сравнивает Bridge с захардкоженной V7.5.4.
+   Версия приложения берётся из установленного package versionName. APP V8.0 == BRIDGE V8.0.
+2. Единый executionSignal для CONSERVATIVE / NORMAL / AGGRESSIVE / SCALP.
+3. SL/TP рассчитываются по фактическому executionSignal для всех режимов, включая early-entry внутри WAIT.
+4. Bridge теперь реально применяет entry gates перед order_send:
+   - daily loss;
+   - drawdown;
+   - consecutive losses;
+   - spread;
+   - cooldown (кроме SCALP basket, где свой короткий slot cooldown);
+   - manual news blackout;
+   - quality/risky-entry gate;
+   - SIGNALS_ONLY / SEMI_AUTO / FULL_AUTO.
+5. SCALP поддерживает M5, M10 и M15.
+   - M5: anchor M5, timing M1.
+   - M10: anchor M10 (агрегация из M5), timing M5, context M15/H1.
+   - M15: anchor M15, timing M5, context H1/H4.
+6. Возвращён дополнительный fallback micro-entry из V7.5.4, чтобы SCALP не был искусственно пережат.
+7. SCALP LOT: AUTO / 0.01 / 0.02 / 0.05 / 0.10 / 0.20 / 0.50 / 1.00 / 10.00.
+   Ручной lot всё равно проходит broker min/max, margin и cash-risk hard cap.
+8. Все прямые MT5 comments для modify/BE/manager/lock приведены к короткому safe формату.
+9. REAL остаётся выключен по умолчанию. Для реального счёта Bridge требует FXM1_ALLOW_REAL=1.
+10. GitHub Actions artifact переименован в FX-M1-Signal-V8.0-APK.
 
-После замены в GitHub Actions должны последовательно пройти:
-1) gradle projects
-2) gradle :app:tasks --all (должен показать assembleDebug)
-3) gradle :app:assembleDebug
+Запуск Bridge:
+  .venv\Scripts\python.exe bridge_v8_0.py
+или START_BRIDGE_V8_0.bat
 
-Версия приложения и Bridge не меняется: V7.6.0.
+После запуска в приложении должно быть:
+  APP V8.0 • BRIDGE V8.0
+  SERVER: CONNECTED • MT5: CONNECTED
+
+Критический тест DEMO:
+- AUTO ON;
+- NORMAL: при execution BUY/SELL в CMD появляется POST /signal;
+- SCALP M5/M10/M15: при micro-entry появляется POST /signal;
+- если Bridge отклоняет вход, причина должна быть конкретной: RISK / SPREAD / COOLDOWN / QUALITY / NEWS / DRIFT / MT5 retcode;
+- после открытия проверить GREEN_CAPTURE / Hard Stop / Cash TP.
