@@ -1,20 +1,16 @@
-FX M1 Bot V7.5.1 — READY REPLACE
+FX M1 Bot V7.5.2 READY REPLACE
 
-1) Закрой Android Studio/старую сборку при необходимости.
-2) Скопируй содержимое архива в корень проекта с заменой файлов.
-3) Для Bridge ОБЯЗАТЕЛЬНО останови старое окно Python/процесс Bridge.
-4) Запусти: mt5_bridge\bridge_v7_5_1.py
-   (bridge_v7_3.py также обновлен до 7.5.1 для совместимости.)
-5) Собери APK и установи обновление.
-6) В приложении должно быть строго: APP V7.5.1 • BRIDGE V7.5.1.
-   При несовпадении версий AUTO теперь блокируется.
+Replace/copy these paths into the project:
+- app/build.gradle
+- app/src/main/java/com/openai/fxm1/MonitoringService.java
+- mt5_bridge/bridge_v7_5_2.py
+- mt5_bridge/bridge_v7_3.py  (compatibility: old START_BRIDGE_V7_3 will now start V7.5.2)
+- mt5_bridge/START_BRIDGE_V7_5_2.bat
 
-V7.5.1:
-- SCALP основной TF M5 сохранен.
-- Peak Profit Lock теперь активируется с ЛЮБОГО положительного пика P/L.
-- При развороте от пика допускается только небольшой giveback: 15%, минимум $0.05, максимум $0.50.
-  Например +$4 -> закрытие ориентировочно при откате к +$3.50; +$7 -> около +$6.50.
-- Статистика / история сигналов / торговый журнал: нажатие на любой из этих блоков открывает отдельное прокручиваемое окно с подробностями.
-- Добавлена защита от APP/BRIDGE version mismatch: новые AUTO-сделки не отправляются, пока версии не совпадают.
+Main fix:
+- GREEN-CAPTURE: any positive P/L arms protection; first meaningful pullback closes immediately.
+- close orders use filling fallback (fixes silent retcode 10030-style close failures).
+- supervisor protects FXM1 MAGIC positions even if broker truncates/re-writes SCALP comment.
+- supervisor cadence 100 ms.
 
-Важно: если приложение показывает старый Bridge V7.4.1, значит в Windows все еще запущен старый Python-процесс. Просто копирование нового файла не меняет уже работающий процесс — его нужно закрыть и запустить bridge_v7_5_1.py.
+After replacement restart Bridge. Expected: APP V7.5.2 / BRIDGE V7.5.2.

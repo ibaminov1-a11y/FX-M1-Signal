@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.5.1"
+BRIDGE_VERSION = "7.5.2"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -381,16 +381,23 @@ def close_position_internal(p, volume=None, comment=None):
         "type_time": mt5.ORDER_TIME_GTC,
         "type_filling": filling_mode_for(p.symbol),
     }
-    r = mt5.order_send(req)
-    ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
-    return ok, {
+    # V7.5.2: closing MUST use the same filling fallback as opening.
+    # Some brokers reject a single filling mode with retcode 10030; previously
+    # the Peak Lock could trigger correctly but the close order silently failed.
+    r, attempts = send_deal_with_fill_fallback(req)
+    ok = r is not None and r.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_DONE_PARTIAL)
+    result = {
         "ticket": int(p.ticket),
         "volume": vol,
         "execution_price": price,
         "retcode": int(r.retcode) if r else None,
         "message": r.comment if r else str(mt5.last_error()),
         "deal": int(r.deal) if r and r.deal else None,
+        "attempts": attempts,
     }
+    if not ok:
+        print(f"CLOSE FAILED ticket={int(p.ticket)} reason={comment} retcode={result['retcode']} message={result['message']} attempts={attempts}")
+    return ok, result
 
 
 @app.errorhandler(404)
@@ -1061,6 +1068,7 @@ _SCALP_SUPERVISOR_CFG = {
     'trailing_enabled': True,
 }
 _SCALP_SUPERVISOR_STOP = threading.Event()
+_SCALP_LAST_PNL = {}
 
 def update_scalp_supervisor_cfg(cfg):
     if not isinstance(cfg, dict):
@@ -1073,10 +1081,13 @@ def update_scalp_supervisor_cfg(cfg):
                 _SCALP_SUPERVISOR_CFG[key] = safe_float(cfg.get(key), _SCALP_SUPERVISOR_CFG[key])
 
 def is_scalp_position(p):
+    # V7.5.2: protect every FXM1 position opened by this bot's MAGIC.
+    # Broker comments can be truncated/rewritten, so relying only on the word
+    # SCALP could leave a live position completely outside the supervisor.
     if int(getattr(p, 'magic', 0) or 0) != MAGIC:
         return False
     c = str(getattr(p, 'comment', '') or '').upper()
-    return 'SCALP' in c
+    return ('SCALP' in c) or ('FXM1' in c)
 
 def scalp_supervisor_once():
     if not ensure_mt5():
@@ -1112,17 +1123,30 @@ def scalp_supervisor_once():
         peak = max(float(_SCALP_PEAK_PNL.get(ticket, pnl_usd)), pnl_usd)
         _SCALP_PEAK_PNL[ticket] = peak
 
-        # V7.5.1 AGGRESSIVE Peak Profit Lock. Arm from ANY positive cash peak,
-        # not only after protect_usd is reached. Once profit starts reversing, exit fast.
-        # Dynamic giveback: 15% of peak, minimum $0.05, maximum $0.50.
-        # Examples: peak +$4.00 -> floor about +$3.50; peak +$7.00 -> floor about +$6.50.
+        # V7.5.2 GREEN-CAPTURE Peak Lock.
+        # The moment a scalp position has been green, we protect that green excursion.
+        # We do NOT wait for +$3/+7/etc. Any positive peak arms the exit.
+        # On the first meaningful pullback from the peak we market-close immediately.
         if bool(cfg.get('scalp_peak_lock_enabled', True)) and peak > 0.0:
-            giveback = max(0.05, min(0.50, peak * 0.15))
-            floor_pnl = max(0.0, peak - giveback)
-            if pnl_usd < peak and pnl_usd <= floor_pnl:
-                close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP PEAK_LOCK')
-                _SCALP_PEAK_PNL.pop(ticket, None)
-                continue
+            prev_pnl = float(_SCALP_LAST_PNL.get(ticket, pnl_usd))
+            # Tiny tolerance avoids reacting to formatting/rounding noise only.
+            eps = 0.005
+            reversed_from_peak = pnl_usd + eps < peak
+            downtick = pnl_usd + eps < prev_pnl
+            # Once we have shown a green P/L, never intentionally let it rotate through zero.
+            lost_green = pnl_usd <= 0.0
+            if reversed_from_peak and (downtick or lost_green):
+                ok, close_res = close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP GREEN_CAPTURE')
+                if ok:
+                    print(f"GREEN_CAPTURE closed ticket={ticket} peak={peak:.4f} current={pnl_usd:.4f}")
+                    _SCALP_PEAK_PNL.pop(ticket, None)
+                    _SCALP_LAST_PNL.pop(ticket, None)
+                    continue
+                else:
+                    print(f"GREEN_CAPTURE retry ticket={ticket} peak={peak:.4f} current={pnl_usd:.4f} result={close_res}")
+            _SCALP_LAST_PNL[ticket] = pnl_usd
+        else:
+            _SCALP_LAST_PNL[ticket] = pnl_usd
 
         if bool(cfg.get('scalp_hard_stop_enabled', True)) and pnl_usd <= -limits['hard_loss_usd']:
             close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP HARD_LOSS')
@@ -1159,6 +1183,7 @@ def scalp_supervisor_once():
     for t in list(_SCALP_PEAK_PNL):
         if t not in live_tickets:
             _SCALP_PEAK_PNL.pop(t, None)
+            _SCALP_LAST_PNL.pop(t, None)
 
 def scalp_supervisor_loop():
     while not _SCALP_SUPERVISOR_STOP.is_set():
@@ -1167,7 +1192,7 @@ def scalp_supervisor_loop():
                 scalp_supervisor_once()
         except Exception as e:
             print('SCALP supervisor error:', e)
-        _SCALP_SUPERVISOR_STOP.wait(0.25)
+        _SCALP_SUPERVISOR_STOP.wait(0.10)
 
 
 @app.get('/trade-log')
@@ -1365,5 +1390,5 @@ if __name__ == "__main__":
     print(f"FX M1 MT5 Bridge V{BRIDGE_VERSION}: http://{ip}:{port}")
     print("REAL trading:", "ENABLED" if ALLOW_REAL else "DISABLED (safe default)")
     threading.Thread(target=scalp_supervisor_loop, name="FXM1-ScalpSupervisor", daemon=True).start()
-    print("SCALP supervisor: ACTIVE · 250 ms cash-stop loop")
+    print("SCALP supervisor: ACTIVE · 100 ms GREEN-CAPTURE loop")
     app.run(host=host, port=port, debug=False, threaded=True)
