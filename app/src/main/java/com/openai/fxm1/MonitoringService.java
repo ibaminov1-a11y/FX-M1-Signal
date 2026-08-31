@@ -604,6 +604,10 @@ public class MonitoringService extends Service {
         }
         if (paused || p.getBoolean("trading_paused", false)) return;
         if (!p.getBoolean("auto_trading", false)) return;
+        if (!p.getBoolean("bridge_version_match_snapshot", false)) {
+            FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "SKIP: APP/BRIDGE version mismatch");
+            return;
+        }
         String tradeSignal = "SCALP".equals(mode) ? a.executionSignal : a.signal;
         if ("WAIT".equals(tradeSignal)) return;
 
@@ -791,6 +795,7 @@ public class MonitoringService extends Service {
                     .putInt("mt5_positions_snapshot", h.optInt("positions", 0))
                     .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                     .putString("bridge_version_snapshot", h.optString("bridge_version", "—"))
+                    .putBoolean("bridge_version_match_snapshot", "7.5.1".equals(h.optString("bridge_version", "—")))
                     .putInt("bridge_uptime_sec", h.optInt("uptime_sec", 0))
                     .putLong("bridge_heartbeat", h.optLong("heartbeat", 0L))
                     .apply();

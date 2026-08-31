@@ -443,6 +443,10 @@ public class MainActivity extends Activity {
         syncMt5SymbolsButton.setOnClickListener(v -> syncSymbolsFromMt5());
         managePositionsButton.setOnClickListener(v -> showPositionManagementHub());
         if (journalCard != null) journalCard.setOnClickListener(v -> showTradeJournalDialog());
+        // V7.5.1: the entire analytics area opens as a full scrollable window.
+        if (statsText != null) statsText.setOnClickListener(v -> showTradeJournalDialog());
+        if (signalHistoryText != null) signalHistoryText.setOnClickListener(v -> showTradeJournalDialog());
+        if (tradeHistoryText != null) tradeHistoryText.setOnClickListener(v -> showTradeJournalDialog());
         refreshSmartUi();
 
         // UI ticker: обновляет «прошло» каждую секунду без новых API-запросов.
@@ -760,6 +764,7 @@ public class MainActivity extends Activity {
                 String currency = root.optString("currency", "USD");
                 String bridgeVersion = root.optString("bridge_version", "?");
                 boolean bridgeRealEnabled = root.optBoolean("real_trading_enabled", false);
+                boolean versionMatch = appVersionName().equals(bridgeVersion);
 
                 runOnUiThread(() -> {
                     serverCheckButton.setEnabled(true);
@@ -770,11 +775,12 @@ public class MainActivity extends Activity {
 
                     serverStatusText.setText(
                             "APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n" +
+                            (versionMatch ? "" : "⚠ VERSION MISMATCH · AUTO BLOCKED\n") +
                             "SERVER: " + (serverOk ? "CONNECTED" : "ERROR") +
                             "   •   MT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
                     );
                     serverStatusText.setTextColor(
-                            serverOk && mt5Ok ? C_GREEN : C_RED
+                            serverOk && mt5Ok && versionMatch ? C_GREEN : C_RED
                     );
 
                     if (serverOk && mt5Ok) {
@@ -801,14 +807,15 @@ public class MainActivity extends Activity {
                             .putLong("mt5_equity_bits", Double.doubleToLongBits(equity))
                             .putString("mt5_currency_snapshot", currency)
                             .putString("bridge_version_snapshot", bridgeVersion)
+                            .putBoolean("bridge_version_match_snapshot", versionMatch)
                             .putBoolean("bridge_real_enabled_snapshot", bridgeRealEnabled)
                             .putInt("mt5_positions_snapshot", positions)
                             .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                             .apply();
                     closeAllButton.setEnabled(serverOk && mt5Ok && positions > 0);
 
-                    if (!serverOk || !mt5Ok || !("REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount)) {
-                        forceAutoOff(null);
+                    if (!serverOk || !mt5Ok || !versionMatch || !("REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount)) {
+                        forceAutoOff(versionMatch ? null : "AUTO заблокирован: APP/BRIDGE версии не совпадают");
                     }
                     addJournal(serverOk && mt5Ok
                             ? "Связь с MT5 установлена · " + accountType + " · Bridge V" + bridgeVersion
