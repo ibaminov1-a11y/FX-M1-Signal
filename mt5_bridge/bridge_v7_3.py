@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.4.1"
+BRIDGE_VERSION = "7.4.4"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -86,6 +86,39 @@ def safe_float(v, default=0.0):
         return x if math.isfinite(x) else default
     except Exception:
         return default
+
+
+def clamp(v, lo, hi):
+    return max(lo, min(float(v), hi))
+
+
+def scalp_money_limits(equity, cfg=None):
+    """Money caps for SCALP. Scale down on small accounts, never above requested hard ceilings."""
+    cfg = cfg or {}
+    eq = max(0.0, float(equity or 0.0))
+    risk_cap = max(0.10, safe_float(cfg.get('scalp_risk_usd_cap'), 5.0))
+    hard_cap = max(risk_cap, safe_float(cfg.get('scalp_hard_loss_usd_cap'), 10.0))
+    protect_cap = max(0.10, safe_float(cfg.get('scalp_profit_protect_usd_cap'), 3.0))
+    trail_cap = max(protect_cap, safe_float(cfg.get('scalp_trail_start_usd_cap'), 5.0))
+    tp_cap = max(protect_cap, safe_float(cfg.get('scalp_take_profit_usd_cap'), 8.0))
+    basket_cap_req = max(risk_cap, safe_float(cfg.get('scalp_basket_risk_usd_cap'), 20.0))
+
+    # 0.5% planned risk; 1% emergency loss. Floors keep tiny DEMO accounts usable,
+    # ceilings prevent a large DEMO balance from creating huge scalp lots.
+    planned = min(risk_cap, max(1.0, eq * 0.005))
+    hard_loss = min(hard_cap, max(2.0, eq * 0.010))
+    protect = min(protect_cap, max(0.50, eq * 0.003))
+    trail_start = min(trail_cap, max(1.00, eq * 0.005))
+    take_profit = min(tp_cap, max(1.50, eq * 0.008))
+    basket_risk = min(basket_cap_req, max(planned * 2.0, eq * 0.04))
+    return {
+        'planned_risk_usd': round(planned, 2),
+        'hard_loss_usd': round(hard_loss, 2),
+        'protect_usd': round(protect, 2),
+        'trail_start_usd': round(trail_start, 2),
+        'take_profit_usd': round(take_profit, 2),
+        'basket_risk_usd': round(basket_risk, 2),
+    }
 
 
 def floor_volume(value, step, minimum, maximum):
@@ -626,13 +659,19 @@ def risk_preview():
 
 
 def position_risk_money(p):
-    """Estimated cash risk to the position's own SL. Positions without SL are treated as unknown risk."""
+    """Estimated cash downside to SL. A stop already beyond breakeven has zero downside risk."""
     try:
         if not p.sl or p.sl <= 0:
             return None
+        open_price = float(p.price_open)
+        stop_price = float(p.sl)
+        if p.type == mt5.POSITION_TYPE_BUY and stop_price >= open_price:
+            return 0.0
+        if p.type == mt5.POSITION_TYPE_SELL and stop_price <= open_price:
+            return 0.0
         order_type = mt5.ORDER_TYPE_BUY if p.type == mt5.POSITION_TYPE_BUY else mt5.ORDER_TYPE_SELL
-        pnl = mt5.order_calc_profit(order_type, p.symbol, float(p.volume), float(p.price_open), float(p.sl))
-        return abs(float(pnl)) if pnl is not None else None
+        pnl = mt5.order_calc_profit(order_type, p.symbol, float(p.volume), open_price, stop_price)
+        return abs(min(0.0, float(pnl))) if pnl is not None else None
     except Exception:
         return None
 
@@ -700,13 +739,13 @@ def signal():
 
         if basket_mode:
             # Add only as the basket moves in our favour. This prevents martingale-style averaging down.
-            cooldown = max(5, int(data.get("basket_add_cooldown_sec") or 12))
+            cooldown = max(3, int(data.get("basket_add_cooldown_sec") or 5))
             if latest_time and int(datetime.now().timestamp()) - latest_time < cooldown:
                 return jsonify(accepted=False, message=f"SCALP add cooldown: {cooldown}s", basket_count=len(basket)), 409
             if basket_avg is not None and basket:
                 first_sl = next((float(p.sl) for p in basket if p.sl and p.sl > 0), 0.0)
                 ref_sl_dist = abs(float(basket_avg) - first_sl) if first_sl > 0 else 0.0
-                min_progress_ratio = max(0.05, safe_float(data.get("basket_min_progress_sl"), 0.12))
+                min_progress_ratio = max(0.05, safe_float(data.get("basket_min_progress_sl"), 0.04))
                 info0 = mt5.symbol_info(symbol)
                 point0 = float(info0.point) if info0 and info0.point else 0.00001
                 min_progress = max(ref_sl_dist * min_progress_ratio, point0 * 3)
@@ -727,12 +766,20 @@ def signal():
         sl = safe_float(data.get("sl"), 0)
         tp = safe_float(data.get("tp1") or data.get("tp"), 0)
         risk_pct = safe_float(data.get("risk_pct"), 0.5)
-        if basket_mode:
+        scalp_limits = None
+        if basket_mode and bool(data.get("scalp_money_manager", True)):
+            scalp_limits = scalp_money_limits(float(account.equity), data)
+            remaining_money = scalp_limits['basket_risk_usd'] - float(basket_risk_money)
+            if remaining_money <= 0.01:
+                return jsonify(accepted=False, message=f"SCALP basket money-risk cap reached: ${basket_risk_money:.2f}/${scalp_limits['basket_risk_usd']:.2f}",
+                               basket_count=len(basket), basket_risk_usd=basket_risk_money, scalp_money=scalp_limits), 409
+            tranche_money = min(scalp_limits['planned_risk_usd'], remaining_money)
+            risk_pct = (tranche_money / max(float(account.equity), 1e-9)) * 100.0
+        elif basket_mode:
             basket_risk_cap = max(0.05, safe_float(data.get("basket_risk_pct"), 0.5))
             if basket_risk_pct_used >= basket_risk_cap - 1e-9:
                 return jsonify(accepted=False, message=f"SCALP basket risk cap reached: {basket_risk_pct_used:.3f}%/{basket_risk_cap:.3f}%",
                                basket_count=len(basket), basket_risk_pct=basket_risk_pct_used), 409
-            # Never let the next tranche exceed the remaining basket risk budget.
             risk_pct = min(risk_pct, max(0.01, basket_risk_cap - basket_risk_pct_used))
 
         # CURRENT: Android analysis prices can differ slightly from the broker feed.
@@ -756,7 +803,12 @@ def signal():
 
         volume, risk, err = calc_risk_volume(symbol, order_type, price, sl, risk_pct, float(account.equity))
         if err:
-            return jsonify(accepted=False, message=err, risk=risk), 400
+            return jsonify(accepted=False, message=err, risk=risk, scalp_money=scalp_limits), 400
+        if scalp_limits is not None:
+            actual = safe_float((risk or {}).get('risk_money_actual'), 0.0)
+            if actual > scalp_limits['hard_loss_usd'] + 0.01:
+                return jsonify(accepted=False, message=f"SCALP lot rejected: SL risk ${actual:.2f} > hard cap ${scalp_limits['hard_loss_usd']:.2f}",
+                               risk=risk, scalp_money=scalp_limits), 409
 
         margin = margin_payload(order_type, symbol, volume, price, account)
         req_margin = margin.get("required_margin")
@@ -811,7 +863,8 @@ def signal():
             attempts=attempts,
             basket_mode=basket_mode,
             basket_count=(len(basket) + 1 if basket_mode and ok else len(basket) if basket_mode else None),
-            basket_risk_pct_before=(basket_risk_pct_used if basket_mode else None)
+            basket_risk_pct_before=(basket_risk_pct_used if basket_mode else None),
+            scalp_money=scalp_limits
         ), (200 if ok else 500)
 
 
@@ -1017,6 +1070,50 @@ def manage_positions_alias():
                 _INITIAL_R[ticket] = max(dist, float(info.point))
             rdist = _INITIAL_R[ticket]
             r_now = direction * (current - float(p.price_open)) / rdist
+
+            # V7.4.4 SCALP Money Manager. Manage by cash P/L, not normal intraday R thresholds.
+            if bool(cfg.get('scalp_mode', False)) and int(getattr(p, 'magic', 0)) == MAGIC:
+                limits = scalp_money_limits(float(account.equity), cfg)
+                age_sec = max(0, int(datetime.now().timestamp()) - int(getattr(p, 'time', 0) or 0))
+                pnl_usd = float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0)
+                max_hold_sec = max(30, int(cfg.get('scalp_max_hold_sec', 120)))
+
+                # Absolute emergency loss and fast take-profit.
+                close_reason = None
+                if pnl_usd <= -limits['hard_loss_usd']:
+                    close_reason = 'HARD_LOSS'
+                elif pnl_usd >= limits['take_profit_usd']:
+                    close_reason = 'TAKE_PROFIT'
+                elif age_sec >= max_hold_sec and pnl_usd > 0:
+                    close_reason = 'TIME_PROFIT'
+
+                if close_reason:
+                    ok, res = close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP {close_reason}')
+                    actions.append({'ticket':ticket,'action':'SCALP_'+close_reason,'ok':ok,'pnl_usd':pnl_usd,
+                                    'age_sec':age_sec,'limits':limits,'message':res.get('message','')})
+                    if ok:
+                        _INITIAL_R.pop(ticket, None); _PARTIAL_DONE.discard(ticket)
+                        continue
+
+                # Protect a small scalp profit early. Once the move is stronger, lock most of it.
+                if pnl_usd >= limits['protect_usd']:
+                    lock_fraction = 0.65 if pnl_usd >= limits['trail_start_usd'] else 0.25
+                    move = current - float(p.price_open)
+                    candidate = float(p.price_open) + move * lock_fraction
+                    side_name = 'BUY' if direction > 0 else 'SELL'
+                    candidate, _ = normalize_order_stops(p.symbol, side_name, tick, candidate, 0.0)
+                    old_sl = float(p.sl)
+                    improve = (direction > 0 and candidate > max(old_sl, float(p.price_open))) or \
+                              (direction < 0 and candidate < (old_sl if old_sl > 0 else float('inf')) and candidate < float(p.price_open))
+                    if improve and candidate > 0:
+                        req={'action':mt5.TRADE_ACTION_SLTP,'position':ticket,'symbol':p.symbol,'sl':candidate,'tp':float(p.tp),
+                             'magic':MAGIC,'comment':f'FXM1 V{BRIDGE_VERSION} SCALP LOCK'}
+                        rr=mt5.order_send(req)
+                        actions.append({'ticket':ticket,'action':'SCALP_LOCK','ok':bool(rr and rr.retcode==mt5.TRADE_RETCODE_DONE),
+                                        'pnl_usd':pnl_usd,'sl':candidate,'lock_fraction':lock_fraction,'limits':limits})
+                # Do not fall through into the normal R-based manager for SCALP.
+                continue
+
             new_sl = float(p.sl)
             do_modify = False
             if bool(cfg.get('break_even_enabled', True)) and r_now >= float(cfg.get('break_even_at_r',1.0)):

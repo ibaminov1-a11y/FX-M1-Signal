@@ -637,7 +637,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception e) {
-            return "7.4.1";
+            return "7.4.4";
         }
     }
 
@@ -865,8 +865,16 @@ public class MainActivity extends Activity {
                     payload.put("allow_same_symbol_multiple", true);
                     payload.put("basket_risk_pct", basketRiskPct);
                     payload.put("risk_pct", basketRiskPct / Math.max(1, basketMaxPositions));
-                    payload.put("basket_add_cooldown_sec", 12);
-                    payload.put("basket_min_progress_sl", 0.12);
+                    // V7.4.4: SCALP uses a separate money manager in Bridge.
+                    // The percent spinner remains a global safety preference, not a per-scalp cash loss target.
+                    payload.put("scalp_money_manager", true);
+                    payload.put("scalp_risk_usd_cap", 5.0);
+                    payload.put("scalp_hard_loss_usd_cap", 10.0);
+                    payload.put("scalp_profit_protect_usd_cap", 3.0);
+                    payload.put("scalp_take_profit_usd_cap", 8.0);
+                    payload.put("scalp_basket_risk_usd_cap", 20.0);
+                    payload.put("basket_add_cooldown_sec", 5);
+                    payload.put("basket_min_progress_sl", 0.04);
                 }
                 payload.put("mode", "DEMO");
                 payload.put("signal_mode", selectedSignalMode());
@@ -2110,12 +2118,13 @@ public class MainActivity extends Activity {
                     breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // CURRENT: SCALP is an early M1 impulse mode. M5/M15 are context only,
-            // not hard blockers; otherwise M1 can sit in WAIT for too long.
-            int impulse = scalpImpulse(entrySeries);
+            // V7.4.4: SCALP impulse MUST come from the fast M1 series.
+            // In the M1 analysis mapping entrySeries is M5 context, so using entrySeries here
+            // accidentally made the scalper wait for M5. M5/M15 remain context only.
+            int impulse = scalpImpulse(fast);
             boolean m1 = "M1".equals(entryTf);
-            buySetup = m1 && impulse > 0 && sFast >= 0 && sEntry >= 0;
-            sellSetup = m1 && impulse < 0 && sFast <= 0 && sEntry <= 0;
+            buySetup = m1 && impulse > 0 && sFast >= 0;
+            sellSetup = m1 && impulse < 0 && sFast <= 0;
 
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;
@@ -2168,13 +2177,19 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
-        // CURRENT: display signal and SCALP execution trigger are separate.
-        // The card may remain WAIT while a short-lived M1 micro opportunity is executed.
+        // V7.4.4: display signal and SCALP execution trigger are separate.
+        // The card may remain WAIT, but the execution trigger reads the actual M1 fast series,
+        // not the M5 context series. This is the key fix for micro entries inside WAIT.
         String executionSignal = signal;
-        if ("SCALP".equals(mode) && "M1".equals(entryTf) && "WAIT".equals(signal)) {
-            int microDirection = scalpExecutionDirection(entrySeries, atr);
-            if (microDirection > 0) executionSignal = "BUY";
-            else if (microDirection < 0) executionSignal = "SELL";
+        double scalpAtr = atr;
+        if ("SCALP".equals(mode) && "M1".equals(entryTf)) {
+            double m1Atr = atr(fast, 14);
+            if (m1Atr > 0) scalpAtr = m1Atr;
+            if ("WAIT".equals(signal)) {
+                int microDirection = scalpExecutionDirection(fast, scalpAtr);
+                if (microDirection > 0) executionSignal = "BUY";
+                else if (microDirection < 0) executionSignal = "SELL";
+            }
         }
 
         int quality = setupQualityAdaptive(
@@ -2190,8 +2205,9 @@ public class MainActivity extends Activity {
         double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
         double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
         double tp2R = "SCALP".equals(mode) ? 1.4 : 2.0;
+        double riskAtr = "SCALP".equals(mode) ? scalpAtr : atr;
         double slDist = Math.max(
-                atr * slMult,
+                riskAtr * slMult,
                 minStopDistance(symbol)
         );
 
@@ -2239,6 +2255,7 @@ public class MainActivity extends Activity {
                 "\nСтруктура " + entryLabel + ": " + arrow(structure) +
                 "\n" + reason +
                 "\n" + filter +
+                ("SCALP".equals(mode) ? "\nSCALP micro M1: " + executionSignal : "") +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
         int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);

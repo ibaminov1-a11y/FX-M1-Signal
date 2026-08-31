@@ -1,50 +1,33 @@
-FX M1 BOT V7.4.1 — FINAL READY REPLACE
+FX M1 Bot V7.4.4 — READY REPLACE
 
-ЭТО НЕ ПОЛНЫЙ ПРОЕКТ. ЭТО ОДИН КОМПЛЕКТ ТОЛЬКО ТЕХ ФАЙЛОВ, КОТОРЫЕ НУЖНО ЗАМЕНИТЬ.
-Распаковать в корень репозитория FX-M1-Signal с сохранением путей и подтверждением замены.
+Заменить файлы из архива в корне репозитория с сохранением путей.
 
-ЗАМЕНЯЮТСЯ РОВНО:
-1. app/build.gradle
-2. app/src/main/java/com/openai/fxm1/FeatureEngine.java
-3. app/src/main/java/com/openai/fxm1/MainActivity.java
-4. app/src/main/java/com/openai/fxm1/MonitoringService.java
-5. app/src/main/res/layout/activity_main.xml
-6. mt5_bridge/bridge_v7_3.py
-7. mt5_bridge/START_BRIDGE_V7_3.bat
-8. .gitignore
+Что исправлено по реальному тесту V7.4.1 (позиция 1.25 lot, P/L от +$21 до -$40):
+1. SCALP больше НЕ использует процентный риск обычной сделки как денежный риск одной позиции.
+2. Новый SCALP Money Manager автоматически масштабируется по Equity и имеет жёсткие верхние потолки:
+   - плановый риск до SL: не более $5 на позицию;
+   - аварийное закрытие: не более $10 плавающего убытка;
+   - защита прибыли начинает работать до $3;
+   - усиленный profit-lock с $5;
+   - полная фиксация прибыли до $8;
+   - общий известный риск SCALP-корзины не более $20.
+   На маленьком счёте лимиты автоматически уменьшаются (например, при Equity $100 плановый риск около $1, hard loss около $2).
+3. Лот рассчитывается обратно от денежного риска и фактического SL. Большой DEMO-баланс больше не должен давать 1.25 lot только из-за 0.50% в интерфейсе.
+4. Если минимальный брокерский лот уже превышает hard-loss лимит, сделка отклоняется.
+5. При небольшом плюсе SL переносится в прибыльную зону; при более сильном плюсе фиксируется большая часть движения.
+6. SCALP не проваливается в обычные R-пороги BE 1.0R / trailing 1.5R / partial 1.5R.
+7. Сохранены micro-entry внутри WAIT, basket до 10, добавление только по движению в пользу позиции, без мартингейла.
+8. APP/Bridge версия 7.4.4.
 
-НЕ НУЖНО ЗАМЕНЯТЬ:
-- AndroidManifest.xml
-- QualityBarView.java
-- SparklineView.java
-- drawable/*
-- notification_monitoring_compact.xml
-- notification_monitoring_expanded.xml
-- strings.xml
-- styles.xml
-- build.gradle в корне
-- settings.gradle
-- .github/workflows/build-apk.yml
-- mt5_bridge/requirements.txt
-- mt5_bridge/INSTALL_AND_START_V7_3.bat
-- mt5_bridge/INSTALL_MT5_BRIDGE.bat
+Файлы на замену:
+- app/build.gradle
+- app/src/main/java/com/openai/fxm1/FeatureEngine.java
+- app/src/main/java/com/openai/fxm1/MainActivity.java
+- app/src/main/java/com/openai/fxm1/MonitoringService.java
+- mt5_bridge/bridge_v7_3.py
 
-ПАПКА mt5_bridge ПОСЛЕ ЗАМЕНЫ:
-- bridge_v7_3.py                 ОБНОВЛЕН V7.4.1
-- START_BRIDGE_V7_3.bat          ОБНОВЛЕН
-- requirements.txt               ОСТАВИТЬ
-- INSTALL_AND_START_V7_3.bat     ОСТАВИТЬ
-- INSTALL_MT5_BRIDGE.bat         ОСТАВИТЬ
-- .venv/                         ОСТАВИТЬ, если уже создана локально
-
-НЕ ДОЛЖНО БЫТЬ В GIT/АРХИВЕ:
-- mt5_bridge/__pycache__/
-- *.pyc
-- mt5_bridge/.venv/
-
-ПРОВЕРКА ПОСЛЕ ЗАМЕНЫ:
-- app/build.gradle: versionCode 741 / versionName 7.4.1
-- Bridge при запуске: FX M1 MT5 Bridge V7.4.1
-- UI берет установленную версию APK через PackageManager; старые V7.3.2/V7.3.3 не захардкожены в активном UI.
-- SCALP может формировать отдельный execution signal при основном WAIT.
-- MT5 retcode 10030 обрабатывается перебором filling modes.
+После замены:
+1) перезапустить START_BRIDGE_V7_3.bat;
+2) собрать/установить APK;
+3) проверить: APP V7.4.4 • BRIDGE V7.4.4;
+4) тестировать только DEMO.

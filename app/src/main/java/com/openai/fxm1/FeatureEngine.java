@@ -78,6 +78,24 @@ public final class FeatureEngine {
         o.put("partial_close_enabled", p.getBoolean("partial_close_enabled", true));
         o.put("partial_close_at_r", p.getFloat("partial_close_at_r", 1.5f));
         o.put("partial_close_pct", p.getFloat("partial_close_pct", 50.0f));
+        boolean scalp = p.getInt("signal_mode_pos", 1) == 3;
+        o.put("scalp_mode", scalp);
+        if (scalp) {
+            // SCALP positions must be managed much faster than normal intraday positions.
+            o.put("break_even_at_r", Math.min(p.getFloat("break_even_at_r", 1.0f), 0.35f));
+            o.put("trailing_start_r", Math.min(p.getFloat("trailing_start_r", 1.5f), 0.55f));
+            o.put("trailing_distance_r", Math.min(p.getFloat("trailing_distance_r", 0.8f), 0.35f));
+            o.put("partial_close_at_r", Math.min(p.getFloat("partial_close_at_r", 1.5f), 0.70f));
+            // V7.4.4: dollar-based SCALP manager. Bridge scales these caps down for small equity.
+            o.put("scalp_money_manager", true);
+            o.put("scalp_risk_usd_cap", 5.0);
+            o.put("scalp_hard_loss_usd_cap", 10.0);
+            o.put("scalp_profit_protect_usd_cap", 3.0);
+            o.put("scalp_trail_start_usd_cap", 5.0);
+            o.put("scalp_take_profit_usd_cap", 8.0);
+            o.put("scalp_basket_risk_usd_cap", 20.0);
+            o.put("scalp_max_hold_sec", 120);
+        }
         return o;
     }
 
@@ -97,7 +115,8 @@ public final class FeatureEngine {
                 "\nRisky confirm: " + onOff(p.getBoolean("confirm_risky_entries", true)) + " < " + p.getInt("confirm_below_quality", 65) + "/100" +
                 " · Session: " + currentSession() +
                 "\nMulti-pair radar: " + onOff(p.getBoolean("multi_pair_enabled", false)) +
-                " · News Guard: " + (newsActive ? "ACTIVE" : "READY");
+                " · News Guard: " + (newsActive ? "ACTIVE" : "READY") +
+                (p.getInt("signal_mode_pos", 1) == 3 ? "\nSCALP MONEY: ON · risk auto-scale · hard loss ≤ $10 · TP ≤ $8" : "");
     }
 
     public static String currentSession() {
