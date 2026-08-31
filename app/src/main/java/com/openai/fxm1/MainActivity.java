@@ -419,8 +419,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V" + BuildConfig.VERSION_NAME + " разрешает только DEMO.");
-                    Toast.makeText(this, "V" + BuildConfig.VERSION_NAME + " разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V" + appVersionName() + " разрешает только DEMO.");
+                    Toast.makeText(this, "V" + appVersionName() + " разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -633,8 +633,16 @@ public class MainActivity extends Activity {
         forceAutoOff(null);
     }
 
+    private String appVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "7.4.1";
+        }
+    }
+
     private void applyRuntimeVersionLabels() {
-        String v = BuildConfig.VERSION_NAME;
+        String v = appVersionName();
         if (versionBadgeText != null) versionBadgeText.setText("V" + v);
         if (smartTitleText != null) smartTitleText.setText("УМНЫЕ ФУНКЦИИ V" + v);
         if (footerVersionText != null) footerVersionText.setText("V" + v + " · SCALP · WATCHDOG · SMART RISK · MT5 BRIDGE");
@@ -665,7 +673,7 @@ public class MainActivity extends Activity {
             serverConnected = true;
             mt5Connected = mt5;
             demoAccount = "DEMO".equalsIgnoreCase(accountType);
-            serverStatusText.setText("APP V" + BuildConfig.VERSION_NAME + "   •   BRIDGE V" + bridgeVersion + "\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
+            serverStatusText.setText("APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
             accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             positionsText.setText("Открытые позиции: " + positions + "\nТекущий P/L: " + signedMoney(floating, currency));
@@ -752,7 +760,7 @@ public class MainActivity extends Activity {
                     demoAccount = "DEMO".equals(accountType);
 
                     serverStatusText.setText(
-                            "APP V" + BuildConfig.VERSION_NAME + "   •   BRIDGE V" + bridgeVersion + "\n" +
+                            "APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n" +
                             "SERVER: " + (serverOk ? "CONNECTED" : "ERROR") +
                             "   •   MT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
                     );
@@ -1140,7 +1148,7 @@ public class MainActivity extends Activity {
         Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
 
         AlertDialog smartDialog = new AlertDialog.Builder(this)
-                .setTitle("Умные функции V" + BuildConfig.VERSION_NAME)
+                .setTitle("Умные функции V" + appVersionName())
                 .setView(scroll)
                 .setNegativeButton("ОТМЕНА", null)
                 .setPositiveButton("СОХРАНИТЬ", (d,w) -> {

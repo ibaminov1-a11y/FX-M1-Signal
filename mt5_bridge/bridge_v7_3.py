@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.4.0"
+BRIDGE_VERSION = "7.4.1"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled

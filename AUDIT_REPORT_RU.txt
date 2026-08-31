@@ -2,7 +2,7 @@ FX M1 BOT — АУДИТ 31.08.2026
 
 ОБНАРУЖЕНО И ИСПРАВЛЕНО:
 1. Частичные архивы обновляли не все видимые version labels. Это позволяло получить новую логику при старой надписи V7.3.2.
-2. Версия была захардкожена одновременно в activity_main.xml и MainActivity.java. Теперь UI получает версию из BuildConfig.VERSION_NAME.
+2. Версия была захардкожена одновременно в activity_main.xml и MainActivity.java. Теперь UI получает версию из PackageManager versionName.
 3. В исходном проекте оставались старые bridge_v7_2.py и BAT V7.1/V6.3, что создавало риск запуска не того Bridge. В чистой поставке они удалены/обновлены.
 4. START_BRIDGE_V7_3.bat больше не выводит фиксированную устаревающую версию; фактическую версию печатает bridge_v7_3.py.
 5. Bridge journal comments содержали V7.2/V7.3.3. Заменено на BRIDGE_VERSION.
@@ -20,3 +20,8 @@ FX M1 BOT — АУДИТ 31.08.2026
 - Проверка workflow GitHub Actions.
 
 ВАЖНО: Android APK в контейнере локально не собирается без Android SDK; окончательная компиляция выполняется GitHub Actions.
+
+
+V7.4.1 BUILD FIX:
+- Устранены 6 compile errors MainActivity: ссылки на BuildConfig.VERSION_NAME заменены на runtime PackageManager versionName.
+- UI по-прежнему получает фактическую установленную версию APK, без hardcoded V7.3.2/V7.4.0.

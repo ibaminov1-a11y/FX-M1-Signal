@@ -1,14 +1,50 @@
-FX M1 BOT V7.3.5 — READY REPLACE
+FX M1 BOT V7.4.1 — FINAL READY REPLACE
 
-Скопировать содержимое архива в корень репозитория с заменой файлов.
+ЭТО НЕ ПОЛНЫЙ ПРОЕКТ. ЭТО ОДИН КОМПЛЕКТ ТОЛЬКО ТЕХ ФАЙЛОВ, КОТОРЫЕ НУЖНО ЗАМЕНИТЬ.
+Распаковать в корень репозитория FX-M1-Signal с сохранением путей и подтверждением замены.
 
-Исправлено:
-- SCALP НЕ ждёт главного BUY/SELL. Главная карточка может оставаться WAIT, а отдельный M1 micro-entry trigger отправляет BUY/SELL в MT5.
-- Это не слепой WAIT->trade: нужен направленный микроимпульс последних M1 свечей и минимальный прогресс относительно ATR/local range.
-- SL/TP для micro-entry рассчитываются отдельно даже когда экран показывает WAIT.
-- Basket до 10 позиций, default 8, без мартингейла; добавления только по благоприятному движению и в пределах общего риска.
-- MT5 order_check/filling diagnostics из V7.3.4 сохранены.
-- Все видимые Android-надписи версии обновлены на V7.3.5.
-- REAL trading выключен по умолчанию.
+ЗАМЕНЯЮТСЯ РОВНО:
+1. app/build.gradle
+2. app/src/main/java/com/openai/fxm1/FeatureEngine.java
+3. app/src/main/java/com/openai/fxm1/MainActivity.java
+4. app/src/main/java/com/openai/fxm1/MonitoringService.java
+5. app/src/main/res/layout/activity_main.xml
+6. mt5_bridge/bridge_v7_3.py
+7. mt5_bridge/START_BRIDGE_V7_3.bat
+8. .gitignore
 
-После замены собрать APK и перезапустить START_BRIDGE_V7_3.bat. Тестировать на DEMO.
+НЕ НУЖНО ЗАМЕНЯТЬ:
+- AndroidManifest.xml
+- QualityBarView.java
+- SparklineView.java
+- drawable/*
+- notification_monitoring_compact.xml
+- notification_monitoring_expanded.xml
+- strings.xml
+- styles.xml
+- build.gradle в корне
+- settings.gradle
+- .github/workflows/build-apk.yml
+- mt5_bridge/requirements.txt
+- mt5_bridge/INSTALL_AND_START_V7_3.bat
+- mt5_bridge/INSTALL_MT5_BRIDGE.bat
+
+ПАПКА mt5_bridge ПОСЛЕ ЗАМЕНЫ:
+- bridge_v7_3.py                 ОБНОВЛЕН V7.4.1
+- START_BRIDGE_V7_3.bat          ОБНОВЛЕН
+- requirements.txt               ОСТАВИТЬ
+- INSTALL_AND_START_V7_3.bat     ОСТАВИТЬ
+- INSTALL_MT5_BRIDGE.bat         ОСТАВИТЬ
+- .venv/                         ОСТАВИТЬ, если уже создана локально
+
+НЕ ДОЛЖНО БЫТЬ В GIT/АРХИВЕ:
+- mt5_bridge/__pycache__/
+- *.pyc
+- mt5_bridge/.venv/
+
+ПРОВЕРКА ПОСЛЕ ЗАМЕНЫ:
+- app/build.gradle: versionCode 741 / versionName 7.4.1
+- Bridge при запуске: FX M1 MT5 Bridge V7.4.1
+- UI берет установленную версию APK через PackageManager; старые V7.3.2/V7.3.3 не захардкожены в активном UI.
+- SCALP может формировать отдельный execution signal при основном WAIT.
+- MT5 retcode 10030 обрабатывается перебором filling modes.
