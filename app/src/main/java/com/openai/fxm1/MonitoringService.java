@@ -1114,15 +1114,29 @@ public class MonitoringService extends Service {
     private int scalpImpulse(List<Candle> s) {
         if (s == null || s.size() < 6) return 0;
         int n = s.size();
-        Candle a=s.get(n-4), b=s.get(n-3), c=s.get(n-2), d=s.get(n-1);
-        double up=0.0, down=0.0;
-        Candle[] arr={a,b,c,d};
-        for (Candle x:arr) { double body=x.close-x.open; if(body>0) up+=body; else down+=-body; }
-        boolean rising=d.close>c.close && c.close>=b.close;
-        boolean falling=d.close<c.close && c.close<=b.close;
-        double range=Math.max(1e-12,(d.high-d.low)+(c.high-c.low));
-        if(rising && up>down*1.05 && (d.close-c.close)>range*0.025) return 1;
-        if(falling && down>up*1.05 && (c.close-d.close)>range*0.025) return -1;
+        Candle a = s.get(n-4), b = s.get(n-3), c = s.get(n-2), d = s.get(n-1);
+        double up = 0.0, down = 0.0;
+        Candle[] arr = {a,b,c,d};
+        for (Candle x : arr) {
+            double body = x.close - x.open;
+            if (body > 0) up += body; else down += -body;
+        }
+        boolean rising = d.close > c.close && c.close >= b.close;
+        boolean falling = d.close < c.close && c.close <= b.close;
+        double range = Math.max(1e-12, (d.high-d.low) + (c.high-c.low));
+        double micro = d.close - c.close;
+        double net = d.close - b.close;
+
+        // Strong M1 impulse.
+        if (rising && up > down * 1.03 && micro > range * 0.018) return 1;
+        if (falling && down > up * 1.03 && -micro > range * 0.018) return -1;
+
+        // V7.3.4 SCALP micro-entry: MAIN may still look neutral, but a small fresh
+        // directional move can arm a scalp entry. We still require direction + body
+        // dominance so a single random tick does not become a trade.
+        double microFloor = range * 0.008;
+        if (micro > microFloor && net >= 0 && up >= down * 0.90) return 1;
+        if (-micro > microFloor && net <= 0 && down >= up * 0.90) return -1;
         return 0;
     }
 

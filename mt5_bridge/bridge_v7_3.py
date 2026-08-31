@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.3.3"
+BRIDGE_VERSION = "7.3.4"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -212,14 +212,75 @@ def margin_payload(order_type, symbol, volume, price, account):
     }
 
 
+def filling_mode_candidates(symbol):
+    """Return safe ORDER_FILLING candidates. SYMBOL filling_mode is a bit-mask,
+    while ORDER_FILLING_* uses different enum values, so they must not be compared directly.
+    """
+    info = mt5.symbol_info(symbol)
+    out = []
+    flags = int(getattr(info, "filling_mode", 0) or 0) if info is not None else 0
+    # SYMBOL_FILLING_FOK=1, SYMBOL_FILLING_IOC=2. RETURN may be allowed depending on execution mode.
+    if flags & 2:
+        out.append(mt5.ORDER_FILLING_IOC)
+    if flags & 1:
+        out.append(mt5.ORDER_FILLING_FOK)
+    out.append(mt5.ORDER_FILLING_RETURN)
+    out.extend([mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK])
+    unique = []
+    for x in out:
+        if x not in unique:
+            unique.append(x)
+    return unique
+
+
 def filling_mode_for(symbol):
+    return filling_mode_candidates(symbol)[0]
+
+
+def normalize_order_stops(symbol, side, tick, sl, tp):
     info = mt5.symbol_info(symbol)
     if info is None:
-        return mt5.ORDER_FILLING_IOC
-    fm = getattr(info, "filling_mode", None)
-    if fm in (mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN):
-        return fm
-    return mt5.ORDER_FILLING_IOC
+        return sl, tp
+    point = float(info.point or 0.00001)
+    digits = int(info.digits)
+    # Extra safety buffer above broker stops level because Bid/Ask can move between check and send.
+    min_stop = max(point * (int(getattr(info, "trade_stops_level", 0) or 0) + 5), point * 8)
+    bid, ask = float(tick.bid), float(tick.ask)
+    if side == "BUY":
+        if sl > 0: sl = min(sl, bid - min_stop)
+        if tp > 0: tp = max(tp, ask + min_stop)
+    else:
+        if sl > 0: sl = max(sl, ask + min_stop)
+        if tp > 0: tp = min(tp, bid - min_stop)
+    return (round(sl, digits) if sl > 0 else 0.0,
+            round(tp, digits) if tp > 0 else 0.0)
+
+
+def send_deal_with_fill_fallback(req):
+    """Try broker-supported filling policies and keep diagnostics for the APK/Bridge log."""
+    attempts = []
+    last = None
+    for fill in filling_mode_candidates(req["symbol"]):
+        trial = dict(req)
+        trial["type_filling"] = fill
+        check = mt5.order_check(trial)
+        check_code = int(check.retcode) if check is not None else None
+        check_comment = check.comment if check is not None else str(mt5.last_error())
+        result = mt5.order_send(trial)
+        last = result
+        attempts.append({
+            "filling": int(fill),
+            "check_retcode": check_code,
+            "check_comment": check_comment,
+            "retcode": int(result.retcode) if result is not None else None,
+            "comment": result.comment if result is not None else str(mt5.last_error()),
+        })
+        if result is not None and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_DONE_PARTIAL):
+            return result, attempts
+        # 10030 = invalid/unsupported filling. Try the next policy.
+        if result is not None and int(result.retcode) != 10030:
+            break
+    return last, attempts
 
 
 def close_position_internal(p, volume=None, comment="FXM1 V7.2 CLOSE"):
@@ -714,11 +775,17 @@ def signal():
             "type_filling": filling_mode_for(symbol),
         }
 
-        result = mt5.order_send(req)
-        if result is None:
-            return jsonify(accepted=False, message=f"order_send returned None: {mt5.last_error()}"), 500
+        # V7.3.4: enforce broker-valid stop side/distance on the live MT5 quote.
+        sl, tp = normalize_order_stops(symbol, side, tick, sl, tp)
+        req["sl"] = sl
+        req["tp"] = tp
 
-        ok = result.retcode == mt5.TRADE_RETCODE_DONE
+        result, attempts = send_deal_with_fill_fallback(req)
+        if result is None:
+            return jsonify(accepted=False, ok=False, bridge_version=BRIDGE_VERSION,
+                           message=f"order_send returned None: {mt5.last_error()}", attempts=attempts), 500
+
+        ok = result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_DONE_PARTIAL)
         return jsonify(
             accepted=ok,
             ok=ok,
@@ -737,6 +804,8 @@ def signal():
             risk=risk,
             margin=margin,
             retcode=int(result.retcode),
+            mt5_comment=result.comment,
+            attempts=attempts,
             basket_mode=basket_mode,
             basket_count=(len(basket) + 1 if basket_mode and ok else len(basket) if basket_mode else None),
             basket_risk_pct_before=(basket_risk_pct_used if basket_mode else None)
@@ -968,7 +1037,7 @@ def manage_positions_alias():
         live={int(x.ticket) for x in (mt5.positions_get() or [])}
         for t in list(_INITIAL_R):
             if t not in live: _INITIAL_R.pop(t,None); _PARTIAL_DONE.discard(t)
-        return jsonify(ok=True, bridge_version='7.3', managed=len(positions), actions=actions, message='ACTIVE')
+        return jsonify(ok=True, bridge_version=BRIDGE_VERSION, managed=len(positions), actions=actions, message='ACTIVE')
 
 @app.get('/risk-state')
 def risk_state_alias():
