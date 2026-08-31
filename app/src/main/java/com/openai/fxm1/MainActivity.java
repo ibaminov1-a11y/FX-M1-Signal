@@ -88,6 +88,7 @@ public class MainActivity extends Activity {
     private boolean mt5Connected = false;
     private boolean demoAccount = false;
     private boolean suppressAutoSwitch = false;
+    private boolean syncingScalpTimeframe = false;
     private long emergencyTapMs = 0L;
 
     private double lastApiPrice = Double.NaN;
@@ -311,7 +312,26 @@ public class MainActivity extends Activity {
         entryTimeframeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.edit().putInt("entry_tf_pos", position).apply();
+                if (syncingScalpTimeframe) return;
+
+                // Rule V7.3.1: SCALP is an M1 entry mode only.
+                // Selecting M1 manually NEVER forces SCALP.
+                // Selecting any TF other than M1 while SCALP is active switches mode to NORMAL.
+                if (!"M1".equals(selectedEntryTimeframe()) && "SCALP".equals(selectedSignalMode())) {
+                    syncingScalpTimeframe = true;
+                    signalModeSpinner.setSelection(1); // NORMAL
+                    prefs.edit()
+                            .putInt("entry_tf_pos", position)
+                            .putInt("signal_mode_pos", 1)
+                            .apply();
+                    syncingScalpTimeframe = false;
+                    Toast.makeText(MainActivity.this,
+                            "SCALP работает на M1. Режим переключён на NORMAL.",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    prefs.edit().putInt("entry_tf_pos", position).apply();
+                }
+
                 lastSentSignal.clear();
                 lastAlertSignal.clear();
 
@@ -326,14 +346,48 @@ public class MainActivity extends Activity {
         signalModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.edit().putInt("signal_mode_pos", position).apply();
+                if (syncingScalpTimeframe) return;
+
+                // Rule V7.3.1: choosing SCALP forces entry TF to M1.
+                // Choosing M1 itself does not select SCALP.
+                if ("SCALP".equals(selectedSignalMode()) && !"M1".equals(selectedEntryTimeframe())) {
+                    syncingScalpTimeframe = true;
+                    entryTimeframeSpinner.setSelection(0); // M1
+                    prefs.edit()
+                            .putInt("signal_mode_pos", position)
+                            .putInt("entry_tf_pos", 0)
+                            .apply();
+                    syncingScalpTimeframe = false;
+                    Toast.makeText(MainActivity.this,
+                            "SCALP: таймфрейм входа автоматически установлен M1.",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    prefs.edit().putInt("signal_mode_pos", position).apply();
+                }
+
+                // V7.3.2 DEMO behaviour: SCALP is an automated execution mode.
+                // If Bridge+MT5 are already connected to a DEMO account, selecting SCALP
+                // arms AUTO immediately so a valid scalp BUY/SELL can actually reach MT5.
+                if ("SCALP".equals(selectedSignalMode()) && serverConnected && mt5Connected && demoAccount) {
+                    autoTradingSwitch.setChecked(true);
+                }
+
                 lastSentSignal.clear();
+                lastAlertSignal.clear();
                 if (getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false)) {
                     sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
                 }
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
+
+        // Normalize an old saved invalid combination (SCALP + M5/M15/etc.) once at startup.
+        if ("SCALP".equals(selectedSignalMode()) && !"M1".equals(selectedEntryTimeframe())) {
+            syncingScalpTimeframe = true;
+            entryTimeframeSpinner.setSelection(0);
+            prefs.edit().putInt("entry_tf_pos", 0).apply();
+            syncingScalpTimeframe = false;
+        }
 
         maxDriftSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -353,8 +407,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V7.1 разрешает только DEMO.");
-                    Toast.makeText(this, "V7.1 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V7.3.2 разрешает только DEMO.");
+                    Toast.makeText(this, "V7.3.2 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -597,7 +651,10 @@ public class MainActivity extends Activity {
             positionsText.setText("Открытые позиции: " + positions + "\nТекущий P/L: " + signedMoney(floating, currency));
             closeAllButton.setEnabled(mt5 && demoAccount && positions > 0);
             suppressAutoSwitch = true;
-            autoTradingSwitch.setChecked(p.getBoolean("auto_trading", false) && mt5 && demoAccount);
+            boolean scalpDemo = "SCALP".equals(selectedSignalMode()) && mt5 && demoAccount;
+            boolean autoSaved = p.getBoolean("auto_trading", false) && mt5 && demoAccount;
+            autoTradingSwitch.setChecked(autoSaved || scalpDemo);
+            if (scalpDemo) p.edit().putBoolean("auto_trading", true).apply();
             suppressAutoSwitch = false;
         } else {
             setTradingControlsOffline();
@@ -1048,7 +1105,7 @@ public class MainActivity extends Activity {
         Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
 
         AlertDialog smartDialog = new AlertDialog.Builder(this)
-                .setTitle("Умные функции V7.3")
+                .setTitle("Умные функции V7.3.2")
                 .setView(scroll)
                 .setNegativeButton("ОТМЕНА", null)
                 .setPositiveButton("СОХРАНИТЬ", (d,w) -> {
@@ -2010,10 +2067,12 @@ public class MainActivity extends Activity {
                     breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
+            // V7.3.2: SCALP is an early M1 impulse mode. M5/M15 are context only,
+            // not hard blockers; otherwise M1 can sit in WAIT for too long.
             int impulse = scalpImpulse(entrySeries);
             boolean m1 = "M1".equals(entryTf);
-            buySetup = m1 && impulse > 0 && sEntry >= 0 && sHigher1 >= 0 && breakout >= 0 && (structure >= 0 || sHigher1 > 0);
-            sellSetup = m1 && impulse < 0 && sEntry <= 0 && sHigher1 <= 0 && breakout <= 0 && (structure <= 0 || sHigher1 < 0);
+            buySetup = m1 && impulse > 0 && sFast >= 0 && sEntry >= 0;
+            sellSetup = m1 && impulse < 0 && sFast <= 0 && sEntry <= 0;
 
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;

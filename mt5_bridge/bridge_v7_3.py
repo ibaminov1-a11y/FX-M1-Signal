@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.3"
+BRIDGE_VERSION = "7.3.2"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -612,6 +612,25 @@ def signal():
         tp = safe_float(data.get("tp1") or data.get("tp"), 0)
         risk_pct = safe_float(data.get("risk_pct"), 0.5)
 
+        # V7.3.2: Android analysis prices can differ slightly from the broker feed.
+        # Preserve the intended SL/TP distance, but anchor execution protection to MT5 Bid/Ask.
+        # This prevents invalid stops and wrong-side stops when API Entry != MT5 price.
+        info = mt5.symbol_info(symbol)
+        point = float(info.point) if info and info.point else 0.00001
+        min_stop = max(point * (int(getattr(info, "trade_stops_level", 0) or 0) + 2), point * 5)
+        if api_entry > 0 and sl > 0:
+            sl_distance = max(abs(api_entry - sl), min_stop)
+            if side == "BUY":
+                sl = price - sl_distance
+            else:
+                sl = price + sl_distance
+        if api_entry > 0 and tp > 0:
+            tp_distance = max(abs(tp - api_entry), min_stop)
+            if side == "BUY":
+                tp = price + tp_distance
+            else:
+                tp = price - tp_distance
+
         volume, risk, err = calc_risk_volume(symbol, order_type, price, sl, risk_pct, float(account.equity))
         if err:
             return jsonify(accepted=False, message=err, risk=risk), 400
@@ -631,7 +650,7 @@ def signal():
             "tp": tp,
             "deviation": int(data.get("deviation") or 20),
             "magic": MAGIC,
-            "comment": f"FXM1 V7.2 {str(data.get('signal_mode') or 'AUTO')[:12]}",
+            "comment": f"FXM1 V7.3.2 {str(data.get('signal_mode') or 'AUTO')[:10]}",
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": filling_mode_for(symbol),
         }

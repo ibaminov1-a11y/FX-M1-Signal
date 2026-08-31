@@ -1011,10 +1011,12 @@ public class MonitoringService extends Service {
             sellSetup = sHigher2 <= 0 && sHigher1 < 0 && sEntry < 0 && sFast <= 0 && structure <= 0 && breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
+            // V7.3.2: SCALP is an early M1 impulse mode. M5/M15 are context only,
+            // not hard blockers; otherwise M1 can sit in WAIT for too long.
             int impulse = scalpImpulse(entrySeries);
             boolean m1 = "M1".equals(entryTf);
-            buySetup = m1 && impulse > 0 && sEntry >= 0 && sHigher1 >= 0 && breakout >= 0 && (structure >= 0 || sHigher1 > 0);
-            sellSetup = m1 && impulse < 0 && sEntry <= 0 && sHigher1 <= 0 && breakout <= 0 && (structure <= 0 || sHigher1 < 0);
+            buySetup = m1 && impulse > 0 && sFast >= 0 && sEntry >= 0;
+            sellSetup = m1 && impulse < 0 && sFast <= 0 && sEntry <= 0;
 
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;
@@ -1109,8 +1111,8 @@ public class MonitoringService extends Service {
         boolean rising=d.close>c.close && c.close>=b.close;
         boolean falling=d.close<c.close && c.close<=b.close;
         double range=Math.max(1e-12,(d.high-d.low)+(c.high-c.low));
-        if(rising && up>down*1.15 && (d.close-c.close)>range*0.06) return 1;
-        if(falling && down>up*1.15 && (c.close-d.close)>range*0.06) return -1;
+        if(rising && up>down*1.05 && (d.close-c.close)>range*0.025) return 1;
+        if(falling && down>up*1.05 && (c.close-d.close)>range*0.025) return -1;
         return 0;
     }
 
