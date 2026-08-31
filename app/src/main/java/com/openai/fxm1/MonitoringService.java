@@ -652,8 +652,10 @@ public class MonitoringService extends Service {
                 payload.put("allow_same_symbol_multiple", true);
                 payload.put("basket_risk_pct", basketRiskPct);
                 payload.put("risk_pct", basketRiskPct / Math.max(1, maxPos));
-                // V7.4.5: separate money-based SCALP risk/exit manager.
+                // V7.4.6: separate money-based SCALP risk/exit manager.
                 payload.put("scalp_money_manager", true);
+                payload.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
+                payload.put("scalp_peak_lock_enabled", true);
                 payload.put("scalp_risk_usd_cap", 2.0);
                 payload.put("scalp_hard_loss_usd_cap", 5.0);
                 payload.put("scalp_profit_protect_usd_cap", 1.5);
@@ -1031,7 +1033,7 @@ public class MonitoringService extends Service {
             sellSetup = sHigher2 <= 0 && sHigher1 < 0 && sEntry < 0 && sFast <= 0 && structure <= 0 && breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.4.5: SCALP impulse MUST come from the fast M1 series.
+            // V7.4.6: SCALP impulse MUST come from the fast M1 series.
             // In the M1 analysis mapping entrySeries is M5 context, so using entrySeries here
             // accidentally made the scalper wait for M5. M5/M15 remain context only.
             int impulse = scalpImpulse(fast);
@@ -1059,7 +1061,7 @@ public class MonitoringService extends Service {
 
         String signal = buySetup ? "BUY" : sellSetup ? "SELL" : "WAIT";
 
-        // V7.4.5: display signal and SCALP execution trigger are separate.
+        // V7.4.6: display signal and SCALP execution trigger are separate.
         // For M1 SCALP the execution trigger must read fast=M1, while entrySeries=M5 is context.
         String executionSignal = signal;
         double scalpAtr = atr;

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.4.5"
+BRIDGE_VERSION = "7.4.6"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -103,7 +103,7 @@ def scalp_money_limits(equity, cfg=None):
     tp_cap = max(protect_cap, safe_float(cfg.get('scalp_take_profit_usd_cap'), 3.0))
     basket_cap_req = max(risk_cap, safe_float(cfg.get('scalp_basket_risk_usd_cap'), 16.0))
 
-    # V7.4.5: true micro-scalp cash sizing. A large DEMO balance must NOT create a large lot.
+    # V7.4.6: true micro-scalp cash sizing. A large DEMO balance must NOT create a large lot.
     # Small future accounts scale down automatically.
     planned = min(risk_cap, max(0.50, eq * 0.002))
     hard_loss = min(hard_cap, max(1.00, eq * 0.005))
@@ -119,6 +119,39 @@ def scalp_money_limits(equity, cfg=None):
         'take_profit_usd': round(take_profit, 2),
         'basket_risk_usd': round(basket_risk, 2),
     }
+
+
+def scalp_manual_volume(symbol, lot_mode):
+    mode = str(lot_mode or 'AUTO').upper().strip()
+    if mode == 'AUTO':
+        return None
+    try:
+        requested = float(mode)
+    except Exception:
+        return None
+    info = mt5.symbol_info(symbol)
+    if info is None:
+        return None
+    return floor_volume(requested, float(info.volume_step), float(info.volume_min), float(info.volume_max))
+
+
+def cash_target_price(symbol, order_type, price, volume, cash_amount, adverse):
+    """Return a price approximately cash_amount away for this volume. adverse=True means SL direction."""
+    info = mt5.symbol_info(symbol)
+    if info is None or volume <= 0 or cash_amount <= 0:
+        return None
+    point = float(info.point or 0.0)
+    if point <= 0:
+        return None
+    is_buy = order_type == mt5.ORDER_TYPE_BUY
+    direction = -1.0 if (is_buy and adverse) or ((not is_buy) and not adverse) else 1.0
+    probe = price + direction * point
+    pnl = mt5.order_calc_profit(order_type, symbol, volume, price, probe)
+    per_point = abs(float(pnl)) if pnl is not None else 0.0
+    if per_point <= 0:
+        return None
+    points = max(1.0, float(cash_amount) / per_point)
+    return price + direction * points * point
 
 
 def floor_volume(value, step, minimum, maximum):
@@ -740,7 +773,7 @@ def signal():
         price = float(tick.ask if side == "BUY" else tick.bid)
 
         if basket_mode:
-            # V7.4.5: independent micro-scalp slots. Each fresh M1 micro trigger may open another
+            # V7.4.6: independent micro-scalp slots. Each fresh M1 micro trigger may open another
             # small same-direction slot until max_positions / cash-risk cap is reached.
             # We no longer require the previous slot to be in profit before allowing the next one.
             cooldown = max(1, int(data.get("basket_add_cooldown_sec") or 2))
@@ -794,13 +827,36 @@ def signal():
             else:
                 tp = price - tp_distance
 
-        volume, risk, err = calc_risk_volume(symbol, order_type, price, sl, risk_pct, float(account.equity))
+        manual_volume = None
+        if scalp_limits is not None:
+            manual_volume = scalp_manual_volume(symbol, data.get('scalp_lot_mode', 'AUTO'))
+
+        if manual_volume is not None:
+            # Manual SCALP lot: keep the chosen lot, but move broker-side SL/TP to cash targets.
+            # If broker minimum stop makes that impossible, reject rather than silently taking excess risk.
+            planned_sl = cash_target_price(symbol, order_type, price, manual_volume, scalp_limits['planned_risk_usd'], True)
+            planned_tp = cash_target_price(symbol, order_type, price, manual_volume, scalp_limits['take_profit_usd'], False)
+            if planned_sl is not None:
+                sl = planned_sl
+            if planned_tp is not None:
+                tp = planned_tp
+            sl, tp = normalize_order_stops(symbol, side, tick, sl, tp)
+            volume = manual_volume
+            calc_loss = mt5.order_calc_profit(order_type, symbol, volume, price, sl)
+            actual_risk = abs(float(calc_loss)) if calc_loss is not None else None
+            risk = {'risk_pct': None, 'risk_money_target': scalp_limits['planned_risk_usd'],
+                    'risk_money_actual': actual_risk, 'raw_volume': volume, 'volume': volume,
+                    'sl_distance': abs(price - sl), 'lot_mode': str(data.get('scalp_lot_mode','AUTO'))}
+            err = None
+        else:
+            volume, risk, err = calc_risk_volume(symbol, order_type, price, sl, risk_pct, float(account.equity))
+
         if err:
             return jsonify(accepted=False, message=err, risk=risk, scalp_money=scalp_limits), 400
         if scalp_limits is not None:
             actual = safe_float((risk or {}).get('risk_money_actual'), 0.0)
             if actual > scalp_limits['hard_loss_usd'] + 0.01:
-                return jsonify(accepted=False, message=f"SCALP lot rejected: SL risk ${actual:.2f} > hard cap ${scalp_limits['hard_loss_usd']:.2f}",
+                return jsonify(accepted=False, message=f"SCALP lot rejected: broker SL risk ${actual:.2f} > hard cap ${scalp_limits['hard_loss_usd']:.2f}",
                                risk=risk, scalp_money=scalp_limits), 409
 
         margin = margin_payload(order_type, symbol, volume, price, account)
@@ -987,7 +1043,7 @@ def position_manager():
 _INITIAL_R = {}
 _PARTIAL_DONE = set()
 
-# V7.4.5 Bridge-side SCALP supervisor. It runs independently of Android's 5-second analysis loop.
+# V7.4.6 Bridge-side SCALP supervisor. It runs independently of Android's 5-second analysis loop.
 _SCALP_SUPERVISOR_CFG = {
     'scalp_risk_usd_cap': 2.0,
     'scalp_hard_loss_usd_cap': 5.0,
@@ -1042,14 +1098,31 @@ def scalp_supervisor_once():
             continue
         pnl_usd = float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0)
         age_sec = max(0, int(datetime.now().timestamp()) - int(getattr(p, 'time', 0) or 0))
+        ticket = int(p.ticket)
+        peak = max(float(_SCALP_PEAK_PNL.get(ticket, pnl_usd)), pnl_usd)
+        _SCALP_PEAK_PNL[ticket] = peak
+
+        # V7.4.6 Peak Profit Lock: once a scalp has made money, do not let a reversal
+        # turn it into a large loss. Example: peak +$7 -> close around +$4 on a $3 giveback.
+        if bool(cfg.get('scalp_peak_lock_enabled', True)) and peak >= limits['protect_usd']:
+            giveback = max(0.50, min(3.00, peak * 0.45))
+            floor_pnl = max(0.10, peak - giveback)
+            if pnl_usd <= floor_pnl:
+                close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP PEAK_LOCK')
+                _SCALP_PEAK_PNL.pop(ticket, None)
+                continue
+
         if pnl_usd <= -limits['hard_loss_usd']:
             close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP HARD_LOSS')
+            _SCALP_PEAK_PNL.pop(ticket, None)
             continue
         if pnl_usd >= limits['take_profit_usd']:
             close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP TAKE_PROFIT')
+            _SCALP_PEAK_PNL.pop(ticket, None)
             continue
         if age_sec >= max(30, int(safe_float(cfg.get('scalp_max_hold_sec'), 90))) and pnl_usd > 0:
             close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP TIME_PROFIT')
+            _SCALP_PEAK_PNL.pop(ticket, None)
             continue
 
         # Profit-lock is broker-side SL, so protection survives even if the phone sleeps.
@@ -1069,6 +1142,11 @@ def scalp_supervisor_once():
                        'sl': candidate, 'tp': float(p.tp), 'magic': MAGIC,
                        'comment': f'FXM1 V{BRIDGE_VERSION} SCALP LOCK'}
                 mt5.order_send(req)
+
+    live_tickets = {int(x.ticket) for x in positions}
+    for t in list(_SCALP_PEAK_PNL):
+        if t not in live_tickets:
+            _SCALP_PEAK_PNL.pop(t, None)
 
 def scalp_supervisor_loop():
     while not _SCALP_SUPERVISOR_STOP.is_set():
@@ -1159,7 +1237,7 @@ def manage_positions_alias():
             rdist = _INITIAL_R[ticket]
             r_now = direction * (current - float(p.price_open)) / rdist
 
-            # V7.4.5 SCALP Money Manager. Manage by cash P/L, not normal intraday R thresholds.
+            # V7.4.6 SCALP Money Manager. Manage by cash P/L, not normal intraday R thresholds.
             if bool(cfg.get('scalp_mode', False)) and int(getattr(p, 'magic', 0)) == MAGIC:
                 limits = scalp_money_limits(float(account.equity), cfg)
                 age_sec = max(0, int(datetime.now().timestamp()) - int(getattr(p, 'time', 0) or 0))

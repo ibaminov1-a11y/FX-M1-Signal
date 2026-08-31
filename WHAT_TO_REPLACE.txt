@@ -1,34 +1,18 @@
-FX M1 Bot V7.4.5 — READY REPLACE
+FX M1 Bot V7.4.6 — READY REPLACE
 
-Заменить ТОЛЬКО эти файлы с сохранением путей:
+Заменить файлы с сохранением путей:
+- app/build.gradle
+- app/src/main/java/com/openai/fxm1/FeatureEngine.java
+- app/src/main/java/com/openai/fxm1/MainActivity.java
+- app/src/main/java/com/openai/fxm1/MonitoringService.java
+- mt5_bridge/bridge_v7_3.py
 
-1) app/build.gradle
-2) app/src/main/java/com/openai/fxm1/FeatureEngine.java
-3) app/src/main/java/com/openai/fxm1/MainActivity.java
-4) app/src/main/java/com/openai/fxm1/MonitoringService.java
-5) mt5_bridge/bridge_v7_3.py
+Что изменено:
+- SCALP LOT selector в «Умные функции»: AUTO / 0.01 / 0.02 / 0.05 / 0.10.
+- Ручной лот не отключает защиту: Bridge рассчитывает broker-side SL/TP по денежному риску; если минимальный стоп брокера превышает hard cap, вход блокируется.
+- Peak Profit Lock: Bridge запоминает максимальный P/L каждой SCALP-позиции и закрывает при существенном откате. Пример: peak +$7 -> примерно +$4 floor.
+- Broker-side SL остаётся активным даже при потере телефона/Bridge.
+- Micro-entry внутри WAIT и independent SCALP slots сохранены.
+- REAL trading по умолчанию отключён.
 
-Что исправлено в V7.4.5:
-- APP / Bridge = V7.4.5.
-- SCALP Bridge Supervisor работает независимо от Android каждые 250 мс.
-- Денежный hard-stop теперь контролируется Bridge постоянно, а не раз в 5 секунд.
-- На одну новую SCALP-позицию целевой риск до ~$2 на большом DEMO счёте.
-- Аварийное закрытие одной SCALP-позиции около -$5 (рыночное проскальзывание возможно).
-- Ранняя защита прибыли примерно от +$1.5; усиление от +$2.5; быстрый TP около +$3.
-- Общий аварийный стоп SCALP-корзины около -$10; общий TP корзины около +$8.
-- До 8 независимых same-direction micro-scalp slots: предыдущая позиция больше не обязана быть в прибыли для следующего входа.
-- Между новыми слотами минимум 2 секунды; фактически Android micro-анализ обычно даёт новый запрос примерно раз в 5 секунд.
-- Общий известный риск по SL всё равно ограничен cash-risk cap.
-- Противоположные FXM1 позиции по тому же символу по-прежнему блокируются для защиты от хаотичного хеджа.
-- SCALP micro M1 внутри WAIT сохранён.
-
-После замены:
-1. Собрать/установить APK.
-2. Полностью закрыть старое окно Bridge.
-3. Запустить START_BRIDGE_V7_3.bat.
-4. Проверить: APP V7.4.5 • BRIDGE V7.4.5.
-5. Тестировать только DEMO.
-
-ВАЖНО:
-- AUTO TRADING должен быть включён в приложении для новых входов.
-- Bridge Supervisor продолжает сопровождать уже открытые FXM1 SCALP-позиции даже между Android-анализами.
+После замены перезапустить Bridge. Должно быть APP V7.4.6 / BRIDGE V7.4.6.

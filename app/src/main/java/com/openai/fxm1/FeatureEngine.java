@@ -48,6 +48,7 @@ public final class FeatureEngine {
                 .putBoolean("manual_news_blackout", false)
                 .putLong("news_blackout_until_epoch", 0L)
                 .putBoolean("position_manager_enabled", true)
+                .putString("scalp_lot_mode", "AUTO")
                 .apply();
     }
 
@@ -86,7 +87,7 @@ public final class FeatureEngine {
             o.put("trailing_start_r", Math.min(p.getFloat("trailing_start_r", 1.5f), 0.55f));
             o.put("trailing_distance_r", Math.min(p.getFloat("trailing_distance_r", 0.8f), 0.35f));
             o.put("partial_close_at_r", Math.min(p.getFloat("partial_close_at_r", 1.5f), 0.70f));
-            // V7.4.5: dollar-based SCALP manager. Bridge scales these caps down for small equity.
+            // V7.4.6: dollar-based SCALP manager. Bridge scales these caps down for small equity.
             o.put("scalp_money_manager", true);
             o.put("scalp_risk_usd_cap", 2.0);
             o.put("scalp_hard_loss_usd_cap", 5.0);
@@ -97,6 +98,8 @@ public final class FeatureEngine {
             o.put("scalp_basket_hard_loss_usd_cap", 10.0);
             o.put("scalp_basket_take_profit_usd_cap", 8.0);
             o.put("scalp_max_hold_sec", 90);
+            o.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
+            o.put("scalp_peak_lock_enabled", true);
         }
         return o;
     }
@@ -118,7 +121,7 @@ public final class FeatureEngine {
                 " · Session: " + currentSession() +
                 "\nMulti-pair radar: " + onOff(p.getBoolean("multi_pair_enabled", false)) +
                 " · News Guard: " + (newsActive ? "ACTIVE" : "READY") +
-                (p.getInt("signal_mode_pos", 1) == 3 ? "\nSCALP MONEY: ON · slot risk ≤ $2 · slot stop ≤ $5 · slot TP ≤ $3 · basket stop ≤ $10" : "");
+                (p.getInt("signal_mode_pos", 1) == 3 ? "\nSCALP MONEY: ON · Lot " + p.getString("scalp_lot_mode", "AUTO") + " · Peak Lock ON · hard stop ≤ $5" : "");
     }
 
     public static String currentSession() {

@@ -637,7 +637,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception e) {
-            return "7.4.5";
+            return "7.4.6";
         }
     }
 
@@ -865,9 +865,11 @@ public class MainActivity extends Activity {
                     payload.put("allow_same_symbol_multiple", true);
                     payload.put("basket_risk_pct", basketRiskPct);
                     payload.put("risk_pct", basketRiskPct / Math.max(1, basketMaxPositions));
-                    // V7.4.5: SCALP uses a separate money manager in Bridge.
+                    // V7.4.6: SCALP uses a separate money manager in Bridge.
                     // The percent spinner remains a global safety preference, not a per-scalp cash loss target.
                     payload.put("scalp_money_manager", true);
+                    payload.put("scalp_lot_mode", getSharedPreferences("fxm1", MODE_PRIVATE).getString("scalp_lot_mode", "AUTO"));
+                    payload.put("scalp_peak_lock_enabled", true);
                     payload.put("scalp_risk_usd_cap", 2.0);
                     payload.put("scalp_hard_loss_usd_cap", 5.0);
                     payload.put("scalp_profit_protect_usd_cap", 1.5);
@@ -1133,6 +1135,11 @@ public class MainActivity extends Activity {
         int execSel = Arrays.asList(execModes).indexOf(p.getString("execution_mode", "FULL_AUTO"));
         Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
 
+        box.addView(smartLabel("SCALP LOT (AUTO или ручной лот)"));
+        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10"};
+        int scalpLotSel = Arrays.asList(scalpLots).indexOf(p.getString("scalp_lot_mode", "AUTO"));
+        Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel); box.addView(scalpLot);
+
         Switch riskM = smartSwitch("Умный риск-менеджер", p.getBoolean("risk_manager_enabled", true)); box.addView(riskM);
         box.addView(smartLabel("Лимит убытка за день")); Spinner daily = smartSpinner(new String[]{"2%","3%","4%","5%"}, Math.max(0, Math.min(3, Math.round(p.getFloat("daily_loss_limit_pct",3f))-2))); box.addView(daily);
         box.addView(smartLabel("Макс. просадка equity")); Spinner dd = smartSpinner(new String[]{"3%","5%","7%","10%"}, p.getFloat("max_drawdown_pct",5f)>=10?3:p.getFloat("max_drawdown_pct",5f)>=7?2:p.getFloat("max_drawdown_pct",5f)>=5?1:0); box.addView(dd);
@@ -1167,6 +1174,7 @@ public class MainActivity extends Activity {
                     long blackout = news.isChecked() ? (System.currentTimeMillis()/1000L + 30*60L) : 0L;
                     p.edit()
                             .putString("execution_mode", execModes[exec.getSelectedItemPosition()])
+                            .putString("scalp_lot_mode", scalpLots[scalpLot.getSelectedItemPosition()])
                             .putBoolean("risk_manager_enabled", riskM.isChecked())
                             .putFloat("daily_loss_limit_pct", dailyVals[daily.getSelectedItemPosition()])
                             .putFloat("max_drawdown_pct", ddVals[dd.getSelectedItemPosition()])
@@ -2120,7 +2128,7 @@ public class MainActivity extends Activity {
                     breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.4.5: SCALP impulse MUST come from the fast M1 series.
+            // V7.4.6: SCALP impulse MUST come from the fast M1 series.
             // In the M1 analysis mapping entrySeries is M5 context, so using entrySeries here
             // accidentally made the scalper wait for M5. M5/M15 remain context only.
             int impulse = scalpImpulse(fast);
@@ -2179,7 +2187,7 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
-        // V7.4.5: display signal and SCALP execution trigger are separate.
+        // V7.4.6: display signal and SCALP execution trigger are separate.
         // The card may remain WAIT, but the execution trigger reads the actual M1 fast series,
         // not the M5 context series. This is the key fix for micro entries inside WAIT.
         String executionSignal = signal;
