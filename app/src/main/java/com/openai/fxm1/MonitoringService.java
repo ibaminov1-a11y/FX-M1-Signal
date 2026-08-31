@@ -642,8 +642,18 @@ public class MonitoringService extends Service {
             payload.put("sl", a.sl);
             payload.put("tp1", a.tp1);
             payload.put("tp2", a.tp2);
-            payload.put("risk_pct", risks[Math.max(0, Math.min(riskPos, risks.length - 1))]);
+            double basketRiskPct = risks[Math.max(0, Math.min(riskPos, risks.length - 1))];
+            if ("SCALP".equals(mode) && maxPos <= 3) maxPos = 8;
+            payload.put("risk_pct", basketRiskPct);
             payload.put("max_positions", maxPos);
+            if ("SCALP".equals(mode)) {
+                payload.put("basket_mode", true);
+                payload.put("allow_same_symbol_multiple", true);
+                payload.put("basket_risk_pct", basketRiskPct);
+                payload.put("risk_pct", basketRiskPct / Math.max(1, maxPos));
+                payload.put("basket_add_cooldown_sec", 12);
+                payload.put("basket_min_progress_sl", 0.12);
+            }
             payload.put("mode", "DEMO");
             payload.put("signal_mode", mode);
             payload.put("entry_timeframe", tf);

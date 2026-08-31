@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.3.2"
+BRIDGE_VERSION = "7.3.3"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -560,6 +560,30 @@ def risk_preview():
                        leverage=int(account.leverage), equity=float(account.equity))
 
 
+
+def position_risk_money(p):
+    """Estimated cash risk to the position's own SL. Positions without SL are treated as unknown risk."""
+    try:
+        if not p.sl or p.sl <= 0:
+            return None
+        order_type = mt5.ORDER_TYPE_BUY if p.type == mt5.POSITION_TYPE_BUY else mt5.ORDER_TYPE_SELL
+        pnl = mt5.order_calc_profit(order_type, p.symbol, float(p.volume), float(p.price_open), float(p.sl))
+        return abs(float(pnl)) if pnl is not None else None
+    except Exception:
+        return None
+
+
+def basket_snapshot(positions, symbol, side, equity):
+    expected_type = mt5.POSITION_TYPE_BUY if side == "BUY" else mt5.POSITION_TYPE_SELL
+    basket = [p for p in positions if p.symbol == symbol and p.type == expected_type and int(getattr(p, "magic", 0)) == MAGIC]
+    total_volume = sum(float(p.volume) for p in basket)
+    avg_entry = (sum(float(p.price_open) * float(p.volume) for p in basket) / total_volume) if total_volume > 0 else None
+    risks = [position_risk_money(p) for p in basket]
+    known_risk = sum(x for x in risks if x is not None)
+    risk_pct = (known_risk / equity * 100.0) if equity and equity > 0 else 0.0
+    latest_time = max((int(getattr(p, "time", 0) or 0) for p in basket), default=0)
+    return basket, total_volume, avg_entry, known_risk, risk_pct, latest_time
+
 @app.post("/signal")
 def signal():
     data = request.get_json(silent=True) or {}
@@ -578,19 +602,30 @@ def signal():
         if side not in ("BUY", "SELL"):
             return jsonify(accepted=False, message="Signal must be BUY or SELL"), 400
 
-        max_positions = int(data.get("max_positions") or 1)
+        max_positions = max(1, min(int(data.get("max_positions") or 1), 10))
         current_positions = mt5.positions_get() or []
-        if len(current_positions) >= max_positions:
-            return jsonify(accepted=False, message=f"Max positions reached: {len(current_positions)}/{max_positions}"), 409
 
         symbol = resolve_symbol(raw_symbol)
         if not symbol:
             return jsonify(accepted=False, error="SYMBOL_NOT_FOUND", message=f"Symbol not found: {raw_symbol}"), 404
 
-        # One active position per symbol by default
+        basket_mode = bool(data.get("basket_mode", False)) and str(data.get("signal_mode") or "").upper() == "SCALP"
         same_symbol = [p for p in current_positions if p.symbol == symbol]
-        if same_symbol and not bool(data.get("allow_same_symbol_multiple", False)):
-            return jsonify(accepted=False, message=f"Position for {symbol} already exists"), 409
+
+        if not basket_mode:
+            if len(current_positions) >= max_positions:
+                return jsonify(accepted=False, message=f"Max positions reached: {len(current_positions)}/{max_positions}"), 409
+            if same_symbol and not bool(data.get("allow_same_symbol_multiple", False)):
+                return jsonify(accepted=False, message=f"Position for {symbol} already exists"), 409
+        else:
+            basket, basket_volume, basket_avg, basket_risk_money, basket_risk_pct_used, latest_time = basket_snapshot(
+                current_positions, symbol, side, float(account.equity))
+            opposite_type = mt5.POSITION_TYPE_SELL if side == "BUY" else mt5.POSITION_TYPE_BUY
+            opposite = [p for p in current_positions if p.symbol == symbol and p.type == opposite_type and int(getattr(p, "magic", 0)) == MAGIC]
+            if opposite:
+                return jsonify(accepted=False, message=f"SCALP basket opposite position exists for {symbol}; close/reverse first"), 409
+            if len(basket) >= max_positions:
+                return jsonify(accepted=False, message=f"SCALP basket full: {len(basket)}/{max_positions}", basket_count=len(basket)), 409
 
         tick = mt5.symbol_info_tick(symbol)
         if tick is None:
@@ -598,6 +633,23 @@ def signal():
 
         order_type = mt5.ORDER_TYPE_BUY if side == "BUY" else mt5.ORDER_TYPE_SELL
         price = float(tick.ask if side == "BUY" else tick.bid)
+
+        if basket_mode:
+            # Add only as the basket moves in our favour. This prevents martingale-style averaging down.
+            cooldown = max(5, int(data.get("basket_add_cooldown_sec") or 12))
+            if latest_time and int(datetime.now().timestamp()) - latest_time < cooldown:
+                return jsonify(accepted=False, message=f"SCALP add cooldown: {cooldown}s", basket_count=len(basket)), 409
+            if basket_avg is not None and basket:
+                first_sl = next((float(p.sl) for p in basket if p.sl and p.sl > 0), 0.0)
+                ref_sl_dist = abs(float(basket_avg) - first_sl) if first_sl > 0 else 0.0
+                min_progress_ratio = max(0.05, safe_float(data.get("basket_min_progress_sl"), 0.12))
+                info0 = mt5.symbol_info(symbol)
+                point0 = float(info0.point) if info0 and info0.point else 0.00001
+                min_progress = max(ref_sl_dist * min_progress_ratio, point0 * 3)
+                favourable = (price >= basket_avg + min_progress) if side == "BUY" else (price <= basket_avg - min_progress)
+                if not favourable:
+                    return jsonify(accepted=False, message="SCALP basket: no favourable progress yet",
+                                   basket_count=len(basket), basket_avg=basket_avg, mt5_price=price, min_progress=min_progress), 409
 
         api_entry = safe_float(data.get("api_entry") or data.get("entry"), 0)
         max_drift = safe_float(data.get("max_price_drift_pct"), 0.05)
@@ -611,8 +663,15 @@ def signal():
         sl = safe_float(data.get("sl"), 0)
         tp = safe_float(data.get("tp1") or data.get("tp"), 0)
         risk_pct = safe_float(data.get("risk_pct"), 0.5)
+        if basket_mode:
+            basket_risk_cap = max(0.05, safe_float(data.get("basket_risk_pct"), 0.5))
+            if basket_risk_pct_used >= basket_risk_cap - 1e-9:
+                return jsonify(accepted=False, message=f"SCALP basket risk cap reached: {basket_risk_pct_used:.3f}%/{basket_risk_cap:.3f}%",
+                               basket_count=len(basket), basket_risk_pct=basket_risk_pct_used), 409
+            # Never let the next tranche exceed the remaining basket risk budget.
+            risk_pct = min(risk_pct, max(0.01, basket_risk_cap - basket_risk_pct_used))
 
-        # V7.3.2: Android analysis prices can differ slightly from the broker feed.
+        # V7.3.3: Android analysis prices can differ slightly from the broker feed.
         # Preserve the intended SL/TP distance, but anchor execution protection to MT5 Bid/Ask.
         # This prevents invalid stops and wrong-side stops when API Entry != MT5 price.
         info = mt5.symbol_info(symbol)
@@ -650,7 +709,7 @@ def signal():
             "tp": tp,
             "deviation": int(data.get("deviation") or 20),
             "magic": MAGIC,
-            "comment": f"FXM1 V7.3.2 {str(data.get('signal_mode') or 'AUTO')[:10]}",
+            "comment": f"FXM1 V7.3.3 {str(data.get('signal_mode') or 'AUTO')[:10]}",
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": filling_mode_for(symbol),
         }
@@ -677,7 +736,10 @@ def signal():
             tp=tp,
             risk=risk,
             margin=margin,
-            retcode=int(result.retcode)
+            retcode=int(result.retcode),
+            basket_mode=basket_mode,
+            basket_count=(len(basket) + 1 if basket_mode and ok else len(basket) if basket_mode else None),
+            basket_risk_pct_before=(basket_risk_pct_used if basket_mode else None)
         ), (200 if ok else 500)
 
 

@@ -224,7 +224,7 @@ public class MainActivity extends Activity {
         riskSpinner.setSelection(prefs.getInt("risk_pos", 1));
 
         ArrayAdapter<String> maxPosAdapter = darkSpinnerAdapter(
-                new String[]{"1", "2", "3"}
+                new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
         );
         maxPositionsSpinner.setAdapter(maxPosAdapter);
         maxPositionsSpinner.setSelection(prefs.getInt("maxpos_pos", 0));
@@ -370,6 +370,13 @@ public class MainActivity extends Activity {
                 // arms AUTO immediately so a valid scalp BUY/SELL can actually reach MT5.
                 if ("SCALP".equals(selectedSignalMode()) && serverConnected && mt5Connected && demoAccount) {
                     autoTradingSwitch.setChecked(true);
+                }
+
+                // V7.3.3: SCALP uses a basket. If the old 1-3 limit is still selected,
+                // raise the safety cap to 8. User can still choose any value 1..10 manually.
+                if ("SCALP".equals(selectedSignalMode()) && maxPositionsSpinner.getSelectedItemPosition() <= 2) {
+                    maxPositionsSpinner.setSelection(7); // 8 positions
+                    prefs.edit().putInt("maxpos_pos", 7).putString("maxpos_label", "8").apply();
                 }
 
                 lastSentSignal.clear();
@@ -806,7 +813,8 @@ public class MainActivity extends Activity {
         }
 
         String previous = lastSentSignal.get(a.symbol);
-        if (a.signal.equals(previous)) return;
+        boolean scalp = "SCALP".equals(selectedSignalMode());
+        if (!scalp && a.signal.equals(previous)) return;
 
         lastSentSignal.put(a.symbol, a.signal);
         final String base = normalizeServerUrl(serverUrlInput.getText().toString());
@@ -823,8 +831,18 @@ public class MainActivity extends Activity {
                 payload.put("sl", a.sl);
                 payload.put("tp1", a.tp1);
                 payload.put("tp2", a.tp2);
-                payload.put("risk_pct", Double.parseDouble(risk.replace("%", "")));
-                payload.put("max_positions", Integer.parseInt(maxPositions));
+                double basketRiskPct = Double.parseDouble(risk.replace("%", ""));
+                int basketMaxPositions = Integer.parseInt(maxPositions);
+                payload.put("risk_pct", basketRiskPct);
+                payload.put("max_positions", basketMaxPositions);
+                if ("SCALP".equals(selectedSignalMode())) {
+                    payload.put("basket_mode", true);
+                    payload.put("allow_same_symbol_multiple", true);
+                    payload.put("basket_risk_pct", basketRiskPct);
+                    payload.put("risk_pct", basketRiskPct / Math.max(1, basketMaxPositions));
+                    payload.put("basket_add_cooldown_sec", 12);
+                    payload.put("basket_min_progress_sl", 0.12);
+                }
                 payload.put("mode", "DEMO");
                 payload.put("signal_mode", selectedSignalMode());
                 payload.put("entry_timeframe", selectedEntryTimeframe());

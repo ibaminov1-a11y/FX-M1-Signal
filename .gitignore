@@ -3,7 +3,6 @@
 local.properties
 **/build/
 *.iml
-
 mt5_bridge/.venv/
 mt5_bridge/__pycache__/
 *.pyc
