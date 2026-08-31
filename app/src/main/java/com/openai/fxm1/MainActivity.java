@@ -414,8 +414,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V7.3.2 разрешает только DEMO.");
-                    Toast.makeText(this, "V7.3.2 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                    forceAutoOff("AUTO заблокирован: V7.3.5 разрешает только DEMO.");
+                    Toast.makeText(this, "V7.3.5 разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
                     return;
                 }
                 prefs.edit().putBoolean("auto_trading", true).apply();
@@ -807,16 +807,17 @@ public class MainActivity extends Activity {
             return;
         }
 
-        if ("WAIT".equals(a.signal)) {
+        boolean scalp = "SCALP".equals(selectedSignalMode());
+        String tradeSignal = scalp ? a.executionSignal : a.signal;
+        if ("WAIT".equals(tradeSignal)) {
             lastSentSignal.put(a.symbol, "WAIT");
             return;
         }
 
         String previous = lastSentSignal.get(a.symbol);
-        boolean scalp = "SCALP".equals(selectedSignalMode());
-        if (!scalp && a.signal.equals(previous)) return;
+        if (!scalp && tradeSignal.equals(previous)) return;
 
-        lastSentSignal.put(a.symbol, a.signal);
+        lastSentSignal.put(a.symbol, tradeSignal);
         final String base = normalizeServerUrl(serverUrlInput.getText().toString());
         final String risk = (String) riskSpinner.getSelectedItem();
         final String maxPositions = (String) maxPositionsSpinner.getSelectedItem();
@@ -825,7 +826,7 @@ public class MainActivity extends Activity {
             try {
                 JSONObject payload = new JSONObject();
                 payload.put("symbol", a.symbol);
-                payload.put("signal", a.signal);
+                payload.put("signal", tradeSignal);
                 payload.put("quality", a.quality);
                 payload.put("entry", a.entry);
                 payload.put("sl", a.sl);
@@ -856,15 +857,15 @@ public class MainActivity extends Activity {
                 String message = response.optString("message", accepted ? "Сигнал принят" : "Сигнал отклонён");
 
                 runOnUiThread(() -> {
-                    addJournal(a.symbol + " " + a.signal + " → " + message);
-                    FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), a.signal, a.quality, message);
+                    addJournal(a.symbol + " SCALP " + tradeSignal + ("WAIT".equals(a.signal) ? " (micro inside WAIT)" : "") + " → " + message);
+                    FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), tradeSignal, a.quality, ("WAIT".equals(a.signal) ? "MICRO inside WAIT · " : "") + message);
                     refreshSmartUi();
                     refreshStatsAndPositions();
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     lastSentSignal.put(a.symbol, "WAIT");
-                    addJournal("Не отправлен " + a.symbol + " " + a.signal + ": " + safeMessage(e));
+                    addJournal("Не отправлен " + a.symbol + " " + tradeSignal + ": " + safeMessage(e));
                 });
             }
         });
@@ -1123,7 +1124,7 @@ public class MainActivity extends Activity {
         Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
 
         AlertDialog smartDialog = new AlertDialog.Builder(this)
-                .setTitle("Умные функции V7.3.2")
+                .setTitle("Умные функции V7.3.5")
                 .setView(scroll)
                 .setNegativeButton("ОТМЕНА", null)
                 .setPositiveButton("СОХРАНИТЬ", (d,w) -> {
@@ -2143,6 +2144,15 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
+        // V7.3.5: display signal and SCALP execution trigger are separate.
+        // The card may remain WAIT while a short-lived M1 micro opportunity is executed.
+        String executionSignal = signal;
+        if ("SCALP".equals(mode) && "M1".equals(entryTf) && "WAIT".equals(signal)) {
+            int microDirection = scalpExecutionDirection(entrySeries, atr);
+            if (microDirection > 0) executionSignal = "BUY";
+            else if (microDirection < 0) executionSignal = "SELL";
+        }
+
         int quality = setupQualityAdaptive(
                 signal,
                 sHigher2,
@@ -2165,11 +2175,12 @@ public class MainActivity extends Activity {
         double tp1 = 0;
         double tp2 = 0;
 
-        if ("BUY".equals(signal)) {
+        String protectionSignal = "SCALP".equals(mode) ? executionSignal : signal;
+        if ("BUY".equals(protectionSignal)) {
             sl = entry - slDist;
             tp1 = entry + slDist * tp1R;
             tp2 = entry + slDist * tp2R;
-        } else if ("SELL".equals(signal)) {
+        } else if ("SELL".equals(protectionSignal)) {
             sl = entry + slDist;
             tp1 = entry - slDist * tp1R;
             tp2 = entry - slDist * tp2R;
@@ -2229,6 +2240,7 @@ public class MainActivity extends Activity {
         return new Analysis(
                 symbol,
                 signal,
+                executionSignal,
                 quality,
                 entry,
                 sl,
@@ -2238,6 +2250,25 @@ public class MainActivity extends Activity {
                 why,
                 components
         );
+    }
+
+    private int scalpExecutionDirection(List<Candle> s, double atr) {
+        if (s == null || s.size() < 5) return 0;
+        int n = s.size();
+        Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
+        double move1 = d.close - c.close;
+        double move2 = c.close - b.close;
+        double net = d.close - a.close;
+        double body = d.close - d.open;
+        double localRange = Math.max(1e-12, (b.high - b.low) + (c.high - c.low) + (d.high - d.low));
+        double floor = Math.max(atr * 0.045, localRange * 0.010);
+        int impulse = scalpImpulse(s);
+        if (impulse != 0) return impulse;
+        boolean buy = (move1 > 0 && move2 >= 0 && net > floor) || (body > 0 && move1 > 0 && net > floor * 1.20);
+        boolean sell = (move1 < 0 && move2 <= 0 && -net > floor) || (body < 0 && move1 < 0 && -net > floor * 1.20);
+        if (buy && !sell) return 1;
+        if (sell && !buy) return -1;
+        return 0;
     }
 
     private int scalpImpulse(List<Candle> s) {
@@ -2659,6 +2690,7 @@ public class MainActivity extends Activity {
     static class Analysis {
         final String symbol;
         final String signal;
+        final String executionSignal;
         final String context;
         final String why;
         final String components;
@@ -2670,6 +2702,7 @@ public class MainActivity extends Activity {
 
         Analysis(String symbol,
                  String signal,
+                 String executionSignal,
                  int quality,
                  double entry,
                  double sl,
@@ -2681,6 +2714,7 @@ public class MainActivity extends Activity {
 
             this.symbol = symbol;
             this.signal = signal;
+            this.executionSignal = executionSignal;
             this.quality = quality;
             this.entry = entry;
             this.sl = sl;

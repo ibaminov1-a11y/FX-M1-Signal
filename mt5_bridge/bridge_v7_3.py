@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.3.4"
+BRIDGE_VERSION = "7.3.5"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -775,7 +775,7 @@ def signal():
             "type_filling": filling_mode_for(symbol),
         }
 
-        # V7.3.4: enforce broker-valid stop side/distance on the live MT5 quote.
+        # V7.3.5: enforce broker-valid stop side/distance on the live MT5 quote.
         sl, tp = normalize_order_stops(symbol, side, tick, sl, tp)
         req["sl"] = sl
         req["tp"] = tp

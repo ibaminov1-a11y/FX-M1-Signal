@@ -603,7 +603,8 @@ public class MonitoringService extends Service {
         }
         if (paused || p.getBoolean("trading_paused", false)) return;
         if (!p.getBoolean("auto_trading", false)) return;
-        if ("WAIT".equals(a.signal)) return;
+        String tradeSignal = "SCALP".equals(mode) ? a.executionSignal : a.signal;
+        if ("WAIT".equals(tradeSignal)) return;
 
         if (p.getBoolean("session_filter_enabled", false)) {
             String session = FeatureEngine.currentSession();
@@ -636,7 +637,7 @@ public class MonitoringService extends Service {
 
             JSONObject payload = new JSONObject();
             payload.put("symbol", a.symbol);
-            payload.put("signal", a.signal);
+            payload.put("signal", tradeSignal);
             payload.put("quality", a.quality);
             payload.put("entry", a.entry);
             payload.put("sl", a.sl);
@@ -666,7 +667,7 @@ public class MonitoringService extends Service {
             JSONObject response = httpJson("POST", base + "/signal", payload);
             boolean accepted = response.optBoolean("accepted", false);
             String message = response.optString("message", accepted ? "DEMO order opened" : "signal rejected");
-            FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, message);
+            FeatureEngine.appendSignalHistory(p, a.symbol, tf, tradeSignal, a.quality, ("WAIT".equals(a.signal) ? "MICRO inside WAIT · " : "") + message);
             p.edit().putString("last_execution_result", message).apply();
 
             if (response.optBoolean("pending_approval", false)) {
@@ -1047,6 +1048,14 @@ public class MonitoringService extends Service {
         }
 
         String signal = buySetup ? "BUY" : sellSetup ? "SELL" : "WAIT";
+
+        // V7.3.5: display signal and SCALP execution trigger are separate.
+        String executionSignal = signal;
+        if ("SCALP".equals(mode) && "M1".equals(entryTf) && "WAIT".equals(signal)) {
+            int microDirection = scalpExecutionDirection(entrySeries, atr);
+            if (microDirection > 0) executionSignal = "BUY";
+            else if (microDirection < 0) executionSignal = "SELL";
+        }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
 
         double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
@@ -1057,11 +1066,12 @@ public class MonitoringService extends Service {
         double tp1 = 0;
         double tp2 = 0;
 
-        if ("BUY".equals(signal)) {
+        String protectionSignal = "SCALP".equals(mode) ? executionSignal : signal;
+        if ("BUY".equals(protectionSignal)) {
             sl = entry - slDist;
             tp1 = entry + slDist * tp1R;
             tp2 = entry + slDist * tp2R;
-        } else if ("SELL".equals(signal)) {
+        } else if ("SELL".equals(protectionSignal)) {
             sl = entry + slDist;
             tp1 = entry - slDist * tp1R;
             tp2 = entry - slDist * tp2R;
@@ -1108,7 +1118,26 @@ public class MonitoringService extends Service {
             why = signal + " открыт: направление ТФ согласовано; структура/фильтр разрешили вход; качество " + quality + "/100";
         }
 
-        return new Analysis(symbol, signal, quality, entry, sl, tp1, tp2, context, why, components);
+        return new Analysis(symbol, signal, executionSignal, quality, entry, sl, tp1, tp2, context, why, components);
+    }
+
+    private int scalpExecutionDirection(List<Candle> s, double atr) {
+        if (s == null || s.size() < 5) return 0;
+        int n = s.size();
+        Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
+        double move1 = d.close - c.close;
+        double move2 = c.close - b.close;
+        double net = d.close - a.close;
+        double body = d.close - d.open;
+        double localRange = Math.max(1e-12, (b.high - b.low) + (c.high - c.low) + (d.high - d.low));
+        double floor = Math.max(atr * 0.045, localRange * 0.010);
+        int impulse = scalpImpulse(s);
+        if (impulse != 0) return impulse;
+        boolean buy = (move1 > 0 && move2 >= 0 && net > floor) || (body > 0 && move1 > 0 && net > floor * 1.20);
+        boolean sell = (move1 < 0 && move2 <= 0 && -net > floor) || (body < 0 && move1 < 0 && -net > floor * 1.20);
+        if (buy && !sell) return 1;
+        if (sell && !buy) return -1;
+        return 0;
     }
 
     private int scalpImpulse(List<Candle> s) {
@@ -1335,13 +1364,14 @@ public class MonitoringService extends Service {
     }
 
     static class Analysis {
-        final String symbol, signal, context, why, components;
+        final String symbol, signal, executionSignal, context, why, components;
         final int quality;
         final double entry, sl, tp1, tp2;
 
-        Analysis(String symbol, String signal, int quality, double entry, double sl, double tp1, double tp2, String context, String why, String components) {
+        Analysis(String symbol, String signal, String executionSignal, int quality, double entry, double sl, double tp1, double tp2, String context, String why, String components) {
             this.symbol = symbol;
             this.signal = signal;
+            this.executionSignal = executionSignal;
             this.quality = quality;
             this.entry = entry;
             this.sl = sl;

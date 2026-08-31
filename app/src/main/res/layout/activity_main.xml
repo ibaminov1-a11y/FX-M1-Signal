@@ -12,7 +12,7 @@
 
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" Bot" android:textColor="#F7F4FF" android:textSize="29sp" android:textStyle="bold" />
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V7.3.2" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="9dp" android:background="#261541" android:paddingLeft="8dp" android:paddingTop="4dp" android:paddingRight="8dp" android:paddingBottom="4dp" android:text="V7.3.5" android:textColor="#C08CFF" android:textSize="13sp" android:textStyle="bold" />
         </LinearLayout>
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="M1 / M5 / M15 / H1 / H4 / D1 / W1 / MN1   •   MT5 execution" android:textColor="#9892AE" android:textSize="11sp" />
@@ -144,7 +144,7 @@
         </LinearLayout>
 
         <LinearLayout android:id="@+id/smartCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="УМНЫЕ ФУНКЦИИ V7.3.2" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="УМНЫЕ ФУНКЦИИ V7.3.5" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
             <TextView android:id="@+id/smartStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Risk Manager · BE · Trailing · Partial · Spread · Cooldown" android:textColor="#B8B2CB" android:textSize="11sp" android:lineSpacingExtra="2dp" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="horizontal">
                 <Button android:id="@+id/smartFeaturesButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="НАСТРОИТЬ" android:textSize="10sp" android:textStyle="bold" />
@@ -189,7 +189,7 @@
             <TextView android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⚙\nНастройки" android:textColor="#9791AA" android:textSize="10sp" />
         </LinearLayout>
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V7.3.2 · SCALP · WATCHDOG · SMART RISK · MT5 BRIDGE" android:textColor="#6F6983" android:textSize="9sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:gravity="center" android:text="V7.3.5 · SCALP · WATCHDOG · SMART RISK · MT5 BRIDGE" android:textColor="#6F6983" android:textSize="9sp" />
 
     </LinearLayout>
 </ScrollView>
