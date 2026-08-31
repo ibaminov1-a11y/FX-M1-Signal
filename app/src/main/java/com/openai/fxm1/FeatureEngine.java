@@ -187,20 +187,23 @@ public final class FeatureEngine {
 
     public static String formatStats(JSONObject s) {
         if (s == null) return "Статистика недоступна";
-        return "Сделок: " + s.optInt("trades", 0) +
-                " · Win rate: " + String.format(Locale.US, "%.1f%%", s.optDouble("win_rate", 0)) +
-                "\nNet P/L: " + String.format(Locale.US, "%+.2f", s.optDouble("net_profit", 0)) +
-                " · PF: " + String.format(Locale.US, "%.2f", s.optDouble("profit_factor", 0)) +
-                "\nAvg: " + String.format(Locale.US, "%+.2f", s.optDouble("avg_trade", 0)) +
-                " · Avg win: " + String.format(Locale.US, "%+.2f", s.optDouble("avg_win", 0)) +
-                " · Avg loss: " + String.format(Locale.US, "%+.2f", s.optDouble("avg_loss", 0)) +
-                "\nMax DD: " + String.format(Locale.US, "%.2f", s.optDouble("max_closed_drawdown", 0)) +
-                " · Сегодня: " + String.format(Locale.US, "%+.2f", s.optDouble("daily_realized_pl", 0)) +
-                " · Loss streak: " + s.optInt("consecutive_losses", 0);
+        JSONObject x = s.optJSONObject("stats");
+        if (x == null) x = s;
+        return "Сделок: " + x.optInt("closed_trades", x.optInt("trades", 0)) +
+                " · Win rate: " + String.format(Locale.US, "%.1f%%", x.optDouble("win_rate_pct", x.optDouble("win_rate", 0))) +
+                "\nNet P/L: " + String.format(Locale.US, "%+.2f", x.optDouble("net_pl", x.optDouble("net_profit", 0))) +
+                " · PF: " + String.format(Locale.US, "%.2f", x.optDouble("profit_factor", 0)) +
+                "\nAvg: " + String.format(Locale.US, "%+.2f", x.optDouble("avg_trade", 0)) +
+                " · Avg win: " + String.format(Locale.US, "%+.2f", x.optDouble("avg_win", 0)) +
+                " · Avg loss: " + String.format(Locale.US, "%+.2f", x.optDouble("avg_loss", 0)) +
+                "\nMax DD: " + String.format(Locale.US, "%.2f", x.optDouble("max_closed_drawdown", 0)) +
+                " · Сегодня: " + String.format(Locale.US, "%+.2f", x.optDouble("daily_realized_pl", 0)) +
+                " · Loss streak: " + x.optInt("max_consecutive_losses", x.optInt("consecutive_losses", 0));
     }
 
     public static String formatTradeLog(JSONObject root) {
         JSONArray arr = root == null ? null : root.optJSONArray("events");
+        if (arr == null && root != null) arr = root.optJSONArray("deals");
         if (arr == null || arr.length() == 0) return "ТОРГОВЫЙ ЖУРНАЛ: пока пусто";
         StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ");
         SimpleDateFormat f = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);

@@ -197,7 +197,7 @@ public class MainActivity extends Activity {
         entryTimeframeSpinner.setAdapter(timeframeAdapter);
 
         ArrayAdapter<String> modeAdapter = darkSpinnerAdapter(
-                new String[]{"CONSERVATIVE", "NORMAL", "AGGRESSIVE"}
+                new String[]{"CONSERVATIVE", "NORMAL", "AGGRESSIVE", "SCALP"}
         );
         signalModeSpinner.setAdapter(modeAdapter);
 
@@ -539,7 +539,7 @@ public class MainActivity extends Activity {
 
     private void styleInput(EditText input) {
         input.setTextColor(C_TEXT);
-        input.setHintTextColor(Color.rgb(126, 120, 151));
+        input.setHintTextColor(Color.rgb(205, 199, 224));
         input.setBackgroundTintList(ColorStateList.valueOf(C_PURPLE));
     }
 
@@ -916,7 +916,7 @@ public class MainActivity extends Activity {
         input.setText(stripServerScheme(p.getString("server_url", "")));
         input.setHint("192.168.1.8:8000");
         input.setTextColor(C_TEXT);
-        input.setHintTextColor(Color.rgb(126, 120, 151));
+        input.setHintTextColor(Color.rgb(205, 199, 224));
         input.setSelectAllOnFocus(false);
         input.setPadding(dp(10), dp(10), dp(10), dp(10));
 
@@ -1010,6 +1010,14 @@ public class MainActivity extends Activity {
         box.setPadding(dp(18), dp(6), dp(18), dp(10));
         scroll.addView(box);
 
+        TextView intro = new TextView(this);
+        intro.setText("Все функции ниже реально влияют на торговый цикл. Risk Manager рассчитывает размер позиции от Equity и SL; Break-even переносит SL в цену входа; Trailing сопровождает прибыль; Partial Close фиксирует часть позиции; Spread Filter блокирует дорогой вход; Cooldown не даёт роботу входить слишком часто.");
+        intro.setTextColor(C_TEXT);
+        intro.setTextSize(13f);
+        intro.setLineSpacing(0f, 1.18f);
+        intro.setPadding(0, dp(6), 0, dp(10));
+        box.addView(intro);
+
         box.addView(smartLabel("РЕЖИМ ИСПОЛНЕНИЯ"));
         String[] execModes = {"SIGNALS_ONLY", "SEMI_AUTO", "FULL_AUTO"};
         int execSel = Arrays.asList(execModes).indexOf(p.getString("execution_mode", "FULL_AUTO"));
@@ -1039,8 +1047,8 @@ public class MainActivity extends Activity {
         Switch positionManager = smartSwitch("Автосопровождение позиций", p.getBoolean("position_manager_enabled", true)); box.addView(positionManager);
         Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Умные функции V7.1")
+        AlertDialog smartDialog = new AlertDialog.Builder(this)
+                .setTitle("Умные функции V7.3")
                 .setView(scroll)
                 .setNegativeButton("ОТМЕНА", null)
                 .setPositiveButton("СОХРАНИТЬ", (d,w) -> {
@@ -1072,7 +1080,21 @@ public class MainActivity extends Activity {
                     refreshSmartUi();
                     if (monitoring) sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
                 })
-                .show();
+                .create();
+        smartDialog.setOnShowListener(d -> {
+            if (smartDialog.getWindow() != null) {
+                GradientDrawable dlgBg = new GradientDrawable();
+                dlgBg.setColor(C_CARD);
+                dlgBg.setCornerRadius(dp(16));
+                smartDialog.getWindow().setBackgroundDrawable(dlgBg);
+            }
+            int titleId = getResources().getIdentifier("alertTitle", "id", "android");
+            TextView titleView = smartDialog.findViewById(titleId);
+            if (titleView != null) titleView.setTextColor(C_TEXT);
+            smartDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(C_PURPLE);
+            smartDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(C_TEXT);
+        });
+        smartDialog.show();
     }
 
     private void refreshSmartUi() {
@@ -1849,7 +1871,7 @@ public class MainActivity extends Activity {
 
     private long selectedMonitorIntervalMs() {
         String tf = selectedEntryTimeframe();
-        if ("M1".equals(tf)) return 20000L;
+        if ("M1".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 5000L : 10000L;
         if ("M5".equals(tf)) return 60000L;
         if ("M15".equals(tf)) return 180000L;
         if ("H1".equals(tf)) return 300000L;
@@ -1987,6 +2009,12 @@ public class MainActivity extends Activity {
                     structure <= 0 &&
                     breakout < 0;
 
+        } else if ("SCALP".equals(mode)) {
+            int impulse = scalpImpulse(entrySeries);
+            boolean m1 = "M1".equals(entryTf);
+            buySetup = m1 && impulse > 0 && sEntry >= 0 && sHigher1 >= 0 && breakout >= 0 && (structure >= 0 || sHigher1 > 0);
+            sellSetup = m1 && impulse < 0 && sEntry <= 0 && sHigher1 <= 0 && breakout <= 0 && (structure <= 0 || sHigher1 < 0);
+
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;
             int sellVotes = 0;
@@ -2048,8 +2076,11 @@ public class MainActivity extends Activity {
                 breakout
         );
 
+        double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
+        double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
+        double tp2R = "SCALP".equals(mode) ? 1.4 : 2.0;
         double slDist = Math.max(
-                atr * 1.8,
+                atr * slMult,
                 minStopDistance(symbol)
         );
 
@@ -2059,12 +2090,12 @@ public class MainActivity extends Activity {
 
         if ("BUY".equals(signal)) {
             sl = entry - slDist;
-            tp1 = entry + slDist * 1.5;
-            tp2 = entry + slDist * 2.0;
+            tp1 = entry + slDist * tp1R;
+            tp2 = entry + slDist * tp2R;
         } else if ("SELL".equals(signal)) {
             sl = entry + slDist;
-            tp1 = entry - slDist * 1.5;
-            tp2 = entry - slDist * 2.0;
+            tp1 = entry - slDist * tp1R;
+            tp2 = entry - slDist * tp2R;
         }
 
         String reason;
@@ -2130,6 +2161,24 @@ public class MainActivity extends Activity {
                 why,
                 components
         );
+    }
+
+    private int scalpImpulse(List<Candle> s) {
+        if (s == null || s.size() < 6) return 0;
+        int n = s.size();
+        Candle a = s.get(n-4), b = s.get(n-3), c = s.get(n-2), d = s.get(n-1);
+        double up = 0.0, down = 0.0;
+        Candle[] arr = {a,b,c,d};
+        for (Candle x : arr) {
+            double body = x.close - x.open;
+            if (body > 0) up += body; else down += -body;
+        }
+        boolean rising = d.close > c.close && c.close >= b.close;
+        boolean falling = d.close < c.close && c.close <= b.close;
+        double range = Math.max(1e-12, (d.high-d.low) + (c.high-c.low));
+        if (rising && up > down * 1.15 && (d.close-c.close) > range * 0.06) return 1;
+        if (falling && down > up * 1.15 && (c.close-d.close) > range * 0.06) return -1;
+        return 0;
     }
 
     private int setupQualityAdaptive(String signal,
@@ -2335,6 +2384,8 @@ public class MainActivity extends Activity {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         boolean active = p.getBoolean("bg_running", false);
         long stoppedAt = p.getLong("monitor_stopped_ms", 0L);
+        long lastAttempt = p.getLong("state_last_attempt_ms", 0L);
+        long lastSuccess = p.getLong("state_last_success_ms", updatedMs);
         long reference = active ? System.currentTimeMillis() : (stoppedAt > 0L ? stoppedAt : System.currentTimeMillis());
 
         if ("BUY".equals(signal) || "SELL".equals(signal)) {
@@ -2342,7 +2393,8 @@ public class MainActivity extends Activity {
             signalAgeText.setText(
                     "Сигнал " + signal + " с: " + formatClock(sinceMs) +
                     "\nДлительность сигнала: " + elapsed +
-                    "\nПоследний анализ: " + formatClock(updatedMs) +
+                    "\nПоследняя проверка: " + formatClock(lastAttempt) +
+                    "\nПоследний успешный анализ: " + formatClock(lastSuccess) +
                     (active ? "" : " · мониторинг остановлен")
             );
             signalAgeText.setTextColor("SELL".equals(signal) ? C_RED : C_GREEN);
@@ -2351,8 +2403,9 @@ public class MainActivity extends Activity {
                 signalAgeText.setText(active ? "Ожидаю первый анализ…" : "Мониторинг остановлен.");
             } else if (active) {
                 signalAgeText.setText(
-                        "Последний анализ: " + formatClock(updatedMs) +
-                        "  ·  " + formatElapsed(updatedMs) + " назад"
+                        "Последняя проверка: " + formatClock(lastAttempt) +
+                        "\nПоследний успешный анализ: " + formatClock(lastSuccess) +
+                        "  ·  " + formatElapsed(lastSuccess) + " назад"
                 );
             } else {
                 signalAgeText.setText("Мониторинг остановлен · последний анализ: " + formatClock(updatedMs));
