@@ -88,6 +88,7 @@ public class MainActivity extends Activity {
     private boolean serverConnected = false;
     private boolean mt5Connected = false;
     private boolean demoAccount = false;
+    private boolean realTradingEnabled = false;
     private boolean suppressAutoSwitch = false;
     private boolean syncingScalpTimeframe = false;
     private long emergencyTapMs = 0L;
@@ -319,10 +320,9 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (syncingScalpTimeframe) return;
 
-                // Rule CURRENT: SCALP is an M1 entry mode only.
-                // Selecting M1 manually NEVER forces SCALP.
-                // Selecting any TF other than M1 while SCALP is active switches mode to NORMAL.
-                if (!"M1".equals(selectedEntryTimeframe()) && "SCALP".equals(selectedSignalMode())) {
+                // V7.5.0: SCALP is an M5 entry mode.
+                // Selecting another TF while SCALP is active returns mode to NORMAL.
+                if (!"M5".equals(selectedEntryTimeframe()) && "SCALP".equals(selectedSignalMode())) {
                     syncingScalpTimeframe = true;
                     signalModeSpinner.setSelection(1); // NORMAL
                     prefs.edit()
@@ -331,7 +331,7 @@ public class MainActivity extends Activity {
                             .apply();
                     syncingScalpTimeframe = false;
                     Toast.makeText(MainActivity.this,
-                            "SCALP работает на M1. Режим переключён на NORMAL.",
+                            "SCALP работает на M5. Режим переключён на NORMAL.",
                             Toast.LENGTH_SHORT).show();
                 } else {
                     prefs.edit().putInt("entry_tf_pos", position).apply();
@@ -353,29 +353,22 @@ public class MainActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (syncingScalpTimeframe) return;
 
-                // Rule CURRENT: choosing SCALP forces entry TF to M1.
-                // Choosing M1 itself does not select SCALP.
-                if ("SCALP".equals(selectedSignalMode()) && !"M1".equals(selectedEntryTimeframe())) {
+                // V7.5.0: choosing SCALP forces entry TF to M5.
+                if ("SCALP".equals(selectedSignalMode()) && !"M5".equals(selectedEntryTimeframe())) {
                     syncingScalpTimeframe = true;
-                    entryTimeframeSpinner.setSelection(0); // M1
+                    entryTimeframeSpinner.setSelection(1); // M5
                     prefs.edit()
                             .putInt("signal_mode_pos", position)
-                            .putInt("entry_tf_pos", 0)
+                            .putInt("entry_tf_pos", 1)
                             .apply();
                     syncingScalpTimeframe = false;
                     Toast.makeText(MainActivity.this,
-                            "SCALP: таймфрейм входа автоматически установлен M1.",
+                            "SCALP: таймфрейм входа автоматически установлен M5.",
                             Toast.LENGTH_SHORT).show();
                 } else {
                     prefs.edit().putInt("signal_mode_pos", position).apply();
                 }
 
-                // CURRENT DEMO behaviour: SCALP is an automated execution mode.
-                // If Bridge+MT5 are already connected to a DEMO account, selecting SCALP
-                // arms AUTO immediately so a valid scalp BUY/SELL can actually reach MT5.
-                if ("SCALP".equals(selectedSignalMode()) && serverConnected && mt5Connected && demoAccount) {
-                    autoTradingSwitch.setChecked(true);
-                }
 
                 // CURRENT: SCALP uses a basket. If the old 1-3 limit is still selected,
                 // raise the safety cap to 8. User can still choose any value 1..10 manually.
@@ -393,11 +386,11 @@ public class MainActivity extends Activity {
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
 
-        // Normalize an old saved invalid combination (SCALP + M5/M15/etc.) once at startup.
-        if ("SCALP".equals(selectedSignalMode()) && !"M1".equals(selectedEntryTimeframe())) {
+        // Normalize old saved SCALP combinations to M5 once at startup.
+        if ("SCALP".equals(selectedSignalMode()) && !"M5".equals(selectedEntryTimeframe())) {
             syncingScalpTimeframe = true;
-            entryTimeframeSpinner.setSelection(0);
-            prefs.edit().putInt("entry_tf_pos", 0).apply();
+            entryTimeframeSpinner.setSelection(1);
+            prefs.edit().putInt("entry_tf_pos", 1).apply();
             syncingScalpTimeframe = false;
         }
 
@@ -418,17 +411,18 @@ public class MainActivity extends Activity {
                     Toast.makeText(this, "Сначала подключите сервер и MT5", Toast.LENGTH_LONG).show();
                     return;
                 }
-                if (!demoAccount) {
-                    forceAutoOff("AUTO заблокирован: V" + appVersionName() + " разрешает только DEMO.");
-                    Toast.makeText(this, "V" + appVersionName() + " разрешает автоторговлю только на DEMO", Toast.LENGTH_LONG).show();
+                if (!currentAccountAllowedForAuto()) {
+                    String target = targetTradeMode();
+                    forceAutoOff("AUTO заблокирован: режим приложения " + target + " не совпадает с доступным режимом MT5/Bridge.");
+                    Toast.makeText(this, "Проверьте DEMO/REAL и разрешение REAL на Bridge", Toast.LENGTH_LONG).show();
                     return;
                 }
-                prefs.edit().putBoolean("auto_trading", true).apply();
-                if (autoStatusText != null) { autoStatusText.setText("AUTO включён · DEMO · новые сигналы могут исполняться"); autoStatusText.setTextColor(C_GREEN); }
-                addJournal("AUTO TRADING включён · DEMO");
+                prefs.edit().putBoolean("auto_trading", true).putBoolean("auto_user_enabled", true).apply();
+                if (autoStatusText != null) { autoStatusText.setText("AUTO включён · " + targetTradeMode()); autoStatusText.setTextColor(C_GREEN); }
+                addJournal("AUTO TRADING включён · " + targetTradeMode());
             } else {
-                prefs.edit().putBoolean("auto_trading", false).apply();
-                if (autoStatusText != null) { autoStatusText.setText("AUTO выключен · DEMO ONLY"); autoStatusText.setTextColor(C_MUTED); }
+                prefs.edit().putBoolean("auto_trading", false).putBoolean("auto_user_enabled", false).apply();
+                if (autoStatusText != null) { autoStatusText.setText("AUTO выключен · режим " + targetTradeMode()); autoStatusText.setTextColor(C_MUTED); }
                 addJournal("AUTO TRADING выключен");
             }
         });
@@ -447,7 +441,8 @@ public class MainActivity extends Activity {
         closeAllButton.setOnClickListener(v -> sendCloseAll());
         smartFeaturesButton.setOnClickListener(v -> showSmartFeaturesDialog());
         syncMt5SymbolsButton.setOnClickListener(v -> syncSymbolsFromMt5());
-        managePositionsButton.setOnClickListener(v -> showPositionsManager());
+        managePositionsButton.setOnClickListener(v -> showPositionManagementHub());
+        if (journalCard != null) journalCard.setOnClickListener(v -> showTradeJournalDialog());
         refreshSmartUi();
 
         // UI ticker: обновляет «прошло» каждую секунду без новых API-запросов.
@@ -467,7 +462,7 @@ public class MainActivity extends Activity {
         if (overview != null) overview.setOnClickListener(v -> scrollToView(topCard));
         if (positions != null) positions.setOnClickListener(v -> scrollToView(positionsCard));
         if (signals != null) signals.setOnClickListener(v -> scrollToView(signalCard));
-        if (journal != null) journal.setOnClickListener(v -> scrollToView(journalCard));
+        if (journal != null) journal.setOnClickListener(v -> showTradeJournalDialog());
         if (settings != null) settings.setOnClickListener(v -> scrollToView(tradingCard));
     }
 
@@ -633,11 +628,22 @@ public class MainActivity extends Activity {
         forceAutoOff(null);
     }
 
+    private String targetTradeMode() {
+        return getSharedPreferences("fxm1", MODE_PRIVATE).getString("target_trade_mode", "DEMO");
+    }
+
+    private boolean currentAccountAllowedForAuto() {
+        if (!serverConnected || !mt5Connected) return false;
+        String target = targetTradeMode();
+        if ("REAL".equals(target)) return !demoAccount && realTradingEnabled;
+        return demoAccount;
+    }
+
     private String appVersionName() {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception e) {
-            return "7.4.6";
+            return "7.5.0";
         }
     }
 
@@ -652,7 +658,7 @@ public class MainActivity extends Activity {
         suppressAutoSwitch = true;
         autoTradingSwitch.setChecked(false);
         suppressAutoSwitch = false;
-        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("auto_trading", false).apply();
+        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("auto_trading", false).putBoolean("auto_user_enabled", false).apply();
         if (journalMessage != null) addJournal(journalMessage);
     }
 
@@ -664,6 +670,7 @@ public class MainActivity extends Activity {
         String accountType = p.getString("mt5_account_type_snapshot", "UNKNOWN");
         String currency = p.getString("mt5_currency_snapshot", "USD");
         String bridgeVersion = p.getString("bridge_version_snapshot", "?");
+        realTradingEnabled = p.getBoolean("bridge_real_enabled_snapshot", false);
         double balance = Double.longBitsToDouble(p.getLong("mt5_balance_bits", Double.doubleToLongBits(Double.NaN)));
         double equity = Double.longBitsToDouble(p.getLong("mt5_equity_bits", Double.doubleToLongBits(Double.NaN)));
         int positions = p.getInt("mt5_positions_snapshot", 0);
@@ -677,12 +684,12 @@ public class MainActivity extends Activity {
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
             accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             positionsText.setText("Открытые позиции: " + positions + "\nТекущий P/L: " + signedMoney(floating, currency));
-            closeAllButton.setEnabled(mt5 && demoAccount && positions > 0);
+            closeAllButton.setEnabled(mt5 && positions > 0);
             suppressAutoSwitch = true;
-            boolean scalpDemo = "SCALP".equals(selectedSignalMode()) && mt5 && demoAccount;
-            boolean autoSaved = p.getBoolean("auto_trading", false) && mt5 && demoAccount;
-            autoTradingSwitch.setChecked(autoSaved || scalpDemo);
-            if (scalpDemo) p.edit().putBoolean("auto_trading", true).apply();
+            boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
+            boolean autoSaved = p.getBoolean("auto_user_enabled", p.getBoolean("auto_trading", false)) && mt5 && targetAllowed;
+            autoTradingSwitch.setChecked(autoSaved);
+            p.edit().putBoolean("auto_trading", autoSaved).apply();
             suppressAutoSwitch = false;
         } else {
             setTradingControlsOffline();
@@ -752,12 +759,14 @@ public class MainActivity extends Activity {
                 double floating = root.optDouble("floating_pl", 0.0);
                 String currency = root.optString("currency", "USD");
                 String bridgeVersion = root.optString("bridge_version", "?");
+                boolean bridgeRealEnabled = root.optBoolean("real_trading_enabled", false);
 
                 runOnUiThread(() -> {
                     serverCheckButton.setEnabled(true);
                     serverConnected = serverOk;
                     mt5Connected = mt5Ok;
                     demoAccount = "DEMO".equals(accountType);
+                    realTradingEnabled = bridgeRealEnabled;
 
                     serverStatusText.setText(
                             "APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n" +
@@ -792,12 +801,13 @@ public class MainActivity extends Activity {
                             .putLong("mt5_equity_bits", Double.doubleToLongBits(equity))
                             .putString("mt5_currency_snapshot", currency)
                             .putString("bridge_version_snapshot", bridgeVersion)
+                            .putBoolean("bridge_real_enabled_snapshot", bridgeRealEnabled)
                             .putInt("mt5_positions_snapshot", positions)
                             .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                             .apply();
-                    closeAllButton.setEnabled(serverOk && mt5Ok && demoAccount && positions > 0);
+                    closeAllButton.setEnabled(serverOk && mt5Ok && positions > 0);
 
-                    if (!serverOk || !mt5Ok || !demoAccount) {
+                    if (!serverOk || !mt5Ok || !("REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount)) {
                         forceAutoOff(null);
                     }
                     addJournal(serverOk && mt5Ok
@@ -827,7 +837,7 @@ public class MainActivity extends Activity {
             addJournal("MARKET CLOSED · новый ордер заблокирован");
             return;
         }
-        if (!autoTradingSwitch.isChecked() || !serverConnected || !mt5Connected || !demoAccount) {
+        if (!autoTradingSwitch.isChecked() || !currentAccountAllowedForAuto()) {
             return;
         }
 
@@ -869,7 +879,9 @@ public class MainActivity extends Activity {
                     // The percent spinner remains a global safety preference, not a per-scalp cash loss target.
                     payload.put("scalp_money_manager", true);
                     payload.put("scalp_lot_mode", getSharedPreferences("fxm1", MODE_PRIVATE).getString("scalp_lot_mode", "AUTO"));
-                    payload.put("scalp_peak_lock_enabled", true);
+                    payload.put("scalp_peak_lock_enabled", getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("scalp_peak_lock_enabled", true));
+                    payload.put("scalp_hard_stop_enabled", getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("scalp_hard_stop_enabled", true));
+                    payload.put("scalp_cash_tp_enabled", getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("scalp_cash_tp_enabled", true));
                     payload.put("scalp_risk_usd_cap", 2.0);
                     payload.put("scalp_hard_loss_usd_cap", 5.0);
                     payload.put("scalp_profit_protect_usd_cap", 1.5);
@@ -880,7 +892,7 @@ public class MainActivity extends Activity {
                     payload.put("basket_add_cooldown_sec", 2);
                     payload.put("basket_min_progress_sl", 0.0);
                 }
-                payload.put("mode", "DEMO");
+                payload.put("mode", getSharedPreferences("fxm1", MODE_PRIVATE).getString("target_trade_mode", "DEMO"));
                 payload.put("signal_mode", selectedSignalMode());
                 payload.put("entry_timeframe", selectedEntryTimeframe());
                 payload.put("api_entry", a.entry);
@@ -922,7 +934,7 @@ public class MainActivity extends Activity {
     }
 
     private void sendCloseAll() {
-        if (!serverConnected || !mt5Connected || !demoAccount) {
+        if (!serverConnected || !mt5Connected) {
             Toast.makeText(this, "Нет подключённого DEMO MT5", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -934,7 +946,7 @@ public class MainActivity extends Activity {
         executor.execute(() -> {
             try {
                 JSONObject payload = new JSONObject();
-                payload.put("mode", "DEMO");
+                payload.put("mode", getSharedPreferences("fxm1", MODE_PRIVATE).getString("target_trade_mode", "DEMO"));
                 JSONObject response = httpJson("POST", base + "/close-all", payload);
                 String message = response.optString("message", "Команда отправлена");
                 runOnUiThread(() -> {
@@ -1001,6 +1013,33 @@ public class MainActivity extends Activity {
             updated = limited.toString();
         }
         journalText.setText(updated);
+        SharedPreferences jp = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String full = jp.getString("full_journal", "");
+        String fullUpdated = prefix + " · " + line + (full.trim().isEmpty() ? "" : "\n" + full);
+        String[] fullRows = fullUpdated.split("\n");
+        StringBuilder saved = new StringBuilder();
+        for (int i = 0; i < Math.min(500, fullRows.length); i++) { if (i > 0) saved.append('\n'); saved.append(fullRows[i]); }
+        jp.edit().putString("full_journal", saved.toString()).apply();
+    }
+
+    private void showTradeJournalDialog() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        ScrollView scroll = new ScrollView(this);
+        TextView tv = new TextView(this);
+        tv.setTextColor(C_TEXT); tv.setTextSize(12f); tv.setPadding(dp(16), dp(12), dp(16), dp(16));
+        String full = p.getString("full_journal", "");
+        String sig = p.getString("signal_history", "");
+        String trades = p.getString("trade_log_snapshot", tradeHistoryText == null ? "" : tradeHistoryText.getText().toString());
+        String stats = p.getString("stats_snapshot", "");
+        String text = "СОБЫТИЯ ПРИЛОЖЕНИЯ\n" + (full.trim().isEmpty()?"Пока пусто":full) +
+                "\n\nИСТОРИЯ СИГНАЛОВ\n" + (sig.trim().isEmpty()?"Пока пусто":sig) +
+                "\n\nСТАТИСТИКА 30 ДНЕЙ\n" + (stats.trim().isEmpty()?"Пока пусто":stats) +
+                "\n\nСДЕЛКИ MT5 · ДО 200 СОБЫТИЙ\n" + (trades.trim().isEmpty()?"Пока пусто":trades);
+        tv.setText(text); scroll.addView(tv);
+        new AlertDialog.Builder(this).setTitle("Торговый журнал · подробно").setView(scroll)
+                .setPositiveButton("ОБНОВИТЬ", (d,w) -> refreshStatsAndPositions())
+                .setNeutralButton("ОЧИСТИТЬ ЛОКАЛЬНЫЙ", (d,w) -> { p.edit().remove("full_journal").apply(); journalText.setText("Журнал пока пуст."); })
+                .setNegativeButton("ЗАКРЫТЬ", null).show();
     }
 
     private void setApiKeyEditMode(boolean editing) {
@@ -1130,6 +1169,10 @@ public class MainActivity extends Activity {
         intro.setPadding(0, dp(6), 0, dp(10));
         box.addView(intro);
 
+        box.addView(smartLabel("РЕЖИМ СЧЁТА"));
+        Switch realMode = smartSwitch("REAL MODE (выкл. = DEMO)", "REAL".equals(p.getString("target_trade_mode", "DEMO"))); box.addView(realMode);
+        TextView modeHint = smartLabel("REAL выбирается здесь, но реальные ордера Bridge разрешит только при FXM1_ALLOW_REAL=1."); box.addView(modeHint);
+
         box.addView(smartLabel("РЕЖИМ ИСПОЛНЕНИЯ"));
         String[] execModes = {"SIGNALS_ONLY", "SEMI_AUTO", "FULL_AUTO"};
         int execSel = Arrays.asList(execModes).indexOf(p.getString("execution_mode", "FULL_AUTO"));
@@ -1162,6 +1205,9 @@ public class MainActivity extends Activity {
         box.addView(watchlistEdit, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)));
         Switch session = smartSwitch("Фильтр торговых сессий", p.getBoolean("session_filter_enabled", false)); box.addView(session);
         Switch positionManager = smartSwitch("Автосопровождение позиций", p.getBoolean("position_manager_enabled", true)); box.addView(positionManager);
+        Switch hardStop = smartSwitch("SCALP Hard Cash Stop", p.getBoolean("scalp_hard_stop_enabled", true)); box.addView(hardStop);
+        Switch peakLock = smartSwitch("SCALP Peak Profit Lock", p.getBoolean("scalp_peak_lock_enabled", true)); box.addView(peakLock);
+        Switch cashTp = smartSwitch("SCALP Cash Take Profit", p.getBoolean("scalp_cash_tp_enabled", true)); box.addView(cashTp);
         Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
 
         AlertDialog smartDialog = new AlertDialog.Builder(this)
@@ -1173,6 +1219,7 @@ public class MainActivity extends Activity {
                     float[] spreadVals={1.5f,2f,3f,5f}; int[] qualityVals={55,60,65,70,75}; int[] cooldownVals={0,5,10,20,30};
                     long blackout = news.isChecked() ? (System.currentTimeMillis()/1000L + 30*60L) : 0L;
                     p.edit()
+                            .putString("target_trade_mode", realMode.isChecked() ? "REAL" : "DEMO")
                             .putString("execution_mode", execModes[exec.getSelectedItemPosition()])
                             .putString("scalp_lot_mode", scalpLots[scalpLot.getSelectedItemPosition()])
                             .putBoolean("risk_manager_enabled", riskM.isChecked())
@@ -1192,6 +1239,9 @@ public class MainActivity extends Activity {
                             .putString("favorite_symbols", watchlistEdit.getText().toString().trim())
                             .putBoolean("session_filter_enabled", session.isChecked())
                             .putBoolean("position_manager_enabled", positionManager.isChecked())
+                            .putBoolean("scalp_hard_stop_enabled", hardStop.isChecked())
+                            .putBoolean("scalp_peak_lock_enabled", peakLock.isChecked())
+                            .putBoolean("scalp_cash_tp_enabled", cashTp.isChecked())
                             .putBoolean("manual_news_blackout", news.isChecked())
                             .putLong("news_blackout_until_epoch", blackout)
                             .apply();
@@ -1247,7 +1297,7 @@ public class MainActivity extends Activity {
             try {
                 JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
                 JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
-                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-log?limit=20", null);
+                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-log?limit=200", null);
                 String stText = FeatureEngine.formatStats(st);
                 String posText = FeatureEngine.formatPositions(pos);
                 String logText = FeatureEngine.formatTradeLog(log);
@@ -1255,6 +1305,7 @@ public class MainActivity extends Activity {
                     if (statsText != null) statsText.setText("СТАТИСТИКА\n" + stText);
                     if (positionsText != null) positionsText.setText(posText);
                     if (tradeHistoryText != null) tradeHistoryText.setText(logText);
+                    getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("trade_log_snapshot", logText).putString("stats_snapshot", stText).apply();
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> { if (statsText != null) statsText.setText("СТАТИСТИКА: " + safeMessage(e)); });
@@ -1292,6 +1343,33 @@ public class MainActivity extends Activity {
                 });
             } catch(Exception e) { runOnUiThread(() -> { syncMt5SymbolsButton.setEnabled(true); Toast.makeText(this,"Символы MT5: "+safeMessage(e),Toast.LENGTH_LONG).show(); }); }
         });
+    }
+
+    private void showPositionManagementHub() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String[] items = {"⚙ Настройки автосопровождения", "📌 Открытые позиции MT5"};
+        new AlertDialog.Builder(this).setTitle("Управление позициями").setItems(items, (d, which) -> {
+            if (which == 0) showPositionManagementSettings(); else showPositionsManager();
+        }).setNegativeButton("ЗАКРЫТЬ", null).show();
+    }
+
+    private void showPositionManagementSettings() {
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(dp(18),dp(8),dp(18),dp(8));
+        Switch master = smartSwitch("Автосопровождение позиций", p.getBoolean("position_manager_enabled", true)); box.addView(master);
+        Switch hard = smartSwitch("Hard Cash Stop", p.getBoolean("scalp_hard_stop_enabled", true)); box.addView(hard);
+        Switch peak = smartSwitch("Peak Profit Lock", p.getBoolean("scalp_peak_lock_enabled", true)); box.addView(peak);
+        Switch take = smartSwitch("Cash Take Profit", p.getBoolean("scalp_cash_tp_enabled", true)); box.addView(take);
+        Switch be = smartSwitch("Break-even", p.getBoolean("break_even_enabled", true)); box.addView(be);
+        Switch tr = smartSwitch("Trailing stop", p.getBoolean("trailing_enabled", true)); box.addView(tr);
+        Switch part = smartSwitch("Partial close", p.getBoolean("partial_close_enabled", true)); box.addView(part);
+        new AlertDialog.Builder(this).setTitle("Автосопровождение · тумблеры").setView(box)
+            .setPositiveButton("СОХРАНИТЬ", (d,w) -> { p.edit().putBoolean("position_manager_enabled", master.isChecked())
+                .putBoolean("scalp_hard_stop_enabled", hard.isChecked()).putBoolean("scalp_peak_lock_enabled", peak.isChecked())
+                .putBoolean("scalp_cash_tp_enabled", take.isChecked()).putBoolean("break_even_enabled", be.isChecked())
+                .putBoolean("trailing_enabled", tr.isChecked()).putBoolean("partial_close_enabled", part.isChecked()).apply();
+                refreshSmartUi(); if (monitoring) sendBackgroundCommand(MonitoringService.ACTION_REFRESH); })
+            .setNegativeButton("ОТМЕНА", null).show();
     }
 
     private void showPositionsManager() {
@@ -1989,8 +2067,8 @@ public class MainActivity extends Activity {
 
     private long selectedMonitorIntervalMs() {
         String tf = selectedEntryTimeframe();
-        if ("M1".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 5000L : 10000L;
-        if ("M5".equals(tf)) return 60000L;
+        if ("M1".equals(tf)) return 10000L;
+        if ("M5".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 15000L : 60000L;
         if ("M15".equals(tf)) return 180000L;
         if ("H1".equals(tf)) return 300000L;
         if ("H4".equals(tf)) return 900000L;
@@ -2128,13 +2206,11 @@ public class MainActivity extends Activity {
                     breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.4.6: SCALP impulse MUST come from the fast M1 series.
-            // In the M1 analysis mapping entrySeries is M5 context, so using entrySeries here
-            // accidentally made the scalper wait for M5. M5/M15 remain context only.
-            int impulse = scalpImpulse(fast);
-            boolean m1 = "M1".equals(entryTf);
-            buySetup = m1 && impulse > 0 && sFast >= 0;
-            sellSetup = m1 && impulse < 0 && sFast <= 0;
+            // V7.5.0: M5 is the SCALP decision timeframe; M1 is only a fast timing filter.
+            int impulse = scalpImpulse(entrySeries);
+            boolean m5 = "M5".equals(entryTf);
+            buySetup = m5 && impulse > 0 && sEntry >= 0 && sFast >= 0;
+            sellSetup = m5 && impulse < 0 && sEntry <= 0 && sFast <= 0;
 
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;
@@ -2187,18 +2263,14 @@ public class MainActivity extends Activity {
                 ? "SELL"
                 : "WAIT";
 
-        // V7.4.6: display signal and SCALP execution trigger are separate.
-        // The card may remain WAIT, but the execution trigger reads the actual M1 fast series,
-        // not the M5 context series. This is the key fix for micro entries inside WAIT.
+        // V7.5.0: execution is driven by M5; M1 only confirms that the immediate move is not opposite.
         String executionSignal = signal;
         double scalpAtr = atr;
-        if ("SCALP".equals(mode) && "M1".equals(entryTf)) {
-            double m1Atr = atr(fast, 14);
-            if (m1Atr > 0) scalpAtr = m1Atr;
+        if ("SCALP".equals(mode) && "M5".equals(entryTf)) {
             if ("WAIT".equals(signal)) {
-                int microDirection = scalpExecutionDirection(fast, scalpAtr);
-                if (microDirection > 0) executionSignal = "BUY";
-                else if (microDirection < 0) executionSignal = "SELL";
+                int microDirection = scalpExecutionDirection(entrySeries, scalpAtr);
+                if (microDirection > 0 && sFast >= 0) executionSignal = "BUY";
+                else if (microDirection < 0 && sFast <= 0) executionSignal = "SELL";
             }
         }
 
@@ -2265,7 +2337,7 @@ public class MainActivity extends Activity {
                 "\nСтруктура " + entryLabel + ": " + arrow(structure) +
                 "\n" + reason +
                 "\n" + filter +
-                ("SCALP".equals(mode) ? "\nSCALP micro M1: " + executionSignal : "") +
+                ("SCALP".equals(mode) ? "\nSCALP M5: " + executionSignal + " · M1 timing " + arrow(sFast) : "") +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
         int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);

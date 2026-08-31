@@ -49,6 +49,11 @@ public final class FeatureEngine {
                 .putLong("news_blackout_until_epoch", 0L)
                 .putBoolean("position_manager_enabled", true)
                 .putString("scalp_lot_mode", "AUTO")
+                .putString("target_trade_mode", "DEMO")
+                .putBoolean("auto_user_enabled", false)
+                .putBoolean("scalp_hard_stop_enabled", true)
+                .putBoolean("scalp_peak_lock_enabled", true)
+                .putBoolean("scalp_cash_tp_enabled", true)
                 .apply();
     }
 
@@ -71,6 +76,7 @@ public final class FeatureEngine {
 
     public static JSONObject managePayload(SharedPreferences p) throws Exception {
         JSONObject o = new JSONObject();
+        o.put("position_manager_enabled", p.getBoolean("position_manager_enabled", true));
         o.put("break_even_enabled", p.getBoolean("break_even_enabled", true));
         o.put("break_even_at_r", p.getFloat("break_even_at_r", 1.0f));
         o.put("trailing_enabled", p.getBoolean("trailing_enabled", true));
@@ -99,7 +105,9 @@ public final class FeatureEngine {
             o.put("scalp_basket_take_profit_usd_cap", 8.0);
             o.put("scalp_max_hold_sec", 90);
             o.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
-            o.put("scalp_peak_lock_enabled", true);
+            o.put("scalp_peak_lock_enabled", p.getBoolean("scalp_peak_lock_enabled", true));
+            o.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
+            o.put("scalp_cash_tp_enabled", p.getBoolean("scalp_cash_tp_enabled", true));
         }
         return o;
     }
@@ -108,6 +116,7 @@ public final class FeatureEngine {
         long newsUntil = p.getLong("news_blackout_until_epoch", 0L);
         boolean newsActive = p.getBoolean("manual_news_blackout", false) && newsUntil > System.currentTimeMillis() / 1000L;
         return "Режим: " + p.getString("execution_mode", "FULL_AUTO") +
+                "\nСчёт: " + p.getString("target_trade_mode", "DEMO") +
                 "\nRisk Manager: " + onOff(p.getBoolean("risk_manager_enabled", true)) +
                 " · день " + fmt1(p.getFloat("daily_loss_limit_pct", 3.0f)) + "%" +
                 " · DD " + fmt1(p.getFloat("max_drawdown_pct", 5.0f)) + "%" +
@@ -121,7 +130,7 @@ public final class FeatureEngine {
                 " · Session: " + currentSession() +
                 "\nMulti-pair radar: " + onOff(p.getBoolean("multi_pair_enabled", false)) +
                 " · News Guard: " + (newsActive ? "ACTIVE" : "READY") +
-                (p.getInt("signal_mode_pos", 1) == 3 ? "\nSCALP MONEY: ON · Lot " + p.getString("scalp_lot_mode", "AUTO") + " · Peak Lock ON · hard stop ≤ $5" : "");
+                (p.getInt("signal_mode_pos", 1) == 3 ? "\nSCALP MONEY: ON · Lot " + p.getString("scalp_lot_mode", "AUTO") + " · Peak Lock " + onOff(p.getBoolean("scalp_peak_lock_enabled", true)) + " · Hard " + onOff(p.getBoolean("scalp_hard_stop_enabled", true)) + " · Cash TP " + onOff(p.getBoolean("scalp_cash_tp_enabled", true)) : "");
     }
 
     public static String currentSession() {

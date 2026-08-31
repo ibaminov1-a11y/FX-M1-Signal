@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.4.6"
+BRIDGE_VERSION = "7.5.0"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -1054,6 +1054,11 @@ _SCALP_SUPERVISOR_CFG = {
     'scalp_basket_hard_loss_usd_cap': 10.0,
     'scalp_basket_take_profit_usd_cap': 8.0,
     'scalp_max_hold_sec': 90,
+    'scalp_peak_lock_enabled': True,
+    'scalp_hard_stop_enabled': True,
+    'scalp_cash_tp_enabled': True,
+    'position_manager_enabled': True,
+    'trailing_enabled': True,
 }
 _SCALP_SUPERVISOR_STOP = threading.Event()
 
@@ -1062,7 +1067,10 @@ def update_scalp_supervisor_cfg(cfg):
         return
     for key in list(_SCALP_SUPERVISOR_CFG.keys()):
         if key in cfg:
-            _SCALP_SUPERVISOR_CFG[key] = safe_float(cfg.get(key), _SCALP_SUPERVISOR_CFG[key])
+            if key.endswith('_enabled'):
+                _SCALP_SUPERVISOR_CFG[key] = bool(cfg.get(key))
+            else:
+                _SCALP_SUPERVISOR_CFG[key] = safe_float(cfg.get(key), _SCALP_SUPERVISOR_CFG[key])
 
 def is_scalp_position(p):
     if int(getattr(p, 'magic', 0) or 0) != MAGIC:
@@ -1076,10 +1084,12 @@ def scalp_supervisor_once():
     account = mt5.account_info()
     if account is None:
         return
+    cfg = dict(_SCALP_SUPERVISOR_CFG)
+    if not bool(cfg.get('position_manager_enabled', True)):
+        return
     positions = [p for p in (mt5.positions_get() or []) if is_scalp_position(p)]
     if not positions:
         return
-    cfg = dict(_SCALP_SUPERVISOR_CFG)
     limits = scalp_money_limits(float(account.equity), cfg)
     basket_hard = max(limits['hard_loss_usd'], safe_float(cfg.get('scalp_basket_hard_loss_usd_cap'), 10.0))
     basket_tp = max(limits['take_profit_usd'], safe_float(cfg.get('scalp_basket_take_profit_usd_cap'), 8.0))
@@ -1112,11 +1122,11 @@ def scalp_supervisor_once():
                 _SCALP_PEAK_PNL.pop(ticket, None)
                 continue
 
-        if pnl_usd <= -limits['hard_loss_usd']:
+        if bool(cfg.get('scalp_hard_stop_enabled', True)) and pnl_usd <= -limits['hard_loss_usd']:
             close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP HARD_LOSS')
             _SCALP_PEAK_PNL.pop(ticket, None)
             continue
-        if pnl_usd >= limits['take_profit_usd']:
+        if bool(cfg.get('scalp_cash_tp_enabled', True)) and pnl_usd >= limits['take_profit_usd']:
             close_position_internal(p, comment=f'FXM1 V{BRIDGE_VERSION} SCALP TAKE_PROFIT')
             _SCALP_PEAK_PNL.pop(ticket, None)
             continue
@@ -1126,7 +1136,7 @@ def scalp_supervisor_once():
             continue
 
         # Profit-lock is broker-side SL, so protection survives even if the phone sleeps.
-        if pnl_usd >= limits['protect_usd']:
+        if bool(cfg.get('trailing_enabled', True)) and pnl_usd >= limits['protect_usd']:
             is_buy = p.type == mt5.POSITION_TYPE_BUY
             current = float(tick.bid if is_buy else tick.ask)
             move = current - float(p.price_open)
@@ -1220,6 +1230,8 @@ def manage_positions_alias():
         allowed, reason = trading_allowed(account)
         if not allowed:
             return jsonify(ok=False, message=reason), 403
+        if not bool(cfg.get('position_manager_enabled', True)):
+            return jsonify(ok=True, status='INACTIVE', message='Position manager disabled', actions=[])
         positions = mt5.positions_get() or []
         actions = []
         for p in positions:
@@ -1246,9 +1258,9 @@ def manage_positions_alias():
 
                 # Absolute emergency loss and fast take-profit.
                 close_reason = None
-                if pnl_usd <= -limits['hard_loss_usd']:
+                if bool(cfg.get('scalp_hard_stop_enabled', True)) and pnl_usd <= -limits['hard_loss_usd']:
                     close_reason = 'HARD_LOSS'
-                elif pnl_usd >= limits['take_profit_usd']:
+                elif bool(cfg.get('scalp_cash_tp_enabled', True)) and pnl_usd >= limits['take_profit_usd']:
                     close_reason = 'TAKE_PROFIT'
                 elif age_sec >= max_hold_sec and pnl_usd > 0:
                     close_reason = 'TIME_PROFIT'

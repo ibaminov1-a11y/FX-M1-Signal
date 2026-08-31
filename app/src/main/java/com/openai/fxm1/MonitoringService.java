@@ -80,7 +80,7 @@ public class MonitoringService extends Service {
             if (!running) return;
             long now = System.currentTimeMillis();
             long lastOk = prefs().getLong("state_last_success_ms", 0L);
-            if ("M1".equals(currentTf()) && lastOk > 0L && now - lastOk > 90000L) {
+            if (("M1".equals(currentTf()) || ("M5".equals(currentTf()) && "SCALP".equals(currentMode()))) && lastOk > 0L && now - lastOk > 90000L) {
                 prefs().edit().putString("bg_status", "WATCHDOG: анализ завис · перезапуск").apply();
                 analyzing = false;
                 handler.removeCallbacks(tick);
@@ -202,6 +202,7 @@ public class MonitoringService extends Service {
             prefs().edit()
                     .putBoolean("stop_all_requested", true)
                     .putBoolean("auto_trading", false)
+                    .putBoolean("auto_user_enabled", false)
                     .apply();
             stopMonitoring(false);
             return START_NOT_STICKY;
@@ -313,7 +314,7 @@ public class MonitoringService extends Service {
             if (!base.isEmpty()) {
                 try {
                     JSONObject payload = new JSONObject();
-                    payload.put("mode", "DEMO");
+                    payload.put("mode", p.getString("target_trade_mode", "DEMO"));
                     httpJson("POST", base + "/close-all", payload);
                     result = "CLOSE ALL отправлен в MT5 bridge";
                 } catch (Exception ignored) {
@@ -627,7 +628,10 @@ public class MonitoringService extends Service {
         try {
             JSONObject health = httpJson("GET", base + "/health", null);
             if (!health.optBoolean("ok", false) || !health.optBoolean("mt5_connected", false)) return;
-            if (!"DEMO".equalsIgnoreCase(health.optString("account_type", ""))) return;
+            String targetMode = p.getString("target_trade_mode", "DEMO");
+            String accountType = health.optString("account_type", "").toUpperCase(Locale.US);
+            boolean accountAllowed = "REAL".equals(targetMode) ? ("REAL".equals(accountType) && health.optBoolean("real_trading_enabled", false)) : "DEMO".equals(accountType);
+            if (!accountAllowed) return;
 
             int riskPos = p.getInt("risk_pos", 1);
             double[] risks = {0.25, 0.50, 1.00};
@@ -655,7 +659,9 @@ public class MonitoringService extends Service {
                 // V7.4.6: separate money-based SCALP risk/exit manager.
                 payload.put("scalp_money_manager", true);
                 payload.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
-                payload.put("scalp_peak_lock_enabled", true);
+                payload.put("scalp_peak_lock_enabled", p.getBoolean("scalp_peak_lock_enabled", true));
+                payload.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
+                payload.put("scalp_cash_tp_enabled", p.getBoolean("scalp_cash_tp_enabled", true));
                 payload.put("scalp_risk_usd_cap", 2.0);
                 payload.put("scalp_hard_loss_usd_cap", 5.0);
                 payload.put("scalp_profit_protect_usd_cap", 1.5);
@@ -666,7 +672,7 @@ public class MonitoringService extends Service {
                 payload.put("basket_add_cooldown_sec", 2);
                 payload.put("basket_min_progress_sl", 0.0);
             }
-            payload.put("mode", "DEMO");
+            payload.put("mode", p.getString("target_trade_mode", "DEMO"));
             payload.put("signal_mode", mode);
             payload.put("entry_timeframe", tf);
             payload.put("timeframe", tf);
@@ -720,7 +726,6 @@ public class MonitoringService extends Service {
 
     private void manageOpenPositions() {
         SharedPreferences p = prefs();
-        if (!p.getBoolean("position_manager_enabled", true)) return;
         String base = normalizeUrl(p.getString("server_url", ""));
         if (base.isEmpty() || !p.getBoolean("mt5_connected_snapshot", false)) return;
         try {
@@ -800,8 +805,8 @@ public class MonitoringService extends Service {
     }
 
     private long intervalFor(String tf) {
-        if ("M1".equals(tf)) return "SCALP".equals(currentMode()) ? 5000L : 10000L;
-        if ("M5".equals(tf)) return 60000L;
+        if ("M1".equals(tf)) return 10000L;
+        if ("M5".equals(tf)) return "SCALP".equals(currentMode()) ? 15000L : 60000L;
         if ("M15".equals(tf)) return 180000L;
         if ("H1".equals(tf)) return 300000L;
         if ("H4".equals(tf)) return 900000L;
@@ -1033,13 +1038,11 @@ public class MonitoringService extends Service {
             sellSetup = sHigher2 <= 0 && sHigher1 < 0 && sEntry < 0 && sFast <= 0 && structure <= 0 && breakout < 0;
 
         } else if ("SCALP".equals(mode)) {
-            // V7.4.6: SCALP impulse MUST come from the fast M1 series.
-            // In the M1 analysis mapping entrySeries is M5 context, so using entrySeries here
-            // accidentally made the scalper wait for M5. M5/M15 remain context only.
-            int impulse = scalpImpulse(fast);
-            boolean m1 = "M1".equals(entryTf);
-            buySetup = m1 && impulse > 0 && sFast >= 0;
-            sellSetup = m1 && impulse < 0 && sFast <= 0;
+            // V7.5.0: M5 is the SCALP decision timeframe; M1 is only timing confirmation.
+            int impulse = scalpImpulse(entrySeries);
+            boolean m5 = "M5".equals(entryTf);
+            buySetup = m5 && impulse > 0 && sEntry >= 0 && sFast >= 0;
+            sellSetup = m5 && impulse < 0 && sEntry <= 0 && sFast <= 0;
 
         } else if ("AGGRESSIVE".equals(mode)) {
             int buyVotes = 0;
@@ -1065,13 +1068,11 @@ public class MonitoringService extends Service {
         // For M1 SCALP the execution trigger must read fast=M1, while entrySeries=M5 is context.
         String executionSignal = signal;
         double scalpAtr = atr;
-        if ("SCALP".equals(mode) && "M1".equals(entryTf)) {
-            double m1Atr = atr(fast, 14);
-            if (m1Atr > 0) scalpAtr = m1Atr;
+        if ("SCALP".equals(mode) && "M5".equals(entryTf)) {
             if ("WAIT".equals(signal)) {
-                int microDirection = scalpExecutionDirection(fast, scalpAtr);
-                if (microDirection > 0) executionSignal = "BUY";
-                else if (microDirection < 0) executionSignal = "SELL";
+                int microDirection = scalpExecutionDirection(entrySeries, scalpAtr);
+                if (microDirection > 0 && sFast >= 0) executionSignal = "BUY";
+                else if (microDirection < 0 && sFast <= 0) executionSignal = "SELL";
             }
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
@@ -1115,7 +1116,7 @@ public class MonitoringService extends Service {
                 "\nСтруктура " + entryLabel + ": " + arrow(structure) +
                 "\n" + reason +
                 "\n" + filter +
-                ("SCALP".equals(mode) ? "\nSCALP micro M1: " + executionSignal : "") +
+                ("SCALP".equals(mode) ? "\nSCALP M5: " + executionSignal + " · M1 timing " + arrow(sFast) : "") +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
         int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);
