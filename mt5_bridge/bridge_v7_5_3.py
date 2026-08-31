@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "7.5.2"
+BRIDGE_VERSION = "7.5.3"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -1068,6 +1068,10 @@ _SCALP_SUPERVISOR_CFG = {
     'trailing_enabled': True,
 }
 _SCALP_SUPERVISOR_STOP = threading.Event()
+# Per-position in-memory state for GREEN-CAPTURE.
+# ticket -> highest observed floating P/L while the position is alive.
+_SCALP_PEAK_PNL = {}
+# ticket -> previous observed floating P/L, used to confirm the first real downtick.
 _SCALP_LAST_PNL = {}
 
 def update_scalp_supervisor_cfg(cfg):

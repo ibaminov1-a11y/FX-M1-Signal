@@ -795,7 +795,7 @@ public class MonitoringService extends Service {
                     .putInt("mt5_positions_snapshot", h.optInt("positions", 0))
                     .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                     .putString("bridge_version_snapshot", h.optString("bridge_version", "—"))
-                    .putBoolean("bridge_version_match_snapshot", "7.5.2".equals(h.optString("bridge_version", "—")))
+                    .putBoolean("bridge_version_match_snapshot", "7.5.3".equals(h.optString("bridge_version", "—")))
                     .putInt("bridge_uptime_sec", h.optInt("uptime_sec", 0))
                     .putLong("bridge_heartbeat", h.optLong("heartbeat", 0L))
                     .apply();

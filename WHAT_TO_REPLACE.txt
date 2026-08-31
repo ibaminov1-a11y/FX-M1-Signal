@@ -1,16 +1,15 @@
-FX M1 Bot V7.5.2 READY REPLACE
+FX M1 Bot V7.5.3 — READY REPLACE
 
-Replace/copy these paths into the project:
-- app/build.gradle
-- app/src/main/java/com/openai/fxm1/MonitoringService.java
-- mt5_bridge/bridge_v7_5_2.py
-- mt5_bridge/bridge_v7_3.py  (compatibility: old START_BRIDGE_V7_3 will now start V7.5.2)
-- mt5_bridge/START_BRIDGE_V7_5_2.bat
+Исправление критической ошибки V7.5.2:
+SCALP supervisor падал с NameError: _SCALP_PEAK_PNL is not defined.
 
-Main fix:
-- GREEN-CAPTURE: any positive P/L arms protection; first meaningful pullback closes immediately.
-- close orders use filling fallback (fixes silent retcode 10030-style close failures).
-- supervisor protects FXM1 MAGIC positions even if broker truncates/re-writes SCALP comment.
-- supervisor cadence 100 ms.
+Заменить файлы из архива с сохранением путей.
 
-After replacement restart Bridge. Expected: APP V7.5.2 / BRIDGE V7.5.2.
+ВАЖНО ПОСЛЕ ЗАМЕНЫ:
+1) Закрыть все старые окна Bridge / python.exe, где работали V7.5.1/V7.5.2.
+2) Запускать только mt5_bridge\START_BRIDGE_V7_5_3.bat
+   или вручную: .venv\Scripts\python.exe bridge_v7_5_3.py
+3) В приложении должно быть: APP V7.5.3 • BRIDGE V7.5.3
+4) В CMD не должно быть строки: _SCALP_PEAK_PNL is not defined
+
+GREEN-CAPTURE хранит peak P/L отдельно для каждого MT5 ticket и очищает состояние после закрытия позиции.
