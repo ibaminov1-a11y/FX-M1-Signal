@@ -1,0 +1,78 @@
+FX M1 BOT V8.1 — АУДИТ И ДОРАБОТКА SCALP CAMPAIGN
+
+ЦЕЛЬ
+Не просто повторно открывать сделки по одному BUY/SELL, а реализовать нормальную кампанию:
+первый подтвержденный вход -> добавления только по ходу прибыли -> управление всей серией.
+Это pyramiding / scale-in по движению. Усреднение против движения и мартингейл запрещены.
+
+ЧТО БЫЛО НЕПРАВИЛЬНО В V8.0
+1. Android мог дать SCALP execution BUY/SELL по слабому fallback Entry+Fast+Structure без обязательного micro timing.
+2. Bridge после сигнала использовал тупой SCALP slot cooldown 2 секунды. Он не понимал структуру цены и не отличал хорошее продолжение от повторного сигнала в той же точке.
+3. Добавление разрешалось без требования, чтобы уже открытая группа была в плюсе. Это не соответствовало логике на референсных кадрах.
+4. GREEN_CAPTURE работал на каждой позиции отдельно. При попытке строить пирамиду это могло закрывать первый микровход раньше, чем появится второй подтвержденный вход.
+5. Не было отдельного MT5 micro-trigger непосредственно перед order_send. API/анализ определял направление, но финальный timing не подтверждался брокерским M1 потоком.
+6. SCALP supervisor распознавал почти любую FXM1 позицию как scalp. Это могло затронуть NORMAL/AGGRESSIVE сделки.
+
+ЧТО СДЕЛАНО В V8.1
+A. ПЕРВЫЙ ВХОД
+- M5/M10/M15 определяют торговое направление/контекст.
+- Удален слабый fallback Entry+Fast+Structure без timing confirmation.
+- Перед фактическим order_send Bridge читает MT5 M1 rates.
+- Первый вход разрешается только после остановки pullback и micro-break/continuation в направлении сигнала.
+- Если MT5 micro-trigger не подтвержден, Bridge отвечает 409 с точной причиной, позиция не открывается.
+
+B. PYRAMIDING / SCALE-IN
+- Удален basket_add_cooldown_sec как основной критерий добавления.
+- Новый вход в существующую кампанию разрешается только если:
+  1) направление совпадает с кампанией;
+  2) нет противоположной позиции;
+  3) basket P/L > 0 — запрещено усреднять убыточную серию;
+  4) новая цена лучше самого дальнего предыдущего входа в сторону прибыли;
+  5) пройдено минимальное расстояние, рассчитанное по M1 ATR + spread + broker point;
+  6) MT5 M1 повторно подтверждает continuation/micro-break;
+  7) не превышены max positions, margin и basket risk caps.
+- BUY добавляется выше предыдущих BUY, SELL — ниже предыдущих SELL.
+
+C. CAMPAIGN / BASKET MANAGEMENT
+- Когда в кампании 2+ позиции, они управляются как одна группа.
+- Введен basket peak P/L по symbol+direction.
+- Basket Peak Lock закрывает всю кампанию при заданном откате от пика либо при потере зеленого basket P/L.
+- Индивидуальный GREEN_CAPTURE для 2+ позиций не мешает построению пирамиды.
+- Для единственной первой позиции при включенной campaign логике введено окно построения: tiny-green не закрывает ее мгновенно, пока не пройдет 45 сек либо peak не достигнет $0.20. Hard Stop остается активным.
+- Basket hard loss и basket cash TP сохранены.
+
+D. EXECUTION QUALITY
+- SCALP max API/MT5 drift ужесточен до <= 0.015% независимо от более мягкой общей настройки.
+- Добавлен spread/ATR gate на live MT5 M1 feed (по умолчанию <= 0.16 ATR).
+- MT5 quote остается единственным источником фактической цены order_send.
+
+E. ИЗОЛЯЦИЯ SCALP
+- Fast SCALP supervisor теперь управляет только legacy comments с SCALP и новыми campaign comments FXM1 Sxx.
+- NORMAL/AGGRESSIVE FXM1 позиции больше не должны попадать под SCALP GREEN/BASKET supervisor только из-за общего MAGIC/comment FXM1.
+
+ЛОГИ V8.1
+При первом входе:
+  SCALP first MT5 micro-trigger confirmed
+  SCALP campaign entry #1 opened
+
+При ожидании:
+  SCALP WAIT: MT5 micro-trigger not confirmed
+
+При добавлении:
+  SCALP CAMPAIGN ADD #2 confirmed
+  SCALP campaign entry #2 opened
+
+Если цена недостаточно прошла:
+  SCALP CAMPAIGN WAIT: progress ... < spacing ...
+
+Если корзина не в плюсе:
+  SCALP CAMPAIGN WAIT: basket P/L ... not positive
+
+При фиксации серии:
+  SCALP_BASKET_LOCK <symbol> BUY/SELL count=N peak=... current=...
+
+ОГРАНИЧЕНИЯ / ЧЕСТНЫЙ СТАТУС
+- Код Python проверен py_compile.
+- Java файлы проверены на парность фигурных скобок и точечную замену логики.
+- Реальная эффективность точки входа не может быть доказана статическим аудитом; ее нужно проверить на DEMO по журналу сделок и MT5 execution log.
+- V8.1 не гарантирует прибыльность. Обновление исправляет архитектуру входа/scale-in/risk flow, а не рыночную неопределенность.

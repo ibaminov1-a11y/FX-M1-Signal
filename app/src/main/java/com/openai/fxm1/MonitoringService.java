@@ -689,15 +689,25 @@ public class MonitoringService extends Service {
                 payload.put("scalp_basket_risk_usd_cap", 16.0);
                     payload.put("scalp_basket_hard_loss_usd_cap", 10.0);
                     payload.put("scalp_basket_take_profit_usd_cap", 8.0);
-                payload.put("basket_add_cooldown_sec", 2);
-                payload.put("basket_min_progress_sl", 0.0);
+                // V8.1 SCALP CAMPAIGN: no blind time cooldown. Bridge decides additions from
+                // live MT5 micro-structure, positive basket P/L and ATR/price progress.
+                payload.put("scalp_campaign_enabled", true);
+                payload.put("campaign_spacing_atr", 0.12);
+                payload.put("scalp_max_spread_atr_ratio", 0.16);
+                payload.put("scalp_campaign_single_arm_usd", 0.20);
+                payload.put("scalp_basket_peak_giveback_pct", 25.0);
+                payload.put("scalp_basket_peak_min_giveback_usd", 0.03);
             }
             payload.put("mode", p.getString("target_trade_mode", "DEMO"));
             payload.put("signal_mode", mode);
             payload.put("entry_timeframe", tf);
             payload.put("timeframe", tf);
             payload.put("api_entry", a.entry);
-            payload.put("max_price_drift_pct", drifts[Math.max(0, Math.min(driftPos, drifts.length - 1))]);
+            double selectedDrift = drifts[Math.max(0, Math.min(driftPos, drifts.length - 1))];
+            // V8.1: SCALP execution must stay close to the broker feed. The MT5 micro-trigger is
+            // authoritative; API price is context only.
+            if ("SCALP".equals(mode)) selectedDrift = Math.min(selectedDrift, 0.015);
+            payload.put("max_price_drift_pct", selectedDrift);
             payload.put("execution_price_source", "MT5");
             FeatureEngine.applySignalFeatures(payload, p, a.why, a.components);
 
@@ -1117,9 +1127,15 @@ public class MonitoringService extends Service {
                     fastAtr = Math.max(minStopDistance(symbol), f.high - f.low);
                 }
                 int timingMicro = scalpExecutionDirection(fast, fastAtr);
-                // Anchor direction + fast timing; preserve the V7.5.4 fallback so SCALP is not over-restricted.
-                if ((anchorMicro > 0 && sFast >= 0) || (sEntry > 0 && structure >= 0 && timingMicro > 0) || (sEntry > 0 && sFast > 0 && structure > 0)) executionSignal = "BUY";
-                else if ((anchorMicro < 0 && sFast <= 0) || (sEntry < 0 && structure <= 0 && timingMicro < 0) || (sEntry < 0 && sFast < 0 && structure < 0)) executionSignal = "SELL";
+                // V8.1: SCALP direction is intent only. Remove the weak Entry+Fast+Structure fallback.
+                // Android may propose a side only when anchor/structure and faster timing agree;
+                // Bridge V8.1 then requires a live MT5 M1 micro-trigger before actual order_send.
+                boolean scalpExecBuy = (anchorMicro > 0 && timingMicro > 0 && sEntry >= 0 && structure >= 0)
+                        || (sEntry > 0 && structure > 0 && timingMicro > 0);
+                boolean scalpExecSell = (anchorMicro < 0 && timingMicro < 0 && sEntry <= 0 && structure <= 0)
+                        || (sEntry < 0 && structure < 0 && timingMicro < 0);
+                if (scalpExecBuy) executionSignal = "BUY";
+                else if (scalpExecSell) executionSignal = "SELL";
             } else if ("NORMAL".equals(mode)) {
                 // Normal: require entry + one higher timeframe, with no direct contradiction
                 // from structure/fast/breakout. This is less brittle than requiring all fields > 0.

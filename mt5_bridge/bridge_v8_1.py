@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "8.0"
+BRIDGE_VERSION = "8.1"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -775,6 +775,125 @@ def latest_bot_entry_epoch(symbol=None):
     return latest
 
 
+
+def _rate_float(r, name):
+    try:
+        return float(r[name])
+    except Exception:
+        try:
+            return float(getattr(r, name))
+        except Exception:
+            return 0.0
+
+
+def mt5_m1_micro_snapshot(symbol):
+    """Broker-feed M1 structure used only for final SCALP execution timing."""
+    try:
+        rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M1, 0, 10)
+    except Exception:
+        rates = None
+    if rates is None or len(rates) < 7:
+        return None
+    # Last row can be the still-forming bar. Use completed bars for structure.
+    closed = list(rates[:-1])
+    if len(closed) < 6:
+        return None
+    recent = closed[-6:]
+    ranges = [max(0.0, _rate_float(x, 'high') - _rate_float(x, 'low')) for x in recent]
+    atr = sum(ranges) / max(1, len(ranges))
+    last = recent[-1]
+    prev = recent[-2]
+    prev2 = recent[-3]
+    return {
+        'atr': atr,
+        'last_open': _rate_float(last, 'open'), 'last_high': _rate_float(last, 'high'),
+        'last_low': _rate_float(last, 'low'), 'last_close': _rate_float(last, 'close'),
+        'prev_high': _rate_float(prev, 'high'), 'prev_low': _rate_float(prev, 'low'),
+        'prev_close': _rate_float(prev, 'close'),
+        'prev2_high': _rate_float(prev2, 'high'), 'prev2_low': _rate_float(prev2, 'low'),
+        'prev2_close': _rate_float(prev2, 'close'),
+        'local_high': max(_rate_float(x, 'high') for x in recent[-4:-1]),
+        'local_low': min(_rate_float(x, 'low') for x in recent[-4:-1]),
+    }
+
+
+def scalp_campaign_entry_gate(symbol, side, basket, tick, info, data):
+    """V8.1 first-entry + scale-in gate driven by the live MT5 feed.
+
+    First entry: signal direction is only an *intent*. Execution waits until the M1
+    broker feed shows a stopped pullback and a micro break in the intended direction.
+    Scale-in: add only into a winning campaign, at a better price than every prior
+    entry, after sufficient price/ATR progress and renewed micro continuation.
+    """
+    snap = mt5_m1_micro_snapshot(symbol)
+    if snap is None:
+        return False, 'SCALP MT5 micro-trigger unavailable', {'campaign_stage': 'WAIT_MT5_M1'}
+
+    point = float(getattr(info, 'point', 0.0) or 0.0)
+    spread = max(0.0, float(tick.ask) - float(tick.bid))
+    atr = max(float(snap['atr']), point * 10.0, spread * 2.0)
+    spread_ratio = spread / atr if atr > 0 else 999.0
+    max_spread_atr = max(0.01, safe_float(data.get('scalp_max_spread_atr_ratio'), 0.16))
+    if spread_ratio > max_spread_atr:
+        return False, f'SCALP spread/ATR {spread_ratio:.3f} > {max_spread_atr:.3f}', {
+            'campaign_stage': 'WAIT_SPREAD', 'spread_atr_ratio': spread_ratio, 'm1_atr': atr
+        }
+
+    price = float(tick.ask if side == 'BUY' else tick.bid)
+    eps = max(point * 2.0, spread * 0.25)
+    if side == 'BUY':
+        bullish_bar = snap['last_close'] > snap['last_open']
+        pullback_stopped = snap['last_low'] >= min(snap['prev_low'], snap['prev2_low']) - atr * 0.12
+        micro_break = price >= max(snap['last_high'], snap['prev_high']) + eps
+        continuation = bullish_bar and price > snap['last_close'] and (micro_break or snap['last_close'] > snap['prev_high'])
+    else:
+        bearish_bar = snap['last_close'] < snap['last_open']
+        pullback_stopped = snap['last_high'] <= max(snap['prev_high'], snap['prev2_high']) + atr * 0.12
+        micro_break = price <= min(snap['last_low'], snap['prev_low']) - eps
+        continuation = bearish_bar and price < snap['last_close'] and (micro_break or snap['last_close'] < snap['prev_low'])
+
+    if not basket:
+        first_ok = pullback_stopped and (micro_break or continuation)
+        if not first_ok:
+            return False, 'SCALP WAIT: MT5 micro-trigger not confirmed', {
+                'campaign_stage': 'FIRST_ENTRY_WAIT', 'pullback_stopped': bool(pullback_stopped),
+                'micro_break': bool(micro_break), 'continuation': bool(continuation), 'm1_atr': atr
+            }
+        return True, 'SCALP first MT5 micro-trigger confirmed', {
+            'campaign_stage': 'FIRST_ENTRY', 'm1_atr': atr, 'spread_atr_ratio': spread_ratio
+        }
+
+    # Campaign add: never average down. Existing basket must already be profitable.
+    basket_pnl = sum(float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0) for p in basket)
+    entries = [float(p.price_open) for p in basket]
+    last_favourable_entry = max(entries) if side == 'BUY' else min(entries)
+    spacing_atr = max(0.05, min(safe_float(data.get('campaign_spacing_atr'), 0.12), 0.50))
+    spacing = max(atr * spacing_atr, spread * 1.5, point * 5.0)
+    progress = price - last_favourable_entry if side == 'BUY' else last_favourable_entry - price
+
+    if basket_pnl <= 0.0:
+        return False, f'SCALP CAMPAIGN WAIT: basket P/L {basket_pnl:.2f} not positive', {
+            'campaign_stage': 'NO_AVERAGING_DOWN', 'basket_pnl': basket_pnl,
+            'progress': progress, 'required_spacing': spacing
+        }
+    if progress + eps < spacing:
+        return False, f'SCALP CAMPAIGN WAIT: progress {progress:.6f} < spacing {spacing:.6f}', {
+            'campaign_stage': 'WAIT_PROGRESS', 'basket_pnl': basket_pnl,
+            'progress': progress, 'required_spacing': spacing
+        }
+    if not continuation:
+        return False, 'SCALP CAMPAIGN WAIT: MT5 continuation not reconfirmed', {
+            'campaign_stage': 'WAIT_CONTINUATION', 'basket_pnl': basket_pnl,
+            'progress': progress, 'required_spacing': spacing,
+            'micro_break': bool(micro_break), 'continuation': bool(continuation)
+        }
+
+    return True, f'SCALP CAMPAIGN ADD #{len(basket)+1} confirmed', {
+        'campaign_stage': 'ADD', 'basket_pnl': basket_pnl, 'progress': progress,
+        'required_spacing': spacing, 'm1_atr': atr, 'spread_atr_ratio': spread_ratio
+    }
+
+
 def entry_gate(data, account, symbol, tick, info):
     now_epoch = int(datetime.now().timestamp())
     execution_mode = str(data.get('execution_mode') or 'FULL_AUTO').upper()
@@ -887,12 +1006,16 @@ def signal():
         price = float(tick.ask if side == "BUY" else tick.bid)
 
         if basket_mode:
-            # V7.4.6: independent micro-scalp slots. Each fresh M1 micro trigger may open another
-            # small same-direction slot until max_positions / cash-risk cap is reached.
-            # We no longer require the previous slot to be in profit before allowing the next one.
-            cooldown = max(1, int(data.get("basket_add_cooldown_sec") or 2))
-            if latest_time and int(datetime.now().timestamp()) - latest_time < cooldown:
-                return jsonify(accepted=False, message=f"SCALP slot cooldown: {cooldown}s", basket_count=len(basket)), 409
+            # V8.1 SCALP CAMPAIGN: no blind time-based slot cooldown.
+            # First entry requires an MT5 micro-trigger. Additional entries are pyramided only
+            # when price has progressed in our favour, the basket is not losing and MT5
+            # micro-structure still confirms continuation. This is intentionally NOT averaging down.
+            micro_ok, micro_reason, micro_meta = scalp_campaign_entry_gate(
+                symbol, side, basket, tick, info, data
+            )
+            if not micro_ok:
+                return jsonify(accepted=False, bridge_version=BRIDGE_VERSION,
+                               message=micro_reason, basket_count=len(basket), **micro_meta), 409
 
         api_entry = safe_float(data.get("api_entry") or data.get("entry"), 0)
         max_drift = safe_float(data.get("max_price_drift_pct"), 0.05)
@@ -987,7 +1110,10 @@ def signal():
             "tp": tp,
             "deviation": int(data.get("deviation") or 20),
             "magic": MAGIC,
-            "comment": safe_mt5_comment(f"FXM1 {str(data.get('signal_mode') or 'AUTO')[:8]}", "FXM1 OPEN"),
+            "comment": safe_mt5_comment(
+                (f"FXM1 S{len(basket)+1:02d}" if basket_mode else f"FXM1 {str(data.get('signal_mode') or 'AUTO')[:8]}"),
+                "FXM1 OPEN"
+            ),
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": filling_mode_for(symbol),
         }
@@ -1007,7 +1133,8 @@ def signal():
             accepted=ok,
             ok=ok,
             bridge_version=BRIDGE_VERSION,
-            message=("Order opened" if ok else f"MT5 retcode {result.retcode}: {result.comment}"),
+            message=((f"SCALP campaign entry #{len(basket)+1} opened" if basket_mode else "Order opened")
+                     if ok else f"MT5 retcode {result.retcode}: {result.comment}"),
             ticket=int(result.order) if result.order else None,
             deal=int(result.deal) if result.deal else None,
             symbol=symbol,
@@ -1172,13 +1299,21 @@ _SCALP_SUPERVISOR_CFG = {
     'scalp_cash_tp_enabled': True,
     'position_manager_enabled': True,
     'trailing_enabled': True,
+    'scalp_campaign_enabled': True,
+    'scalp_campaign_single_arm_usd': 0.20,
+    'scalp_basket_peak_giveback_pct': 25.0,
+    'scalp_basket_peak_min_giveback_usd': 0.03,
 }
+
 _SCALP_SUPERVISOR_STOP = threading.Event()
 # Per-position in-memory state for GREEN-CAPTURE.
 # ticket -> highest observed floating P/L while the position is alive.
 _SCALP_PEAK_PNL = {}
 # ticket -> previous observed floating P/L, used to confirm the first real downtick.
 _SCALP_LAST_PNL = {}
+# V8.1: per (symbol, side) campaign/basket peak P/L.
+_SCALP_BASKET_PEAK = {}
+_SCALP_BASKET_LAST = {}
 
 def update_scalp_supervisor_cfg(cfg):
     if not isinstance(cfg, dict):
@@ -1191,13 +1326,12 @@ def update_scalp_supervisor_cfg(cfg):
                 _SCALP_SUPERVISOR_CFG[key] = safe_float(cfg.get(key), _SCALP_SUPERVISOR_CFG[key])
 
 def is_scalp_position(p):
-    # V7.5.2: protect every FXM1 position opened by this bot's MAGIC.
-    # Broker comments can be truncated/rewritten, so relying only on the word
-    # SCALP could leave a live position completely outside the supervisor.
+    # V8.1: do not let the fast SCALP supervisor manage NORMAL/AGGRESSIVE trades.
+    # New campaign comments start with "FXM1 Sxx"; legacy scalp comments contain SCALP.
     if int(getattr(p, 'magic', 0) or 0) != MAGIC:
         return False
-    c = str(getattr(p, 'comment', '') or '').upper()
-    return ('SCALP' in c) or ('FXM1' in c)
+    c = str(getattr(p, 'comment', '') or '').upper().strip()
+    return ('SCALP' in c) or c.startswith('FXM1 S')
 
 def scalp_supervisor_once():
     if not ensure_mt5():
@@ -1216,14 +1350,47 @@ def scalp_supervisor_once():
     basket_tp = max(limits['take_profit_usd'], safe_float(cfg.get('scalp_basket_take_profit_usd_cap'), 8.0))
     basket_pnl = sum(float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0) for p in positions)
 
-    # Basket circuit breaker first: prevents several independent slots from accumulating a large loss.
+    # Global circuit breaker remains the last-resort safety net.
     if basket_pnl <= -basket_hard or basket_pnl >= basket_tp:
         reason = 'BASKET_HARD_LOSS' if basket_pnl <= -basket_hard else 'BASKET_TAKE_PROFIT'
         for p in list(positions):
             close_position_internal(p, comment=f'FXM1 {reason}')
         return
 
+    # V8.1 campaign protection is per symbol+direction. Once multiple entries exist,
+    # manage the group as one campaign instead of letting each tiny entry GREEN_CAPTURE
+    # independently and destroy the pyramid.
+    groups = {}
+    for p in positions:
+        side_name = 'BUY' if p.type == mt5.POSITION_TYPE_BUY else 'SELL'
+        groups.setdefault((p.symbol, side_name), []).append(p)
+    campaign_multi_tickets = set()
+    campaign_closed_tickets = set()
+    if bool(cfg.get('scalp_campaign_enabled', True)):
+        for key, group in groups.items():
+            gpnl = sum(float(x.profit) + float(getattr(x, 'swap', 0.0) or 0.0) for x in group)
+            peak = max(float(_SCALP_BASKET_PEAK.get(key, gpnl)), gpnl)
+            prev = float(_SCALP_BASKET_LAST.get(key, gpnl))
+            _SCALP_BASKET_PEAK[key] = peak
+            _SCALP_BASKET_LAST[key] = gpnl
+            if len(group) >= 2:
+                campaign_multi_tickets.update(int(x.ticket) for x in group)
+                giveback_pct = max(5.0, min(safe_float(cfg.get('scalp_basket_peak_giveback_pct'), 25.0), 80.0)) / 100.0
+                min_giveback = max(0.01, safe_float(cfg.get('scalp_basket_peak_min_giveback_usd'), 0.03))
+                giveback = max(min_giveback, peak * giveback_pct)
+                reversed_from_peak = peak > 0.0 and gpnl <= peak - giveback
+                lost_green = peak > 0.0 and gpnl <= 0.0
+                if reversed_from_peak or lost_green:
+                    for x in list(group):
+                        close_position_internal(x, comment='FXM1 BASKET LOCK')
+                        campaign_closed_tickets.add(int(x.ticket))
+                    print(f"SCALP_BASKET_LOCK {key[0]} {key[1]} count={len(group)} peak={peak:.4f} current={gpnl:.4f}")
+                    _SCALP_BASKET_PEAK.pop(key, None)
+                    _SCALP_BASKET_LAST.pop(key, None)
+
     for p in list(positions):
+        if int(p.ticket) in campaign_closed_tickets:
+            continue
         tick = mt5.symbol_info_tick(p.symbol)
         if tick is None:
             continue
@@ -1237,7 +1404,11 @@ def scalp_supervisor_once():
         # The moment a scalp position has been green, we protect that green excursion.
         # We do NOT wait for +$3/+7/etc. Any positive peak arms the exit.
         # On the first meaningful pullback from the peak we market-close immediately.
-        if bool(cfg.get('scalp_peak_lock_enabled', True)) and peak > 0.0:
+        campaign_enabled = bool(cfg.get('scalp_campaign_enabled', True))
+        campaign_multi = ticket in campaign_multi_tickets
+        single_arm = max(0.0, safe_float(cfg.get('scalp_campaign_single_arm_usd'), 0.20))
+        green_capture_armed = peak > 0.0 and (not campaign_enabled or age_sec >= 45 or peak >= single_arm)
+        if bool(cfg.get('scalp_peak_lock_enabled', True)) and green_capture_armed and not campaign_multi:
             prev_pnl = float(_SCALP_LAST_PNL.get(ticket, pnl_usd))
             # Tiny tolerance avoids reacting to formatting/rounding noise only.
             eps = 0.005
@@ -1294,6 +1465,13 @@ def scalp_supervisor_once():
         if t not in live_tickets:
             _SCALP_PEAK_PNL.pop(t, None)
             _SCALP_LAST_PNL.pop(t, None)
+    live_group_keys = set()
+    for x in positions:
+        live_group_keys.add((x.symbol, 'BUY' if x.type == mt5.POSITION_TYPE_BUY else 'SELL'))
+    for k in list(_SCALP_BASKET_PEAK):
+        if k not in live_group_keys:
+            _SCALP_BASKET_PEAK.pop(k, None)
+            _SCALP_BASKET_LAST.pop(k, None)
 
 def scalp_supervisor_loop():
     while not _SCALP_SUPERVISOR_STOP.is_set():

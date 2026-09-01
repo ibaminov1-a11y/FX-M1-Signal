@@ -117,6 +117,10 @@ public final class FeatureEngine {
             o.put("scalp_peak_lock_enabled", p.getBoolean("scalp_peak_lock_enabled", true));
             o.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
             o.put("scalp_cash_tp_enabled", p.getBoolean("scalp_cash_tp_enabled", true));
+            o.put("scalp_campaign_enabled", true);
+            o.put("scalp_campaign_single_arm_usd", 0.20);
+            o.put("scalp_basket_peak_giveback_pct", 25.0);
+            o.put("scalp_basket_peak_min_giveback_usd", 0.03);
         }
         return o;
     }
