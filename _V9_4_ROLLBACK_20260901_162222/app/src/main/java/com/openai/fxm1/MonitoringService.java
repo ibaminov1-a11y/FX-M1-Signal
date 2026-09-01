@@ -74,7 +74,7 @@ public class MonitoringService extends Service {
         }
     };
 
-    // V9.4: MT5/UI/position management independent from Twelve Data cadence.
+    // V9.3 LIVE MT5 LOOP: independent from Twelve Data/API cadence.
     private final Runnable liveMt5Runnable = new Runnable() {
         @Override
         public void run() {
@@ -83,6 +83,7 @@ public class MonitoringService extends Service {
                 try {
                     refreshMt5Snapshot();
                     manageOpenPositions();
+                    refreshLiveScalpState();
                 } catch (Exception ignored) { }
             });
             handler.postDelayed(this, 1000L);
@@ -833,6 +834,51 @@ public class MonitoringService extends Service {
         } catch (Exception ignored) { }
     }
 
+    private void refreshLiveScalpState() {
+        SharedPreferences p = prefs();
+        String base = normalizeUrl(p.getString("server_url", ""));
+        if (base.isEmpty()) return;
+        try {
+            String sym = URLEncoder.encode(currentSymbol(), "UTF-8");
+            JSONObject root = httpJson("GET", base + "/live-state?symbol=" + sym, null);
+            JSONObject scalp = root.optJSONObject("scalp");
+            JSONObject last = root.optJSONObject("last_closed");
+            SharedPreferences.Editor e = p.edit()
+                    .putLong("live_mt5_update_ms", System.currentTimeMillis())
+                    .putLong("mt5_balance_bits", Double.doubleToLongBits(root.optDouble("balance", Double.NaN)))
+                    .putLong("mt5_equity_bits", Double.doubleToLongBits(root.optDouble("equity", Double.NaN)))
+                    .putInt("mt5_positions_snapshot", root.optInt("positions", 0))
+                    .putLong("mt5_floating_bits", Double.doubleToLongBits(root.optDouble("floating_pl", 0.0)));
+            if (scalp != null) {
+                e.putString("live_scalp_side", scalp.optString("side","WAIT"))
+                 .putInt("live_scalp_entry_quality", scalp.optInt("live_entry_quality",0))
+                 .putString("live_scalp_stage", scalp.optString("stage","BIAS"))
+                 .putInt("live_scalp_positions", scalp.optInt("positions",0))
+                 .putInt("live_scalp_max_positions", scalp.optInt("max_positions",10))
+                 .putLong("live_scalp_pnl_bits", Double.doubleToLongBits(scalp.optDouble("basket_pnl",0.0)))
+                 .putLong("live_scalp_peak_bits", Double.doubleToLongBits(scalp.optDouble("basket_peak",0.0)));
+            }
+            if (last != null) {
+                long deal = last.optLong("deal_id",0);
+                long previous = p.getLong("last_money_deal_id",0);
+                double net = last.optDouble("net_pl",0.0);
+                e.putLong("last_closed_net_bits", Double.doubleToLongBits(net))
+                 .putLong("last_closed_time", last.optLong("time",0))
+                 .putString("last_closed_symbol", last.optString("symbol",""))
+                 .putLong("last_money_deal_id", deal);
+                if (deal > 0 && deal != previous) {
+                    FeatureEngine.appendSignalHistory(
+                            p, last.optString("symbol", currentSymbol()), currentTf(),
+                            p.getString("live_scalp_side","SCALP"),
+                            p.getInt("state_quality",-1),
+                            String.format(Locale.US, "СДЕЛКА ЗАКРЫТА · NET %+.2f USD", net)
+                    );
+                }
+            }
+            e.apply();
+        } catch (Exception ignored) { }
+    }
+
     private void refreshMt5Snapshot() {
         SharedPreferences p = prefs();
         String base = normalizeUrl(p.getString("server_url", ""));
@@ -1188,18 +1234,24 @@ public class MonitoringService extends Service {
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
 
-        // V9.0: SCALP separates directional intent from the exact execution trigger.
-        // Android provides an early bias; Bridge owns the sub-second MT5 entry/add/exit timing.
-        String scalpIntent = executionSignal;
-        if ("SCALP".equals(mode) && "WAIT".equals(scalpIntent)) {
-            int buyBias = 0, sellBias = 0;
-            int[] biasVotes = {sHigher1, sEntry, sFast, structure};
-            for (int v : biasVotes) { if (v > 0) buyBias++; else if (v < 0) sellBias++; }
-            boolean earlyBiasBuy = sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && buyBias >= 2 && sellBias <= 1;
-            boolean earlyBiasSell = sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && sellBias >= 2 && buyBias <= 1;
-            if (earlyBiasBuy) scalpIntent = "BUY";
-            else if (earlyBiasSell) scalpIntent = "SELL";
+        // V9.2: GLOBAL signal is not a SCALP blocker.
+        int scalpDirectionScore = 0;
+        if ("SCALP".equals(mode)) {
+            scalpDirectionScore += sHigher2 * 25;
+            scalpDirectionScore += sHigher1 * 30;
+            scalpDirectionScore += sEntry * 30;
+            scalpDirectionScore += sFast * 15;
+            scalpDirectionScore += structure * 10;
+            scalpDirectionScore = Math.max(-100, Math.min(100, scalpDirectionScore));
         }
+        String scalpIntent = executionSignal;
+        if ("SCALP".equals(mode)) {
+            if (scalpDirectionScore >= 45) scalpIntent = "BUY";
+            else if (scalpDirectionScore <= -45) scalpIntent = "SELL";
+            else scalpIntent = "WAIT";
+        }
+
+
 
         double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
         double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;

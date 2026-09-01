@@ -49,7 +49,6 @@ public class MonitoringService extends Service {
     private static final long CACHE_MN1_MS = 24 * 60 * 60 * 1000L;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final ExecutorService liveExecutor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<String, CacheItem> cache = new HashMap<>();
     private final Map<String, String> lastSignalBySymbol = new HashMap<>();
@@ -71,21 +70,6 @@ public class MonitoringService extends Service {
             // PAUSE запрещает только НОВЫЕ ВХОДЫ. Рыночный анализ и сопровождение продолжаются.
             if (!analyzing) analyzeOnce();
             else scheduleNext(1000L);
-        }
-    };
-
-    // V9.4: MT5/UI/position management independent from Twelve Data cadence.
-    private final Runnable liveMt5Runnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!running) return;
-            liveExecutor.execute(() -> {
-                try {
-                    refreshMt5Snapshot();
-                    manageOpenPositions();
-                } catch (Exception ignored) { }
-            });
-            handler.postDelayed(this, 1000L);
         }
     };
 
@@ -297,15 +281,12 @@ public class MonitoringService extends Service {
         handler.post(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.postDelayed(notificationWatchdog, 15000L);
-        handler.removeCallbacks(liveMt5Runnable);
-        handler.post(liveMt5Runnable);
     }
 
     private void stopMonitoring(boolean emergency) {
         running = false;
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
-        handler.removeCallbacks(liveMt5Runnable);
         prefs().edit()
                 .putLong("monitor_stopped_ms", System.currentTimeMillis())
                 .putBoolean("bg_running", false)
@@ -482,6 +463,8 @@ public class MonitoringService extends Service {
                 saveSparkline(sparkSeries);
                 saveAnalysis(a, fresh, cached);
                 prefs().edit().putLong("state_last_success_ms", System.currentTimeMillis()).apply();
+                refreshMt5Snapshot();
+                manageOpenPositions();
                 updateWatchlistRadar(key, tf);
                 updateNotification(
                         a.symbol + " · " + tf + " · " + mode,
@@ -692,7 +675,7 @@ public class MonitoringService extends Service {
             payload.put("tp1", a.tp1);
             payload.put("tp2", a.tp2);
             double basketRiskPct = risks[Math.max(0, Math.min(riskPos, risks.length - 1))];
-            if ("SCALP".equals(mode) && maxPos <= 3) maxPos = 10;
+            if ("SCALP".equals(mode) && maxPos <= 3) maxPos = 8;
             payload.put("risk_pct", basketRiskPct);
             payload.put("max_positions", maxPos);
             if ("SCALP".equals(mode)) {
@@ -716,11 +699,11 @@ public class MonitoringService extends Service {
                 // V9.0 SCALP CAMPAIGN: no blind time cooldown. Bridge decides additions from
                 // live MT5 micro-structure, positive basket P/L and ATR/price progress.
                 payload.put("scalp_campaign_enabled", true);
-                payload.put("campaign_spacing_atr", 0.07);
+                payload.put("campaign_spacing_atr", 0.12);
                 payload.put("scalp_max_spread_atr_ratio", 0.16);
-                payload.put("scalp_campaign_single_arm_usd", 0.90);
-                payload.put("scalp_basket_peak_giveback_pct", 28.0);
-                payload.put("scalp_basket_peak_min_giveback_usd", 0.25);
+                payload.put("scalp_campaign_single_arm_usd", 0.05);
+                payload.put("scalp_basket_peak_giveback_pct", 15.0);
+                payload.put("scalp_basket_peak_min_giveback_usd", 0.02);
             }
             payload.put("mode", p.getString("target_trade_mode", "DEMO"));
             payload.put("signal_mode", mode);
@@ -1485,10 +1468,8 @@ public class MonitoringService extends Service {
         boolean shouldRemainStarted = prefs().getBoolean("bg_running", false);
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
-        handler.removeCallbacks(liveMt5Runnable);
         running = false;
         executor.shutdownNow();
-        liveExecutor.shutdownNow();
         super.onDestroy();
         // START_STICKY handles system recreation. We intentionally do not call stopForeground here
         // so an unexpected process death cannot explicitly remove the user's monitoring notification.

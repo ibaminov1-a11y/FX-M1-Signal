@@ -881,6 +881,7 @@ public class MainActivity extends Activity {
                 payload.put("tp2", a.tp2);
                 double basketRiskPct = Double.parseDouble(risk.replace("%", ""));
                 int basketMaxPositions = Integer.parseInt(maxPositions);
+                if ("SCALP".equals(selectedSignalMode()) && basketMaxPositions <= 3) basketMaxPositions = 10;
                 payload.put("risk_pct", basketRiskPct);
                 payload.put("max_positions", basketMaxPositions);
                 if ("SCALP".equals(selectedSignalMode())) {

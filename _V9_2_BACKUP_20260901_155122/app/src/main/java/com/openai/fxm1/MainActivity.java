@@ -1192,7 +1192,7 @@ public class MainActivity extends Activity {
         Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
 
         box.addView(smartLabel("SCALP LOT (AUTO или ручной лот)"));
-        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10"};
+        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10","0.20","0.50","1.00","10.00"};
         int scalpLotSel = Arrays.asList(scalpLots).indexOf(p.getString("scalp_lot_mode", "AUTO"));
         Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel); box.addView(scalpLot);
 

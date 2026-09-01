@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "9.2"
+BRIDGE_VERSION = "9.4"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -947,126 +947,103 @@ def _scalp_order_from_intent(symbol, side, data, basket):
     return True,f'opened #{len(basket)+1}'
 
 
-
 def _scalp_entry_state(symbol, side, tick, info, snap, state, basket):
+    """V9.1 execution state machine.
+
+    Directional intent is NOT an entry.  MT5 owns timing:
+      BIAS -> EXTENSION_CHECK -> RETRACE -> REJECTION -> PROBE
+      -> CONFIRM -> SCALE_IN.
+    This prevents chasing a 90-100/100 signal after the impulse is already spent.
+    """
     now = time.time()
     data = state.get('data') or {}
     quality = int(data.get('quality') or 0)
     _remember_tick(symbol, tick)
-    q = [x for x in list(_SCALP_TICKS.get(symbol, ())) if now - x[0] <= 14.0]
-    if len(q) < 10:
-        return False, 'WARMUP', {'stage': 'WARMUP', 'ticks': len(q)}
+    q = [x for x in list(_SCALP_TICKS.get(symbol, ())) if now-x[0] <= 12.0]
+    if len(q) < 8:
+        return False, 'WARMUP', {'stage':'WARMUP','ticks':len(q)}
 
-    mids = [(x[1] + x[2]) * 0.5 for x in q]
-    cur = mids[-1]
-    point = max(float(getattr(info, 'point', 0.0) or 0.0), 1e-9)
-    spread = max(0.0, float(tick.ask) - float(tick.bid))
-    atr = max(float(snap.get('atr') or 0.0), point * 10.0, spread * 2.0)
-    cm = _SCALP_CAMPAIGN_META.setdefault((symbol, side), {})
+    mids=[(x[1]+x[2])*0.5 for x in q]
+    cur=mids[-1]
+    point=max(float(getattr(info,'point',0.0) or 0.0),1e-9)
+    spread=max(0.0,float(tick.ask)-float(tick.bid))
+    atr=max(float(snap.get('atr') or 0.0), point*10)
+    cm=_SCALP_CAMPAIGN_META.setdefault((symbol,side),{})
 
-    recent = mids[-min(36, len(mids)):]
-    short = mids[-min(12, len(mids)):]
-    hi, lo = max(recent), min(recent)
-    short_hi, short_lo = max(short), min(short)
-    rng = max(hi - lo, point)
-    short_rng = max(short_hi - short_lo, point)
-    k = min(6, len(mids) - 1)
-    fast_move = cur - mids[-1-k]
+    # Fast broker-feed movement, independent of delayed API price.
+    k=min(6,len(mids)-1)
+    fast_move=cur-mids[-1-k]
+    window=mids[-min(30,len(mids)):]
+    hi=max(window); lo=min(window)
+    tick_range=max(hi-lo, point)
 
-    near_high = (hi - cur) <= max(rng * 0.12, spread * 1.5, point * 4)
-    near_low = (cur - lo) <= max(rng * 0.12, spread * 1.5, point * 4)
-
-    if side == 'BUY':
-        favourable = fast_move > max(point, spread * 0.18)
-        counter = fast_move < -max(point * 0.8, spread * 0.15)
-        chase = favourable and near_high
-        pullback_depth = max(0.0, hi - cur)
-        pullback_ok = counter or pullback_depth >= max(atr * 0.07, spread * 1.2, point * 3)
-        rejection = favourable and cur >= short_lo + short_rng * 0.52
-        micro_break = cur >= max(short[:-1]) + max(point * 0.5, spread * 0.10)
-        m1_bias = (snap['last_close'] >= snap['last_open']) or (snap['last_close'] > snap['prev_close'])
+    if side=='BUY':
+        favourable=fast_move > max(point*1.0,spread*0.20)
+        against=fast_move < -max(point*0.8,spread*0.15)
+        m1_bias=(snap['last_close'] >= snap['last_open']) or (snap['last_close'] > snap['prev_close'])
+        extension=max(0.0,cur-float(snap['last_close']))
+        pullback_depth=max(0.0,hi-cur)
+        rejection=(cur > lo + tick_range*0.45 and favourable)
+        micro_break=cur >= max(mids[-min(10,len(mids)):-1]) + max(point*0.5,spread*0.10)
     else:
-        favourable = fast_move < -max(point, spread * 0.18)
-        counter = fast_move > max(point * 0.8, spread * 0.15)
-        chase = favourable and near_low
-        pullback_depth = max(0.0, cur - lo)
-        pullback_ok = counter or pullback_depth >= max(atr * 0.07, spread * 1.2, point * 3)
-        rejection = favourable and cur <= short_hi - short_rng * 0.52
-        micro_break = cur <= min(short[:-1]) - max(point * 0.5, spread * 0.10)
-        m1_bias = (snap['last_close'] <= snap['last_open']) or (snap['last_close'] < snap['prev_close'])
+        favourable=fast_move < -max(point*1.0,spread*0.20)
+        against=fast_move > max(point*0.8,spread*0.15)
+        m1_bias=(snap['last_close'] <= snap['last_open']) or (snap['last_close'] < snap['prev_close'])
+        extension=max(0.0,float(snap['last_close'])-cur)
+        pullback_depth=max(0.0,cur-lo)
+        rejection=(cur < hi - tick_range*0.45 and favourable)
+        micro_break=cur <= min(mids[-min(10,len(mids)):-1]) - max(point*0.5,spread*0.10)
 
-    stage = cm.get('stage', 'BIAS')
-
+    # Never chase an already extended impulse.  A high direction score makes this
+    # MORE important, not less important.
+    extended = extension > max(atr*0.32, spread*2.5, point*8)
+    stage=cm.get('stage','BIAS')
     if not basket:
-        if chase and stage not in ('PULLBACK', 'REJECTION', 'RESUME'):
-            cm.update(stage='WAIT_PULLBACK', chase_at=now, chase_price=cur)
-            return False, 'CHASE_BLOCK_WAIT_PULLBACK', {'stage':'WAIT_PULLBACK','side':side,'quality':quality}
+        if extended and stage not in ('RETRACE','REJECTION'):
+            cm.update(stage='EXTENDED', extended_at=now, extreme=cur)
+            return False,'MOVE_EXTENDED_WAIT_RETEST',{'stage':'EXTENDED','extension_atr':extension/atr,'quality':quality}
 
-        if stage == 'WAIT_PULLBACK':
-            if pullback_ok:
-                cm.update(stage='PULLBACK', pullback_at=now, pullback_price=cur)
+        if stage=='EXTENDED':
+            # Need a real counter-move/retest before considering the next impulse.
+            enough_retrace = pullback_depth >= max(atr*0.08,spread*1.2,point*3)
+            if enough_retrace or against:
+                cm.update(stage='RETRACE', retrace_at=now)
             else:
-                return False, 'WAIT_PULLBACK', {'stage':'WAIT_PULLBACK','pullback_depth_atr':pullback_depth/atr}
+                return False,'WAIT_RETRACE',{'stage':'EXTENDED','pullback_atr':pullback_depth/atr}
 
-        if cm.get('stage') == 'PULLBACK':
+        if cm.get('stage')=='RETRACE':
             if rejection:
-                cm.update(stage='REJECTION', rejection_at=now, rejection_price=cur)
+                cm.update(stage='REJECTION', rejection_at=now)
             else:
-                return False, 'WAIT_REJECTION', {'stage':'PULLBACK','favourable':bool(favourable)}
+                return False,'WAIT_REJECTION',{'stage':'RETRACE','favourable':favourable}
 
-        if cm.get('stage') == 'REJECTION':
-            if not favourable:
-                return False, 'WAIT_RESUME', {'stage':'REJECTION'}
-            cm['stage'] = 'RESUME'
+        # Early probe is allowed before a full candle breakout, but only when live
+        # MT5 momentum turns back with the bias.  This is the key difference from V9.0.
+        early_context = quality >= 50 and m1_bias
+        entry_ok = favourable and (micro_break or rejection or (early_context and cm.get('stage') not in ('EXTENDED','RETRACE')))
+        if not entry_ok:
+            cm['stage']='BIAS'
+            return False,'WAIT_MT5_TURN',{'stage':'BIAS','quality':quality,'m1_bias':bool(m1_bias),'favourable':bool(favourable)}
+        cm.update(stage='PROBE', probe_at=now, probe_price=cur)
+        return True,'PROBE',{'stage':'PROBE','micro_break':bool(micro_break),'quality':quality}
 
-        early_probe = quality >= 45 and m1_bias and favourable and not chase
-        confirmed = favourable and (micro_break or (cm.get('stage') == 'RESUME' and rejection))
-        if not (confirmed or early_probe):
-            cm['stage'] = 'BIAS'
-            return False, 'WAIT_MT5_ENTRY', {
-                'stage':'BIAS','quality':quality,'m1_bias':bool(m1_bias),
-                'favourable':bool(favourable),'micro_break':bool(micro_break),'chase':bool(chase)
-            }
-
-        cm.update(stage='ENTRY', entry_trigger_at=now, trigger_price=cur)
-        return True, ('MICRO_BREAK' if micro_break else 'EARLY_RESUME'), {
-            'stage':'ENTRY','side':side,'quality':quality,'micro_break':bool(micro_break)
-        }
-
-    basket_pnl = sum(float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0) for p in basket)
+    # Existing campaign: additions only after the campaign has proved itself.
+    basket_pnl=sum(float(p.profit)+float(getattr(p,'swap',0.0) or 0.0) for p in basket)
+    entries=[float(p.price_open) for p in basket]
+    last_entry=max(entries) if side=='BUY' else min(entries)
+    price=float(tick.ask if side=='BUY' else tick.bid)
+    progress=price-last_entry if side=='BUY' else last_entry-price
+    spacing=max(atr*0.10,spread*1.5,point*5)
     if basket_pnl <= 0.0:
-        return False, 'NO_ADD_RED_BASKET', {'stage':'PROTECT','basket_pnl':basket_pnl}
-
-    entries = [float(p.price_open) for p in basket]
-    best_entry = max(entries) if side == 'BUY' else min(entries)
-    px = float(tick.ask if side == 'BUY' else tick.bid)
-    progress = px - best_entry if side == 'BUY' else best_entry - px
-    spacing = max(atr * max(0.10, safe_float(data.get('campaign_spacing_atr'), 0.14)),
-                  spread * 1.8, point * 6)
-
+        return False,'NO_ADD_RED_BASKET',{'stage':'PROTECT','basket_pnl':basket_pnl}
+    if not favourable or not micro_break:
+        return False,'WAIT_CONFIRMATION',{'stage':'CONFIRM','basket_pnl':basket_pnl,'micro_break':bool(micro_break)}
     if progress < spacing:
-        return False, 'WAIT_PROGRESS', {'stage':'CONFIRM','basket_pnl':basket_pnl,'progress':progress,'spacing':spacing}
-    if chase:
-        cm['stage'] = 'ADD_WAIT_PULLBACK'
-        return False, 'ADD_CHASE_BLOCK', {'stage':'ADD_WAIT_PULLBACK','basket_pnl':basket_pnl}
-    if cm.get('stage') == 'ADD_WAIT_PULLBACK':
-        if pullback_ok:
-            cm['stage'] = 'ADD_PULLBACK'
-        else:
-            return False, 'ADD_WAIT_PULLBACK', {'stage':'ADD_WAIT_PULLBACK'}
-    if cm.get('stage') == 'ADD_PULLBACK':
-        if rejection:
-            cm['stage'] = 'ADD_REJECTION'
-        else:
-            return False, 'ADD_WAIT_REJECTION', {'stage':'ADD_PULLBACK'}
-    if not (favourable and micro_break):
-        return False, 'ADD_WAIT_MICRO_BREAK', {'stage':'ADD_CONFIRM','micro_break':bool(micro_break)}
-    if now - float(cm.get('last_add_at', 0.0)) < 1.5:
-        return False, 'DEBOUNCE', {'stage':'ADD_CONFIRM'}
+        return False,'WAIT_PROGRESS',{'stage':'CONFIRM','progress':progress,'spacing':spacing}
+    if now-float(cm.get('last_add_at',0)) < 1.0:
+        return False,'DEBOUNCE',{'stage':'CONFIRM'}
+    return True,'SCALE_IN',{'stage':'SCALE_IN','basket_pnl':basket_pnl,'progress':progress,'spacing':spacing}
 
-    return True, 'SCALE_IN', {
-        'stage':'SCALE_IN','basket_pnl':basket_pnl,'progress':progress,'spacing':spacing
-    }
 
 def scalp_autonomous_once():
     """V9.1 autonomous MT5 execution loop. Android supplies bias only."""
@@ -1633,9 +1610,9 @@ _SCALP_SUPERVISOR_CFG = {
     'position_manager_enabled': True,
     'trailing_enabled': True,
     'scalp_campaign_enabled': True,
-    'scalp_campaign_single_arm_usd': 0.90,
-    'scalp_basket_peak_giveback_pct': 28.0,
-    'scalp_basket_peak_min_giveback_usd': 0.25,
+    'scalp_campaign_single_arm_usd': 0.05,
+    'scalp_basket_peak_giveback_pct': 15.0,
+    'scalp_basket_peak_min_giveback_usd': 0.02,
 }
 
 _SCALP_SUPERVISOR_STOP = threading.Event()
@@ -1709,12 +1686,12 @@ def scalp_supervisor_once():
             _SCALP_BASKET_LAST[key] = gpnl
             if len(group) >= 2:
                 campaign_multi_tickets.update(int(x.ticket) for x in group)
-                giveback_pct = max(15.0, min(safe_float(cfg.get('scalp_basket_peak_giveback_pct'), 28.0), 65.0)) / 100.0
-                min_giveback = max(0.20, safe_float(cfg.get('scalp_basket_peak_min_giveback_usd'), 0.25))
-                campaign_arm = max(1.00, safe_float(cfg.get('scalp_campaign_arm_usd'), 1.25))
+                giveback_pct = max(5.0, min(safe_float(cfg.get('scalp_basket_peak_giveback_pct'), 18.0), 60.0)) / 100.0
+                min_giveback = max(0.01, safe_float(cfg.get('scalp_basket_peak_min_giveback_usd'), 0.02))
                 giveback = max(min_giveback, peak * giveback_pct)
-                reversed_from_peak = peak >= campaign_arm and gpnl > 0.0 and gpnl <= peak - giveback
-                if reversed_from_peak:
+                reversed_from_peak = peak > 0.0 and gpnl <= peak - giveback
+                lost_green = peak > 0.0 and gpnl <= 0.0
+                if reversed_from_peak or lost_green:
                     for x in list(group):
                         close_position_internal(x, comment='FXM1 BASKET LOCK')
                         campaign_closed_tickets.add(int(x.ticket))
@@ -1740,22 +1717,25 @@ def scalp_supervisor_once():
         # On the first meaningful pullback from the peak we market-close immediately.
         campaign_enabled = bool(cfg.get('scalp_campaign_enabled', True))
         campaign_multi = ticket in campaign_multi_tickets
-        single_arm = max(0.60, safe_float(cfg.get('scalp_campaign_single_arm_usd'), 0.90))
-        giveback_pct = max(15.0, min(safe_float(cfg.get('scalp_single_peak_giveback_pct'), 30.0), 65.0)) / 100.0
-        min_giveback = max(0.15, safe_float(cfg.get('scalp_single_peak_min_giveback_usd'), 0.25))
-        green_capture_armed = peak >= single_arm
+        single_arm = max(0.0, safe_float(cfg.get('scalp_campaign_single_arm_usd'), 0.20))
+        green_capture_armed = peak > 0.0
         if bool(cfg.get('scalp_peak_lock_enabled', True)) and green_capture_armed and not campaign_multi:
-            giveback = max(min_giveback, peak * giveback_pct)
-            reversed_from_peak = pnl_usd <= peak - giveback
-            if reversed_from_peak and pnl_usd > 0.0:
-                ok, close_res = close_position_internal(p, comment='FXM1 PROFIT LOCK')
+            prev_pnl = float(_SCALP_LAST_PNL.get(ticket, pnl_usd))
+            # Tiny tolerance avoids reacting to formatting/rounding noise only.
+            eps = 0.005
+            reversed_from_peak = pnl_usd + eps < peak
+            downtick = pnl_usd + eps < prev_pnl
+            # Once we have shown a green P/L, never intentionally let it rotate through zero.
+            lost_green = pnl_usd <= 0.0
+            if reversed_from_peak and (downtick or lost_green):
+                ok, close_res = close_position_internal(p, comment='FXM1 GREEN CAP')
                 if ok:
-                    print(f"PROFIT_LOCK closed ticket={ticket} arm={single_arm:.2f} peak={peak:.4f} current={pnl_usd:.4f}")
+                    print(f"GREEN_CAPTURE closed ticket={ticket} peak={peak:.4f} current={pnl_usd:.4f}")
                     _SCALP_PEAK_PNL.pop(ticket, None)
                     _SCALP_LAST_PNL.pop(ticket, None)
                     continue
-            _SCALP_LAST_PNL[ticket] = pnl_usd
-        else:
+                else:
+                    print(f"GREEN_CAPTURE retry ticket={ticket} peak={peak:.4f} current={pnl_usd:.4f} result={close_res}")
             _SCALP_LAST_PNL[ticket] = pnl_usd
         else:
             _SCALP_LAST_PNL[ticket] = pnl_usd
@@ -1837,7 +1817,7 @@ def trade_log_alias():
 
 
 @app.get('/trade-ledger')
-def trade_ledger_v92():
+def trade_ledger_v94():
     days = int(request.args.get('days', '30'))
     limit = min(max(int(request.args.get('limit', '200')), 1), 1000)
     with LOCK:
@@ -1877,7 +1857,18 @@ def trade_ledger_v92():
                 'close_comment': str(getattr(last,'comment','') or '')
             })
         rows.sort(key=lambda x: x['exit_time'], reverse=True)
-        return jsonify(ok=True, bridge_version=BRIDGE_VERSION, count=min(len(rows),limit), trades=rows[:limit])
+        wins = sum(1 for x in rows if x['net_pl'] > 0)
+        losses = sum(1 for x in rows if x['net_pl'] < 0)
+        return jsonify(
+            ok=True, bridge_version=BRIDGE_VERSION, count=min(len(rows),limit), trades=rows[:limit],
+            summary={
+                'net_pl':sum(x['net_pl'] for x in rows),
+                'gross_profit':sum(x['net_pl'] for x in rows if x['net_pl'] > 0),
+                'gross_loss':sum(x['net_pl'] for x in rows if x['net_pl'] < 0),
+                'wins':wins, 'losses':losses,
+                'win_rate':(wins*100.0/(wins+losses)) if (wins+losses) else 0.0
+            }
+        )
 
 @app.post('/position-action')
 def position_action_alias():

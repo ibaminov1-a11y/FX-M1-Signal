@@ -118,9 +118,9 @@ public final class FeatureEngine {
             o.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
             o.put("scalp_cash_tp_enabled", p.getBoolean("scalp_cash_tp_enabled", true));
             o.put("scalp_campaign_enabled", true);
-            o.put("scalp_campaign_single_arm_usd", 0.90);
-            o.put("scalp_basket_peak_giveback_pct", 28.0);
-            o.put("scalp_basket_peak_min_giveback_usd", 0.25);
+            o.put("scalp_campaign_single_arm_usd", 0.20);
+            o.put("scalp_basket_peak_giveback_pct", 25.0);
+            o.put("scalp_basket_peak_min_giveback_usd", 0.03);
         }
         return o;
     }
@@ -248,42 +248,25 @@ public final class FeatureEngine {
     }
 
     public static String formatTradeLog(JSONObject root) {
-        JSONArray arr = root == null ? null : root.optJSONArray("trades");
+        JSONArray arr = root == null ? null : root.optJSONArray("events");
+        if (arr == null && root != null) arr = root.optJSONArray("deals");
         if (arr == null || arr.length() == 0) return "ТОРГОВЫЙ ЖУРНАЛ: пока пусто";
-        StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ · ДЕНЬГИ");
-        JSONObject sum = root.optJSONObject("summary");
-        if (sum != null) {
-            sb.append("
-NET ").append(String.format(Locale.US,"%+.2f USD",sum.optDouble("net_pl",0)))
-              .append(" · PROFIT ").append(String.format(Locale.US,"%+.2f",sum.optDouble("gross_profit",0)))
-              .append(" · LOSS ").append(String.format(Locale.US,"%+.2f",sum.optDouble("gross_loss",0)))
-              .append(" · WIN ").append(String.format(Locale.US,"%.1f%%",sum.optDouble("win_rate",0)));
-        }
-        SimpleDateFormat fmt = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
-        for (int i = 0; i < Math.min(arr.length(), 30); i++) {
+        StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ");
+        SimpleDateFormat f = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
+        for (int i = 0; i < Math.min(arr.length(), 10); i++) {
             JSONObject e = arr.optJSONObject(i);
             if (e == null) continue;
-            long a = e.optLong("entry_time",0), b = e.optLong("exit_time",0);
-            sb.append("
-
-").append(a>0?fmt.format(new Date(a*1000L)):"—")
-              .append(" → ").append(b>0?fmt.format(new Date(b*1000L)):"—")
-              .append("
-").append(e.optString("symbol","—")).append(" · ")
-              .append(e.optString("side","—")).append(" · ")
-              .append(String.format(Locale.US,"%.2f lot",e.optDouble("volume",0)))
-              .append("
-Entry ").append(String.format(Locale.US,"%.5f",e.optDouble("entry_price",0)))
-              .append(" → Exit ").append(String.format(Locale.US,"%.5f",e.optDouble("exit_price",0)))
-              .append(" · ").append(e.optInt("duration_sec",0)).append("s")
-              .append("
-Gross ").append(String.format(Locale.US,"%+.2f",e.optDouble("gross_pl",0)))
-              .append(" · Comm ").append(String.format(Locale.US,"%+.2f",e.optDouble("commission",0)))
-              .append(" · Swap ").append(String.format(Locale.US,"%+.2f",e.optDouble("swap",0)))
-              .append("
-NET ").append(String.format(Locale.US,"%+.2f USD",e.optDouble("net_pl",0)));
-            String reason=e.optString("close_comment","");
-            if(!reason.isEmpty()) sb.append(" · ").append(reason);
+            long ts = e.optLong("ts", 0L);
+            String event = e.optString("event", "event");
+            sb.append("\n").append(ts > 0 ? f.format(new Date(ts * 1000L)) : "—")
+                    .append(" · ").append(event);
+            if (e.has("symbol")) sb.append(" · ").append(e.optString("symbol"));
+            if (e.has("ticket")) sb.append(" #").append(e.optLong("ticket"));
+            if (e.has("reason")) sb.append(" · ").append(e.optString("reason"));
+            if (e.has("message")) sb.append(" · ").append(e.optString("message"));
+            if (e.has("slippage_pips") && !e.isNull("slippage_pips")) {
+                sb.append(" · slip ").append(String.format(Locale.US, "%.2f p", e.optDouble("slippage_pips", 0)));
+            }
         }
         return sb.toString();
     }

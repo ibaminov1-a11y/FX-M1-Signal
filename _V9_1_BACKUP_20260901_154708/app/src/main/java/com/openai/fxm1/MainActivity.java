@@ -1047,7 +1047,7 @@ public class MainActivity extends Activity {
         String text = "СОБЫТИЯ ПРИЛОЖЕНИЯ\n" + (full.trim().isEmpty()?"Пока пусто":full) +
                 "\n\nИСТОРИЯ СИГНАЛОВ\n" + (sig.trim().isEmpty()?"Пока пусто":sig) +
                 "\n\nСТАТИСТИКА 30 ДНЕЙ\n" + (stats.trim().isEmpty()?"Пока пусто":stats) +
-                "\n\nТОРГОВЫЙ ЖУРНАЛ MT5 · ДО 200 ЗАКРЫТЫХ СДЕЛОК\n" + (trades.trim().isEmpty()?"Пока пусто":trades);
+                "\n\nСДЕЛКИ MT5 · ДО 200 СОБЫТИЙ\n" + (trades.trim().isEmpty()?"Пока пусто":trades);
         tv.setText(text); scroll.addView(tv);
         new AlertDialog.Builder(this).setTitle("Торговый журнал · подробно").setView(scroll)
                 .setPositiveButton("ОБНОВИТЬ", (d,w) -> refreshStatsAndPositions())
@@ -1192,7 +1192,7 @@ public class MainActivity extends Activity {
         Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
 
         box.addView(smartLabel("SCALP LOT (AUTO или ручной лот)"));
-        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10"};
+        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10","0.20","0.50","1.00","10.00"};
         int scalpLotSel = Arrays.asList(scalpLots).indexOf(p.getString("scalp_lot_mode", "AUTO"));
         Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel); box.addView(scalpLot);
 
@@ -1310,7 +1310,7 @@ public class MainActivity extends Activity {
             try {
                 JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
                 JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
-                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-ledger?days=30&limit=200", null);
+                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-log?limit=200", null);
                 String stText = FeatureEngine.formatStats(st);
                 String posText = FeatureEngine.formatPositions(pos);
                 String logText = FeatureEngine.formatTradeLog(log);

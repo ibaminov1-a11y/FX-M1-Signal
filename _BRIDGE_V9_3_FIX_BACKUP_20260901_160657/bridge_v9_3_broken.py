@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "9.2"
+BRIDGE_VERSION = "9.3"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -1019,17 +1019,18 @@ def _scalp_entry_state(symbol, side, tick, info, snap, state, basket):
                 return False, 'WAIT_RESUME', {'stage':'REJECTION'}
             cm['stage'] = 'RESUME'
 
-        early_probe = quality >= 45 and m1_bias and favourable and not chase
-        confirmed = favourable and (micro_break or (cm.get('stage') == 'RESUME' and rejection))
-        if not (confirmed or early_probe):
-            cm['stage'] = 'BIAS'
+        confirmed = favourable and (
+            micro_break or
+            (cm.get('stage') == 'RESUME' and rejection)
+        )
+        if not confirmed:
             return False, 'WAIT_MT5_ENTRY', {
-                'stage':'BIAS','quality':quality,'m1_bias':bool(m1_bias),
+                'stage': cm.get('stage','BIAS'),'quality':quality,'m1_bias':bool(m1_bias),
                 'favourable':bool(favourable),'micro_break':bool(micro_break),'chase':bool(chase)
             }
 
         cm.update(stage='ENTRY', entry_trigger_at=now, trigger_price=cur)
-        return True, ('MICRO_BREAK' if micro_break else 'EARLY_RESUME'), {
+        return True, ('MICRO_BREAK' if micro_break else 'PULLBACK_RESUME'), {
             'stage':'ENTRY','side':side,'quality':quality,'micro_break':bool(micro_break)
         }
 
@@ -1041,8 +1042,8 @@ def _scalp_entry_state(symbol, side, tick, info, snap, state, basket):
     best_entry = max(entries) if side == 'BUY' else min(entries)
     px = float(tick.ask if side == 'BUY' else tick.bid)
     progress = px - best_entry if side == 'BUY' else best_entry - px
-    spacing = max(atr * max(0.10, safe_float(data.get('campaign_spacing_atr'), 0.14)),
-                  spread * 1.8, point * 6)
+    spacing = max(atr * max(0.05, safe_float(data.get('campaign_spacing_atr'), 0.07)),
+                  spread * 1.20, point * 4)
 
     if progress < spacing:
         return False, 'WAIT_PROGRESS', {'stage':'CONFIRM','basket_pnl':basket_pnl,'progress':progress,'spacing':spacing}
@@ -1059,9 +1060,12 @@ def _scalp_entry_state(symbol, side, tick, info, snap, state, basket):
             cm['stage'] = 'ADD_REJECTION'
         else:
             return False, 'ADD_WAIT_REJECTION', {'stage':'ADD_PULLBACK'}
-    if not (favourable and micro_break):
-        return False, 'ADD_WAIT_MICRO_BREAK', {'stage':'ADD_CONFIRM','micro_break':bool(micro_break)}
-    if now - float(cm.get('last_add_at', 0.0)) < 1.5:
+    continuation = favourable and (micro_break or cm.get('stage') == 'ADD_REJECTION')
+    if not continuation:
+        return False, 'ADD_WAIT_CONTINUATION', {
+            'stage':'ADD_CONFIRM','micro_break':bool(micro_break),'rejection':bool(rejection)
+        }
+    if now - float(cm.get('last_add_at', 0.0)) < 0.75:
         return False, 'DEBOUNCE', {'stage':'ADD_CONFIRM'}
 
     return True, 'SCALE_IN', {
@@ -1878,6 +1882,63 @@ def trade_ledger_v92():
             })
         rows.sort(key=lambda x: x['exit_time'], reverse=True)
         return jsonify(ok=True, bridge_version=BRIDGE_VERSION, count=min(len(rows),limit), trades=rows[:limit])
+
+
+@app.get('/live-state')
+def live_state_v93():
+    raw = request.args.get('symbol','')
+    with LOCK:
+        if not ensure_mt5():
+            return jsonify(ok=False, message=f"MT5 initialize failed: {mt5.last_error()}"), 503
+        account = mt5.account_info()
+        symbol = resolve_symbol(raw) if raw else None
+        tick = mt5.symbol_info_tick(symbol) if symbol else None
+        positions = mt5.positions_get() or []
+        pp = [position_payload(p) for p in positions]
+        intent = None
+        st = _SCALP_INTENTS.get(symbol) if symbol else None
+        if st:
+            side = st.get('side')
+            basket = _scalp_positions(symbol, side)
+            cm = _SCALP_CAMPAIGN_META.get((symbol,side),{})
+            stage = cm.get('stage','BIAS')
+            stage_score = {
+                'BIAS':30,'WAIT_PULLBACK':38,'PULLBACK':52,'REJECTION':68,'RESUME':80,
+                'ENTRY':95,'CONFIRM':72,'ADD_WAIT_PULLBACK':55,'ADD_PULLBACK':66,
+                'ADD_REJECTION':80,'ADD_CONFIRM':88,'SCALE_IN':94,'PROTECT':45
+            }
+            api_q = int(st.get('quality') or 0)
+            live_q = max(0,min(100,int(round(stage_score.get(stage,45)*0.70 + api_q*0.30))))
+            bp = sum(float(p.profit)+float(getattr(p,'swap',0.0) or 0.0) for p in basket)
+            intent = {
+                'side':side,'api_quality':api_q,'live_entry_quality':live_q,
+                'stage':stage,'positions':len(basket),'basket_pnl':bp,
+                'basket_peak':float(_SCALP_BASKET_PEAK.get((symbol,side),bp)),
+                'max_positions':max(1,min(int((st.get('data') or {}).get('max_positions') or 10),10))
+            }
+
+        latest = None
+        deals = history_deals(2)
+        outs = [d for d in deals if d.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY)]
+        if outs:
+            d = outs[-1]
+            net = float(d.profit)+float(d.commission)+float(d.swap)+float(getattr(d,'fee',0.0) or 0.0)
+            latest = {
+                'deal_id':int(d.ticket),'position_id':int(d.position_id),'time':int(d.time),
+                'symbol':d.symbol,'volume':float(d.volume),'price':float(d.price),
+                'net_pl':net,'profit':float(d.profit),'commission':float(d.commission),
+                'swap':float(d.swap),'comment':str(getattr(d,'comment','') or '')
+            }
+
+        return jsonify(
+            ok=True, bridge_version=BRIDGE_VERSION, server_time_ms=int(time.time()*1000),
+            account_type=account_type_name(account), balance=float(account.balance),
+            equity=float(account.equity), currency=account.currency,
+            positions=len(pp), floating_pl=sum(x['profit']+x.get('swap',0.0) for x in pp),
+            bid=float(tick.bid) if tick else None, ask=float(tick.ask) if tick else None,
+            symbol=symbol, scalp=intent, last_closed=latest
+        )
+
 
 @app.post('/position-action')
 def position_action_alias():

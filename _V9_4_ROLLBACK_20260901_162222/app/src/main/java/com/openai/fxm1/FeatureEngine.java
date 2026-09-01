@@ -112,7 +112,7 @@ public final class FeatureEngine {
             o.put("scalp_basket_risk_usd_cap", 16.0);
             o.put("scalp_basket_hard_loss_usd_cap", 10.0);
             o.put("scalp_basket_take_profit_usd_cap", 8.0);
-            o.put("scalp_max_hold_sec", 90);
+            o.put("scalp_max_hold_sec", 180);
             o.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
             o.put("scalp_peak_lock_enabled", p.getBoolean("scalp_peak_lock_enabled", true));
             o.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
@@ -251,14 +251,6 @@ public final class FeatureEngine {
         JSONArray arr = root == null ? null : root.optJSONArray("trades");
         if (arr == null || arr.length() == 0) return "ТОРГОВЫЙ ЖУРНАЛ: пока пусто";
         StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ · ДЕНЬГИ");
-        JSONObject sum = root.optJSONObject("summary");
-        if (sum != null) {
-            sb.append("
-NET ").append(String.format(Locale.US,"%+.2f USD",sum.optDouble("net_pl",0)))
-              .append(" · PROFIT ").append(String.format(Locale.US,"%+.2f",sum.optDouble("gross_profit",0)))
-              .append(" · LOSS ").append(String.format(Locale.US,"%+.2f",sum.optDouble("gross_loss",0)))
-              .append(" · WIN ").append(String.format(Locale.US,"%.1f%%",sum.optDouble("win_rate",0)));
-        }
         SimpleDateFormat fmt = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
         for (int i = 0; i < Math.min(arr.length(), 30); i++) {
             JSONObject e = arr.optJSONObject(i);
@@ -281,7 +273,7 @@ Gross ").append(String.format(Locale.US,"%+.2f",e.optDouble("gross_pl",0)))
               .append(" · Comm ").append(String.format(Locale.US,"%+.2f",e.optDouble("commission",0)))
               .append(" · Swap ").append(String.format(Locale.US,"%+.2f",e.optDouble("swap",0)))
               .append("
-NET ").append(String.format(Locale.US,"%+.2f USD",e.optDouble("net_pl",0)));
+NET ").append(String.format(Locale.US,"%+.2f",e.optDouble("net_pl",0)));
             String reason=e.optString("close_comment","");
             if(!reason.isEmpty()) sb.append(" · ").append(reason);
         }

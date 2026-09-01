@@ -1,13 +1,26 @@
-FX M1 BOT V9.2
+FX M1 BOT V9.3 LIVE
 
-1. Скопировать ВСЁ содержимое этой папки в корень проекта FX-M1-Signal.
-2. Запустить APPLY_V9_2.bat.
-3. Скрипт сам создаст резервную копию V9.1 и разложит изменения по путям:
-   app/build.gradle
-   app/src/main/java/com/openai/fxm1/MonitoringService.java
-   app/src/main/java/com/openai/fxm1/FeatureEngine.java
-   app/src/main/java/com/openai/fxm1/MainActivity.java
-   mt5_bridge/bridge_v9_2.py
-   mt5_bridge/START_BRIDGE_V9_2.bat
-4. После успешного применения Bridge запускать: mt5_bridge\START_BRIDGE_V9_2.bat
-5. REAL не включать. Тестировать только DEMO.
+Сделано в одной версии:
+- LIVE MT5 loop ~1 сек независимо от Twelve Data/API;
+- P/L, balance, equity, positions обновляются отдельно от анализа;
+- GLOBAL WAIT не блокирует SCALP bias;
+- слабый EARLY_PROBE убран: вход только после live MT5 подтверждения;
+- anti-chase сохранён;
+- pyramiding до 10 позиций: только по прибыльному движению, без усреднения вниз;
+- шаг добавления уменьшен, чтобы #2/#3/... реально могли появляться;
+- подробный MT5 money ledger из V9.2 сохранён;
+- каждое новое закрытие дописывается в историю как NET +X.XX USD / -X.XX USD;
+- Profit Lock не цепляется за микроплюс;
+- REAL остаётся заблокирован safe-default.
+
+УСТАНОВКА:
+1. Распаковать ZIP.
+2. Скопировать содержимое папки в корень FX-M1-Signal.
+3. Запустить APPLY_V9_3.bat.
+   Если проект ещё V9.1, BAT сначала применит V9.2, затем V9.3.
+4. Запустить mt5_bridge\START_BRIDGE_V9_3.bat.
+5. Собрать APK: gradle :app:assembleDebug
+6. Проверить: APP V9.3 и BRIDGE V9.3.
+7. Тестировать только DEMO.
+
+Updater делает резервную копию V9.2 перед изменениями.

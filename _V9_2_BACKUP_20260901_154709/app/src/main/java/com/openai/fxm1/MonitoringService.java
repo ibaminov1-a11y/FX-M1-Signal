@@ -49,7 +49,6 @@ public class MonitoringService extends Service {
     private static final long CACHE_MN1_MS = 24 * 60 * 60 * 1000L;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final ExecutorService liveExecutor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<String, CacheItem> cache = new HashMap<>();
     private final Map<String, String> lastSignalBySymbol = new HashMap<>();
@@ -71,21 +70,6 @@ public class MonitoringService extends Service {
             // PAUSE запрещает только НОВЫЕ ВХОДЫ. Рыночный анализ и сопровождение продолжаются.
             if (!analyzing) analyzeOnce();
             else scheduleNext(1000L);
-        }
-    };
-
-    // V9.4: MT5/UI/position management independent from Twelve Data cadence.
-    private final Runnable liveMt5Runnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!running) return;
-            liveExecutor.execute(() -> {
-                try {
-                    refreshMt5Snapshot();
-                    manageOpenPositions();
-                } catch (Exception ignored) { }
-            });
-            handler.postDelayed(this, 1000L);
         }
     };
 
@@ -297,15 +281,12 @@ public class MonitoringService extends Service {
         handler.post(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.postDelayed(notificationWatchdog, 15000L);
-        handler.removeCallbacks(liveMt5Runnable);
-        handler.post(liveMt5Runnable);
     }
 
     private void stopMonitoring(boolean emergency) {
         running = false;
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
-        handler.removeCallbacks(liveMt5Runnable);
         prefs().edit()
                 .putLong("monitor_stopped_ms", System.currentTimeMillis())
                 .putBoolean("bg_running", false)
@@ -482,6 +463,8 @@ public class MonitoringService extends Service {
                 saveSparkline(sparkSeries);
                 saveAnalysis(a, fresh, cached);
                 prefs().edit().putLong("state_last_success_ms", System.currentTimeMillis()).apply();
+                refreshMt5Snapshot();
+                manageOpenPositions();
                 updateWatchlistRadar(key, tf);
                 updateNotification(
                         a.symbol + " · " + tf + " · " + mode,
@@ -692,7 +675,7 @@ public class MonitoringService extends Service {
             payload.put("tp1", a.tp1);
             payload.put("tp2", a.tp2);
             double basketRiskPct = risks[Math.max(0, Math.min(riskPos, risks.length - 1))];
-            if ("SCALP".equals(mode) && maxPos <= 3) maxPos = 10;
+            if ("SCALP".equals(mode) && maxPos <= 3) maxPos = 8;
             payload.put("risk_pct", basketRiskPct);
             payload.put("max_positions", maxPos);
             if ("SCALP".equals(mode)) {
@@ -716,7 +699,7 @@ public class MonitoringService extends Service {
                 // V9.0 SCALP CAMPAIGN: no blind time cooldown. Bridge decides additions from
                 // live MT5 micro-structure, positive basket P/L and ATR/price progress.
                 payload.put("scalp_campaign_enabled", true);
-                payload.put("campaign_spacing_atr", 0.07);
+                payload.put("campaign_spacing_atr", 0.12);
                 payload.put("scalp_max_spread_atr_ratio", 0.16);
                 payload.put("scalp_campaign_single_arm_usd", 0.90);
                 payload.put("scalp_basket_peak_giveback_pct", 28.0);
@@ -1188,18 +1171,24 @@ public class MonitoringService extends Service {
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
 
-        // V9.0: SCALP separates directional intent from the exact execution trigger.
-        // Android provides an early bias; Bridge owns the sub-second MT5 entry/add/exit timing.
-        String scalpIntent = executionSignal;
-        if ("SCALP".equals(mode) && "WAIT".equals(scalpIntent)) {
-            int buyBias = 0, sellBias = 0;
-            int[] biasVotes = {sHigher1, sEntry, sFast, structure};
-            for (int v : biasVotes) { if (v > 0) buyBias++; else if (v < 0) sellBias++; }
-            boolean earlyBiasBuy = sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && buyBias >= 2 && sellBias <= 1;
-            boolean earlyBiasSell = sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && sellBias >= 2 && buyBias <= 1;
-            if (earlyBiasBuy) scalpIntent = "BUY";
-            else if (earlyBiasSell) scalpIntent = "SELL";
+        // V9.2: GLOBAL signal is not a SCALP blocker.
+        int scalpDirectionScore = 0;
+        if ("SCALP".equals(mode)) {
+            scalpDirectionScore += sHigher2 * 25;
+            scalpDirectionScore += sHigher1 * 30;
+            scalpDirectionScore += sEntry * 30;
+            scalpDirectionScore += sFast * 15;
+            scalpDirectionScore += structure * 10;
+            scalpDirectionScore = Math.max(-100, Math.min(100, scalpDirectionScore));
         }
+        String scalpIntent = executionSignal;
+        if ("SCALP".equals(mode)) {
+            if (scalpDirectionScore >= 45) scalpIntent = "BUY";
+            else if (scalpDirectionScore <= -45) scalpIntent = "SELL";
+            else scalpIntent = "WAIT";
+        }
+
+
 
         double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
         double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
@@ -1485,10 +1474,8 @@ public class MonitoringService extends Service {
         boolean shouldRemainStarted = prefs().getBoolean("bg_running", false);
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
-        handler.removeCallbacks(liveMt5Runnable);
         running = false;
         executor.shutdownNow();
-        liveExecutor.shutdownNow();
         super.onDestroy();
         // START_STICKY handles system recreation. We intentionally do not call stopForeground here
         // so an unexpected process death cannot explicitly remove the user's monitoring notification.
