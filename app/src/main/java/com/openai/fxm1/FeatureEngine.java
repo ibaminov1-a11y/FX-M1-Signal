@@ -12,10 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * V7.1 consolidated smart-trading settings + bridge helpers.
- * Defaults are deliberately conservative and DEMO-first.
- */
 public final class FeatureEngine {
     private FeatureEngine() {}
 
@@ -97,12 +93,10 @@ public final class FeatureEngine {
         boolean scalp = p.getInt("signal_mode_pos", 1) == 3;
         o.put("scalp_mode", scalp);
         if (scalp) {
-            // SCALP positions must be managed much faster than normal intraday positions.
             o.put("break_even_at_r", Math.min(p.getFloat("break_even_at_r", 1.0f), 0.35f));
             o.put("trailing_start_r", Math.min(p.getFloat("trailing_start_r", 1.5f), 0.55f));
             o.put("trailing_distance_r", Math.min(p.getFloat("trailing_distance_r", 0.8f), 0.35f));
             o.put("partial_close_at_r", Math.min(p.getFloat("partial_close_at_r", 1.5f), 0.70f));
-            // V7.4.6: dollar-based SCALP manager. Bridge scales these caps down for small equity.
             o.put("scalp_money_manager", true);
             o.put("scalp_risk_usd_cap", 2.0);
             o.put("scalp_hard_loss_usd_cap", 5.0);
@@ -112,7 +106,7 @@ public final class FeatureEngine {
             o.put("scalp_basket_risk_usd_cap", 16.0);
             o.put("scalp_basket_hard_loss_usd_cap", 10.0);
             o.put("scalp_basket_take_profit_usd_cap", 8.0);
-            o.put("scalp_max_hold_sec", 90);
+            o.put("scalp_max_hold_sec", 180);
             o.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
             o.put("scalp_peak_lock_enabled", p.getBoolean("scalp_peak_lock_enabled", true));
             o.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
@@ -149,7 +143,6 @@ public final class FeatureEngine {
     public static String currentSession() {
         Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         int h = utc.get(Calendar.HOUR_OF_DAY);
-        // Simple session labels for situational awareness, not broker trading hours.
         if (h >= 0 && h < 7) return "ASIA";
         if (h >= 7 && h < 12) return "LONDON";
         if (h >= 12 && h < 16) return "LONDON+NEW_YORK";
@@ -187,15 +180,12 @@ public final class FeatureEngine {
     public static String analysisSymbol(String raw) {
         String v = raw == null ? "" : raw.trim().toUpperCase(Locale.US);
         if (v.isEmpty()) return v;
-        // Broker symbols often look like EURUSD, EURUSD.a or XAUUSDm.
-        // Twelve Data FX/metal endpoints are more reliable with AAA/BBB form.
         String letters = v.replaceAll("[^A-Z]", "");
         if (letters.length() >= 6) {
             String six = letters.substring(0, 6);
             String a = six.substring(0, 3);
             String b = six.substring(3, 6);
-            Set<String> ccy = new HashSet<>(Arrays.asList(
-                    "USD","EUR","GBP","JPY","CHF","AUD","CAD","NZD","XAU","XAG"));
+            Set<String> ccy = new HashSet<>(Arrays.asList("USD","EUR","GBP","JPY","CHF","AUD","CAD","NZD","XAU","XAG"));
             if (ccy.contains(a) && ccy.contains(b)) return a + "/" + b;
         }
         return v;
@@ -253,35 +243,28 @@ public final class FeatureEngine {
         StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ · ДЕНЬГИ");
         JSONObject sum = root.optJSONObject("summary");
         if (sum != null) {
-            sb.append("
-NET ").append(String.format(Locale.US,"%+.2f USD",sum.optDouble("net_pl",0)))
-              .append(" · PROFIT ").append(String.format(Locale.US,"%+.2f",sum.optDouble("gross_profit",0)))
-              .append(" · LOSS ").append(String.format(Locale.US,"%+.2f",sum.optDouble("gross_loss",0)))
-              .append(" · WIN ").append(String.format(Locale.US,"%.1f%%",sum.optDouble("win_rate",0)));
+            sb.append("\nNET ").append(String.format(Locale.US, "%+.2f USD", sum.optDouble("net_pl", 0)))
+              .append(" · PROFIT ").append(String.format(Locale.US, "%+.2f", sum.optDouble("gross_profit", 0)))
+              .append(" · LOSS ").append(String.format(Locale.US, "%+.2f", sum.optDouble("gross_loss", 0)))
+              .append(" · WIN ").append(String.format(Locale.US, "%.1f%%", sum.optDouble("win_rate", 0)));
         }
         SimpleDateFormat fmt = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
         for (int i = 0; i < Math.min(arr.length(), 30); i++) {
             JSONObject e = arr.optJSONObject(i);
             if (e == null) continue;
             long a = e.optLong("entry_time",0), b = e.optLong("exit_time",0);
-            sb.append("
-
-").append(a>0?fmt.format(new Date(a*1000L)):"—")
-              .append(" → ").append(b>0?fmt.format(new Date(b*1000L)):"—")
-              .append("
-").append(e.optString("symbol","—")).append(" · ")
+            sb.append("\n\n").append(a > 0 ? fmt.format(new Date(a*1000L)) : "—")
+              .append(" → ").append(b > 0 ? fmt.format(new Date(b*1000L)) : "—")
+              .append("\n").append(e.optString("symbol","—")).append(" · ")
               .append(e.optString("side","—")).append(" · ")
               .append(String.format(Locale.US,"%.2f lot",e.optDouble("volume",0)))
-              .append("
-Entry ").append(String.format(Locale.US,"%.5f",e.optDouble("entry_price",0)))
+              .append("\nEntry ").append(String.format(Locale.US,"%.5f",e.optDouble("entry_price",0)))
               .append(" → Exit ").append(String.format(Locale.US,"%.5f",e.optDouble("exit_price",0)))
               .append(" · ").append(e.optInt("duration_sec",0)).append("s")
-              .append("
-Gross ").append(String.format(Locale.US,"%+.2f",e.optDouble("gross_pl",0)))
+              .append("\nGross ").append(String.format(Locale.US,"%+.2f",e.optDouble("gross_pl",0)))
               .append(" · Comm ").append(String.format(Locale.US,"%+.2f",e.optDouble("commission",0)))
               .append(" · Swap ").append(String.format(Locale.US,"%+.2f",e.optDouble("swap",0)))
-              .append("
-NET ").append(String.format(Locale.US,"%+.2f USD",e.optDouble("net_pl",0)));
+              .append("\nNET ").append(String.format(Locale.US,"%+.2f USD",e.optDouble("net_pl",0)));
             String reason=e.optString("close_comment","");
             if(!reason.isEmpty()) sb.append(" · ").append(reason);
         }
