@@ -1236,44 +1236,25 @@ public class MonitoringService extends Service {
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
 
-        // V9.5 FINAL FIX: independent SCALP directional bias.
-        // Direction only. Bridge still requires pullback -> rejection -> resume -> micro-break.
+        // V9.5: GLOBAL BUY/SELL/WAIT is informational for SCALP.
+        // SCALP computes its own BIAS; Bridge owns exact MT5 entry/add/exit timing.
         int scalpDirectionScore = 0;
-        String scalpIntent = "WAIT";
-
         if ("SCALP".equals(mode)) {
-            scalpDirectionScore += sHigher2 * 18;
-            scalpDirectionScore += sHigher1 * 24;
-            scalpDirectionScore += sEntry   * 28;
-            scalpDirectionScore += sFast    * 20;
+            scalpDirectionScore += sHigher2 * 20;
+            scalpDirectionScore += sHigher1 * 25;
+            scalpDirectionScore += sEntry * 30;
+            scalpDirectionScore += sFast * 15;
             scalpDirectionScore += structure * 10;
             scalpDirectionScore = Math.max(-100, Math.min(100, scalpDirectionScore));
-
-            int buyVotes = 0;
-            int sellVotes = 0;
-            int[] scalpVotes = {sHigher2, sHigher1, sEntry, sFast, structure};
-            for (int v : scalpVotes) {
-                if (v > 0) buyVotes++;
-                else if (v < 0) sellVotes++;
-            }
-
-            boolean localBuy = sEntry > 0 && (sFast >= 0 || structure >= 0);
-            boolean localSell = sEntry < 0 && (sFast <= 0 || structure <= 0);
-
-            boolean buyBias =
-                    (scalpDirectionScore >= 28 && buyVotes >= 3 && sellVotes <= 2)
-                    || (localBuy && buyVotes >= 3 && scalpDirectionScore >= 18);
-
-            boolean sellBias =
-                    (scalpDirectionScore <= -28 && sellVotes >= 3 && buyVotes <= 2)
-                    || (localSell && sellVotes >= 3 && scalpDirectionScore <= -18);
-
-            if (buyBias && !sellBias) {
-                scalpIntent = "BUY";
-            } else if (sellBias && !buyBias) {
-                scalpIntent = "SELL";
-            }
         }
+        String scalpIntent = executionSignal;
+        if ("SCALP".equals(mode)) {
+            if (scalpDirectionScore >= 40) scalpIntent = "BUY";
+            else if (scalpDirectionScore <= -40) scalpIntent = "SELL";
+            else scalpIntent = "WAIT";
+        }
+
+
 
         double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
         double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
