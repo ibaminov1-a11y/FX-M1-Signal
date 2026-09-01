@@ -1,23 +1,24 @@
-ПРИЧИНА BUILD #60 НАЙДЕНА ТОЧНО.
+FX M1 BOT V9.5 FINAL
 
-В GitHub FeatureEngine.java в formatTradeLog() были записаны реальные переносы
-строки внутри Java-кавычек. Например:
+Одним обновлением:
+- полностью убран ранний PROBE без micro-break;
+- первый вход: PULLBACK -> REJECTION -> RESUME -> MICRO BREAK;
+- BUY/SELL зеркальны;
+- GLOBAL WAIT не блокирует SCALP direction;
+- anti-chase;
+- pyramiding до 10;
+- scale-in только прибыльной кампании;
+- tiny GREEN_CAPTURE удалён;
+- single Profit Lock arm ~0.90 USD;
+- basket lock arm ~1.25 USD;
+- Android больше не отправляет старые 0.05 / 15% / 0.02;
+- расширены ручные лоты до 100.00;
+- Bridge нормализует лот под broker volume_min/max/step;
+- REAL остаётся OFF.
 
-    sb.append("
-NET ")
-
-Такой Java-код не компилируется.
-
-ЧТО ДЕЛАТЬ:
-1. Открой ZIP -> FX-M1-Signal.
-2. Скопируй FIX_V9_4_ANDROID_BUILD.bat и FIX_V9_4_ANDROID_BUILD.py
-   в корень:
-   C:\Users\Hp\OneDrive\Documents\GitHub\FX-M1-Signal\
-3. Запусти FIX_V9_4_ANDROID_BUILD.bat.
-4. После DONE в GitHub обнови только файл:
-   app\src\main\java\com\openai\fxm1\FeatureEngine.java
-5. Запусти Actions APK V9.4 снова.
-
-Bridge V9.4 не трогается.
-MonitoringService не трогается.
-MainActivity не трогается.
+Установка:
+1. Содержимое этой папки FX-M1-Signal скопировать в корень своего FX-M1-Signal.
+2. Запустить APPLY_V9_5_FINAL.bat.
+3. Дождаться DONE.
+4. Запустить mt5_bridge\START_BRIDGE_V9_5.bat.
+5. После проверки Bridge отправить изменённые Android-файлы и V9.5 Bridge в GitHub и собрать APK V9.5.
