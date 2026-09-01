@@ -4,16 +4,28 @@ import math
 import os
 import socket
 import threading
+import time
+from collections import deque
 from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "8.1.1"
+BRIDGE_VERSION = "9.0"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
 ALLOW_REAL = os.environ.get("FXM1_ALLOW_REAL", "0").strip().lower() in ("1", "true", "yes", "on")
+
+
+# V9.0 autonomous SCALP runtime. Android supplies a directional intent; Bridge owns
+# the 100 ms MT5 trigger, campaign additions and exits.
+_SCALP_INTENTS = {}            # resolved_symbol -> latest intent payload/state
+_SCALP_TICKS = {}              # resolved_symbol -> deque[(ts,bid,ask)]
+_SCALP_CAMPAIGN_META = {}      # (symbol,side) -> last add metadata
+_RUNTIME_STARTED = False
+_RUNTIME_LOCK = threading.Lock()
+
 
 
 def ensure_mt5():
@@ -817,6 +829,196 @@ def mt5_m1_micro_snapshot(symbol):
     }
 
 
+
+def _remember_tick(symbol, tick):
+    if tick is None:
+        return
+    q = _SCALP_TICKS.setdefault(symbol, deque(maxlen=120))
+    now = time.time()
+    bid = float(tick.bid)
+    ask = float(tick.ask)
+    if q and abs(q[-1][1]-bid) < 1e-12 and abs(q[-1][2]-ask) < 1e-12 and now-q[-1][0] < 0.08:
+        return
+    q.append((now,bid,ask))
+
+
+def scalp_live_tick_trigger(symbol, side, tick, info, snap, quality=0, continuation_required=False):
+    """Sub-second execution trigger from broker ticks plus closed-M1 structure.
+    It is intentionally faster than waiting for a new closed M1 bar.
+    """
+    _remember_tick(symbol, tick)
+    q = list(_SCALP_TICKS.get(symbol, ()))
+    if len(q) < 6:
+        return False, {'tick_ready': False, 'tick_count': len(q)}
+    now = time.time()
+    q = [x for x in q if now-x[0] <= 8.0]
+    if len(q) < 6:
+        return False, {'tick_ready': False, 'tick_count': len(q)}
+    mids=[(x[1]+x[2])*0.5 for x in q]
+    cur=mids[-1]
+    prev=mids[:-1]
+    short=prev[-min(12,len(prev)):]
+    older=prev[-min(30,len(prev)):-min(5,len(prev))] if len(prev)>8 else prev[:max(1,len(prev)//2)]
+    point=float(getattr(info,'point',0.0) or 0.0)
+    spread=max(0.0,float(tick.ask)-float(tick.bid))
+    eps=max(point*1.5, spread*0.20)
+    # tick slope avoids entering merely because a stale closed candle points that way.
+    k=min(6,len(mids)-1)
+    slope=cur-mids[-1-k]
+    if side=='BUY':
+        micro_break=cur > max(short) + eps*0.15
+        momentum=slope > eps*0.20
+        rebound=cur > min(short) + max(eps, (max(short)-min(short))*0.35)
+        live_side=cur >= float(snap['last_close']) - eps
+    else:
+        micro_break=cur < min(short) - eps*0.15
+        momentum=slope < -eps*0.20
+        rebound=cur < max(short) - max(eps, (max(short)-min(short))*0.35)
+        live_side=cur <= float(snap['last_close']) + eps
+    strong=int(quality or 0)>=70
+    if continuation_required:
+        ok = micro_break and momentum
+    else:
+        # First entry may use strong directional intent + live momentum before a full M1 breakout.
+        ok = (micro_break and momentum) or (strong and momentum and rebound and live_side)
+    return ok, {'tick_ready': True, 'tick_count': len(q), 'micro_break_tick': bool(micro_break),
+                'tick_momentum': bool(momentum), 'tick_rebound': bool(rebound), 'live_side': bool(live_side),
+                'tick_slope': slope}
+
+
+def _scalp_positions(symbol, side=None):
+    positions = mt5.positions_get(symbol=symbol) or []
+    out=[]
+    for p in positions:
+        if int(getattr(p,'magic',0) or 0)!=MAGIC or not is_scalp_position(p):
+            continue
+        if side=='BUY' and p.type!=mt5.POSITION_TYPE_BUY: continue
+        if side=='SELL' and p.type!=mt5.POSITION_TYPE_SELL: continue
+        out.append(p)
+    return out
+
+
+def _scalp_order_from_intent(symbol, side, data, basket):
+    """Open one SCALP tranche directly from the autonomous Bridge runtime."""
+    account=mt5.account_info()
+    allowed,reason=trading_allowed(account)
+    if not allowed: return False, reason
+    tick=mt5.symbol_info_tick(symbol); info=mt5.symbol_info(symbol)
+    if tick is None or info is None: return False,'No current MT5 quote'
+    gate_ok,gate_message,gate_code,gate_extra=entry_gate(data,account,symbol,tick,info)
+    if not gate_ok: return False,gate_message
+    max_positions=max(1,int(data.get('max_positions') or 8))
+    if len(basket)>=max_positions: return False,f'campaign full {len(basket)}/{max_positions}'
+    order_type=mt5.ORDER_TYPE_BUY if side=='BUY' else mt5.ORDER_TYPE_SELL
+    price=float(tick.ask if side=='BUY' else tick.bid)
+    limits=scalp_money_limits(float(account.equity),data)
+    manual_volume=scalp_manual_volume(symbol,data.get('scalp_lot_mode','AUTO'))
+    if manual_volume is None:
+        # AUTO uses cash-risk-derived size, with a broker-valid protective distance.
+        atr_snap=mt5_m1_micro_snapshot(symbol)
+        atr=max((atr_snap or {}).get('atr',0.0), float(info.point or 0.00001)*10)
+        temp_sl=price-atr*0.85 if side=='BUY' else price+atr*0.85
+        temp_sl,_=normalize_order_stops(symbol,side,tick,temp_sl,0)
+        volume,risk,err=calc_risk_volume(symbol,order_type,price,temp_sl,
+            (limits['planned_risk_usd']/max(float(account.equity),1e-9))*100.0,float(account.equity))
+        if err: return False,err
+    else:
+        volume=manual_volume
+    sl=cash_target_price(symbol,order_type,price,volume,limits['planned_risk_usd'],True)
+    tp=cash_target_price(symbol,order_type,price,volume,limits['take_profit_usd'],False)
+    sl,tp=normalize_order_stops(symbol,side,tick,safe_float(sl,0),safe_float(tp,0))
+    if sl<=0: return False,'Cannot calculate broker-valid SCALP SL'
+    calc_loss=mt5.order_calc_profit(order_type,symbol,volume,price,sl)
+    actual=abs(float(calc_loss)) if calc_loss is not None else 999999.0
+    if actual>limits['hard_loss_usd']+0.01:
+        return False,f'lot risk ${actual:.2f} > hard cap ${limits["hard_loss_usd"]:.2f}'
+    margin=margin_payload(order_type,symbol,volume,price,account)
+    req_margin=margin.get('required_margin')
+    if req_margin is not None and req_margin>float(account.margin_free): return False,'Insufficient free margin'
+    req={'action':mt5.TRADE_ACTION_DEAL,'symbol':symbol,'volume':volume,'type':order_type,'price':price,
+         'sl':sl,'tp':tp,'deviation':int(data.get('deviation') or 20),'magic':MAGIC,
+         'comment':safe_mt5_comment(f'FXM1 S{len(basket)+1:02d}','FXM1 OPEN'),
+         'type_time':mt5.ORDER_TIME_GTC,'type_filling':filling_mode_for(symbol)}
+    result,attempts=send_deal_with_fill_fallback(req)
+    if result is None: return False,f'order_send None {mt5.last_error()}'
+    if result.retcode!=mt5.TRADE_RETCODE_DONE:
+        return False,f'order retcode={result.retcode} {getattr(result,"comment","")}'
+    print(f'SCALP_AUTONOMOUS_OPEN {symbol} {side} #{len(basket)+1} price={price:.5f} vol={volume}')
+    return True,f'opened #{len(basket)+1}'
+
+
+def scalp_autonomous_once():
+    """Evaluate all live intents at 100 ms cadence; Android need not resend /signal."""
+    if not ensure_mt5(): return
+    now=time.time()
+    for symbol,state in list(_SCALP_INTENTS.items()):
+        data=state.get('data') or {}
+        side=state.get('side')
+        if side not in ('BUY','SELL') or now>float(state.get('expires_at',0)):
+            _SCALP_INTENTS.pop(symbol,None); continue
+        tick=mt5.symbol_info_tick(symbol); info=mt5.symbol_info(symbol)
+        if tick is None or info is None: continue
+        _remember_tick(symbol,tick)
+        snap=mt5_m1_micro_snapshot(symbol)
+        if snap is None: continue
+        basket=_scalp_positions(symbol,side)
+        opposite=_scalp_positions(symbol,'SELL' if side=='BUY' else 'BUY')
+        if opposite: continue
+        quality=int(data.get('quality') or 0)
+        live_ok,meta=scalp_live_tick_trigger(symbol,side,tick,info,snap,quality,continuation_required=bool(basket))
+        if not basket:
+            if not live_ok: continue
+            ok,msg=_scalp_order_from_intent(symbol,side,data,basket)
+            state['last_action']=msg; state['last_action_at']=now
+            continue
+        # Scale in only in profit and only after actual favourable price progress.
+        basket_pnl=sum(float(p.profit)+float(getattr(p,'swap',0.0) or 0.0) for p in basket)
+        if basket_pnl<=0.0 or not live_ok: continue
+        entries=[float(p.price_open) for p in basket]
+        last_entry=max(entries) if side=='BUY' else min(entries)
+        price=float(tick.ask if side=='BUY' else tick.bid)
+        atr=max(float(snap['atr']),float(info.point or 0.00001)*10)
+        spread=max(0.0,float(tick.ask)-float(tick.bid))
+        spacing=max(atr*max(0.05,min(safe_float(data.get('campaign_spacing_atr'),0.10),0.40)),spread*1.5,float(info.point or 0.0)*5)
+        progress=price-last_entry if side=='BUY' else last_entry-price
+        key=(symbol,side)
+        cm=_SCALP_CAMPAIGN_META.setdefault(key,{})
+        # anti-duplicate debounce only; it is not the entry criterion
+        if now-float(cm.get('last_add_at',0))<1.0: continue
+        if progress+max(float(info.point or 0.0)*2,spread*0.2)<spacing: continue
+        ok,msg=_scalp_order_from_intent(symbol,side,data,basket)
+        if ok:
+            cm['last_add_at']=now; cm['last_add_price']=price
+        state['last_action']=msg; state['last_action_at']=now
+
+
+@app.post('/scalp-intent')
+def scalp_intent():
+    data=request.get_json(silent=True) or {}
+    if not ensure_mt5(): return jsonify(accepted=False,message='MT5 offline',bridge_version=BRIDGE_VERSION),503
+    side=str(data.get('signal') or '').upper()
+    if side not in ('BUY','SELL'): return jsonify(accepted=False,message='Intent must be BUY/SELL',bridge_version=BRIDGE_VERSION),400
+    symbol=resolve_symbol(data.get('symbol',''))
+    if not symbol: return jsonify(accepted=False,message='Symbol not found',bridge_version=BRIDGE_VERSION),404
+    update_scalp_supervisor_cfg(data)
+    ttl=max(15,min(int(data.get('intent_ttl_sec') or 90),180))
+    old=_SCALP_INTENTS.get(symbol)
+    # Opposite fresh intent replaces old direction; same direction refreshes it.
+    _SCALP_INTENTS[symbol]={'side':side,'data':dict(data),'updated_at':time.time(),'expires_at':time.time()+ttl,
+                            'quality':int(data.get('quality') or 0),'source_signal':data.get('intent_source_signal')}
+    return jsonify(accepted=True,queued=True,bridge_version=BRIDGE_VERSION,message=f'SCALP INTENT {side} active {ttl}s',
+                   replaced_side=(old or {}).get('side')),202
+
+
+@app.get('/scalp-intent-state')
+def scalp_intent_state():
+    now=time.time(); rows=[]
+    for symbol,state in list(_SCALP_INTENTS.items()):
+        rows.append({'symbol':symbol,'side':state.get('side'),'quality':state.get('quality'),
+                     'ttl_left_sec':max(0,int(float(state.get('expires_at',0))-now)),
+                     'last_action':state.get('last_action','')})
+    return jsonify(ok=True,bridge_version=BRIDGE_VERSION,intents=rows)
+
 def scalp_campaign_entry_gate(symbol, side, basket, tick, info, data):
     """V8.1 first-entry + scale-in gate driven by the live MT5 feed.
 
@@ -1350,6 +1552,7 @@ def is_scalp_position(p):
     return ('SCALP' in c) or c.startswith('FXM1 S')
 
 def scalp_supervisor_once():
+    scalp_autonomous_once()
     if not ensure_mt5():
         return
     account = mt5.account_info()
@@ -1391,8 +1594,8 @@ def scalp_supervisor_once():
             _SCALP_BASKET_LAST[key] = gpnl
             if len(group) >= 2:
                 campaign_multi_tickets.update(int(x.ticket) for x in group)
-                giveback_pct = max(5.0, min(safe_float(cfg.get('scalp_basket_peak_giveback_pct'), 25.0), 80.0)) / 100.0
-                min_giveback = max(0.01, safe_float(cfg.get('scalp_basket_peak_min_giveback_usd'), 0.03))
+                giveback_pct = max(5.0, min(safe_float(cfg.get('scalp_basket_peak_giveback_pct'), 18.0), 60.0)) / 100.0
+                min_giveback = max(0.01, safe_float(cfg.get('scalp_basket_peak_min_giveback_usd'), 0.02))
                 giveback = max(min_giveback, peak * giveback_pct)
                 reversed_from_peak = peak > 0.0 and gpnl <= peak - giveback
                 lost_green = peak > 0.0 and gpnl <= 0.0
@@ -1660,20 +1863,24 @@ def risk_state_alias():
         return jsonify(ok=True, **rs)
 
 
-if __name__ == "__main__":
-    if not mt5.initialize():
-        print("WARNING: MT5 is not connected yet:", mt5.last_error())
-        print("Open MetaTrader 5 on Windows and log in, then retry /health.")
+def start_runtime():
+    global _RUNTIME_STARTED
+    with _RUNTIME_LOCK:
+        if _RUNTIME_STARTED:
+            return
+        _RUNTIME_STARTED=True
+        if not mt5.initialize():
+            print('WARNING: MT5 is not connected yet:', mt5.last_error())
+        threading.Thread(target=scalp_supervisor_loop,name='FXM1-ScalpSupervisor',daemon=True).start()
+        print('SCALP runtime: ACTIVE · 100 ms autonomous INTENT/CAMPAIGN/EXIT loop')
 
-    host = "0.0.0.0"
-    port = int(os.environ.get("FXM1_PORT", "8000"))
-    try:
-        ip = socket.gethostbyname(socket.gethostname())
-    except Exception:
-        ip = "YOUR_PC_IP"
 
-    print(f"FX M1 MT5 Bridge V{BRIDGE_VERSION}: http://{ip}:{port}")
-    print("REAL trading:", "ENABLED" if ALLOW_REAL else "DISABLED (safe default)")
-    threading.Thread(target=scalp_supervisor_loop, name="FXM1-ScalpSupervisor", daemon=True).start()
-    print("SCALP supervisor: ACTIVE · 100 ms GREEN-CAPTURE loop")
-    app.run(host=host, port=port, debug=False, threaded=True)
+if __name__ == '__main__':
+    start_runtime()
+    host='0.0.0.0'
+    port=int(os.environ.get('FXM1_PORT','8000'))
+    try: ip=socket.gethostbyname(socket.gethostname())
+    except Exception: ip='YOUR_PC_IP'
+    print(f'FX M1 MT5 Bridge V{BRIDGE_VERSION}: http://{ip}:{port}')
+    print('REAL trading:', 'ENABLED' if ALLOW_REAL else 'DISABLED (safe default)')
+    app.run(host=host,port=port,debug=False,threaded=True)

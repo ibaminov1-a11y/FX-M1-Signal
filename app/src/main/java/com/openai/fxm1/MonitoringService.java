@@ -621,7 +621,14 @@ public class MonitoringService extends Service {
         // The big card may remain WAIT while a mode-specific executable setup exists.
         // Conversely, if there is no executable setup we log the reason instead of silently returning.
         String tradeSignal = a.executionSignal;
-        if ("WAIT".equals(tradeSignal)) {
+        String scalpIntent = "SCALP".equals(mode) ? a.scalpIntent : tradeSignal;
+        if ("SCALP".equals(mode)) {
+            if ("WAIT".equals(scalpIntent)) {
+                FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality,
+                        "SCALP: NO DIRECTIONAL INTENT");
+                return;
+            }
+        } else if ("WAIT".equals(tradeSignal)) {
             FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality,
                     "SKIP: NO EXECUTION SETUP · " + mode);
             return;
@@ -661,7 +668,7 @@ public class MonitoringService extends Service {
 
             JSONObject payload = new JSONObject();
             payload.put("symbol", a.symbol);
-            payload.put("signal", tradeSignal);
+            payload.put("signal", "SCALP".equals(mode) ? scalpIntent : tradeSignal);
             payload.put("quality", a.quality);
             payload.put("entry", a.entry);
             payload.put("sl", a.sl);
@@ -689,7 +696,7 @@ public class MonitoringService extends Service {
                 payload.put("scalp_basket_risk_usd_cap", 16.0);
                     payload.put("scalp_basket_hard_loss_usd_cap", 10.0);
                     payload.put("scalp_basket_take_profit_usd_cap", 8.0);
-                // V8.1 SCALP CAMPAIGN: no blind time cooldown. Bridge decides additions from
+                // V9.0 SCALP CAMPAIGN: no blind time cooldown. Bridge decides additions from
                 // live MT5 micro-structure, positive basket P/L and ATR/price progress.
                 payload.put("scalp_campaign_enabled", true);
                 payload.put("campaign_spacing_atr", 0.12);
@@ -704,17 +711,25 @@ public class MonitoringService extends Service {
             payload.put("timeframe", tf);
             payload.put("api_entry", a.entry);
             double selectedDrift = drifts[Math.max(0, Math.min(driftPos, drifts.length - 1))];
-            // V8.1: SCALP execution must stay close to the broker feed. The MT5 micro-trigger is
+            // V9.0: SCALP execution must stay close to the broker feed. The MT5 micro-trigger is
             // authoritative; API price is context only.
             if ("SCALP".equals(mode)) selectedDrift = Math.min(selectedDrift, 0.015);
             payload.put("max_price_drift_pct", selectedDrift);
             payload.put("execution_price_source", "MT5");
+            if ("SCALP".equals(mode)) {
+                payload.put("intent_ttl_sec", 90);
+                payload.put("intent_source_signal", a.signal);
+                payload.put("intent_execution_signal", a.executionSignal);
+                payload.put("autonomous_campaign", true);
+            }
             FeatureEngine.applySignalFeatures(payload, p, a.why, a.components);
 
-            JSONObject response = httpJson("POST", base + "/signal", payload);
+            String endpoint = "SCALP".equals(mode) ? "/scalp-intent" : "/signal";
+            JSONObject response = httpJson("POST", base + endpoint, payload);
             boolean accepted = response.optBoolean("accepted", false);
             String message = response.optString("message", accepted ? "DEMO order opened" : "signal rejected");
-            FeatureEngine.appendSignalHistory(p, a.symbol, tf, tradeSignal, a.quality, ("WAIT".equals(a.signal) ? "MICRO inside WAIT · " : "") + message);
+            FeatureEngine.appendSignalHistory(p, a.symbol, tf, "SCALP".equals(mode) ? scalpIntent : tradeSignal, a.quality,
+                    ("SCALP".equals(mode) ? "INTENT · " : ("WAIT".equals(a.signal) ? "MICRO inside WAIT · " : "")) + message);
             p.edit().putString("last_execution_result", message).apply();
 
             if (response.optBoolean("pending_approval", false)) {
@@ -1127,9 +1142,9 @@ public class MonitoringService extends Service {
                     fastAtr = Math.max(minStopDistance(symbol), f.high - f.low);
                 }
                 int timingMicro = scalpExecutionDirection(fast, fastAtr);
-                // V8.1: SCALP direction is intent only. Remove the weak Entry+Fast+Structure fallback.
+                // V9.0: SCALP direction is intent only. Remove the weak Entry+Fast+Structure fallback.
                 // Android may propose a side only when anchor/structure and faster timing agree;
-                // Bridge V8.1 then requires a live MT5 M1 micro-trigger before actual order_send.
+                // Bridge V9.0 then requires a live MT5 M1 micro-trigger before actual order_send.
                 boolean scalpExecBuy = (anchorMicro > 0 && timingMicro > 0 && sEntry >= 0 && structure >= 0)
                         || (sEntry > 0 && structure > 0 && timingMicro > 0);
                 boolean scalpExecSell = (anchorMicro < 0 && timingMicro < 0 && sEntry <= 0 && structure <= 0)
@@ -1155,6 +1170,19 @@ public class MonitoringService extends Service {
             // CONSERVATIVE intentionally has no early-entry path.
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
+
+        // V9.0: SCALP separates directional intent from the exact execution trigger.
+        // Android provides an early bias; Bridge owns the sub-second MT5 entry/add/exit timing.
+        String scalpIntent = executionSignal;
+        if ("SCALP".equals(mode) && "WAIT".equals(scalpIntent)) {
+            int buyBias = 0, sellBias = 0;
+            int[] biasVotes = {sHigher1, sEntry, sFast, structure};
+            for (int v : biasVotes) { if (v > 0) buyBias++; else if (v < 0) sellBias++; }
+            boolean earlyBiasBuy = sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && buyBias >= 2 && sellBias <= 1;
+            boolean earlyBiasSell = sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && sellBias >= 2 && buyBias <= 1;
+            if (earlyBiasBuy) scalpIntent = "BUY";
+            else if (earlyBiasSell) scalpIntent = "SELL";
+        }
 
         double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
         double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
@@ -1221,7 +1249,7 @@ public class MonitoringService extends Service {
             why = signal + " открыт: направление ТФ согласовано; структура/фильтр разрешили вход; качество " + quality + "/100";
         }
 
-        return new Analysis(symbol, signal, executionSignal, quality, entry, sl, tp1, tp2, context, why, components);
+        return new Analysis(symbol, signal, executionSignal, scalpIntent, quality, entry, sl, tp1, tp2, context, why, components);
     }
 
     private int scalpExecutionDirection(List<Candle> s, double atr) {
@@ -1467,14 +1495,15 @@ public class MonitoringService extends Service {
     }
 
     static class Analysis {
-        final String symbol, signal, executionSignal, context, why, components;
+        final String symbol, signal, executionSignal, scalpIntent, context, why, components;
         final int quality;
         final double entry, sl, tp1, tp2;
 
-        Analysis(String symbol, String signal, String executionSignal, int quality, double entry, double sl, double tp1, double tp2, String context, String why, String components) {
+        Analysis(String symbol, String signal, String executionSignal, String scalpIntent, int quality, double entry, double sl, double tp1, double tp2, String context, String why, String components) {
             this.symbol = symbol;
             this.signal = signal;
             this.executionSignal = executionSignal;
+            this.scalpIntent = scalpIntent;
             this.quality = quality;
             this.entry = entry;
             this.sl = sl;

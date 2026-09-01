@@ -1,19 +1,18 @@
-FX M1 Bot V8.1.1 FIRST ENTRY FIX
+FX M1 BOT V9.0 READY REPLACE
 
-Replace:
-app/build.gradle
-mt5_bridge/bridge_v8_1.py
-mt5_bridge/bridge_v8_1_1.py
-mt5_bridge/START_BRIDGE_V8_1_1.bat
+Скопировать содержимое ZIP в корень проекта FX-M1-Signal с заменой.
 
-Reason:
-V8.1 required a full closed-M1 micro-break for the first SCALP entry.
-That over-filtered valid strong setups and produced FIRST_ENTRY_WAIT even when
-Android had a 70+ directional SCALP signal and MT5 pullback_stopped=true.
+Заменяются:
+- app/build.gradle
+- app/src/main/java/com/openai/fxm1/MonitoringService.java
+- app/src/main/java/com/openai/fxm1/FeatureEngine.java
+- mt5_bridge/bridge_v9_0.py
+- mt5_bridge/START_BRIDGE_V9_0.bat
 
-V8.1.1 allows first entry when:
-- pullback_stopped = true, AND
-- micro_break OR continuation, OR
-- quality >= 70 AND live MT5 price is already moving beyond the last completed M1 close in signal direction.
+Запуск Bridge:
+.venv\Scripts\python.exe bridge_v9_0.py
 
-Scale-in/additional campaign entries remain strict: positive basket, favourable progress, spacing, and continuation confirmation.
+В консоли ОБЯЗАТЕЛЬНО должна появиться строка:
+SCALP runtime: ACTIVE · 100 ms autonomous INTENT/CAMPAIGN/EXIT loop
+
+APP/BRIDGE должны показывать V9.0.
