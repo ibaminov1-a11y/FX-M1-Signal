@@ -50,11 +50,6 @@ public class MonitoringService extends Service {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ExecutorService liveExecutor = Executors.newSingleThreadExecutor();
-    private static final long MT5_SNAPSHOT_MS = 1000L;
-    private static final long POSITION_MANAGE_MS = 2000L;
-    private volatile long lastMt5SnapshotDispatchMs = 0L;
-    private volatile long lastPositionManageDispatchMs = 0L;
-
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<String, CacheItem> cache = new HashMap<>();
     private final Map<String, String> lastSignalBySymbol = new HashMap<>();
@@ -79,56 +74,18 @@ public class MonitoringService extends Service {
         }
     };
 
-    // V9.5 Android network throttle.
-    // Bridge keeps the 100 ms SCALP runtime. Android only reads MT5 state once/sec.
+    // V9.4: MT5/UI/position management independent from Twelve Data cadence.
     private final Runnable liveMt5Runnable = new Runnable() {
         @Override
         public void run() {
             if (!running) return;
-
-            long now = SystemClock.elapsedRealtime();
-            long elapsed = now - lastMt5SnapshotDispatchMs;
-            if (elapsed < MT5_SNAPSHOT_MS) {
-                handler.removeCallbacks(this);
-                handler.postDelayed(this, MT5_SNAPSHOT_MS - elapsed);
-                return;
-            }
-            lastMt5SnapshotDispatchMs = now;
-
             liveExecutor.execute(() -> {
                 try {
                     refreshMt5Snapshot();
-                } catch (Exception ignored) { }
-            });
-
-            handler.removeCallbacks(this);
-            handler.postDelayed(this, MT5_SNAPSHOT_MS);
-        }
-    };
-
-    // Position manager is intentionally slower than quote/P&L refresh.
-    private final Runnable positionManagerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!running) return;
-
-            long now = SystemClock.elapsedRealtime();
-            long elapsed = now - lastPositionManageDispatchMs;
-            if (elapsed < POSITION_MANAGE_MS) {
-                handler.removeCallbacks(this);
-                handler.postDelayed(this, POSITION_MANAGE_MS - elapsed);
-                return;
-            }
-            lastPositionManageDispatchMs = now;
-
-            liveExecutor.execute(() -> {
-                try {
                     manageOpenPositions();
                 } catch (Exception ignored) { }
             });
-
-            handler.removeCallbacks(this);
-            handler.postDelayed(this, POSITION_MANAGE_MS);
+            handler.postDelayed(this, 1000L);
         }
     };
 
@@ -340,12 +297,8 @@ public class MonitoringService extends Service {
         handler.post(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.postDelayed(notificationWatchdog, 15000L);
-        lastMt5SnapshotDispatchMs = 0L;
-        lastPositionManageDispatchMs = 0L;
         handler.removeCallbacks(liveMt5Runnable);
-        handler.removeCallbacks(positionManagerRunnable);
         handler.post(liveMt5Runnable);
-        handler.post(positionManagerRunnable);
     }
 
     private void stopMonitoring(boolean emergency) {
@@ -353,7 +306,6 @@ public class MonitoringService extends Service {
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.removeCallbacks(liveMt5Runnable);
-        handler.removeCallbacks(positionManagerRunnable);
         prefs().edit()
                 .putLong("monitor_stopped_ms", System.currentTimeMillis())
                 .putBoolean("bg_running", false)
@@ -1541,7 +1493,6 @@ public class MonitoringService extends Service {
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.removeCallbacks(liveMt5Runnable);
-        handler.removeCallbacks(positionManagerRunnable);
         running = false;
         executor.shutdownNow();
         liveExecutor.shutdownNow();

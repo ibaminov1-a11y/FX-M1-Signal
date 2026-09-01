@@ -881,7 +881,6 @@ public class MainActivity extends Activity {
                 payload.put("tp2", a.tp2);
                 double basketRiskPct = Double.parseDouble(risk.replace("%", ""));
                 int basketMaxPositions = Integer.parseInt(maxPositions);
-                if ("SCALP".equals(selectedSignalMode()) && basketMaxPositions <= 3) basketMaxPositions = 10;
                 payload.put("risk_pct", basketRiskPct);
                 payload.put("max_positions", basketMaxPositions);
                 if ("SCALP".equals(selectedSignalMode())) {
@@ -1193,7 +1192,7 @@ public class MainActivity extends Activity {
         Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
 
         box.addView(smartLabel("SCALP LOT (AUTO или ручной лот)"));
-        String[] scalpLots = {"AUTO","0.01","0.02","0.03","0.04","0.05","0.06","0.07","0.08","0.09","0.10","0.15","0.20","0.25","0.30","0.40","0.50","0.75","1.00","1.50","2.00","3.00","5.00","10.00","20.00","50.00","100.00"};
+        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10"};
         int scalpLotSel = Arrays.asList(scalpLots).indexOf(p.getString("scalp_lot_mode", "AUTO"));
         Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel); box.addView(scalpLot);
 

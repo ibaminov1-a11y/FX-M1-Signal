@@ -225,12 +225,16 @@ basket_new = r'''giveback_pct = max(18.0, min(safe_float(cfg.get('scalp_basket_p
                 reversed_from_peak = peak >= campaign_arm and gpnl > 0.0 and gpnl <= peak - giveback
                 if reversed_from_peak:'''
 
-s = replace_regex_once(
-    s,
-    r"giveback_pct = max\(5\.0, min\(safe_float\(cfg\.get\('scalp_basket_peak_giveback_pct'\), 18\.0\), 60\.0\)\) / 100\.0.*?if reversed_from_peak or lost_green:",
-    basket_new,
-    "Bridge: basket lock meaningful-profit only"
-)
+
+# V9.5 ROBUST: replace complete basket-lock trigger block.
+_basket_old = "                giveback_pct = max(5.0, min(safe_float(cfg.get('scalp_basket_peak_giveback_pct'), 18.0), 60.0)) / 100.0\n                min_giveback = max(0.01, safe_float(cfg.get('scalp_basket_peak_min_giveback_usd'), 0.02))\n                giveback = max(min_giveback, peak * giveback_pct)\n                reversed_from_peak = peak > 0.0 and gpnl <= peak - giveback\n                lost_green = peak > 0.0 and gpnl <= 0.0\n                if reversed_from_peak or lost_green:\n"
+_basket_new = "                giveback_pct = max(18.0, min(safe_float(cfg.get('scalp_basket_peak_giveback_pct'), 28.0), 65.0)) / 100.0\n                min_giveback = max(0.25, safe_float(cfg.get('scalp_basket_peak_min_giveback_usd'), 0.25))\n                campaign_arm = max(1.25, safe_float(cfg.get('scalp_campaign_arm_usd'), 1.25))\n                giveback = max(min_giveback, peak * giveback_pct)\n                reversed_from_peak = peak >= campaign_arm and gpnl > 0.0 and gpnl <= peak - giveback\n                if reversed_from_peak:\n"
+_basket_count = s.count(_basket_old)
+if _basket_count != 1:
+    fail("Bridge basket-lock exact block: expected 1, found " + str(_basket_count))
+s = s.replace(_basket_old, _basket_new, 1)
+print("OK: Bridge: basket lock exact block replaced")
+
 
 green_new = r'''campaign_enabled = bool(cfg.get('scalp_campaign_enabled', True))
         campaign_multi = ticket in campaign_multi_tickets
@@ -251,17 +255,38 @@ green_new = r'''campaign_enabled = bool(cfg.get('scalp_campaign_enabled', True))
                     continue
         _SCALP_LAST_PNL[ticket] = pnl_usd'''
 
-s = replace_regex_once(
-    s,
-    r"campaign_enabled = bool\(cfg\.get\('scalp_campaign_enabled', True\)\).*?_SCALP_LAST_PNL\[ticket\] = pnl_usd",
-    green_new,
-    "Bridge: tiny GREEN_CAPTURE removed"
-)
+
+# V9.5 ROBUST: replace the complete old GREEN_CAPTURE block including its else.
+_green_old = '        campaign_enabled = bool(cfg.get(\'scalp_campaign_enabled\', True))\n        campaign_multi = ticket in campaign_multi_tickets\n        single_arm = max(0.0, safe_float(cfg.get(\'scalp_campaign_single_arm_usd\'), 0.20))\n        green_capture_armed = peak > 0.0\n        if bool(cfg.get(\'scalp_peak_lock_enabled\', True)) and green_capture_armed and not campaign_multi:\n            prev_pnl = float(_SCALP_LAST_PNL.get(ticket, pnl_usd))\n            # Tiny tolerance avoids reacting to formatting/rounding noise only.\n            eps = 0.005\n            reversed_from_peak = pnl_usd + eps < peak\n            downtick = pnl_usd + eps < prev_pnl\n            # Once we have shown a green P/L, never intentionally let it rotate through zero.\n            lost_green = pnl_usd <= 0.0\n            if reversed_from_peak and (downtick or lost_green):\n                ok, close_res = close_position_internal(p, comment=\'FXM1 GREEN CAP\')\n                if ok:\n                    print(f"GREEN_CAPTURE closed ticket={ticket} peak={peak:.4f} current={pnl_usd:.4f}")\n                    _SCALP_PEAK_PNL.pop(ticket, None)\n                    _SCALP_LAST_PNL.pop(ticket, None)\n                    continue\n                else:\n                    print(f"GREEN_CAPTURE retry ticket={ticket} peak={peak:.4f} current={pnl_usd:.4f} result={close_res}")\n            _SCALP_LAST_PNL[ticket] = pnl_usd\n        else:\n            _SCALP_LAST_PNL[ticket] = pnl_usd\n'
+_green_new = '        campaign_enabled = bool(cfg.get(\'scalp_campaign_enabled\', True))\n        campaign_multi = ticket in campaign_multi_tickets\n        single_arm = max(0.90, safe_float(cfg.get(\'scalp_campaign_single_arm_usd\'), 0.90))\n        giveback_pct = max(20.0, min(safe_float(cfg.get(\'scalp_single_peak_giveback_pct\'), 32.0), 65.0)) / 100.0\n        min_giveback = max(0.25, safe_float(cfg.get(\'scalp_single_peak_min_giveback_usd\'), 0.25))\n        green_capture_armed = peak >= single_arm\n        if bool(cfg.get(\'scalp_peak_lock_enabled\', True)) and green_capture_armed and not campaign_multi:\n            giveback = max(min_giveback, peak * giveback_pct)\n            reversed_from_peak = pnl_usd <= peak - giveback\n            if reversed_from_peak and pnl_usd > 0.0:\n                ok, close_res = close_position_internal(p, comment=\'FXM1 PROFIT LOCK\')\n                if ok:\n                    _SCALP_REENTRY_LOCK[(p.symbol, \'BUY\' if p.type == mt5.POSITION_TYPE_BUY else \'SELL\')] = time.time() + 2.0\n                    print(f"PROFIT_LOCK closed ticket={ticket} arm={single_arm:.2f} peak={peak:.4f} current={pnl_usd:.4f}")\n                    _SCALP_PEAK_PNL.pop(ticket, None)\n                    _SCALP_LAST_PNL.pop(ticket, None)\n                    continue\n        _SCALP_LAST_PNL[ticket] = pnl_usd\n'
+_green_count = s.count(_green_old)
+if _green_count != 1:
+    fail("Bridge GREEN_CAPTURE exact block: expected 1, found " + str(_green_count))
+s = s.replace(_green_old, _green_new, 1)
+print("OK: Bridge: complete GREEN_CAPTURE block replaced")
+
 
 s = s.replace(
     "effective_hard = min(limits['hard_loss_usd'], 0.75 if group_size <= 1 else 1.50)",
     "effective_hard = min(limits['hard_loss_usd'], 1.25 if group_size <= 1 else 2.00)"
 )
+
+
+# Final source audit before compile.
+forbidden = [
+    "FXM1 GREEN CAP",
+    "GREEN_CAPTURE closed",
+    "lost_green = peak > 0.0",
+    "early_probe =",
+]
+for marker in forbidden:
+    if marker in s:
+        fail("V9.5 audit failed; forbidden old marker remains: " + marker)
+if "PROFIT_LOCK closed" not in s:
+    fail("V9.5 audit failed: PROFIT_LOCK code missing")
+if "WAIT_MICRO_BREAK" not in s:
+    fail("V9.5 audit failed: mandatory micro-break state missing")
+print("OK: V9.5 source audit: old Green Cap / early probe absent")
 
 stage = ROOT / "mt5_bridge" / "_bridge_v9_5_compile_test.py"
 write(stage, s)

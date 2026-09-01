@@ -50,11 +50,6 @@ public class MonitoringService extends Service {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ExecutorService liveExecutor = Executors.newSingleThreadExecutor();
-    private static final long MT5_SNAPSHOT_MS = 1000L;
-    private static final long POSITION_MANAGE_MS = 2000L;
-    private volatile long lastMt5SnapshotDispatchMs = 0L;
-    private volatile long lastPositionManageDispatchMs = 0L;
-
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<String, CacheItem> cache = new HashMap<>();
     private final Map<String, String> lastSignalBySymbol = new HashMap<>();
@@ -79,56 +74,18 @@ public class MonitoringService extends Service {
         }
     };
 
-    // V9.5 Android network throttle.
-    // Bridge keeps the 100 ms SCALP runtime. Android only reads MT5 state once/sec.
+    // V9.4: MT5/UI/position management independent from Twelve Data cadence.
     private final Runnable liveMt5Runnable = new Runnable() {
         @Override
         public void run() {
             if (!running) return;
-
-            long now = SystemClock.elapsedRealtime();
-            long elapsed = now - lastMt5SnapshotDispatchMs;
-            if (elapsed < MT5_SNAPSHOT_MS) {
-                handler.removeCallbacks(this);
-                handler.postDelayed(this, MT5_SNAPSHOT_MS - elapsed);
-                return;
-            }
-            lastMt5SnapshotDispatchMs = now;
-
             liveExecutor.execute(() -> {
                 try {
                     refreshMt5Snapshot();
-                } catch (Exception ignored) { }
-            });
-
-            handler.removeCallbacks(this);
-            handler.postDelayed(this, MT5_SNAPSHOT_MS);
-        }
-    };
-
-    // Position manager is intentionally slower than quote/P&L refresh.
-    private final Runnable positionManagerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!running) return;
-
-            long now = SystemClock.elapsedRealtime();
-            long elapsed = now - lastPositionManageDispatchMs;
-            if (elapsed < POSITION_MANAGE_MS) {
-                handler.removeCallbacks(this);
-                handler.postDelayed(this, POSITION_MANAGE_MS - elapsed);
-                return;
-            }
-            lastPositionManageDispatchMs = now;
-
-            liveExecutor.execute(() -> {
-                try {
                     manageOpenPositions();
                 } catch (Exception ignored) { }
             });
-
-            handler.removeCallbacks(this);
-            handler.postDelayed(this, POSITION_MANAGE_MS);
+            handler.postDelayed(this, 1000L);
         }
     };
 
@@ -340,12 +297,8 @@ public class MonitoringService extends Service {
         handler.post(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.postDelayed(notificationWatchdog, 15000L);
-        lastMt5SnapshotDispatchMs = 0L;
-        lastPositionManageDispatchMs = 0L;
         handler.removeCallbacks(liveMt5Runnable);
-        handler.removeCallbacks(positionManagerRunnable);
         handler.post(liveMt5Runnable);
-        handler.post(positionManagerRunnable);
     }
 
     private void stopMonitoring(boolean emergency) {
@@ -353,7 +306,6 @@ public class MonitoringService extends Service {
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.removeCallbacks(liveMt5Runnable);
-        handler.removeCallbacks(positionManagerRunnable);
         prefs().edit()
                 .putLong("monitor_stopped_ms", System.currentTimeMillis())
                 .putBoolean("bg_running", false)
@@ -764,7 +716,7 @@ public class MonitoringService extends Service {
                 // V9.0 SCALP CAMPAIGN: no blind time cooldown. Bridge decides additions from
                 // live MT5 micro-structure, positive basket P/L and ATR/price progress.
                 payload.put("scalp_campaign_enabled", true);
-                payload.put("campaign_spacing_atr", 0.06);
+                payload.put("campaign_spacing_atr", 0.07);
                 payload.put("scalp_max_spread_atr_ratio", 0.16);
                 payload.put("scalp_campaign_single_arm_usd", 0.90);
                 payload.put("scalp_basket_peak_giveback_pct", 28.0);
@@ -1236,25 +1188,18 @@ public class MonitoringService extends Service {
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
 
-        // V9.5: GLOBAL BUY/SELL/WAIT is informational for SCALP.
-        // SCALP computes its own BIAS; Bridge owns exact MT5 entry/add/exit timing.
-        int scalpDirectionScore = 0;
-        if ("SCALP".equals(mode)) {
-            scalpDirectionScore += sHigher2 * 20;
-            scalpDirectionScore += sHigher1 * 25;
-            scalpDirectionScore += sEntry * 30;
-            scalpDirectionScore += sFast * 15;
-            scalpDirectionScore += structure * 10;
-            scalpDirectionScore = Math.max(-100, Math.min(100, scalpDirectionScore));
-        }
+        // V9.0: SCALP separates directional intent from the exact execution trigger.
+        // Android provides an early bias; Bridge owns the sub-second MT5 entry/add/exit timing.
         String scalpIntent = executionSignal;
-        if ("SCALP".equals(mode)) {
-            if (scalpDirectionScore >= 40) scalpIntent = "BUY";
-            else if (scalpDirectionScore <= -40) scalpIntent = "SELL";
-            else scalpIntent = "WAIT";
+        if ("SCALP".equals(mode) && "WAIT".equals(scalpIntent)) {
+            int buyBias = 0, sellBias = 0;
+            int[] biasVotes = {sHigher1, sEntry, sFast, structure};
+            for (int v : biasVotes) { if (v > 0) buyBias++; else if (v < 0) sellBias++; }
+            boolean earlyBiasBuy = sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && buyBias >= 2 && sellBias <= 1;
+            boolean earlyBiasSell = sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && sellBias >= 2 && buyBias <= 1;
+            if (earlyBiasBuy) scalpIntent = "BUY";
+            else if (earlyBiasSell) scalpIntent = "SELL";
         }
-
-
 
         double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
         double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
@@ -1541,7 +1486,6 @@ public class MonitoringService extends Service {
         handler.removeCallbacks(tick);
         handler.removeCallbacks(notificationWatchdog);
         handler.removeCallbacks(liveMt5Runnable);
-        handler.removeCallbacks(positionManagerRunnable);
         running = false;
         executor.shutdownNow();
         liveExecutor.shutdownNow();
