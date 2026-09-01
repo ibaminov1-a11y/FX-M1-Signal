@@ -701,9 +701,9 @@ public class MonitoringService extends Service {
                 payload.put("scalp_campaign_enabled", true);
                 payload.put("campaign_spacing_atr", 0.12);
                 payload.put("scalp_max_spread_atr_ratio", 0.16);
-                payload.put("scalp_campaign_single_arm_usd", 0.20);
-                payload.put("scalp_basket_peak_giveback_pct", 25.0);
-                payload.put("scalp_basket_peak_min_giveback_usd", 0.03);
+                payload.put("scalp_campaign_single_arm_usd", 0.05);
+                payload.put("scalp_basket_peak_giveback_pct", 15.0);
+                payload.put("scalp_basket_peak_min_giveback_usd", 0.02);
             }
             payload.put("mode", p.getString("target_trade_mode", "DEMO"));
             payload.put("signal_mode", mode);

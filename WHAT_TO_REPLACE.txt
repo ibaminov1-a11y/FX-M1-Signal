@@ -1,4 +1,4 @@
-FX M1 BOT V9.0 READY REPLACE
+FX M1 BOT V9.1 READY REPLACE
 
 Скопировать содержимое ZIP в корень проекта FX-M1-Signal с заменой.
 
@@ -6,13 +6,20 @@ FX M1 BOT V9.0 READY REPLACE
 - app/build.gradle
 - app/src/main/java/com/openai/fxm1/MonitoringService.java
 - app/src/main/java/com/openai/fxm1/FeatureEngine.java
-- mt5_bridge/bridge_v9_0.py
-- mt5_bridge/START_BRIDGE_V9_0.bat
+- mt5_bridge/bridge_v9_1.py
+- mt5_bridge/START_BRIDGE_V9_1.bat
+
+V9.1 execution:
+BIAS -> EXTENSION CHECK -> RETRACE -> REJECTION -> PROBE -> CONFIRM -> SCALE-IN -> EXIT.
+- высокий Direction Score сам по себе НЕ является входом;
+- запрещена погоня за уже растянутым импульсом;
+- ранний PROBE разрешён по live MT5 turn даже до полного M1 breakout;
+- добавление только при положительном basket P/L + новом micro-break + ценовом прогрессе;
+- одиночный PROBE защищается Peak Lock сразу после появления положительного P/L;
+- одиночная ошибочная идея получает быстрый cash hard-stop $0.75;
+- MT5 feed определяет execution, API остаётся контекстом.
 
 Запуск Bridge:
-.venv\Scripts\python.exe bridge_v9_0.py
+.venv\Scripts\python.exe bridge_v9_1.py
 
-В консоли ОБЯЗАТЕЛЬНО должна появиться строка:
-SCALP runtime: ACTIVE · 100 ms autonomous INTENT/CAMPAIGN/EXIT loop
-
-APP/BRIDGE должны показывать V9.0.
+APP/BRIDGE должны показывать V9.1.

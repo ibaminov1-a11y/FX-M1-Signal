@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "9.0"
+BRIDGE_VERSION = "9.1"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -947,8 +947,106 @@ def _scalp_order_from_intent(symbol, side, data, basket):
     return True,f'opened #{len(basket)+1}'
 
 
+def _scalp_entry_state(symbol, side, tick, info, snap, state, basket):
+    """V9.1 execution state machine.
+
+    Directional intent is NOT an entry.  MT5 owns timing:
+      BIAS -> EXTENSION_CHECK -> RETRACE -> REJECTION -> PROBE
+      -> CONFIRM -> SCALE_IN.
+    This prevents chasing a 90-100/100 signal after the impulse is already spent.
+    """
+    now = time.time()
+    data = state.get('data') or {}
+    quality = int(data.get('quality') or 0)
+    _remember_tick(symbol, tick)
+    q = [x for x in list(_SCALP_TICKS.get(symbol, ())) if now-x[0] <= 12.0]
+    if len(q) < 8:
+        return False, 'WARMUP', {'stage':'WARMUP','ticks':len(q)}
+
+    mids=[(x[1]+x[2])*0.5 for x in q]
+    cur=mids[-1]
+    point=max(float(getattr(info,'point',0.0) or 0.0),1e-9)
+    spread=max(0.0,float(tick.ask)-float(tick.bid))
+    atr=max(float(snap.get('atr') or 0.0), point*10)
+    cm=_SCALP_CAMPAIGN_META.setdefault((symbol,side),{})
+
+    # Fast broker-feed movement, independent of delayed API price.
+    k=min(6,len(mids)-1)
+    fast_move=cur-mids[-1-k]
+    window=mids[-min(30,len(mids)):]
+    hi=max(window); lo=min(window)
+    tick_range=max(hi-lo, point)
+
+    if side=='BUY':
+        favourable=fast_move > max(point*1.0,spread*0.20)
+        against=fast_move < -max(point*0.8,spread*0.15)
+        m1_bias=(snap['last_close'] >= snap['last_open']) or (snap['last_close'] > snap['prev_close'])
+        extension=max(0.0,cur-float(snap['last_close']))
+        pullback_depth=max(0.0,hi-cur)
+        rejection=(cur > lo + tick_range*0.45 and favourable)
+        micro_break=cur >= max(mids[-min(10,len(mids)):-1]) + max(point*0.5,spread*0.10)
+    else:
+        favourable=fast_move < -max(point*1.0,spread*0.20)
+        against=fast_move > max(point*0.8,spread*0.15)
+        m1_bias=(snap['last_close'] <= snap['last_open']) or (snap['last_close'] < snap['prev_close'])
+        extension=max(0.0,float(snap['last_close'])-cur)
+        pullback_depth=max(0.0,cur-lo)
+        rejection=(cur < hi - tick_range*0.45 and favourable)
+        micro_break=cur <= min(mids[-min(10,len(mids)):-1]) - max(point*0.5,spread*0.10)
+
+    # Never chase an already extended impulse.  A high direction score makes this
+    # MORE important, not less important.
+    extended = extension > max(atr*0.32, spread*2.5, point*8)
+    stage=cm.get('stage','BIAS')
+    if not basket:
+        if extended and stage not in ('RETRACE','REJECTION'):
+            cm.update(stage='EXTENDED', extended_at=now, extreme=cur)
+            return False,'MOVE_EXTENDED_WAIT_RETEST',{'stage':'EXTENDED','extension_atr':extension/atr,'quality':quality}
+
+        if stage=='EXTENDED':
+            # Need a real counter-move/retest before considering the next impulse.
+            enough_retrace = pullback_depth >= max(atr*0.08,spread*1.2,point*3)
+            if enough_retrace or against:
+                cm.update(stage='RETRACE', retrace_at=now)
+            else:
+                return False,'WAIT_RETRACE',{'stage':'EXTENDED','pullback_atr':pullback_depth/atr}
+
+        if cm.get('stage')=='RETRACE':
+            if rejection:
+                cm.update(stage='REJECTION', rejection_at=now)
+            else:
+                return False,'WAIT_REJECTION',{'stage':'RETRACE','favourable':favourable}
+
+        # Early probe is allowed before a full candle breakout, but only when live
+        # MT5 momentum turns back with the bias.  This is the key difference from V9.0.
+        early_context = quality >= 50 and m1_bias
+        entry_ok = favourable and (micro_break or rejection or (early_context and cm.get('stage') not in ('EXTENDED','RETRACE')))
+        if not entry_ok:
+            cm['stage']='BIAS'
+            return False,'WAIT_MT5_TURN',{'stage':'BIAS','quality':quality,'m1_bias':bool(m1_bias),'favourable':bool(favourable)}
+        cm.update(stage='PROBE', probe_at=now, probe_price=cur)
+        return True,'PROBE',{'stage':'PROBE','micro_break':bool(micro_break),'quality':quality}
+
+    # Existing campaign: additions only after the campaign has proved itself.
+    basket_pnl=sum(float(p.profit)+float(getattr(p,'swap',0.0) or 0.0) for p in basket)
+    entries=[float(p.price_open) for p in basket]
+    last_entry=max(entries) if side=='BUY' else min(entries)
+    price=float(tick.ask if side=='BUY' else tick.bid)
+    progress=price-last_entry if side=='BUY' else last_entry-price
+    spacing=max(atr*0.10,spread*1.5,point*5)
+    if basket_pnl <= 0.0:
+        return False,'NO_ADD_RED_BASKET',{'stage':'PROTECT','basket_pnl':basket_pnl}
+    if not favourable or not micro_break:
+        return False,'WAIT_CONFIRMATION',{'stage':'CONFIRM','basket_pnl':basket_pnl,'micro_break':bool(micro_break)}
+    if progress < spacing:
+        return False,'WAIT_PROGRESS',{'stage':'CONFIRM','progress':progress,'spacing':spacing}
+    if now-float(cm.get('last_add_at',0)) < 1.0:
+        return False,'DEBOUNCE',{'stage':'CONFIRM'}
+    return True,'SCALE_IN',{'stage':'SCALE_IN','basket_pnl':basket_pnl,'progress':progress,'spacing':spacing}
+
+
 def scalp_autonomous_once():
-    """Evaluate all live intents at 100 ms cadence; Android need not resend /signal."""
+    """V9.1 autonomous MT5 execution loop. Android supplies bias only."""
     if not ensure_mt5(): return
     now=time.time()
     for symbol,state in list(_SCALP_INTENTS.items()):
@@ -958,38 +1056,32 @@ def scalp_autonomous_once():
             _SCALP_INTENTS.pop(symbol,None); continue
         tick=mt5.symbol_info_tick(symbol); info=mt5.symbol_info(symbol)
         if tick is None or info is None: continue
-        _remember_tick(symbol,tick)
         snap=mt5_m1_micro_snapshot(symbol)
         if snap is None: continue
         basket=_scalp_positions(symbol,side)
         opposite=_scalp_positions(symbol,'SELL' if side=='BUY' else 'BUY')
-        if opposite: continue
-        quality=int(data.get('quality') or 0)
-        live_ok,meta=scalp_live_tick_trigger(symbol,side,tick,info,snap,quality,continuation_required=bool(basket))
-        if not basket:
-            if not live_ok: continue
-            ok,msg=_scalp_order_from_intent(symbol,side,data,basket)
-            state['last_action']=msg; state['last_action_at']=now
-            continue
-        # Scale in only in profit and only after actual favourable price progress.
-        basket_pnl=sum(float(p.profit)+float(getattr(p,'swap',0.0) or 0.0) for p in basket)
-        if basket_pnl<=0.0 or not live_ok: continue
-        entries=[float(p.price_open) for p in basket]
-        last_entry=max(entries) if side=='BUY' else min(entries)
-        price=float(tick.ask if side=='BUY' else tick.bid)
-        atr=max(float(snap['atr']),float(info.point or 0.00001)*10)
-        spread=max(0.0,float(tick.ask)-float(tick.bid))
-        spacing=max(atr*max(0.05,min(safe_float(data.get('campaign_spacing_atr'),0.10),0.40)),spread*1.5,float(info.point or 0.0)*5)
-        progress=price-last_entry if side=='BUY' else last_entry-price
-        key=(symbol,side)
-        cm=_SCALP_CAMPAIGN_META.setdefault(key,{})
-        # anti-duplicate debounce only; it is not the entry criterion
-        if now-float(cm.get('last_add_at',0))<1.0: continue
-        if progress+max(float(info.point or 0.0)*2,spread*0.2)<spacing: continue
+        if opposite:
+            state['last_action']='opposite position exists'; continue
+        max_positions=max(1,int(data.get('max_positions') or 8))
+        if len(basket)>=max_positions: continue
+
+        enter,reason,meta=_scalp_entry_state(symbol,side,tick,info,snap,state,basket)
+        state['execution_stage']=meta.get('stage')
+        state['execution_reason']=reason
+        state['execution_meta']=meta
+        if not enter: continue
+
         ok,msg=_scalp_order_from_intent(symbol,side,data,basket)
-        if ok:
-            cm['last_add_at']=now; cm['last_add_price']=price
         state['last_action']=msg; state['last_action_at']=now
+        if ok:
+            cm=_SCALP_CAMPAIGN_META.setdefault((symbol,side),{})
+            if basket:
+                cm['last_add_at']=now
+                cm['last_add_price']=float(tick.ask if side=='BUY' else tick.bid)
+                cm['stage']='SCALE_IN'
+            else:
+                cm['stage']='PROBE_OPEN'
+            print(f'SCALP_V91 {symbol} {side} {reason} {msg} meta={meta}')
 
 
 @app.post('/scalp-intent')
@@ -1518,9 +1610,9 @@ _SCALP_SUPERVISOR_CFG = {
     'position_manager_enabled': True,
     'trailing_enabled': True,
     'scalp_campaign_enabled': True,
-    'scalp_campaign_single_arm_usd': 0.20,
-    'scalp_basket_peak_giveback_pct': 25.0,
-    'scalp_basket_peak_min_giveback_usd': 0.03,
+    'scalp_campaign_single_arm_usd': 0.05,
+    'scalp_basket_peak_giveback_pct': 15.0,
+    'scalp_basket_peak_min_giveback_usd': 0.02,
 }
 
 _SCALP_SUPERVISOR_STOP = threading.Event()
@@ -1626,7 +1718,7 @@ def scalp_supervisor_once():
         campaign_enabled = bool(cfg.get('scalp_campaign_enabled', True))
         campaign_multi = ticket in campaign_multi_tickets
         single_arm = max(0.0, safe_float(cfg.get('scalp_campaign_single_arm_usd'), 0.20))
-        green_capture_armed = peak > 0.0 and (not campaign_enabled or age_sec >= 45 or peak >= single_arm)
+        green_capture_armed = peak > 0.0
         if bool(cfg.get('scalp_peak_lock_enabled', True)) and green_capture_armed and not campaign_multi:
             prev_pnl = float(_SCALP_LAST_PNL.get(ticket, pnl_usd))
             # Tiny tolerance avoids reacting to formatting/rounding noise only.
@@ -1648,7 +1740,9 @@ def scalp_supervisor_once():
         else:
             _SCALP_LAST_PNL[ticket] = pnl_usd
 
-        if bool(cfg.get('scalp_hard_stop_enabled', True)) and pnl_usd <= -limits['hard_loss_usd']:
+        group_size = len(groups.get((p.symbol, 'BUY' if p.type == mt5.POSITION_TYPE_BUY else 'SELL'), []))
+        effective_hard = min(limits['hard_loss_usd'], 0.75 if group_size <= 1 else 1.50)
+        if bool(cfg.get('scalp_hard_stop_enabled', True)) and pnl_usd <= -effective_hard:
             close_position_internal(p, comment='FXM1 HARD STOP')
             _SCALP_PEAK_PNL.pop(ticket, None)
             continue
