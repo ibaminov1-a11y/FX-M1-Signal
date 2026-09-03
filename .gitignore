@@ -10,3 +10,8 @@ app/build/
 mt5_bridge/.venv/
 mt5_bridge/__pycache__/
 *.pyc
+.v10-build-tools/
+.gradle/
+local.properties
+app/build/
+build/

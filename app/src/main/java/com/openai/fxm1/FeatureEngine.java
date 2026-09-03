@@ -221,6 +221,28 @@ public final class FeatureEngine {
         return new JSONObject(body);
     }
 
+
+    public static String formatLedgerStats(JSONObject root) {
+        JSONArray arr=root==null?null:root.optJSONArray("trades");
+        if(arr==null)return "ДЕНЬГИ MT5: недоступно";
+        double profit=0,loss=0,net=0,comm=0,swap=0,fee=0,tProfit=0,tLoss=0,tNet=0;
+        int wins=0,today=0;
+        Calendar cal=Calendar.getInstance(); cal.set(Calendar.HOUR_OF_DAY,0);cal.set(Calendar.MINUTE,0);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);
+        long dayStart=cal.getTimeInMillis()/1000L;
+        for(int i=0;i<arr.length();i++){
+            JSONObject e=arr.optJSONObject(i); if(e==null)continue;
+            double n=e.optDouble("net_pl",0); net+=n; comm+=e.optDouble("commission",0); swap+=e.optDouble("swap",0); fee+=e.optDouble("fee",0);
+            if(n>0){profit+=n;wins++;} else if(n<0)loss+=n;
+            if(e.optLong("exit_time",0)>=dayStart){ today++; tNet+=n; if(n>0)tProfit+=n; else if(n<0)tLoss+=n; }
+        }
+        int count=arr.length(); double wr=count>0?wins*100.0/count:0;
+        return "ДЕНЬГИ MT5 · ЕДИНЫЙ ЖУРНАЛ"+
+            "\nСегодня: сделок "+today+" · PROFIT "+String.format(Locale.US,"%+.2f",tProfit)+" · LOSS "+String.format(Locale.US,"%+.2f",tLoss)+" · NET "+String.format(Locale.US,"%+.2f",tNet)+
+            "\n30 дней: закрытых "+count+" · Win "+String.format(Locale.US,"%.1f%%",wr)+
+            "\nPROFIT "+String.format(Locale.US,"%+.2f",profit)+" · LOSS "+String.format(Locale.US,"%+.2f",loss)+" · NET "+String.format(Locale.US,"%+.2f",net)+
+            "\nComm "+String.format(Locale.US,"%+.2f",comm)+" · Swap "+String.format(Locale.US,"%+.2f",swap)+" · Fee "+String.format(Locale.US,"%+.2f",fee);
+    }
+
     public static String formatStats(JSONObject s) {
         if (s == null) return "Статистика недоступна";
         JSONObject x = s.optJSONObject("stats");

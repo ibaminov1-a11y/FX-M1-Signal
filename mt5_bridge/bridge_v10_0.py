@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 LOCK = threading.RLock()
 
-BRIDGE_VERSION = "9.5"
+BRIDGE_VERSION = "10.0"
 MAGIC = 720072
 
 # Safety default: real-account execution remains OFF until explicitly enabled
@@ -950,150 +950,71 @@ def _scalp_order_from_intent(symbol, side, data, basket):
 
 
 def _scalp_entry_state(symbol, side, tick, info, snap, state, basket):
-    # V9.5 final SCALP timing.
-    # Intent is BIAS only:
-    # WAIT_PULLBACK -> PULLBACK -> REJECTION -> RESUME -> MICRO_BREAK -> ENTRY.
-    now = time.time()
-    data = state.get('data') or {}
-    quality = int(data.get('quality') or 0)
-
-    _remember_tick(symbol, tick)
-    q = [x for x in list(_SCALP_TICKS.get(symbol, ())) if now - x[0] <= 16.0]
-    if len(q) < 10:
-        return False, 'WARMUP', {'stage':'WARMUP','ticks':len(q)}
-
-    mids = [(x[1] + x[2]) * 0.5 for x in q]
-    cur = mids[-1]
-    point = max(float(getattr(info, 'point', 0.0) or 0.0), 1e-9)
-    spread = max(0.0, float(tick.ask) - float(tick.bid))
-    atr = max(float(snap.get('atr') or 0.0), point * 10.0, spread * 2.0)
-    cm = _SCALP_CAMPAIGN_META.setdefault((symbol, side), {})
-
-    recent = mids[-min(40, len(mids)):]
-    short = mids[-min(12, len(mids)):]
-    hi, lo = max(recent), min(recent)
-    short_hi, short_lo = max(short), min(short)
-    rng = max(hi - lo, point)
-    short_rng = max(short_hi - short_lo, point)
-    k = min(6, len(mids) - 1)
-    fast_move = cur - mids[-1-k]
-
-    near_high = (hi - cur) <= max(rng * 0.12, spread * 1.5, point * 4)
-    near_low = (cur - lo) <= max(rng * 0.12, spread * 1.5, point * 4)
-
-    if side == 'BUY':
-        favourable = fast_move > max(point, spread * 0.18)
-        counter = fast_move < -max(point * 0.8, spread * 0.15)
-        chase = favourable and near_high
-        pullback_depth = max(0.0, hi - cur)
-        pullback_ok = counter or pullback_depth >= max(atr * 0.06, spread * 1.10, point * 3)
-        rejection = favourable and cur >= short_lo + short_rng * 0.52
-        micro_break = cur >= max(short[:-1]) + max(point * 0.5, spread * 0.10)
+    now=time.time(); data=state.get('data') or {}; quality=int(data.get('quality') or 0)
+    _remember_tick(symbol,tick)
+    q=[x for x in list(_SCALP_TICKS.get(symbol,())) if now-x[0] <= 18.0]
+    if len(q)<12: return False,'WARMUP',{'stage':'WARMUP','ticks':len(q)}
+    mids=[(x[1]+x[2])*0.5 for x in q]; cur=mids[-1]
+    point=max(float(getattr(info,'point',0.0) or 0.0),1e-9)
+    spread=max(0.0,float(tick.ask)-float(tick.bid))
+    atr=max(float(snap.get('atr') or 0.0),point*10.0,spread*2.0)
+    cm=_SCALP_CAMPAIGN_META.setdefault((symbol,side),{})
+    recent=mids[-min(50,len(mids)):]; short=mids[-min(10,len(mids)):]
+    hi,lo=max(recent),min(recent); rng=max(hi-lo,point)
+    k=min(5,len(mids)-1); fast=cur-mids[-1-k]; eps=max(point*0.5,spread*0.10)
+    if side=='BUY':
+        favourable=fast>max(point,spread*0.15); counter=fast < -max(point*0.8,spread*0.12)
+        extended=(hi-cur)<=max(rng*0.18,spread*1.5,point*4); depth=max(0.0,hi-cur)
+        pull_ok=counter or depth>=max(atr*0.045,spread*1.0,point*2)
+        rejection=favourable and cur>min(short[:-1]); micro_break=cur>=max(short[:-1])+eps
     else:
-        favourable = fast_move < -max(point, spread * 0.18)
-        counter = fast_move > max(point * 0.8, spread * 0.15)
-        chase = favourable and near_low
-        pullback_depth = max(0.0, cur - lo)
-        pullback_ok = counter or pullback_depth >= max(atr * 0.06, spread * 1.10, point * 3)
-        rejection = favourable and cur <= short_hi - short_rng * 0.52
-        micro_break = cur <= min(short[:-1]) - max(point * 0.5, spread * 0.10)
+        favourable=fast < -max(point,spread*0.15); counter=fast>max(point*0.8,spread*0.12)
+        extended=(cur-lo)<=max(rng*0.18,spread*1.5,point*4); depth=max(0.0,cur-lo)
+        pull_ok=counter or depth>=max(atr*0.045,spread*1.0,point*2)
+        rejection=favourable and cur<max(short[:-1]); micro_break=cur<=min(short[:-1])-eps
 
     if not basket:
-        lock_until = float(_SCALP_REENTRY_LOCK.get((symbol, side), 0.0))
-        if now < lock_until:
-            return False, 'REENTRY_LOCK', {'stage':'REENTRY_LOCK','left':round(lock_until-now,2)}
+        stage=cm.get('stage','WAIT_PULLBACK')
+        if stage not in ('WAIT_PULLBACK','PULLBACK','REJECTION','RESUME'):
+            stage='WAIT_PULLBACK'; cm['stage']=stage
+        if stage=='WAIT_PULLBACK':
+            if not pull_ok: return False,('CHASE_WAIT_PULLBACK' if extended else 'WAIT_PULLBACK'),{'stage':'WAIT_PULLBACK'}
+            cm.update(stage='PULLBACK',pullback_at=now,pullback_price=cur); return False,'PULLBACK_SEEN',{'stage':'PULLBACK'}
+        if cm.get('stage')=='PULLBACK':
+            if not rejection: return False,'WAIT_REJECTION',{'stage':'PULLBACK'}
+            cm.update(stage='REJECTION',rejection_at=now,rejection_price=cur); return False,'REJECTION_SEEN',{'stage':'REJECTION'}
+        if cm.get('stage')=='REJECTION':
+            if not favourable: return False,'WAIT_RESUME',{'stage':'REJECTION'}
+            cm['stage']='RESUME'; return False,'RESUME_SEEN',{'stage':'RESUME'}
+        if cm.get('stage')=='RESUME':
+            if not (favourable and micro_break): return False,'WAIT_MICRO_BREAK',{'stage':'RESUME'}
+            cm.update(stage='WAIT_PULLBACK',entry_trigger_at=now,trigger_price=cur)
+            return True,'PULLBACK_MICRO_BREAK',{'stage':'ENTRY','side':side,'quality':quality}
+        return False,'WAIT_PULLBACK',{'stage':'WAIT_PULLBACK'}
 
-        stage = cm.get('stage', 'BIAS')
-
-        if stage in ('BIAS','WARMUP','ENTRY','SCALE_IN','PROTECT'):
-            cm['stage'] = 'WAIT_PULLBACK'
-            return False, ('CHASE_BLOCK_WAIT_PULLBACK' if chase else 'WAIT_PULLBACK'), {
-                'stage':'WAIT_PULLBACK','side':side,'quality':quality,'chase':bool(chase)
-            }
-
-        if stage == 'WAIT_PULLBACK':
-            if not pullback_ok:
-                return False, 'WAIT_PULLBACK', {
-                    'stage':'WAIT_PULLBACK','pullback_depth_atr':pullback_depth/max(atr,1e-12)
-                }
-            cm.update(stage='PULLBACK', pullback_at=now, pullback_price=cur)
-            return False, 'PULLBACK_FOUND', {'stage':'PULLBACK'}
-
-        if stage == 'PULLBACK':
-            if not rejection:
-                return False, 'WAIT_REJECTION', {'stage':'PULLBACK'}
-            cm.update(stage='REJECTION', rejection_at=now, rejection_price=cur)
-            return False, 'REJECTION_FOUND', {'stage':'REJECTION'}
-
-        if stage == 'REJECTION':
-            if not favourable:
-                return False, 'WAIT_RESUME', {'stage':'REJECTION'}
-            cm.update(stage='RESUME', resume_at=now)
-            return False, 'RESUME_FOUND', {'stage':'RESUME'}
-
-        if stage == 'RESUME':
-            if not (favourable and micro_break):
-                return False, 'WAIT_MICRO_BREAK', {
-                    'stage':'RESUME','favourable':bool(favourable),'micro_break':bool(micro_break)
-                }
-            cm.update(stage='ENTRY', entry_trigger_at=now, trigger_price=cur)
-            return True, 'MICRO_BREAK', {
-                'stage':'ENTRY','side':side,'quality':quality,'micro_break':True
-            }
-
-        cm['stage'] = 'WAIT_PULLBACK'
-        return False, 'WAIT_PULLBACK', {'stage':'WAIT_PULLBACK'}
-
-    basket_pnl = sum(float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0) for p in basket)
-    if basket_pnl <= 0.20:
-        return False, 'NO_ADD_RED_OR_FLAT_BASKET', {'stage':'PROTECT','basket_pnl':basket_pnl}
-
-    entries = [float(p.price_open) for p in basket]
-    best_entry = max(entries) if side == 'BUY' else min(entries)
-    px = float(tick.ask if side == 'BUY' else tick.bid)
-    progress = px - best_entry if side == 'BUY' else best_entry - px
-
-    spacing = max(
-        atr * max(0.04, safe_float(data.get('campaign_spacing_atr'), 0.06)),
-        spread * 1.10,
-        point * 4
-    )
-
-    if progress < spacing:
-        return False, 'WAIT_PROGRESS', {
-            'stage':'CONFIRM','basket_pnl':basket_pnl,'progress':progress,'spacing':spacing
-        }
-
-    if chase:
-        cm['stage'] = 'ADD_WAIT_PULLBACK'
-        return False, 'ADD_CHASE_BLOCK', {'stage':'ADD_WAIT_PULLBACK','basket_pnl':basket_pnl}
-
-    if cm.get('stage') == 'ADD_WAIT_PULLBACK':
-        if not pullback_ok:
-            return False, 'ADD_WAIT_PULLBACK', {'stage':'ADD_WAIT_PULLBACK'}
-        cm['stage'] = 'ADD_PULLBACK'
-        return False, 'ADD_PULLBACK_FOUND', {'stage':'ADD_PULLBACK'}
-
-    if cm.get('stage') == 'ADD_PULLBACK':
-        if not rejection:
-            return False, 'ADD_WAIT_REJECTION', {'stage':'ADD_PULLBACK'}
-        cm['stage'] = 'ADD_REJECTION'
-        return False, 'ADD_REJECTION_FOUND', {'stage':'ADD_REJECTION'}
-
-    if not (favourable and micro_break):
-        return False, 'ADD_WAIT_MICRO_BREAK', {
-            'stage':'ADD_CONFIRM','micro_break':bool(micro_break),'basket_pnl':basket_pnl
-        }
-
-    if now - float(cm.get('last_add_at', 0.0)) < 0.75:
-        return False, 'DEBOUNCE', {'stage':'ADD_CONFIRM'}
-
-    cm['last_add_at'] = now
-    cm['stage'] = 'SCALE_IN'
-    return True, 'SCALE_IN', {
-        'stage':'SCALE_IN','basket_pnl':basket_pnl,'progress':progress,'spacing':spacing
-    }
-
+    pnl=sum(float(p.profit)+float(getattr(p,'swap',0.0) or 0.0) for p in basket)
+    if pnl<=0:
+        cm['add_stage']='ADD_WAIT_PULLBACK'; return False,'NO_ADD_RED_BASKET',{'basket_pnl':pnl}
+    entries=[float(p.price_open) for p in basket]; best=max(entries) if side=='BUY' else min(entries)
+    px=float(tick.ask if side=='BUY' else tick.bid); progress=px-best if side=='BUY' else best-px
+    spacing=max(atr*max(0.035,safe_float(data.get('campaign_spacing_atr'),0.05)),spread*1.1,point*3)
+    if progress<spacing: return False,'WAIT_PROGRESS',{'basket_pnl':pnl,'progress':progress,'spacing':spacing}
+    st=cm.get('add_stage','ADD_WAIT_PULLBACK')
+    if st=='ADD_WAIT_PULLBACK':
+        if not pull_ok: return False,'ADD_WAIT_PULLBACK',{'basket_pnl':pnl}
+        cm['add_stage']='ADD_PULLBACK'; return False,'ADD_PULLBACK_SEEN',{}
+    if st=='ADD_PULLBACK':
+        if not rejection: return False,'ADD_WAIT_REJECTION',{}
+        cm['add_stage']='ADD_REJECTION'; return False,'ADD_REJECTION_SEEN',{}
+    if st=='ADD_REJECTION':
+        if not favourable: return False,'ADD_WAIT_RESUME',{}
+        cm['add_stage']='ADD_RESUME'; return False,'ADD_RESUME_SEEN',{}
+    if cm.get('add_stage')=='ADD_RESUME':
+        if not (favourable and micro_break): return False,'ADD_WAIT_MICRO_BREAK',{}
+        if now-float(cm.get('last_add_at',0.0))<0.75: return False,'ADD_DEBOUNCE',{}
+        cm.update(add_stage='ADD_WAIT_PULLBACK',last_add_at=now)
+        return True,'SCALE_IN_PULLBACK_BREAK',{'basket_pnl':pnl,'progress':progress,'spacing':spacing}
+    cm['add_stage']='ADD_WAIT_PULLBACK'; return False,'ADD_WAIT_PULLBACK',{}
 
 def scalp_autonomous_once():
     """V9.1 autonomous MT5 execution loop. Android supplies bias only."""
@@ -1335,7 +1256,7 @@ def signal():
         if not symbol:
             return jsonify(accepted=False, error="SYMBOL_NOT_FOUND", message=f"Symbol not found: {raw_symbol}"), 404
 
-        basket_mode = bool(data.get("basket_mode", False)) and str(data.get("signal_mode") or "").upper() == "SCALP"
+        basket_mode = bool(data.get("basket_mode", False)) and str(data.get("signal_mode") or "").upper() in ("NORMAL", "SCALP")
         same_symbol = [p for p in current_positions if p.symbol == symbol]
 
         if not basket_mode:
@@ -1775,7 +1696,7 @@ def scalp_supervisor_once():
             giveback = max(min_giveback, peak * giveback_pct)
             reversed_from_peak = pnl_usd <= peak - giveback
             if reversed_from_peak and pnl_usd > 0.0:
-                ok, close_res = close_position_internal(p, comment='FXM1 PROFIT LOCK')
+                ok, close_res = close_position_internal(p, comment='FXM1 MICRO LOCK')
                 if ok:
                     _SCALP_REENTRY_LOCK[(p.symbol, 'BUY' if p.type == mt5.POSITION_TYPE_BUY else 'SELL')] = time.time() + 2.0
                     print(f"PROFIT_LOCK closed ticket={ticket} arm={single_arm:.2f} peak={peak:.4f} current={pnl_usd:.4f}")
@@ -2064,8 +1985,8 @@ def start_runtime():
         _RUNTIME_STARTED=True
         if not mt5.initialize():
             print('WARNING: MT5 is not connected yet:', mt5.last_error())
-        threading.Thread(target=scalp_supervisor_loop,name='FXM1-ScalpSupervisor',daemon=True).start()
-        print('SCALP runtime: ACTIVE · 100 ms autonomous INTENT/CAMPAIGN/EXIT loop')
+        # V10 NORMAL ONLY: scalp supervisor disabled
+        print("NORMAL runtime: ACTIVE · SCALP supervisor DISABLED")
 
 
 if __name__ == '__main__':

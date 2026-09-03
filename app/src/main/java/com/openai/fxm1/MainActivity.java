@@ -881,7 +881,6 @@ public class MainActivity extends Activity {
                 payload.put("tp2", a.tp2);
                 double basketRiskPct = Double.parseDouble(risk.replace("%", ""));
                 int basketMaxPositions = Integer.parseInt(maxPositions);
-                if ("SCALP".equals(selectedSignalMode()) && basketMaxPositions <= 3) basketMaxPositions = 10;
                 payload.put("risk_pct", basketRiskPct);
                 payload.put("max_positions", basketMaxPositions);
                 if ("SCALP".equals(selectedSignalMode())) {
@@ -1048,7 +1047,7 @@ public class MainActivity extends Activity {
         String text = "СОБЫТИЯ ПРИЛОЖЕНИЯ\n" + (full.trim().isEmpty()?"Пока пусто":full) +
                 "\n\nИСТОРИЯ СИГНАЛОВ\n" + (sig.trim().isEmpty()?"Пока пусто":sig) +
                 "\n\nСТАТИСТИКА 30 ДНЕЙ\n" + (stats.trim().isEmpty()?"Пока пусто":stats) +
-                "\n\nТОРГОВЫЙ ЖУРНАЛ MT5 · ДО 200 ЗАКРЫТЫХ СДЕЛОК\n" + (trades.trim().isEmpty()?"Пока пусто":trades);
+                "\n\nСДЕЛКИ MT5 · ДО 200 СОБЫТИЙ\n" + (trades.trim().isEmpty()?"Пока пусто":trades);
         tv.setText(text); scroll.addView(tv);
         new AlertDialog.Builder(this).setTitle("Торговый журнал · подробно").setView(scroll)
                 .setPositiveButton("ОБНОВИТЬ", (d,w) -> refreshStatsAndPositions())
@@ -1193,7 +1192,7 @@ public class MainActivity extends Activity {
         Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
 
         box.addView(smartLabel("SCALP LOT (AUTO или ручной лот)"));
-        String[] scalpLots = {"AUTO","0.01","0.02","0.03","0.04","0.05","0.06","0.07","0.08","0.09","0.10","0.15","0.20","0.25","0.30","0.40","0.50","0.75","1.00","1.50","2.00","3.00","5.00","10.00","20.00","50.00","100.00"};
+        String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10","0.20","0.50","1.00","10.00"};
         int scalpLotSel = Arrays.asList(scalpLots).indexOf(p.getString("scalp_lot_mode", "AUTO"));
         Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel); box.addView(scalpLot);
 
@@ -1311,7 +1310,7 @@ public class MainActivity extends Activity {
             try {
                 JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
                 JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
-                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-ledger?days=30&limit=200", null);
+                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-log?limit=200", null);
                 String stText = FeatureEngine.formatStats(st);
                 String posText = FeatureEngine.formatPositions(pos);
                 String logText = FeatureEngine.formatTradeLog(log);
