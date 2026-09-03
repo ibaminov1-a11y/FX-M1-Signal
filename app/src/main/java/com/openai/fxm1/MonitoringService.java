@@ -675,35 +675,18 @@ public class MonitoringService extends Service {
             payload.put("tp1", a.tp1);
             payload.put("tp2", a.tp2);
             double basketRiskPct = risks[Math.max(0, Math.min(riskPos, risks.length - 1))];
-            if ("SCALP".equals(mode) && maxPos <= 3) maxPos = 8;
+            maxPos = 10;
             payload.put("risk_pct", basketRiskPct);
             payload.put("max_positions", maxPos);
-            if ("SCALP".equals(mode)) {
+            if ("NORMAL".equals(mode)) {
                 payload.put("basket_mode", true);
                 payload.put("allow_same_symbol_multiple", true);
                 payload.put("basket_risk_pct", basketRiskPct);
                 payload.put("risk_pct", basketRiskPct / Math.max(1, maxPos));
-                // V7.4.6: separate money-based SCALP risk/exit manager.
-                payload.put("scalp_money_manager", true);
-                payload.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
-                payload.put("scalp_peak_lock_enabled", p.getBoolean("scalp_peak_lock_enabled", true));
-                payload.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
-                payload.put("scalp_cash_tp_enabled", p.getBoolean("scalp_cash_tp_enabled", true));
-                payload.put("scalp_risk_usd_cap", 2.0);
-                payload.put("scalp_hard_loss_usd_cap", 5.0);
-                payload.put("scalp_profit_protect_usd_cap", 1.5);
-                payload.put("scalp_take_profit_usd_cap", 3.0);
-                payload.put("scalp_basket_risk_usd_cap", 16.0);
-                    payload.put("scalp_basket_hard_loss_usd_cap", 10.0);
-                    payload.put("scalp_basket_take_profit_usd_cap", 8.0);
-                // V9.0 SCALP CAMPAIGN: no blind time cooldown. Bridge decides additions from
-                // live MT5 micro-structure, positive basket P/L and ATR/price progress.
-                payload.put("scalp_campaign_enabled", true);
-                payload.put("campaign_spacing_atr", 0.12);
-                payload.put("scalp_max_spread_atr_ratio", 0.16);
-                payload.put("scalp_campaign_single_arm_usd", 0.05);
-                payload.put("scalp_basket_peak_giveback_pct", 15.0);
-                payload.put("scalp_basket_peak_min_giveback_usd", 0.02);
+                payload.put("basket_add_only_if_profitable", true);
+                payload.put("basket_no_average_down", true);
+                payload.put("basket_require_structure_confirmation", true);
+                payload.put("basket_add_cooldown_sec", 2);
             }
             payload.put("mode", p.getString("target_trade_mode", "DEMO"));
             payload.put("signal_mode", mode);
@@ -894,12 +877,7 @@ public class MonitoringService extends Service {
         return values[pos];
     }
 
-    private String currentMode() {
-        int pos = prefs().getInt("signal_mode_pos", 1);
-        String[] values = {"CONSERVATIVE", "NORMAL", "AGGRESSIVE", "SCALP"};
-        pos = Math.max(0, Math.min(pos, values.length - 1));
-        return values[pos];
-    }
+    private String currentMode() { return "NORMAL"; }
 
     private SharedPreferences prefs() {
         return getSharedPreferences("fxm1", MODE_PRIVATE);
@@ -1171,7 +1149,19 @@ public class MonitoringService extends Service {
         }
         int quality = setupQualityAdaptive(signal, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
 
-        // V9.0: SCALP separates directional intent from the exact execution trigger.
+        
+        // V10 NORMAL ONLY: pattern quality + exact timing gate.
+        int patternV10 = patternScoreV10(entrySeries);
+        if ("BUY".equals(executionSignal)) quality = Math.max(0, Math.min(100, quality + patternV10 * 3));
+        else if ("SELL".equals(executionSignal)) quality = Math.max(0, Math.min(100, quality - patternV10 * 3));
+
+        int timingV10 = entryTimingV10(entrySeries);
+        int wantedV10 = "BUY".equals(executionSignal) ? 1 : ("SELL".equals(executionSignal) ? -1 : 0);
+        if (wantedV10 != 0 && (quality < 82 || timingV10 != wantedV10 || (wantedV10 > 0 && patternV10 <= 0) || (wantedV10 < 0 && patternV10 >= 0))) {
+            signal = "WAIT";
+            executionSignal = "WAIT";
+        }
+// V9.0: SCALP separates directional intent from the exact execution trigger.
         // Android provides an early bias; Bridge owns the sub-second MT5 entry/add/exit timing.
         String scalpIntent = executionSignal;
         if ("SCALP".equals(mode) && "WAIT".equals(scalpIntent)) {
@@ -1250,6 +1240,67 @@ public class MonitoringService extends Service {
         }
 
         return new Analysis(symbol, signal, executionSignal, scalpIntent, quality, entry, sl, tp1, tp2, context, why, components);
+    }
+
+
+    // V10 NORMAL pattern/structure confirmation.
+    // Positive = bullish structure, negative = bearish structure.
+    private int patternScoreV10(List<Candle> s) {
+        if (s == null || s.size() < 12) return 0;
+        int n = s.size();
+        Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
+        int score = 0;
+
+        // HH/HL or LH/LL continuation structure.
+        if (d.high > c.high && d.low > c.low) score += 2;
+        if (d.high < c.high && d.low < c.low) score -= 2;
+
+        // Local range breakout.
+        double hi = -Double.MAX_VALUE, lo = Double.MAX_VALUE;
+        for (int i = Math.max(0, n - 10); i < n - 1; i++) {
+            hi = Math.max(hi, s.get(i).high);
+            lo = Math.min(lo, s.get(i).low);
+        }
+        if (d.close > hi) score += 2;
+        if (d.close < lo) score -= 2;
+
+        // Pullback/retest and resume.
+        if (b.close > a.close && c.close <= b.close && d.close > c.high) score += 2;
+        if (b.close < a.close && c.close >= b.close && d.close < c.low) score -= 2;
+
+        // Compression / triangle-like contraction followed by direction.
+        double oldRange = Math.max(1e-9, s.get(n - 6).high - s.get(n - 6).low);
+        double newRange = Math.max(1e-9, c.high - c.low);
+        if (newRange < oldRange * 0.75) {
+            if (d.close > c.high) score += 1;
+            if (d.close < c.low) score -= 1;
+        }
+
+        // Approximate double bottom / double top confirmation.
+        double atr = atr(s, 14);
+        double tol = Math.max(atr * 0.35, 1e-9);
+        Candle p1 = s.get(n - 6), p2 = s.get(n - 3);
+        if (Math.abs(p1.low - p2.low) <= tol && d.close > Math.max(p1.high, p2.high)) score += 1;
+        if (Math.abs(p1.high - p2.high) <= tol && d.close < Math.min(p1.low, p2.low)) score -= 1;
+
+        return Math.max(-8, Math.min(8, score));
+    }
+
+    // Entry timing: do not chase the end of an impulse.
+    // Requires a fresh resume/break after a pullback/retest.
+    private int entryTimingV10(List<Candle> s) {
+        if (s == null || s.size() < 5) return 0;
+        int n = s.size();
+        Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
+        double atr = atr(s, 14);
+        if (atr <= 0) atr = Math.max(1e-9, d.high - d.low);
+
+        boolean buyPullback = b.close >= a.close && c.low <= b.low + atr * 0.20 && d.close > c.high;
+        boolean sellPullback = b.close <= a.close && c.high >= b.high - atr * 0.20 && d.close < c.low;
+
+        if (buyPullback) return 1;
+        if (sellPullback) return -1;
+        return 0;
     }
 
     private int scalpExecutionDirection(List<Candle> s, double atr) {

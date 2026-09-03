@@ -12,6 +12,10 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * V7.1 consolidated smart-trading settings + bridge helpers.
+ * Defaults are deliberately conservative and DEMO-first.
+ */
 public final class FeatureEngine {
     private FeatureEngine() {}
 
@@ -90,13 +94,15 @@ public final class FeatureEngine {
         o.put("partial_close_enabled", p.getBoolean("partial_close_enabled", true));
         o.put("partial_close_at_r", p.getFloat("partial_close_at_r", 1.5f));
         o.put("partial_close_pct", p.getFloat("partial_close_pct", 50.0f));
-        boolean scalp = p.getInt("signal_mode_pos", 1) == 3;
+        boolean scalp = false;
         o.put("scalp_mode", scalp);
         if (scalp) {
+            // SCALP positions must be managed much faster than normal intraday positions.
             o.put("break_even_at_r", Math.min(p.getFloat("break_even_at_r", 1.0f), 0.35f));
             o.put("trailing_start_r", Math.min(p.getFloat("trailing_start_r", 1.5f), 0.55f));
             o.put("trailing_distance_r", Math.min(p.getFloat("trailing_distance_r", 0.8f), 0.35f));
             o.put("partial_close_at_r", Math.min(p.getFloat("partial_close_at_r", 1.5f), 0.70f));
+            // V7.4.6: dollar-based SCALP manager. Bridge scales these caps down for small equity.
             o.put("scalp_money_manager", true);
             o.put("scalp_risk_usd_cap", 2.0);
             o.put("scalp_hard_loss_usd_cap", 5.0);
@@ -106,15 +112,15 @@ public final class FeatureEngine {
             o.put("scalp_basket_risk_usd_cap", 16.0);
             o.put("scalp_basket_hard_loss_usd_cap", 10.0);
             o.put("scalp_basket_take_profit_usd_cap", 8.0);
-            o.put("scalp_max_hold_sec", 180);
+            o.put("scalp_max_hold_sec", 90);
             o.put("scalp_lot_mode", p.getString("scalp_lot_mode", "AUTO"));
             o.put("scalp_peak_lock_enabled", p.getBoolean("scalp_peak_lock_enabled", true));
             o.put("scalp_hard_stop_enabled", p.getBoolean("scalp_hard_stop_enabled", true));
             o.put("scalp_cash_tp_enabled", p.getBoolean("scalp_cash_tp_enabled", true));
             o.put("scalp_campaign_enabled", true);
-            o.put("scalp_campaign_single_arm_usd", 0.90);
-            o.put("scalp_basket_peak_giveback_pct", 28.0);
-            o.put("scalp_basket_peak_min_giveback_usd", 0.25);
+            o.put("scalp_campaign_single_arm_usd", 0.20);
+            o.put("scalp_basket_peak_giveback_pct", 25.0);
+            o.put("scalp_basket_peak_min_giveback_usd", 0.03);
         }
         return o;
     }
@@ -137,12 +143,13 @@ public final class FeatureEngine {
                 " · Session: " + currentSession() +
                 "\nMulti-pair radar: " + onOff(p.getBoolean("multi_pair_enabled", false)) +
                 " · News Guard: " + (newsActive ? "ACTIVE" : "READY") +
-                (p.getInt("signal_mode_pos", 1) == 3 ? "\nSCALP MONEY: ON · Lot " + p.getString("scalp_lot_mode", "AUTO") + " · Peak Lock " + onOff(p.getBoolean("scalp_peak_lock_enabled", true)) + " · Hard " + onOff(p.getBoolean("scalp_hard_stop_enabled", true)) + " · Cash TP " + onOff(p.getBoolean("scalp_cash_tp_enabled", true)) : "");
+                "";
     }
 
     public static String currentSession() {
         Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         int h = utc.get(Calendar.HOUR_OF_DAY);
+        // Simple session labels for situational awareness, not broker trading hours.
         if (h >= 0 && h < 7) return "ASIA";
         if (h >= 7 && h < 12) return "LONDON";
         if (h >= 12 && h < 16) return "LONDON+NEW_YORK";
@@ -180,12 +187,15 @@ public final class FeatureEngine {
     public static String analysisSymbol(String raw) {
         String v = raw == null ? "" : raw.trim().toUpperCase(Locale.US);
         if (v.isEmpty()) return v;
+        // Broker symbols often look like EURUSD, EURUSD.a or XAUUSDm.
+        // Twelve Data FX/metal endpoints are more reliable with AAA/BBB form.
         String letters = v.replaceAll("[^A-Z]", "");
         if (letters.length() >= 6) {
             String six = letters.substring(0, 6);
             String a = six.substring(0, 3);
             String b = six.substring(3, 6);
-            Set<String> ccy = new HashSet<>(Arrays.asList("USD","EUR","GBP","JPY","CHF","AUD","CAD","NZD","XAU","XAG"));
+            Set<String> ccy = new HashSet<>(Arrays.asList(
+                    "USD","EUR","GBP","JPY","CHF","AUD","CAD","NZD","XAU","XAG"));
             if (ccy.contains(a) && ccy.contains(b)) return a + "/" + b;
         }
         return v;
@@ -221,28 +231,6 @@ public final class FeatureEngine {
         return new JSONObject(body);
     }
 
-
-    public static String formatLedgerStats(JSONObject root) {
-        JSONArray arr=root==null?null:root.optJSONArray("trades");
-        if(arr==null)return "ДЕНЬГИ MT5: недоступно";
-        double profit=0,loss=0,net=0,comm=0,swap=0,fee=0,tProfit=0,tLoss=0,tNet=0;
-        int wins=0,today=0;
-        Calendar cal=Calendar.getInstance(); cal.set(Calendar.HOUR_OF_DAY,0);cal.set(Calendar.MINUTE,0);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);
-        long dayStart=cal.getTimeInMillis()/1000L;
-        for(int i=0;i<arr.length();i++){
-            JSONObject e=arr.optJSONObject(i); if(e==null)continue;
-            double n=e.optDouble("net_pl",0); net+=n; comm+=e.optDouble("commission",0); swap+=e.optDouble("swap",0); fee+=e.optDouble("fee",0);
-            if(n>0){profit+=n;wins++;} else if(n<0)loss+=n;
-            if(e.optLong("exit_time",0)>=dayStart){ today++; tNet+=n; if(n>0)tProfit+=n; else if(n<0)tLoss+=n; }
-        }
-        int count=arr.length(); double wr=count>0?wins*100.0/count:0;
-        return "ДЕНЬГИ MT5 · ЕДИНЫЙ ЖУРНАЛ"+
-            "\nСегодня: сделок "+today+" · PROFIT "+String.format(Locale.US,"%+.2f",tProfit)+" · LOSS "+String.format(Locale.US,"%+.2f",tLoss)+" · NET "+String.format(Locale.US,"%+.2f",tNet)+
-            "\n30 дней: закрытых "+count+" · Win "+String.format(Locale.US,"%.1f%%",wr)+
-            "\nPROFIT "+String.format(Locale.US,"%+.2f",profit)+" · LOSS "+String.format(Locale.US,"%+.2f",loss)+" · NET "+String.format(Locale.US,"%+.2f",net)+
-            "\nComm "+String.format(Locale.US,"%+.2f",comm)+" · Swap "+String.format(Locale.US,"%+.2f",swap)+" · Fee "+String.format(Locale.US,"%+.2f",fee);
-    }
-
     public static String formatStats(JSONObject s) {
         if (s == null) return "Статистика недоступна";
         JSONObject x = s.optJSONObject("stats");
@@ -260,35 +248,25 @@ public final class FeatureEngine {
     }
 
     public static String formatTradeLog(JSONObject root) {
-        JSONArray arr = root == null ? null : root.optJSONArray("trades");
+        JSONArray arr = root == null ? null : root.optJSONArray("events");
+        if (arr == null && root != null) arr = root.optJSONArray("deals");
         if (arr == null || arr.length() == 0) return "ТОРГОВЫЙ ЖУРНАЛ: пока пусто";
-        StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ · ДЕНЬГИ");
-        JSONObject sum = root.optJSONObject("summary");
-        if (sum != null) {
-            sb.append("\nNET ").append(String.format(Locale.US, "%+.2f USD", sum.optDouble("net_pl", 0)))
-              .append(" · PROFIT ").append(String.format(Locale.US, "%+.2f", sum.optDouble("gross_profit", 0)))
-              .append(" · LOSS ").append(String.format(Locale.US, "%+.2f", sum.optDouble("gross_loss", 0)))
-              .append(" · WIN ").append(String.format(Locale.US, "%.1f%%", sum.optDouble("win_rate", 0)));
-        }
-        SimpleDateFormat fmt = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
-        for (int i = 0; i < Math.min(arr.length(), 30); i++) {
+        StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ");
+        SimpleDateFormat f = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
+        for (int i = 0; i < Math.min(arr.length(), 10); i++) {
             JSONObject e = arr.optJSONObject(i);
             if (e == null) continue;
-            long a = e.optLong("entry_time",0), b = e.optLong("exit_time",0);
-            sb.append("\n\n").append(a > 0 ? fmt.format(new Date(a*1000L)) : "—")
-              .append(" → ").append(b > 0 ? fmt.format(new Date(b*1000L)) : "—")
-              .append("\n").append(e.optString("symbol","—")).append(" · ")
-              .append(e.optString("side","—")).append(" · ")
-              .append(String.format(Locale.US,"%.2f lot",e.optDouble("volume",0)))
-              .append("\nEntry ").append(String.format(Locale.US,"%.5f",e.optDouble("entry_price",0)))
-              .append(" → Exit ").append(String.format(Locale.US,"%.5f",e.optDouble("exit_price",0)))
-              .append(" · ").append(e.optInt("duration_sec",0)).append("s")
-              .append("\nGross ").append(String.format(Locale.US,"%+.2f",e.optDouble("gross_pl",0)))
-              .append(" · Comm ").append(String.format(Locale.US,"%+.2f",e.optDouble("commission",0)))
-              .append(" · Swap ").append(String.format(Locale.US,"%+.2f",e.optDouble("swap",0)))
-              .append("\nNET ").append(String.format(Locale.US,"%+.2f USD",e.optDouble("net_pl",0)));
-            String reason=e.optString("close_comment","");
-            if(!reason.isEmpty()) sb.append(" · ").append(reason);
+            long ts = e.optLong("ts", 0L);
+            String event = e.optString("event", "event");
+            sb.append("\n").append(ts > 0 ? f.format(new Date(ts * 1000L)) : "—")
+                    .append(" · ").append(event);
+            if (e.has("symbol")) sb.append(" · ").append(e.optString("symbol"));
+            if (e.has("ticket")) sb.append(" #").append(e.optLong("ticket"));
+            if (e.has("reason")) sb.append(" · ").append(e.optString("reason"));
+            if (e.has("message")) sb.append(" · ").append(e.optString("message"));
+            if (e.has("slippage_pips") && !e.isNull("slippage_pips")) {
+                sb.append(" · slip ").append(String.format(Locale.US, "%.2f p", e.optDouble("slippage_pips", 0)));
+            }
         }
         return sb.toString();
     }

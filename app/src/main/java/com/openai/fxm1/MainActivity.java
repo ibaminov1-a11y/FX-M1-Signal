@@ -190,6 +190,7 @@ public class MainActivity extends Activity {
         bottomNav = findViewById(R.id.bottomNav);
 
         applyDarkVioletTheme();
+        if (modeCard != null) modeCard.setVisibility(View.GONE);
         updateMarketStatusUi();
 
         loadSyncedMt5Symbols();
@@ -204,7 +205,7 @@ public class MainActivity extends Activity {
         entryTimeframeSpinner.setAdapter(timeframeAdapter);
 
         ArrayAdapter<String> modeAdapter = darkSpinnerAdapter(
-                new String[]{"CONSERVATIVE", "NORMAL", "AGGRESSIVE", "SCALP"}
+                new String[]{"NORMAL"}
         );
         signalModeSpinner.setAdapter(modeAdapter);
 
@@ -661,7 +662,7 @@ public class MainActivity extends Activity {
         String v = appVersionName();
         if (versionBadgeText != null) versionBadgeText.setText("V" + v);
         if (smartTitleText != null) smartTitleText.setText("УМНЫЕ ФУНКЦИИ V" + v);
-        if (footerVersionText != null) footerVersionText.setText("V" + v + " · SCALP · WATCHDOG · SMART RISK · MT5 BRIDGE");
+        if (footerVersionText != null) footerVersionText.setText("V" + v + " · NORMAL · WATCHDOG · SMART RISK · MT5 BRIDGE");
     }
 
     private void forceAutoOff(String journalMessage) {
@@ -883,27 +884,15 @@ public class MainActivity extends Activity {
                 int basketMaxPositions = Integer.parseInt(maxPositions);
                 payload.put("risk_pct", basketRiskPct);
                 payload.put("max_positions", basketMaxPositions);
-                if ("SCALP".equals(selectedSignalMode())) {
+                if ("NORMAL".equals(selectedSignalMode())) {
                     payload.put("basket_mode", true);
                     payload.put("allow_same_symbol_multiple", true);
                     payload.put("basket_risk_pct", basketRiskPct);
                     payload.put("risk_pct", basketRiskPct / Math.max(1, basketMaxPositions));
-                    // V7.4.6: SCALP uses a separate money manager in Bridge.
-                    // The percent spinner remains a global safety preference, not a per-scalp cash loss target.
-                    payload.put("scalp_money_manager", true);
-                    payload.put("scalp_lot_mode", getSharedPreferences("fxm1", MODE_PRIVATE).getString("scalp_lot_mode", "AUTO"));
-                    payload.put("scalp_peak_lock_enabled", getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("scalp_peak_lock_enabled", true));
-                    payload.put("scalp_hard_stop_enabled", getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("scalp_hard_stop_enabled", true));
-                    payload.put("scalp_cash_tp_enabled", getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("scalp_cash_tp_enabled", true));
-                    payload.put("scalp_risk_usd_cap", 2.0);
-                    payload.put("scalp_hard_loss_usd_cap", 5.0);
-                    payload.put("scalp_profit_protect_usd_cap", 1.5);
-                    payload.put("scalp_take_profit_usd_cap", 3.0);
-                    payload.put("scalp_basket_risk_usd_cap", 16.0);
-                    payload.put("scalp_basket_hard_loss_usd_cap", 10.0);
-                    payload.put("scalp_basket_take_profit_usd_cap", 8.0);
+                    payload.put("basket_add_only_if_profitable", true);
+                    payload.put("basket_no_average_down", true);
+                    payload.put("basket_require_structure_confirmation", true);
                     payload.put("basket_add_cooldown_sec", 2);
-                    payload.put("basket_min_progress_sl", 0.0);
                 }
                 payload.put("mode", getSharedPreferences("fxm1", MODE_PRIVATE).getString("target_trade_mode", "DEMO"));
                 payload.put("signal_mode", selectedSignalMode());
@@ -918,8 +907,8 @@ public class MainActivity extends Activity {
                 String message = response.optString("message", accepted ? "Сигнал принят" : "Сигнал отклонён");
 
                 runOnUiThread(() -> {
-                    addJournal(a.symbol + " SCALP " + tradeSignal + ("WAIT".equals(a.signal) ? " (micro inside WAIT)" : "") + " → " + message);
-                    FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), tradeSignal, a.quality, ("WAIT".equals(a.signal) ? "MICRO inside WAIT · " : "") + message);
+                    addJournal(a.symbol + " NORMAL " + tradeSignal + " → " + message);
+                    FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), tradeSignal, a.quality, message);
                     refreshSmartUi();
                     refreshStatsAndPositions();
                 });
@@ -1191,10 +1180,10 @@ public class MainActivity extends Activity {
         int execSel = Arrays.asList(execModes).indexOf(p.getString("execution_mode", "FULL_AUTO"));
         Spinner exec = smartSpinner(execModes, execSel < 0 ? 2 : execSel); box.addView(exec);
 
-        box.addView(smartLabel("SCALP LOT (AUTO или ручной лот)"));
+        // V10 NORMAL ONLY: SCALP controls hidden.
         String[] scalpLots = {"AUTO","0.01","0.02","0.05","0.10","0.20","0.50","1.00","10.00"};
         int scalpLotSel = Arrays.asList(scalpLots).indexOf(p.getString("scalp_lot_mode", "AUTO"));
-        Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel); box.addView(scalpLot);
+        Spinner scalpLot = smartSpinner(scalpLots, scalpLotSel < 0 ? 0 : scalpLotSel);
 
         Switch riskM = smartSwitch("Умный риск-менеджер", p.getBoolean("risk_manager_enabled", true)); box.addView(riskM);
         box.addView(smartLabel("Лимит убытка за день")); Spinner daily = smartSpinner(new String[]{"2%","3%","4%","5%"}, Math.max(0, Math.min(3, Math.round(p.getFloat("daily_loss_limit_pct",3f))-2))); box.addView(daily);
@@ -1218,9 +1207,9 @@ public class MainActivity extends Activity {
         box.addView(watchlistEdit, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)));
         Switch session = smartSwitch("Фильтр торговых сессий", p.getBoolean("session_filter_enabled", false)); box.addView(session);
         Switch positionManager = smartSwitch("Автосопровождение позиций", p.getBoolean("position_manager_enabled", true)); box.addView(positionManager);
-        Switch hardStop = smartSwitch("SCALP Hard Cash Stop", p.getBoolean("scalp_hard_stop_enabled", true)); box.addView(hardStop);
-        Switch peakLock = smartSwitch("SCALP Peak Profit Lock", p.getBoolean("scalp_peak_lock_enabled", true)); box.addView(peakLock);
-        Switch cashTp = smartSwitch("SCALP Cash Take Profit", p.getBoolean("scalp_cash_tp_enabled", true)); box.addView(cashTp);
+        Switch hardStop = smartSwitch("SCALP Hard Cash Stop", p.getBoolean("scalp_hard_stop_enabled", true));
+        Switch peakLock = smartSwitch("SCALP Peak Profit Lock", p.getBoolean("scalp_peak_lock_enabled", true));
+        Switch cashTp = smartSwitch("SCALP Cash Take Profit", p.getBoolean("scalp_cash_tp_enabled", true));
         Switch news = smartSwitch("Ручная пауза перед важной новостью на 30 минут", p.getBoolean("manual_news_blackout", false)); box.addView(news);
 
         AlertDialog smartDialog = new AlertDialog.Builder(this)
@@ -2128,8 +2117,7 @@ public class MainActivity extends Activity {
     }
 
     private String selectedSignalMode() {
-        Object selected = signalModeSpinner.getSelectedItem();
-        return selected == null ? "NORMAL" : selected.toString();
+        return "NORMAL";
     }
 
     private double selectedMaxDriftPct() {
@@ -2346,7 +2334,19 @@ public class MainActivity extends Activity {
                 breakout
         );
 
-        double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
+        
+        // V10 NORMAL ONLY: pattern quality + exact timing gate.
+        int patternV10 = patternScoreV10(entrySeries);
+        if ("BUY".equals(executionSignal)) quality = Math.max(0, Math.min(100, quality + patternV10 * 3));
+        else if ("SELL".equals(executionSignal)) quality = Math.max(0, Math.min(100, quality - patternV10 * 3));
+
+        int timingV10 = entryTimingV10(entrySeries);
+        int wantedV10 = "BUY".equals(executionSignal) ? 1 : ("SELL".equals(executionSignal) ? -1 : 0);
+        if (wantedV10 != 0 && (quality < 82 || timingV10 != wantedV10 || (wantedV10 > 0 && patternV10 <= 0) || (wantedV10 < 0 && patternV10 >= 0))) {
+            signal = "WAIT";
+            executionSignal = "WAIT";
+        }
+double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
         double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
         double tp2R = "SCALP".equals(mode) ? 1.4 : 2.0;
         double riskAtr = "SCALP".equals(mode) ? scalpAtr : atr;
@@ -2437,6 +2437,67 @@ public class MainActivity extends Activity {
                 why,
                 components
         );
+    }
+
+
+    // V10 NORMAL pattern/structure confirmation.
+    // Positive = bullish structure, negative = bearish structure.
+    private int patternScoreV10(List<Candle> s) {
+        if (s == null || s.size() < 12) return 0;
+        int n = s.size();
+        Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
+        int score = 0;
+
+        // HH/HL or LH/LL continuation structure.
+        if (d.high > c.high && d.low > c.low) score += 2;
+        if (d.high < c.high && d.low < c.low) score -= 2;
+
+        // Local range breakout.
+        double hi = -Double.MAX_VALUE, lo = Double.MAX_VALUE;
+        for (int i = Math.max(0, n - 10); i < n - 1; i++) {
+            hi = Math.max(hi, s.get(i).high);
+            lo = Math.min(lo, s.get(i).low);
+        }
+        if (d.close > hi) score += 2;
+        if (d.close < lo) score -= 2;
+
+        // Pullback/retest and resume.
+        if (b.close > a.close && c.close <= b.close && d.close > c.high) score += 2;
+        if (b.close < a.close && c.close >= b.close && d.close < c.low) score -= 2;
+
+        // Compression / triangle-like contraction followed by direction.
+        double oldRange = Math.max(1e-9, s.get(n - 6).high - s.get(n - 6).low);
+        double newRange = Math.max(1e-9, c.high - c.low);
+        if (newRange < oldRange * 0.75) {
+            if (d.close > c.high) score += 1;
+            if (d.close < c.low) score -= 1;
+        }
+
+        // Approximate double bottom / double top confirmation.
+        double atr = atr(s, 14);
+        double tol = Math.max(atr * 0.35, 1e-9);
+        Candle p1 = s.get(n - 6), p2 = s.get(n - 3);
+        if (Math.abs(p1.low - p2.low) <= tol && d.close > Math.max(p1.high, p2.high)) score += 1;
+        if (Math.abs(p1.high - p2.high) <= tol && d.close < Math.min(p1.low, p2.low)) score -= 1;
+
+        return Math.max(-8, Math.min(8, score));
+    }
+
+    // Entry timing: do not chase the end of an impulse.
+    // Requires a fresh resume/break after a pullback/retest.
+    private int entryTimingV10(List<Candle> s) {
+        if (s == null || s.size() < 5) return 0;
+        int n = s.size();
+        Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
+        double atr = atr(s, 14);
+        if (atr <= 0) atr = Math.max(1e-9, d.high - d.low);
+
+        boolean buyPullback = b.close >= a.close && c.low <= b.low + atr * 0.20 && d.close > c.high;
+        boolean sellPullback = b.close <= a.close && c.high >= b.high - atr * 0.20 && d.close < c.low;
+
+        if (buyPullback) return 1;
+        if (sellPullback) return -1;
+        return 0;
     }
 
     private int scalpExecutionDirection(List<Candle> s, double atr) {
