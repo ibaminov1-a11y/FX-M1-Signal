@@ -448,7 +448,7 @@ def health():
             "service": "FX M1 MT5 Bridge",
             "bridge_version": BRIDGE_VERSION,
             "api_version": 7,
-            "build_tag": "UNIFIED_EXECUTION_760",
+            "build_tag": "V10_NORMAL_PATTERN_EXECUTION",
             "mt5_connected": info is not None,
             "account_type": account_type_name(info),
             "real_trading_enabled": bool(ALLOW_REAL),
@@ -1202,7 +1202,10 @@ def entry_gate(data, account, symbol, tick, info):
             return False, f'SPREAD {spread_pips:.2f} pips > {max_spread:.2f}', 409, {'spread_pips': spread_pips}
 
     cooldown = max(0, int(data.get('cooldown_sec') or 0))
-    if cooldown > 0 and str(data.get('signal_mode') or '').upper() != 'SCALP':
+    # NORMAL pyramid add-ons are separately gated by profitable continuation.
+    # Do not let the generic trade cooldown block a valid add-on inside an already-open campaign.
+    internal_pyramid_add = bool(data.get('_normal_pyramid_add', False))
+    if cooldown > 0 and str(data.get('signal_mode') or '').upper() != 'SCALP' and not internal_pyramid_add:
         last = latest_bot_entry_epoch(symbol)
         elapsed = now_epoch - last if last else cooldown
         if last and elapsed < cooldown:
@@ -1229,12 +1232,85 @@ def basket_snapshot(positions, symbol, side, equity):
     latest_time = max((int(getattr(p, "time", 0) or 0) for p in basket), default=0)
     return basket, total_volume, avg_entry, known_risk, risk_pct, latest_time
 
+
+def normal_campaign_entry_gate(symbol, side, basket, tick, info, data):
+    """NORMAL-only campaign gate.
+
+    First entry is already confirmed by Android's Pattern/Structure/Timing engine,
+    so Bridge must not re-run the legacy SCALP M1 trigger.
+
+    Add-ons are allowed only when:
+      * the existing NORMAL basket is profitable;
+      * price has progressed further in the same direction;
+      * Android has sent another confirmed NORMAL BUY/SELL signal.
+    This prevents averaging down while still allowing pyramiding.
+    """
+    if not basket:
+        return True, 'NORMAL FIRST ENTRY: Android pattern/timing confirmed', {
+            'campaign_stage': 'FIRST_ENTRY',
+            'normal_entry': True,
+        }
+
+    basket_pnl = sum(float(p.profit) + float(getattr(p, 'swap', 0.0) or 0.0) for p in basket)
+    if basket_pnl <= 0.0:
+        return False, f'NORMAL ADD WAIT: basket P/L {basket_pnl:.2f} not positive', {
+            'campaign_stage': 'NO_AVERAGING_DOWN',
+            'basket_pnl': basket_pnl,
+        }
+
+    point = max(float(getattr(info, 'point', 0.0) or 0.0), 1e-9)
+    spread = max(0.0, float(tick.ask) - float(tick.bid))
+    current_price = float(tick.ask if side == 'BUY' else tick.bid)
+
+    # Use recent completed M5 bars only to size a sensible continuation spacing.
+    atr = point * 20.0
+    try:
+        rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 8)
+        if rates is not None and len(rates) >= 4:
+            closed = list(rates[:-1])
+            ranges = [
+                max(0.0, _rate_float(r, 'high') - _rate_float(r, 'low'))
+                for r in closed[-6:]
+            ]
+            if ranges:
+                atr = max(sum(ranges) / len(ranges), point * 10.0)
+    except Exception:
+        pass
+
+    entries = [float(p.price_open) for p in basket]
+    best_entry = max(entries) if side == 'BUY' else min(entries)
+    progress = current_price - best_entry if side == 'BUY' else best_entry - current_price
+
+    spacing_atr = max(0.05, min(safe_float(data.get('normal_campaign_spacing_atr'), 0.10), 0.50))
+    spacing = max(atr * spacing_atr, spread * 1.5, point * 5.0)
+
+    if progress < spacing:
+        return False, f'NORMAL ADD WAIT: progress {progress:.6f} < spacing {spacing:.6f}', {
+            'campaign_stage': 'WAIT_PROGRESS',
+            'basket_pnl': basket_pnl,
+            'progress': progress,
+            'required_spacing': spacing,
+            'm5_atr': atr,
+        }
+
+    return True, f'NORMAL ADD #{len(basket)+1}: profitable continuation confirmed', {
+        'campaign_stage': 'ADD',
+        'basket_pnl': basket_pnl,
+        'progress': progress,
+        'required_spacing': spacing,
+        'm5_atr': atr,
+    }
+
+
 @app.post("/signal")
 def signal():
     data = request.get_json(silent=True) or {}
     raw_symbol = data.get("symbol", "")
     side = str(data.get("signal") or data.get("side") or "").upper()
-    if str(data.get("signal_mode") or "").upper() == "SCALP":
+    signal_mode = str(data.get("signal_mode") or "NORMAL").upper()
+    is_scalp_mode = signal_mode == "SCALP"
+    is_normal_mode = signal_mode == "NORMAL"
+    if is_scalp_mode:
         update_scalp_supervisor_cfg(data)
 
     with LOCK:
@@ -1256,7 +1332,9 @@ def signal():
         if not symbol:
             return jsonify(accepted=False, error="SYMBOL_NOT_FOUND", message=f"Symbol not found: {raw_symbol}"), 404
 
-        basket_mode = bool(data.get("basket_mode", False)) and str(data.get("signal_mode") or "").upper() in ("NORMAL", "SCALP")
+        basket_mode = bool(data.get("basket_mode", False)) and (is_normal_mode or is_scalp_mode)
+        normal_basket_mode = basket_mode and is_normal_mode
+        scalp_basket_mode = basket_mode and is_scalp_mode
         same_symbol = [p for p in current_positions if p.symbol == symbol]
 
         if not basket_mode:
@@ -1270,33 +1348,40 @@ def signal():
             opposite_type = mt5.POSITION_TYPE_SELL if side == "BUY" else mt5.POSITION_TYPE_BUY
             opposite = [p for p in current_positions if p.symbol == symbol and p.type == opposite_type and int(getattr(p, "magic", 0)) == MAGIC]
             if opposite:
-                return jsonify(accepted=False, message=f"SCALP basket opposite position exists for {symbol}; close/reverse first"), 409
+                return jsonify(accepted=False, message=f"{signal_mode} basket opposite position exists for {symbol}; close/reverse first"), 409
             if len(basket) >= max_positions:
-                return jsonify(accepted=False, message=f"SCALP basket full: {len(basket)}/{max_positions}", basket_count=len(basket)), 409
+                return jsonify(accepted=False, message=f"{signal_mode} basket full: {len(basket)}/{max_positions}", basket_count=len(basket)), 409
 
         tick = mt5.symbol_info_tick(symbol)
         info = mt5.symbol_info(symbol)
         if tick is None or info is None:
             return jsonify(accepted=False, message="No current MT5 quote"), 503
 
-        gate_ok, gate_message, gate_code, gate_extra = entry_gate(data, account, symbol, tick, info)
+        gate_data = dict(data)
+        if normal_basket_mode and basket:
+            gate_data['_normal_pyramid_add'] = True
+        gate_ok, gate_message, gate_code, gate_extra = entry_gate(gate_data, account, symbol, tick, info)
         if not gate_ok:
             return jsonify(accepted=False, bridge_version=BRIDGE_VERSION, message=gate_message, **gate_extra), gate_code
 
         order_type = mt5.ORDER_TYPE_BUY if side == "BUY" else mt5.ORDER_TYPE_SELL
         price = float(tick.ask if side == "BUY" else tick.bid)
 
-        if basket_mode:
-            # V8.1 SCALP CAMPAIGN: no blind time-based slot cooldown.
-            # First entry requires an MT5 micro-trigger. Additional entries are pyramided only
-            # when price has progressed in our favour, the basket is not losing and MT5
-            # micro-structure still confirms continuation. This is intentionally NOT averaging down.
+        if scalp_basket_mode:
+            # Legacy SCALP path is isolated from NORMAL.
             micro_ok, micro_reason, micro_meta = scalp_campaign_entry_gate(
                 symbol, side, basket, tick, info, data
             )
             if not micro_ok:
                 return jsonify(accepted=False, bridge_version=BRIDGE_VERSION,
                                message=micro_reason, basket_count=len(basket), **micro_meta), 409
+        elif normal_basket_mode:
+            normal_ok, normal_reason, normal_meta = normal_campaign_entry_gate(
+                symbol, side, basket, tick, info, data
+            )
+            if not normal_ok:
+                return jsonify(accepted=False, bridge_version=BRIDGE_VERSION,
+                               message=normal_reason, basket_count=len(basket), **normal_meta), 409
 
         api_entry = safe_float(data.get("api_entry") or data.get("entry"), 0)
         max_drift = safe_float(data.get("max_price_drift_pct"), 0.05)
@@ -1311,7 +1396,7 @@ def signal():
         tp = safe_float(data.get("tp1") or data.get("tp"), 0)
         risk_pct = safe_float(data.get("risk_pct"), 0.5)
         scalp_limits = None
-        if basket_mode and bool(data.get("scalp_money_manager", True)):
+        if scalp_basket_mode and bool(data.get("scalp_money_manager", True)):
             scalp_limits = scalp_money_limits(float(account.equity), data)
             remaining_money = scalp_limits['basket_risk_usd'] - float(basket_risk_money)
             if remaining_money <= 0.01:
@@ -1319,12 +1404,16 @@ def signal():
                                basket_count=len(basket), basket_risk_usd=basket_risk_money, scalp_money=scalp_limits), 409
             tranche_money = min(scalp_limits['planned_risk_usd'], remaining_money)
             risk_pct = (tranche_money / max(float(account.equity), 1e-9)) * 100.0
-        elif basket_mode:
+        elif scalp_basket_mode:
             basket_risk_cap = max(0.05, safe_float(data.get("basket_risk_pct"), 0.5))
             if basket_risk_pct_used >= basket_risk_cap - 1e-9:
                 return jsonify(accepted=False, message=f"SCALP basket risk cap reached: {basket_risk_pct_used:.3f}%/{basket_risk_cap:.3f}%",
                                basket_count=len(basket), basket_risk_pct=basket_risk_pct_used), 409
             risk_pct = min(risk_pct, max(0.01, basket_risk_cap - basket_risk_pct_used))
+        elif normal_basket_mode and basket:
+            # NORMAL keeps the user-selected risk_pct per add-on.
+            # Safety against averaging down is enforced by normal_campaign_entry_gate().
+            pass
 
         # CURRENT: Android analysis prices can differ slightly from the broker feed.
         # Preserve the intended SL/TP distance, but anchor execution protection to MT5 Bid/Ask.
@@ -1392,7 +1481,9 @@ def signal():
             "deviation": int(data.get("deviation") or 20),
             "magic": MAGIC,
             "comment": safe_mt5_comment(
-                (f"FXM1 S{len(basket)+1:02d}" if basket_mode else f"FXM1 {str(data.get('signal_mode') or 'AUTO')[:8]}"),
+                (f"FXM1 S{len(basket)+1:02d}" if scalp_basket_mode
+                 else f"FXM1 N{len(basket)+1:02d}" if normal_basket_mode
+                 else f"FXM1 {signal_mode[:8]}"),
                 "FXM1 OPEN"
             ),
             "type_time": mt5.ORDER_TIME_GTC,
@@ -1414,7 +1505,9 @@ def signal():
             accepted=ok,
             ok=ok,
             bridge_version=BRIDGE_VERSION,
-            message=((f"SCALP campaign entry #{len(basket)+1} opened" if basket_mode else "Order opened")
+            message=((f"SCALP campaign entry #{len(basket)+1} opened" if scalp_basket_mode
+                      else f"NORMAL campaign entry #{len(basket)+1} opened" if normal_basket_mode
+                      else "Order opened")
                      if ok else f"MT5 retcode {result.retcode}: {result.comment}"),
             ticket=int(result.order) if result.order else None,
             deal=int(result.deal) if result.deal else None,

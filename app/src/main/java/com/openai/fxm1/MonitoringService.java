@@ -1093,6 +1093,9 @@ public class MonitoringService extends Service {
 
         int structure = structureScore(entrySeries);
         int breakout = breakoutScore(entrySeries);
+        SwingState swingV10 = swingStateV10(entrySeries);
+        int swingStructureV10 = swingV10.direction;
+        int effectiveStructureV10 = swingStructureV10 != 0 ? swingStructureV10 : structure;
 
         Candle last = entrySeries.get(entrySeries.size() - 1);
         double entry = last.close;
@@ -1102,29 +1105,32 @@ public class MonitoringService extends Service {
         // Entry starts from a recognised price pattern/structure, not from quality alone.
         int patternV10 = patternScoreV10(entrySeries);
         int buyVotesV10 = 0, sellVotesV10 = 0;
-        int[] votesV10 = {sHigher2, sHigher1, sEntry, sFast, structure};
+        int[] votesV10 = {sHigher2, sHigher1, sEntry, sFast, effectiveStructureV10};
         for (int v : votesV10) { if (v > 0) buyVotesV10++; else if (v < 0) sellVotesV10++; }
 
         boolean buyPatternV10 = patternV10 > 0;
         boolean sellPatternV10 = patternV10 < 0;
-        boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && structure >= 0 && buyVotesV10 >= 3 && sellVotesV10 <= 1;
-        boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && structure <= 0 && sellVotesV10 >= 3 && buyVotesV10 <= 1;
+        boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && effectiveStructureV10 >= 0 && buyVotesV10 >= 3 && sellVotesV10 <= 1;
+        boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && effectiveStructureV10 <= 0 && sellVotesV10 >= 3 && buyVotesV10 <= 1;
 
         String candidateSignalV10 = buyPatternV10 && buyContextV10 ? "BUY" :
                 (sellPatternV10 && sellContextV10 ? "SELL" : "WAIT");
 
-        int quality = setupQualityAdaptive(candidateSignalV10, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
+        int quality = setupQualityAdaptive(candidateSignalV10, sHigher2, sHigher1, sEntry, sFast, effectiveStructureV10, breakout);
         if ("BUY".equals(candidateSignalV10)) quality = Math.min(100, quality + Math.max(0, patternV10) * 5);
         if ("SELL".equals(candidateSignalV10)) quality = Math.min(100, quality + Math.max(0, -patternV10) * 5);
 
         int timingV10 = entryTimingV10(entrySeries);
         int wantedV10 = "BUY".equals(candidateSignalV10) ? 1 : ("SELL".equals(candidateSignalV10) ? -1 : 0);
         int momentumV10 = momentumConfirmV10(entrySeries);
+        int swingTimingV10 = swingEntryTimingV10(entrySeries, swingV10, wantedV10);
 
-        // A scheme must exist. Confirmation can be a clean pullback/retest OR a fresh
-        // directional continuation candle. We no longer require a standalone breakout.
-        boolean confirmationV10 = wantedV10 != 0 && (timingV10 == wantedV10 || momentumV10 == wantedV10);
-        boolean entryReadyV10 = wantedV10 != 0 && quality >= 78 && confirmationV10;
+        // V10.1 SWING ENTRY: the pattern is built from meaningful pivots, not every candle.
+        // Entry needs either a pullback/retest resume, a swing resume, or fresh momentum
+        // in the same direction. A standalone breakout is not mandatory.
+        boolean confirmationV10 = wantedV10 != 0 &&
+                (timingV10 == wantedV10 || swingTimingV10 == wantedV10 || momentumV10 == wantedV10);
+        boolean entryReadyV10 = wantedV10 != 0 && quality >= 76 && confirmationV10;
 
         String signal = entryReadyV10 ? candidateSignalV10 : "WAIT";
         String executionSignal = signal;
@@ -1133,8 +1139,8 @@ public class MonitoringService extends Service {
         String scalpIntent = executionSignal; // compatibility only
 
         double slMult = 1.8;
-        double tp1R = 1.5;
-        double tp2R = 2.0;
+        double tp1R = 0.0;
+        double tp2R = 0.0;
         double riskAtr = atr;
         double slDist = Math.max(riskAtr * slMult, minStopDistance(symbol));
         double sl = 0;
@@ -1144,18 +1150,18 @@ public class MonitoringService extends Service {
         String protectionSignal = executionSignal;
         if ("BUY".equals(protectionSignal)) {
             sl = entry - slDist;
-            tp1 = entry + slDist * tp1R;
-            tp2 = entry + slDist * tp2R;
+            tp1 = 0.0;
+            tp2 = 0.0;
         } else if ("SELL".equals(protectionSignal)) {
             sl = entry + slDist;
-            tp1 = entry - slDist * tp1R;
-            tp2 = entry - slDist * tp2R;
+            tp1 = 0.0;
+            tp2 = 0.0;
         }
 
         String reason;
         if (breakout > 0) reason = entryLabel + ": подтверждён пробой/импульс вверх";
         else if (breakout < 0) reason = entryLabel + ": подтверждён пробой/импульс вниз";
-        else reason = patternV10 != 0 ? entryLabel + ": схема найдена · ждём/проверяем подтверждение" : entryLabel + ": подходящая схема ещё не сформирована";
+        else reason = patternV10 != 0 ? entryLabel + ": swing-схема найдена · ждём возобновление движения" : entryLabel + ": swing-схема ещё не сформирована";
 
         String filter;
         if ("BUY".equals(signal)) filter = "Фильтр: " + mode + " разрешил BUY";
@@ -1168,7 +1174,8 @@ public class MonitoringService extends Service {
                 "   " + higher1Label + " " + arrow(sHigher1) +
                 "   " + entryLabel + " " + arrow(sEntry) +
                 "   " + fastLabel + " " + arrow(sFast) +
-                "\nСтруктура " + entryLabel + ": " + arrow(structure) +
+                "\nСтруктура " + entryLabel + ": " + arrow(effectiveStructureV10) +
+                "\nSwing " + entryLabel + ": " + swingV10.label +
                 "\n" + reason +
                 "\n" + filter +
                 ("SCALP".equals(mode) ? "\nSCALP " + entryTf + " exec: " + executionSignal + " · timing " + arrow(sFast) +
@@ -1180,7 +1187,7 @@ public class MonitoringService extends Service {
         int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);
         int entryScore = sEntry == 0 ? 6 : 18;
         int fastScore = (sEntry != 0 && sFast == sEntry) ? 15 : (sFast == 0 ? 8 : 3);
-        int structureScorePart = structure == 0 ? 5 : 15;
+        int structureScorePart = effectiveStructureV10 == 0 ? 5 : 15;
         int breakoutScorePart = Math.abs(breakout) >= 2 ? 20 : (Math.abs(breakout) == 1 ? 14 : 4);
         String components = "HTF " + htfScore + "/20 · Entry " + entryScore + "/20 · Fast " + fastScore + "/15 · Structure " + structureScorePart + "/15 · Breakout " + breakoutScorePart + "/20";
 
@@ -1188,8 +1195,9 @@ public class MonitoringService extends Service {
         if (sHigher1 != 0 && sHigher2 != 0 && sHigher1 != sHigher2) whyParts.add("старшие ТФ расходятся");
         if (sEntry == 0) whyParts.add(entryLabel + " без направления");
         if (sEntry != 0 && sFast != 0 && sFast != sEntry) whyParts.add(fastLabel + " против входа");
-        if (structure == 0) whyParts.add("структура не подтверждена");
-        if (breakout == 0) whyParts.add("отдельный пробой не обязателен");
+        if (effectiveStructureV10 == 0) whyParts.add("swing-структура ещё не подтверждена");
+        if (wantedV10 != 0 && swingTimingV10 != wantedV10 && timingV10 != wantedV10 && momentumV10 != wantedV10)
+            whyParts.add("схема есть, но нет подтверждённого возобновления движения");
         String why;
         if ("WAIT".equals(signal)) {
             why = whyParts.isEmpty() ? "условия режима " + mode + " не совпали одновременно" : android.text.TextUtils.join("; ", whyParts);
@@ -1207,15 +1215,33 @@ public class MonitoringService extends Service {
     // Returns +1 when a profitable BUY should be closed after a confirmed local peak,
     // -1 when a profitable SELL should be closed after a confirmed local bottom.
     private int peakExitDirectionV10(List<Candle> s) {
-        if (s == null || s.size() < 8) return 0;
+        if (s == null || s.size() < 10) return 0;
+        SwingState sw = swingStateV10(s);
+        double a = atr(s, 14);
+        if (a <= 0) a = Math.max(1e-9, s.get(s.size()-1).high - s.get(s.size()-1).low);
         int n = s.size();
-        Candle p3=s.get(n-4), p2=s.get(n-3), p1=s.get(n-2), x=s.get(n-1);
-        double prevHigh=Math.max(p3.high,p2.high);
-        double prevLow=Math.min(p3.low,p2.low);
-        boolean buyPeak = p1.high >= prevHigh && x.close < p1.close && x.close < x.open && x.close < p1.low;
-        boolean sellBottom = p1.low <= prevLow && x.close > p1.close && x.close > x.open && x.close > p1.high;
-        if (buyPeak) return 1;
-        if (sellBottom) return -1;
+        Candle x = s.get(n-1), p = s.get(n-2), p2 = s.get(n-3);
+
+        SwingPoint lastHigh = lastSwingOfType(sw.points, true);
+        SwingPoint lastLow = lastSwingOfType(sw.points, false);
+        // Structure break: BUY exits below the latest confirmed swing low;
+        // SELL exits above the latest confirmed swing high.
+        if (lastLow != null && x.close < lastLow.price - a * 0.08) return 1;
+        if (lastHigh != null && x.close > lastHigh.price + a * 0.08) return -1;
+
+        // Confirmed peak/bottom: meaningful excursion from a recent extreme plus two
+        // closes in the opposite direction. This avoids closing on one random candle.
+        double hi = -Double.MAX_VALUE, lo = Double.MAX_VALUE;
+        int hiIdx = -1, loIdx = -1;
+        for (int i=Math.max(0,n-10); i<n; i++) {
+            Candle c=s.get(i);
+            if (c.high>hi) { hi=c.high; hiIdx=i; }
+            if (c.low<lo) { lo=c.low; loIdx=i; }
+        }
+        boolean downConfirm = p.close < p2.close && x.close < p.close && x.close < x.open;
+        boolean upConfirm = p.close > p2.close && x.close > p.close && x.close > x.open;
+        if (hiIdx <= n-3 && hi - x.close >= a * 0.65 && downConfirm) return 1;
+        if (loIdx <= n-3 && x.close - lo >= a * 0.65 && upConfirm) return -1;
         return 0;
     }
 
@@ -1240,56 +1266,177 @@ public class MonitoringService extends Service {
         Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
         int score = 0;
 
-        // HH/HL or LH/LL continuation structure.
-        if (d.high > c.high && d.low > c.low) score += 2;
-        if (d.high < c.high && d.low < c.low) score -= 2;
+        SwingState sw = swingStateV10(s);
+        score += sw.patternDirection * 3;
+        if (sw.direction != 0) score += sw.direction * 2;
 
-        // Local range breakout.
-        double hi = -Double.MAX_VALUE, lo = Double.MAX_VALUE;
-        for (int i = Math.max(0, n - 10); i < n - 1; i++) {
-            hi = Math.max(hi, s.get(i).high);
-            lo = Math.min(lo, s.get(i).low);
-        }
-        if (d.close > hi) score += 2;
-        if (d.close < lo) score -= 2;
+        // Local candle continuation is secondary to the pivot structure.
+        if (d.high > c.high && d.low > c.low) score += 1;
+        if (d.high < c.high && d.low < c.low) score -= 1;
 
         // Pullback/retest and resume.
         if (b.close > a.close && c.close <= b.close && d.close > c.high) score += 2;
         if (b.close < a.close && c.close >= b.close && d.close < c.low) score -= 2;
 
-        // Compression / triangle-like contraction followed by direction.
-        double oldRange = Math.max(1e-9, s.get(n - 6).high - s.get(n - 6).low);
-        double newRange = Math.max(1e-9, c.high - c.low);
-        if (newRange < oldRange * 0.75) {
-            if (d.close > c.high) score += 1;
-            if (d.close < c.low) score -= 1;
+        // Local range breakout can confirm a pivot pattern but is not mandatory.
+        double hi = -Double.MAX_VALUE, lo = Double.MAX_VALUE;
+        for (int i = Math.max(0, n - 10); i < n - 1; i++) {
+            hi = Math.max(hi, s.get(i).high);
+            lo = Math.min(lo, s.get(i).low);
         }
+        if (d.close > hi) score += 1;
+        if (d.close < lo) score -= 1;
 
-        // Approximate double bottom / double top confirmation.
-        double atr = atr(s, 14);
-        double tol = Math.max(atr * 0.35, 1e-9);
-        Candle p1 = s.get(n - 6), p2 = s.get(n - 3);
-        if (Math.abs(p1.low - p2.low) <= tol && d.close > Math.max(p1.high, p2.high)) score += 1;
-        if (Math.abs(p1.high - p2.high) <= tol && d.close < Math.min(p1.low, p2.low)) score -= 1;
-
-        return Math.max(-8, Math.min(8, score));
+        return Math.max(-10, Math.min(10, score));
     }
 
-    // Entry timing: do not chase the end of an impulse.
-    // Requires a fresh resume/break after a pullback/retest.
+    // Legacy candle pullback timing remains as a secondary confirmation.
     private int entryTimingV10(List<Candle> s) {
         if (s == null || s.size() < 5) return 0;
         int n = s.size();
         Candle a = s.get(n - 4), b = s.get(n - 3), c = s.get(n - 2), d = s.get(n - 1);
-        double atr = atr(s, 14);
-        if (atr <= 0) atr = Math.max(1e-9, d.high - d.low);
-
-        boolean buyPullback = b.close >= a.close && c.low <= b.low + atr * 0.20 && d.close > c.high;
-        boolean sellPullback = b.close <= a.close && c.high >= b.high - atr * 0.20 && d.close < c.low;
-
+        double at = atr(s, 14);
+        if (at <= 0) at = Math.max(1e-9, d.high - d.low);
+        boolean buyPullback = b.close >= a.close && c.low <= b.low + at * 0.20 && d.close > c.high;
+        boolean sellPullback = b.close <= a.close && c.high >= b.high - at * 0.20 && d.close < c.low;
         if (buyPullback) return 1;
         if (sellPullback) return -1;
         return 0;
+    }
+
+    private int swingEntryTimingV10(List<Candle> s, SwingState sw, int wanted) {
+        if (s == null || s.size() < 8 || sw == null || wanted == 0) return 0;
+        int n=s.size();
+        Candle x=s.get(n-1), p=s.get(n-2), p2=s.get(n-3);
+        double at=atr(s,14);
+        if (at<=0) at=Math.max(1e-9,x.high-x.low);
+        double body=Math.abs(x.close-x.open);
+
+        SwingPoint lastHigh=lastSwingOfType(sw.points,true);
+        SwingPoint lastLow=lastSwingOfType(sw.points,false);
+        if (wanted>0) {
+            boolean recentPullback=lastLow!=null && n-1-lastLow.index<=10;
+            boolean resume=x.close>x.open && x.close>p.high && p.close>=p2.close;
+            boolean structureBreak=lastHigh!=null && x.close>lastHigh.price+at*0.04 && body<=at*1.20;
+            boolean notChasing=lastLow==null || x.close-lastLow.price<=at*2.20;
+            if (sw.patternDirection>0 && notChasing && ((recentPullback && resume) || structureBreak)) return 1;
+        } else {
+            boolean recentPullback=lastHigh!=null && n-1-lastHigh.index<=10;
+            boolean resume=x.close<x.open && x.close<p.low && p.close<=p2.close;
+            boolean structureBreak=lastLow!=null && x.close<lastLow.price-at*0.04 && body<=at*1.20;
+            boolean notChasing=lastHigh==null || lastHigh.price-x.close<=at*2.20;
+            if (sw.patternDirection<0 && notChasing && ((recentPullback && resume) || structureBreak)) return -1;
+        }
+        return 0;
+    }
+
+    private SwingState swingStateV10(List<Candle> s) {
+        ArrayList<SwingPoint> pts = swingPointsV10(s);
+        if (s == null || s.isEmpty()) return new SwingState(pts,0,0,"нет данных");
+        double at=atr(s,14);
+        if (at<=0) at=Math.max(1e-9,s.get(s.size()-1).high-s.get(s.size()-1).low);
+        double eps=at*0.08;
+
+        ArrayList<SwingPoint> highs=new ArrayList<>(), lows=new ArrayList<>();
+        for (SwingPoint p:pts) { if (p.high) highs.add(p); else lows.add(p); }
+        int dir=0;
+        if (highs.size()>=2 && lows.size()>=2) {
+            SwingPoint h1=highs.get(highs.size()-2), h2=highs.get(highs.size()-1);
+            SwingPoint l1=lows.get(lows.size()-2), l2=lows.get(lows.size()-1);
+            if (h2.price>h1.price+eps && l2.price>l1.price+eps) dir=1;
+            else if (h2.price<h1.price-eps && l2.price<l1.price-eps) dir=-1;
+        }
+
+        int pattern=dir;
+        double close=s.get(s.size()-1).close;
+        if (highs.size()>=2 && lows.size()>=1) {
+            SwingPoint h1=highs.get(highs.size()-2), h2=highs.get(highs.size()-1);
+            SwingPoint ll=lows.get(lows.size()-1);
+            if (Math.abs(h2.price-h1.price)<=at*0.28 && close<ll.price-at*0.03) pattern=-1; // double top
+        }
+        if (lows.size()>=2 && highs.size()>=1) {
+            SwingPoint l1=lows.get(lows.size()-2), l2=lows.get(lows.size()-1);
+            SwingPoint hh=highs.get(highs.size()-1);
+            if (Math.abs(l2.price-l1.price)<=at*0.28 && close>hh.price+at*0.03) pattern=1; // double bottom
+        }
+        if (highs.size()>=2 && lows.size()>=2) {
+            SwingPoint h1=highs.get(highs.size()-2), h2=highs.get(highs.size()-1);
+            SwingPoint l1=lows.get(lows.size()-2), l2=lows.get(lows.size()-1);
+            boolean triangle=h2.price<h1.price-eps && l2.price>l1.price+eps;
+            if (triangle) {
+                if (close>h2.price+at*0.04) pattern=1;
+                else if (close<l2.price-at*0.04) pattern=-1;
+                else pattern=0;
+            }
+        }
+        return new SwingState(pts,dir,pattern,swingLabelV10(pts,at));
+    }
+
+    private ArrayList<SwingPoint> swingPointsV10(List<Candle> s) {
+        ArrayList<SwingPoint> out=new ArrayList<>();
+        if (s==null || s.size()<9) return out;
+        double at=atr(s,14);
+        if (at<=0) {
+            double r=0.0; int count=0;
+            for (int i=Math.max(0,s.size()-20);i<s.size();i++) { r+=s.get(i).high-s.get(i).low; count++; }
+            at=count>0?r/count:1e-9;
+        }
+        double minMove=Math.max(at*0.32,1e-9);
+        int wing=2;
+        for (int i=wing;i<s.size()-wing;i++) {
+            Candle x=s.get(i);
+            boolean hi=true,lo=true;
+            for (int j=i-wing;j<=i+wing;j++) {
+                if (j==i) continue;
+                if (s.get(j).high>=x.high) hi=false;
+                if (s.get(j).low<=x.low) lo=false;
+            }
+            if (!hi && !lo) continue;
+            boolean high=hi;
+            double price=high?x.high:x.low;
+            SwingPoint cand=new SwingPoint(i,price,high);
+            if (out.isEmpty()) { out.add(cand); continue; }
+            SwingPoint last=out.get(out.size()-1);
+            if (last.high==cand.high) {
+                boolean moreExtreme=high ? cand.price>last.price : cand.price<last.price;
+                if (moreExtreme) out.set(out.size()-1,cand);
+                continue;
+            }
+            if (Math.abs(cand.price-last.price)<minMove) continue;
+            out.add(cand);
+        }
+        return out;
+    }
+
+    private SwingPoint lastSwingOfType(List<SwingPoint> pts, boolean high) {
+        if (pts==null) return null;
+        for (int i=pts.size()-1;i>=0;i--) if (pts.get(i).high==high) return pts.get(i);
+        return null;
+    }
+
+    private String swingLabelV10(List<SwingPoint> pts, double at) {
+        if (pts==null || pts.isEmpty()) return "нет подтверждённых pivot-точек";
+        ArrayList<String> labels=new ArrayList<>();
+        Double prevH=null,prevL=null;
+        for (SwingPoint p:pts) {
+            String z;
+            if (p.high) {
+                if (prevH==null) z="H";
+                else if (p.price>prevH+at*0.08) z="HH";
+                else if (p.price<prevH-at*0.08) z="LH";
+                else z="EH";
+                prevH=p.price;
+            } else {
+                if (prevL==null) z="L";
+                else if (p.price>prevL+at*0.08) z="HL";
+                else if (p.price<prevL-at*0.08) z="LL";
+                else z="EL";
+                prevL=p.price;
+            }
+            labels.add(z);
+        }
+        int from=Math.max(0,labels.size()-6);
+        return android.text.TextUtils.join(" → ",labels.subList(from,labels.size()));
     }
 
     private int scalpExecutionDirection(List<Candle> s, double atr) {
@@ -1522,6 +1669,25 @@ public class MonitoringService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    static class SwingPoint {
+        final int index;
+        final double price;
+        final boolean high;
+        SwingPoint(int index, double price, boolean high) {
+            this.index=index; this.price=price; this.high=high;
+        }
+    }
+
+    static class SwingState {
+        final ArrayList<SwingPoint> points;
+        final int direction;
+        final int patternDirection;
+        final String label;
+        SwingState(ArrayList<SwingPoint> points, int direction, int patternDirection, String label) {
+            this.points=points; this.direction=direction; this.patternDirection=patternDirection; this.label=label;
+        }
     }
 
     static class Candle {
