@@ -222,7 +222,8 @@ public class MainActivity extends Activity {
             prefs.edit().putInt("entry_tf_pos", savedTfPos).putBoolean("v800_tf_migrated", true).apply();
         }
         entryTimeframeSpinner.setSelection(Math.max(0, Math.min(savedTfPos, 8)));
-        signalModeSpinner.setSelection(prefs.getInt("signal_mode_pos", 1));
+        signalModeSpinner.setSelection(0);
+        prefs.edit().putInt("signal_mode_pos", 0).apply();
         apiKeyInput.setText(prefs.getString("apikey", ""));
         serverUrlInput.setText(stripServerScheme(prefs.getString("server_url", "")));
         setApiKeyEditMode(prefs.getString("apikey", "").trim().isEmpty());
@@ -234,7 +235,7 @@ public class MainActivity extends Activity {
                 new String[]{"0.25%", "0.50%", "1.00%"}
         );
         riskSpinner.setAdapter(riskAdapter);
-        riskSpinner.setSelection(prefs.getInt("risk_pos", 1));
+        riskSpinner.setSelection(prefs.getInt("risk_pos", 0));
 
         ArrayAdapter<String> maxPosAdapter = darkSpinnerAdapter(
                 new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
@@ -2099,9 +2100,9 @@ public class MainActivity extends Activity {
     private long selectedMonitorIntervalMs() {
         String tf = selectedEntryTimeframe();
         if ("M1".equals(tf)) return 10000L;
-        if ("M5".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 15000L : 60000L;
-        if ("M10".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 20000L : 120000L;
-        if ("M15".equals(tf)) return "SCALP".equals(selectedSignalMode()) ? 30000L : 180000L;
+        if ("M5".equals(tf)) return 60000L;
+        if ("M10".equals(tf)) return 120000L;
+        if ("M15".equals(tf)) return 180000L;
         if ("H1".equals(tf)) return 300000L;
         if ("H4".equals(tf)) return 900000L;
         if ("D1".equals(tf)) return 1800000L;
@@ -2342,14 +2343,33 @@ public class MainActivity extends Activity {
 
         int timingV10 = entryTimingV10(entrySeries);
         int wantedV10 = "BUY".equals(executionSignal) ? 1 : ("SELL".equals(executionSignal) ? -1 : 0);
-        if (wantedV10 != 0 && (quality < 82 || timingV10 != wantedV10 || (wantedV10 > 0 && patternV10 <= 0) || (wantedV10 < 0 && patternV10 >= 0))) {
+
+        // NORMAL V10 final gate:
+        // 1) quality must be strong;
+        // 2) structure/pattern must agree with direction;
+        // 3) accept either a fresh pullback/retest trigger OR a very strong aligned continuation.
+        // This prevents the old bug where 87-93/100 stayed WAIT forever only because
+        // the last candle did not match one exact 4-candle pullback formula.
+        boolean patternAlignedV10 = wantedV10 > 0 ? patternV10 > 0 : wantedV10 < 0 && patternV10 < 0;
+        boolean trendAlignedV10 = wantedV10 > 0
+                ? (sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && structure >= 0)
+                : wantedV10 < 0 && (sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && structure <= 0);
+        boolean exactTimingV10 = timingV10 == wantedV10;
+        boolean strongContinuationV10 = quality >= 88 && trendAlignedV10 && patternAlignedV10;
+        boolean entryReadyV10 = wantedV10 != 0 && quality >= 82 && patternAlignedV10
+                && (exactTimingV10 || strongContinuationV10);
+
+        if (wantedV10 != 0 && !entryReadyV10) {
             signal = "WAIT";
             executionSignal = "WAIT";
+        } else if (entryReadyV10) {
+            signal = executionSignal;
         }
-double slMult = "SCALP".equals(mode) ? 0.85 : 1.8;
-        double tp1R = "SCALP".equals(mode) ? 0.9 : 1.5;
-        double tp2R = "SCALP".equals(mode) ? 1.4 : 2.0;
-        double riskAtr = "SCALP".equals(mode) ? scalpAtr : atr;
+
+        double slMult = 1.8;
+        double tp1R = 1.5;
+        double tp2R = 2.0;
+        double riskAtr = atr;
         double slDist = Math.max(
                 riskAtr * slMult,
                 minStopDistance(symbol)

@@ -835,9 +835,9 @@ public class MonitoringService extends Service {
 
     private long intervalFor(String tf) {
         if ("M1".equals(tf)) return 10000L;
-        if ("M5".equals(tf)) return "SCALP".equals(currentMode()) ? 15000L : 60000L;
-        if ("M10".equals(tf)) return "SCALP".equals(currentMode()) ? 20000L : 120000L;
-        if ("M15".equals(tf)) return "SCALP".equals(currentMode()) ? 30000L : 180000L;
+        if ("M5".equals(tf)) return 60000L;
+        if ("M10".equals(tf)) return 120000L;
+        if ("M15".equals(tf)) return 180000L;
         if ("H1".equals(tf)) return 300000L;
         if ("H4".equals(tf)) return 900000L;
         if ("D1".equals(tf)) return 1800000L;
@@ -1157,11 +1157,26 @@ public class MonitoringService extends Service {
 
         int timingV10 = entryTimingV10(entrySeries);
         int wantedV10 = "BUY".equals(executionSignal) ? 1 : ("SELL".equals(executionSignal) ? -1 : 0);
-        if (wantedV10 != 0 && (quality < 82 || timingV10 != wantedV10 || (wantedV10 > 0 && patternV10 <= 0) || (wantedV10 < 0 && patternV10 >= 0))) {
+
+        // NORMAL V10 final gate. Do not require one exact pullback shape forever:
+        // a fresh retest trigger is preferred, but a very strong aligned continuation
+        // (88+/100 + structure + pattern) is also executable.
+        boolean patternAlignedV10 = wantedV10 > 0 ? patternV10 > 0 : wantedV10 < 0 && patternV10 < 0;
+        boolean trendAlignedV10 = wantedV10 > 0
+                ? (sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && structure >= 0)
+                : wantedV10 < 0 && (sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && structure <= 0);
+        boolean exactTimingV10 = timingV10 == wantedV10;
+        boolean strongContinuationV10 = quality >= 88 && trendAlignedV10 && patternAlignedV10;
+        boolean entryReadyV10 = wantedV10 != 0 && quality >= 82 && patternAlignedV10
+                && (exactTimingV10 || strongContinuationV10);
+
+        if (wantedV10 != 0 && !entryReadyV10) {
             signal = "WAIT";
             executionSignal = "WAIT";
+        } else if (entryReadyV10) {
+            signal = executionSignal;
         }
-// V9.0: SCALP separates directional intent from the exact execution trigger.
+// Legacy scalpIntent field remains only for object compatibility; currentMode() is NORMAL.
         // Android provides an early bias; Bridge owns the sub-second MT5 entry/add/exit timing.
         String scalpIntent = executionSignal;
         if ("SCALP".equals(mode) && "WAIT".equals(scalpIntent)) {
