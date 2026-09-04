@@ -92,6 +92,8 @@ public class MainActivity extends Activity {
     private boolean suppressAutoSwitch = false;
     private boolean syncingScalpTimeframe = false;
     private long emergencyTapMs = 0L;
+    private long lastMoneyRefreshMs = 0L;
+    private volatile boolean moneyRefreshInFlight = false;
 
     private double lastApiPrice = Double.NaN;
     private double lastMt5Bid = Double.NaN;
@@ -1293,7 +1295,8 @@ public class MainActivity extends Activity {
 
     private void refreshStatsAndPositions() {
         final String base = serverBaseFromPrefs();
-        if (base.isEmpty()) return;
+        if (base.isEmpty() || moneyRefreshInFlight) return;
+        moneyRefreshInFlight = true;
         executor.execute(() -> {
             try {
                 JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
@@ -1336,6 +1339,8 @@ public class MainActivity extends Activity {
                     if (statsText != null && !cachedStats.trim().isEmpty()) statsText.setText("СТАТИСТИКА\n" + cachedStats);
                     if (tradeHistoryText != null && !cachedLog.trim().isEmpty()) tradeHistoryText.setText(cachedLog);
                 });
+            } finally {
+                moneyRefreshInFlight = false;
             }
         });
     }
@@ -1578,7 +1583,14 @@ public class MainActivity extends Activity {
 
     private void syncUiFromBackgroundService() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
-        if (p.getBoolean("server_verified", false)) restoreTradingSnapshotFromPrefs();
+        if (p.getBoolean("server_verified", false)) {
+            restoreTradingSnapshotFromPrefs();
+            long nowMoney = System.currentTimeMillis();
+            if (nowMoney - lastMoneyRefreshMs >= 5000L) {
+                lastMoneyRefreshMs = nowMoney;
+                refreshStatsAndPositions();
+            }
+        }
         boolean bgRunning = p.getBoolean("bg_running", false);
         monitoring = bgRunning;
 

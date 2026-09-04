@@ -941,8 +941,11 @@ public class MonitoringService extends Service {
     }
 
     private Notification buildNotification(String title, String text, String signal, int quality) {
-        PendingIntent pausePi = serviceActionIntent(paused ? ACTION_RESUME : ACTION_PAUSE, 101);
-        PendingIntent emergencyPi = serviceActionIntent(ACTION_EMERGENCY, 102);
+        // Keep three explicit native actions. MediaStyle is intentionally NOT used:
+        // on the user's Android skin it rendered only anonymous icons instead of PLAY/PAUSE/STOP text.
+        PendingIntent playPi = serviceActionIntent(ACTION_RESUME, 101);
+        PendingIntent pausePi = serviceActionIntent(ACTION_PAUSE, 102);
+        PendingIntent emergencyPi = serviceActionIntent(ACTION_EMERGENCY, 103);
         String state = paused ? "PAUSE" : "PLAY";
         String line = currentSymbol() + " · " + currentTf() + " · " + currentMode() + " · " + signal +
                 (quality >= 0 ? " · " + quality + "/100" : "");
@@ -957,13 +960,10 @@ public class MonitoringService extends Service {
                 .setContentTitle("FX M1 Bot · " + state)
                 .setContentText(line)
                 .setContentIntent(openAppIntent())
-                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, paused ? "PLAY" : "PAUSE", pausePi).build())
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "PLAY", playPi).build())
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "PAUSE", pausePi).build())
                 .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
 
-        // Native Android style only: no custom RemoteViews/layouts. This keeps the service stable.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            b.setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1));
-        }
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH);
         return b.build();
