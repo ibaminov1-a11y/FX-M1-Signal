@@ -948,6 +948,49 @@ public class MonitoringService extends Service {
         String line = currentSymbol() + " · " + currentTf() + " · " + currentMode() + " · " + signal +
                 (quality >= 0 ? " · " + quality + "/100" : "");
 
+        // V10: PAUSE/PLAY and EMERGENCY STOP must be visible on the first (collapsed)
+        // notification card. Standard Notification actions are hidden behind expansion on
+        // some Xiaomi/HyperOS/Android builds, therefore we render the controls directly
+        // inside RemoteViews and bind PendingIntent actions to them.
+        RemoteViews compact = new RemoteViews(getPackageName(), R.layout.notification_monitoring_compact);
+        compact.setTextViewText(R.id.notifTitle, "FX M1 Bot · " + state);
+        compact.setTextViewText(R.id.notifCore, line);
+        compact.setTextViewText(R.id.notifConnection,
+                prefs().getBoolean("mt5_connected_snapshot", false)
+                        ? "SERVER CONNECTED · MT5 CONNECTED"
+                        : "MONITORING · MT5 CHECK");
+        compact.setTextViewText(R.id.notifPause, paused ? "▶  PLAY" : "Ⅱ  PAUSE");
+        compact.setOnClickPendingIntent(R.id.notifPause, pausePi);
+        compact.setOnClickPendingIntent(R.id.notifEmergency, emergencyPi);
+        compact.setOnClickPendingIntent(R.id.notifLogo, openAppIntent());
+
+        RemoteViews expanded = new RemoteViews(getPackageName(), R.layout.notification_monitoring_expanded);
+        expanded.setTextViewText(R.id.notifTitle, "FX M1 Bot · " + state);
+        expanded.setTextViewText(R.id.notifCore, line);
+        expanded.setTextViewText(R.id.notifPause, paused ? "▶  PLAY" : "Ⅱ  PAUSE");
+        expanded.setOnClickPendingIntent(R.id.notifPause, pausePi);
+        expanded.setOnClickPendingIntent(R.id.notifEmergency, emergencyPi);
+        expanded.setOnClickPendingIntent(R.id.notifLogo, openAppIntent());
+
+        int q = Math.max(0, Math.min(quality, 100));
+        expanded.setProgressBar(R.id.notifQualityBar, 100, q, quality < 0);
+        expanded.setTextViewText(R.id.notifQuality, "Качество\n" + (quality >= 0 ? quality + "/100" : "—"));
+
+        double balance = Double.longBitsToDouble(prefs().getLong("mt5_balance_bits", Double.doubleToLongBits(0.0)));
+        int posCount = prefs().getInt("mt5_positions_snapshot", 0);
+        expanded.setTextViewText(R.id.notifAccount, String.format(Locale.US, "Баланс\n%.2f", balance));
+        expanded.setTextViewText(R.id.notifPositions, "Открытые позиции\n" + posCount);
+                String riskLabel = prefs().getString("risk_label", "0.25%");
+        expanded.setTextViewText(R.id.notifRisk, "Риск\n" + riskLabel);
+                double notifEntry = Double.longBitsToDouble(prefs().getLong("state_entry_bits", Double.doubleToLongBits(0.0)));
+        expanded.setTextViewText(R.id.notifApiPrice, "Entry/API\n" + (notifEntry > 0.0 ? String.format(Locale.US, "%.5f", notifEntry) : "—"));
+        expanded.setTextViewText(R.id.notifLastSignal, "Сигнал\n" + signal + (quality >= 0 ? " " + quality + "/100" : ""));
+        expanded.setTextViewText(R.id.notifConnection,
+                prefs().getBoolean("mt5_connected_snapshot", false)
+                        ? "SERVER CONNECTED · MT5 CONNECTED"
+                        : "MONITORING · MT5 CHECK");
+        expanded.setTextViewText(R.id.notifSmart, "NORMAL · foreground monitoring");
+
         Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(R.drawable.ic_stat_fx)
                 .setOngoing(true)
@@ -958,8 +1001,13 @@ public class MonitoringService extends Service {
                 .setContentTitle("FX M1 Bot · " + state)
                 .setContentText(line)
                 .setContentIntent(openAppIntent())
-                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, paused ? "PLAY" : "PAUSE", pausePi).build())
-                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
+                .setCustomContentView(compact)
+                .setCustomBigContentView(expanded)
+                .setCustomHeadsUpContentView(compact);
+
+        if (Build.VERSION.SDK_INT >= 24) {
+            b.setStyle(new Notification.DecoratedCustomViewStyle());
+        }
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH);
         return b.build();
@@ -1124,13 +1172,19 @@ public class MonitoringService extends Service {
         int wantedV10 = "BUY".equals(candidateSignalV10) ? 1 : ("SELL".equals(candidateSignalV10) ? -1 : 0);
         int momentumV10 = momentumConfirmV10(entrySeries);
         int swingTimingV10 = swingEntryTimingV10(entrySeries, swingV10, wantedV10);
+        int liveResumeV10 = liveResumeDirectionV10(entrySeries);
+        boolean chasingV10 = isChasingV10(entrySeries, wantedV10);
 
-        // V10.1 SWING ENTRY: the pattern is built from meaningful pivots, not every candle.
-        // Entry needs either a pullback/retest resume, a swing resume, or fresh momentum
-        // in the same direction. A standalone breakout is not mandatory.
-        boolean confirmationV10 = wantedV10 != 0 &&
+        // V10.2 FAST SWING ENTRY. Confirmed pivots define the setup, but they must not
+        // delay execution until another complete swing is printed. Once the pattern/context
+        // is aligned, the first live continuation in that direction is enough to execute.
+        boolean preciseConfirmV10 = wantedV10 != 0 &&
                 (timingV10 == wantedV10 || swingTimingV10 == wantedV10 || momentumV10 == wantedV10);
-        boolean entryReadyV10 = wantedV10 != 0 && quality >= 76 && confirmationV10;
+        boolean strongSetupV10 = wantedV10 != 0 && quality >= 84 &&
+                (effectiveStructureV10 == wantedV10 || swingV10.patternDirection == wantedV10);
+        boolean fastConfirmV10 = strongSetupV10 && liveResumeV10 == wantedV10;
+        boolean confirmationV10 = preciseConfirmV10 || fastConfirmV10;
+        boolean entryReadyV10 = wantedV10 != 0 && quality >= 72 && confirmationV10 && !chasingV10;
 
         String signal = entryReadyV10 ? candidateSignalV10 : "WAIT";
         String executionSignal = signal;
@@ -1161,7 +1215,7 @@ public class MonitoringService extends Service {
         String reason;
         if (breakout > 0) reason = entryLabel + ": подтверждён пробой/импульс вверх";
         else if (breakout < 0) reason = entryLabel + ": подтверждён пробой/импульс вниз";
-        else reason = patternV10 != 0 ? entryLabel + ": swing-схема найдена · ждём возобновление движения" : entryLabel + ": swing-схема ещё не сформирована";
+        else reason = patternV10 != 0 ? entryLabel + ": swing-схема найдена · ждём только первое подтверждение продолжения" : entryLabel + ": swing-схема ещё не сформирована";
 
         String filter;
         if ("BUY".equals(signal)) filter = "Фильтр: " + mode + " разрешил BUY";
@@ -1196,8 +1250,10 @@ public class MonitoringService extends Service {
         if (sEntry == 0) whyParts.add(entryLabel + " без направления");
         if (sEntry != 0 && sFast != 0 && sFast != sEntry) whyParts.add(fastLabel + " против входа");
         if (effectiveStructureV10 == 0) whyParts.add("swing-структура ещё не подтверждена");
-        if (wantedV10 != 0 && swingTimingV10 != wantedV10 && timingV10 != wantedV10 && momentumV10 != wantedV10)
-            whyParts.add("схема есть, но нет подтверждённого возобновления движения");
+        if (wantedV10 != 0 && !confirmationV10)
+            whyParts.add("схема есть, ждём первую свечу продолжения");
+        if (wantedV10 != 0 && chasingV10)
+            whyParts.add("не входим в растянутый импульс — ждём короткий откат");
         String why;
         if ("WAIT".equals(signal)) {
             why = whyParts.isEmpty() ? "условия режима " + mode + " не совпали одновременно" : android.text.TextUtils.join("; ", whyParts);
@@ -1243,6 +1299,48 @@ public class MonitoringService extends Service {
         if (hiIdx <= n-3 && hi - x.close >= a * 0.65 && downConfirm) return 1;
         if (loIdx <= n-3 && x.close - lo >= a * 0.65 && upConfirm) return -1;
         return 0;
+    }
+
+    private int liveResumeDirectionV10(List<Candle> s) {
+        if (s == null || s.size() < 4) return 0;
+        int n = s.size();
+        Candle a = s.get(n-3), b = s.get(n-2), x = s.get(n-1);
+        double at = atr(s, 14);
+        if (at <= 0) at = Math.max(1e-9, x.high - x.low);
+        double body = x.close - x.open;
+        double minBody = at * 0.08;
+
+        boolean buy = body > minBody && x.close > b.close &&
+                (b.close >= a.close || x.close > b.high - at * 0.04);
+        boolean sell = -body > minBody && x.close < b.close &&
+                (b.close <= a.close || x.close < b.low + at * 0.04);
+        if (buy && !sell) return 1;
+        if (sell && !buy) return -1;
+        return 0;
+    }
+
+    private boolean isChasingV10(List<Candle> s, int wanted) {
+        if (s == null || s.size() < 8 || wanted == 0) return false;
+        int n = s.size();
+        Candle x = s.get(n-1);
+        double at = atr(s, 14);
+        if (at <= 0) at = Math.max(1e-9, x.high - x.low);
+
+        double hi = -Double.MAX_VALUE, lo = Double.MAX_VALUE;
+        for (int i = Math.max(0, n-10); i < n; i++) {
+            hi = Math.max(hi, s.get(i).high);
+            lo = Math.min(lo, s.get(i).low);
+        }
+        double range = Math.max(at, hi - lo);
+        double body = Math.abs(x.close - x.open);
+        boolean impulse = body >= at * 0.85;
+        if (wanted > 0) {
+            boolean atTop = hi - x.close <= Math.max(at * 0.10, range * 0.06);
+            return atTop && impulse;
+        } else {
+            boolean atBottom = x.close - lo <= Math.max(at * 0.10, range * 0.06);
+            return atBottom && impulse;
+        }
     }
 
     private int momentumConfirmV10(List<Candle> s) {
@@ -1381,8 +1479,8 @@ public class MonitoringService extends Service {
             for (int i=Math.max(0,s.size()-20);i<s.size();i++) { r+=s.get(i).high-s.get(i).low; count++; }
             at=count>0?r/count:1e-9;
         }
-        double minMove=Math.max(at*0.32,1e-9);
-        int wing=2;
+        double minMove=Math.max(at*0.24,1e-9);
+        int wing=1;
         for (int i=wing;i<s.size()-wing;i++) {
             Candle x=s.get(i);
             boolean hi=true,lo=true;
