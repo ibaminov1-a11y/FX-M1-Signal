@@ -138,18 +138,16 @@
         </LinearLayout>
 
         
-        <LinearLayout android:id="@+id/positionsCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
+        <LinearLayout android:id="@+id/positionsCard" android:clickable="true" android:focusable="true" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ПОЗИЦИИ (MT5)" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
-            <TextView android:id="@+id/positionsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Открытые позиции: —&#10;Текущий P/L: —" android:textColor="#F7F4FF" android:textSize="13sp" android:lineSpacingExtra="3dp" />
+            <TextView android:id="@+id/positionsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Открытые позиции: —&#10;Текущий P/L: —&#10;Сегодня: —&#10;Всего: —" android:textColor="#F7F4FF" android:textSize="13sp" android:lineSpacingExtra="3dp" />
+            <Button android:id="@+id/moneyHistoryButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="9dp" android:text="ДЕНЬГИ / ИСТОРИЯ" android:textSize="10sp" android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout android:id="@+id/smartCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
             <TextView android:id="@+id/smartTitleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="УМНЫЕ ФУНКЦИИ" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
             <TextView android:id="@+id/smartStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Risk Manager · BE · Trailing · Partial · Spread · Cooldown" android:textColor="#B8B2CB" android:textSize="11sp" android:lineSpacingExtra="2dp" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="horizontal">
-                <Button android:id="@+id/smartFeaturesButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="НАСТРОИТЬ" android:textSize="10sp" android:textStyle="bold" />
-                <Button android:id="@+id/syncMt5SymbolsButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:layout_marginStart="4dp" android:text="СИМВОЛЫ MT5" android:textSize="10sp" android:textStyle="bold" />
-            </LinearLayout>
+            <Button android:id="@+id/smartFeaturesButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="8dp" android:text="НАСТРОИТЬ" android:textSize="10sp" android:textStyle="bold" />
             <TextView android:id="@+id/statsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="СТАТИСТИКА: подключите MT5 Bridge" android:textColor="#F7F4FF" android:textSize="11sp" android:lineSpacingExtra="2dp" />
             <TextView android:id="@+id/signalHistoryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:maxLines="6" android:ellipsize="end" android:text="ИСТОРИЯ СИГНАЛОВ: пока пусто" android:textColor="#AFA8C4" android:textSize="10sp" android:lineSpacingExtra="2dp" />
             <TextView android:id="@+id/tradeHistoryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:maxLines="11" android:ellipsize="end" android:text="ТОРГОВЫЙ ЖУРНАЛ: подключите MT5 Bridge" android:textColor="#AFA8C4" android:textSize="10sp" android:lineSpacingExtra="2dp" />

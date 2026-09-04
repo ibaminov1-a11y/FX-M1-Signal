@@ -7,7 +7,6 @@ import android.content.pm.ServiceInfo;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.*;
-import android.widget.RemoteViews;
 import android.graphics.Color;
 
 import org.json.JSONArray;
@@ -948,49 +947,6 @@ public class MonitoringService extends Service {
         String line = currentSymbol() + " · " + currentTf() + " · " + currentMode() + " · " + signal +
                 (quality >= 0 ? " · " + quality + "/100" : "");
 
-        // V10: PAUSE/PLAY and EMERGENCY STOP must be visible on the first (collapsed)
-        // notification card. Standard Notification actions are hidden behind expansion on
-        // some Xiaomi/HyperOS/Android builds, therefore we render the controls directly
-        // inside RemoteViews and bind PendingIntent actions to them.
-        RemoteViews compact = new RemoteViews(getPackageName(), R.layout.notification_monitoring_compact);
-        compact.setTextViewText(R.id.notifTitle, "FX M1 Bot · " + state);
-        compact.setTextViewText(R.id.notifCore, line);
-        compact.setTextViewText(R.id.notifConnection,
-                prefs().getBoolean("mt5_connected_snapshot", false)
-                        ? "SERVER CONNECTED · MT5 CONNECTED"
-                        : "MONITORING · MT5 CHECK");
-        compact.setTextViewText(R.id.notifPause, paused ? "▶  PLAY" : "Ⅱ  PAUSE");
-        compact.setOnClickPendingIntent(R.id.notifPause, pausePi);
-        compact.setOnClickPendingIntent(R.id.notifEmergency, emergencyPi);
-        compact.setOnClickPendingIntent(R.id.notifLogo, openAppIntent());
-
-        RemoteViews expanded = new RemoteViews(getPackageName(), R.layout.notification_monitoring_expanded);
-        expanded.setTextViewText(R.id.notifTitle, "FX M1 Bot · " + state);
-        expanded.setTextViewText(R.id.notifCore, line);
-        expanded.setTextViewText(R.id.notifPause, paused ? "▶  PLAY" : "Ⅱ  PAUSE");
-        expanded.setOnClickPendingIntent(R.id.notifPause, pausePi);
-        expanded.setOnClickPendingIntent(R.id.notifEmergency, emergencyPi);
-        expanded.setOnClickPendingIntent(R.id.notifLogo, openAppIntent());
-
-        int q = Math.max(0, Math.min(quality, 100));
-        expanded.setProgressBar(R.id.notifQualityBar, 100, q, quality < 0);
-        expanded.setTextViewText(R.id.notifQuality, "Качество\n" + (quality >= 0 ? quality + "/100" : "—"));
-
-        double balance = Double.longBitsToDouble(prefs().getLong("mt5_balance_bits", Double.doubleToLongBits(0.0)));
-        int posCount = prefs().getInt("mt5_positions_snapshot", 0);
-        expanded.setTextViewText(R.id.notifAccount, String.format(Locale.US, "Баланс\n%.2f", balance));
-        expanded.setTextViewText(R.id.notifPositions, "Открытые позиции\n" + posCount);
-                String riskLabel = prefs().getString("risk_label", "0.25%");
-        expanded.setTextViewText(R.id.notifRisk, "Риск\n" + riskLabel);
-                double notifEntry = Double.longBitsToDouble(prefs().getLong("state_entry_bits", Double.doubleToLongBits(0.0)));
-        expanded.setTextViewText(R.id.notifApiPrice, "Entry/API\n" + (notifEntry > 0.0 ? String.format(Locale.US, "%.5f", notifEntry) : "—"));
-        expanded.setTextViewText(R.id.notifLastSignal, "Сигнал\n" + signal + (quality >= 0 ? " " + quality + "/100" : ""));
-        expanded.setTextViewText(R.id.notifConnection,
-                prefs().getBoolean("mt5_connected_snapshot", false)
-                        ? "SERVER CONNECTED · MT5 CONNECTED"
-                        : "MONITORING · MT5 CHECK");
-        expanded.setTextViewText(R.id.notifSmart, "NORMAL · foreground monitoring");
-
         Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(R.drawable.ic_stat_fx)
                 .setOngoing(true)
@@ -1001,12 +957,12 @@ public class MonitoringService extends Service {
                 .setContentTitle("FX M1 Bot · " + state)
                 .setContentText(line)
                 .setContentIntent(openAppIntent())
-                .setCustomContentView(compact)
-                .setCustomBigContentView(expanded)
-                .setCustomHeadsUpContentView(compact);
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, paused ? "PLAY" : "PAUSE", pausePi).build())
+                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
 
-        if (Build.VERSION.SDK_INT >= 24) {
-            b.setStyle(new Notification.DecoratedCustomViewStyle());
+        // Native Android style only: no custom RemoteViews/layouts. This keeps the service stable.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            b.setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1));
         }
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH);

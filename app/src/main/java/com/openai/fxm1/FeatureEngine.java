@@ -249,29 +249,128 @@ public final class FeatureEngine {
                 " · Loss streak: " + x.optInt("max_consecutive_losses", x.optInt("consecutive_losses", 0));
     }
 
+    public static String formatLedgerStats(JSONObject root) {
+        JSONArray arr = root == null ? null : root.optJSONArray("trades");
+        if (arr == null) return "ДЕНЬГИ MT5: недоступно";
+        double profit = 0, loss = 0, net = 0, todayProfit = 0, todayLoss = 0, todayNet = 0;
+        int wins = 0, todayCount = 0;
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
+        long dayStart = cal.getTimeInMillis() / 1000L;
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject e = arr.optJSONObject(i); if (e == null) continue;
+            double n = e.optDouble("net_pl", 0.0); net += n;
+            if (n > 0) { profit += n; wins++; } else if (n < 0) loss += n;
+            if (e.optLong("exit_time", 0L) >= dayStart) {
+                todayCount++; todayNet += n;
+                if (n > 0) todayProfit += n; else if (n < 0) todayLoss += n;
+            }
+        }
+        int count = arr.length();
+        double wr = count > 0 ? wins * 100.0 / count : 0.0;
+        return "Закрытых: " + count + " · Win rate: " + String.format(Locale.US, "%.1f%%", wr) +
+                "\nСегодня: +" + moneyAbs(todayProfit) + " / -" + moneyAbs(todayLoss) + " · NET " + signed(todayNet) +
+                "\nВсего: +" + moneyAbs(profit) + " / -" + moneyAbs(loss) + " · NET " + signed(net);
+    }
+
+    public static String formatRealizedMoneySummary(JSONObject root, String currency) {
+        JSONArray arr = root == null ? null : root.optJSONArray("trades");
+        if (arr == null) return "Сегодня: —\nВсего: —";
+        double allProfit = 0.0, allLoss = 0.0, allNet = 0.0;
+        double todayProfit = 0.0, todayLoss = 0.0, todayNet = 0.0;
+        int todayCount = 0, allCount = 0;
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
+        long dayStart = cal.getTimeInMillis() / 1000L;
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject e = arr.optJSONObject(i); if (e == null) continue;
+            double n = e.optDouble("net_pl", 0.0);
+            allCount++; allNet += n;
+            if (n > 0) allProfit += n; else if (n < 0) allLoss += n;
+            if (e.optLong("exit_time", 0L) >= dayStart) {
+                todayCount++; todayNet += n;
+                if (n > 0) todayProfit += n; else if (n < 0) todayLoss += n;
+            }
+        }
+        String c = (currency == null || currency.trim().isEmpty()) ? "USD" : currency.trim();
+        return "Сегодня: +" + moneyAbs(todayProfit) + " / -" + moneyAbs(todayLoss) + " · ИТОГ " + signed(todayNet) + " " + c + " · " + todayCount + " сдел." +
+                "\nВсего: +" + moneyAbs(allProfit) + " / -" + moneyAbs(allLoss) + " · ИТОГ " + signed(allNet) + " " + c + " · " + allCount + " сдел.";
+    }
+
+    public static String formatMoneyHistoryHeader(JSONObject positionsRoot, JSONObject ledgerRoot, String currency) {
+        int open = positionsRoot == null ? 0 : positionsRoot.optInt("count", 0);
+        double floating = positionsRoot == null ? 0.0 : positionsRoot.optDouble("floating_pl", 0.0);
+        String c = (currency == null || currency.trim().isEmpty()) ? "USD" : currency.trim();
+        return "Открытые позиции: " + open +
+                "\nТекущий P/L: " + signed(floating) + " " + c +
+                "\n" + formatRealizedMoneySummary(ledgerRoot, c);
+    }
+
+    public static String formatFullTradeHistory(JSONObject root, String currency) {
+        JSONArray arr = root == null ? null : root.optJSONArray("trades");
+        if (arr == null || arr.length() == 0) return "Пока пусто";
+        String c = (currency == null || currency.trim().isEmpty()) ? "USD" : currency.trim();
+        StringBuilder sb = new StringBuilder();
+        SimpleDateFormat fmt = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.US);
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject e = arr.optJSONObject(i); if (e == null) continue;
+            long a = e.optLong("entry_time", 0L), b = e.optLong("exit_time", 0L);
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append(i + 1).append(". ")
+                    .append(a > 0 ? fmt.format(new Date(a * 1000L)) : "—")
+                    .append(" → ").append(b > 0 ? fmt.format(new Date(b * 1000L)) : "—")
+                    .append("\n").append(e.optString("symbol", "—")).append(" · ")
+                    .append(e.optString("side", "—")).append(" · ")
+                    .append(String.format(Locale.US, "%.2f lot", e.optDouble("volume", 0.0)))
+                    .append("\nEntry ").append(String.format(Locale.US, "%.5f", e.optDouble("entry_price", 0.0)))
+                    .append(" → Exit ").append(String.format(Locale.US, "%.5f", e.optDouble("exit_price", 0.0)))
+                    .append(" · ").append(e.optInt("duration_sec", 0)).append("s")
+                    .append("\nP/L ").append(signed(e.optDouble("net_pl", 0.0))).append(" ").append(c)
+                    .append(" · Gross ").append(signed(e.optDouble("gross_pl", 0.0)))
+                    .append(" · Comm ").append(signed(e.optDouble("commission", 0.0)))
+                    .append(" · Swap ").append(signed(e.optDouble("swap", 0.0)));
+            String reason = e.optString("close_comment", "");
+            if (!reason.isEmpty()) sb.append("\nЗакрытие: ").append(reason);
+        }
+        return sb.toString();
+    }
+
     public static String formatTradeLog(JSONObject root) {
+        JSONArray trades = root == null ? null : root.optJSONArray("trades");
+        if (trades != null) {
+            if (trades.length() == 0) return "ТОРГОВЫЙ ЖУРНАЛ: пока пусто";
+            StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ");
+            SimpleDateFormat fmt = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
+            for (int i = 0; i < Math.min(trades.length(), 12); i++) {
+                JSONObject e = trades.optJSONObject(i); if (e == null) continue;
+                long a = e.optLong("entry_time", 0L), b = e.optLong("exit_time", 0L);
+                sb.append("\n\n").append(a > 0 ? fmt.format(new Date(a * 1000L)) : "—")
+                        .append(" → ").append(b > 0 ? fmt.format(new Date(b * 1000L)) : "—")
+                        .append("\n").append(e.optString("symbol", "—")).append(" · ")
+                        .append(e.optString("side", "—")).append(" · ")
+                        .append(String.format(Locale.US, "%.2f lot", e.optDouble("volume", 0.0)))
+                        .append(" · NET ").append(signed(e.optDouble("net_pl", 0.0)));
+            }
+            return sb.toString();
+        }
         JSONArray arr = root == null ? null : root.optJSONArray("events");
         if (arr == null && root != null) arr = root.optJSONArray("deals");
         if (arr == null || arr.length() == 0) return "ТОРГОВЫЙ ЖУРНАЛ: пока пусто";
         StringBuilder sb = new StringBuilder("ТОРГОВЫЙ ЖУРНАЛ");
         SimpleDateFormat f = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US);
         for (int i = 0; i < Math.min(arr.length(), 10); i++) {
-            JSONObject e = arr.optJSONObject(i);
-            if (e == null) continue;
+            JSONObject e = arr.optJSONObject(i); if (e == null) continue;
             long ts = e.optLong("ts", 0L);
             String event = e.optString("event", "event");
-            sb.append("\n").append(ts > 0 ? f.format(new Date(ts * 1000L)) : "—")
-                    .append(" · ").append(event);
+            sb.append("\n").append(ts > 0 ? f.format(new Date(ts * 1000L)) : "—").append(" · ").append(event);
             if (e.has("symbol")) sb.append(" · ").append(e.optString("symbol"));
             if (e.has("ticket")) sb.append(" #").append(e.optLong("ticket"));
-            if (e.has("reason")) sb.append(" · ").append(e.optString("reason"));
-            if (e.has("message")) sb.append(" · ").append(e.optString("message"));
-            if (e.has("slippage_pips") && !e.isNull("slippage_pips")) {
-                sb.append(" · slip ").append(String.format(Locale.US, "%.2f p", e.optDouble("slippage_pips", 0)));
-            }
         }
         return sb.toString();
     }
+
+    private static String signed(double v) { return String.format(Locale.US, "%+.2f", v); }
+    private static String moneyAbs(double v) { return String.format(Locale.US, "%.2f", Math.abs(v)); }
 
     public static String formatPositions(JSONObject root) {
         JSONArray arr = root == null ? null : root.optJSONArray("positions");

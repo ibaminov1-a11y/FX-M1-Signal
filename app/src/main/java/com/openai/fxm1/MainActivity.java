@@ -38,7 +38,7 @@ public class MainActivity extends Activity {
     private TextView marketStatusText, marketSessionText;
     private SparklineView sparklineView;
     private QualityBarView qualityBarView;
-    private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton, smartFeaturesButton, syncMt5SymbolsButton, managePositionsButton;
+    private Button analyzeButton, saveKeyButton, serverCheckButton, emergencyStopButton, closeAllButton, smartFeaturesButton, managePositionsButton, moneyHistoryButton;
     private EditText serverUrlInput;
     private TextView serverStatusText, accountText, positionsText, journalText, priceCompareText, serverUrlLabel, smartStatusText, statsText, signalHistoryText, tradeHistoryText;
     private TextView versionBadgeText, smartTitleText, footerVersionText;
@@ -164,8 +164,8 @@ public class MainActivity extends Activity {
         emergencyStopButton = findViewById(R.id.emergencyStopButton);
         closeAllButton = findViewById(R.id.closeAllButton);
         smartFeaturesButton = findViewById(R.id.smartFeaturesButton);
-        syncMt5SymbolsButton = findViewById(R.id.syncMt5SymbolsButton);
         managePositionsButton = findViewById(R.id.managePositionsButton);
+        moneyHistoryButton = findViewById(R.id.moneyHistoryButton);
         marketStatusText = findViewById(R.id.marketStatusText);
         marketSessionText = findViewById(R.id.marketSessionText);
         smartStatusText = findViewById(R.id.smartStatusText);
@@ -448,8 +448,9 @@ public class MainActivity extends Activity {
 
         closeAllButton.setOnClickListener(v -> sendCloseAll());
         smartFeaturesButton.setOnClickListener(v -> showSmartFeaturesDialog());
-        syncMt5SymbolsButton.setOnClickListener(v -> syncSymbolsFromMt5());
         managePositionsButton.setOnClickListener(v -> showPositionManagementHub());
+        if (moneyHistoryButton != null) moneyHistoryButton.setOnClickListener(v -> showMoneyHistoryDialog());
+        if (positionsCard != null) positionsCard.setOnClickListener(v -> showMoneyHistoryDialog());
         if (journalCard != null) journalCard.setOnClickListener(v -> showTradeJournalDialog());
         // V7.5.1: the entire analytics area opens as a full scrollable window.
         if (statsText != null) statsText.setOnClickListener(v -> showTradeJournalDialog());
@@ -516,8 +517,8 @@ public class MainActivity extends Activity {
         styleOutlineButton(closeAllButton, C_PURPLE);
         styleOutlineButton(emergencyStopButton, C_RED);
         styleOutlineButton(smartFeaturesButton, C_PURPLE);
-        styleOutlineButton(syncMt5SymbolsButton, C_PURPLE);
         styleOutlineButton(managePositionsButton, C_PURPLE);
+        if (moneyHistoryButton != null) styleOutlineButton(moneyHistoryButton, C_PURPLE);
 
         styleInput(apiKeyInput);
         styleInput(serverUrlInput);
@@ -632,7 +633,7 @@ public class MainActivity extends Activity {
         if (statsText != null) statsText.setTextColor(C_TEXT);
         if (signalHistoryText != null) signalHistoryText.setTextColor(C_MUTED);
         accountText.setText("Счёт: —\nБаланс: —\nEquity: —");
-        positionsText.setText("Открытые позиции: —\nТекущий P/L: —");
+        positionsText.setText("Открытые позиции: —\nТекущий P/L: —\nСегодня: —\nВсего: —");
         lastMt5Bid = Double.NaN;
         lastMt5Ask = Double.NaN;
         updatePriceComparison();
@@ -695,7 +696,7 @@ public class MainActivity extends Activity {
             serverStatusText.setText("APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
             accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
-            positionsText.setText("Открытые позиции: " + positions + "\nТекущий P/L: " + signedMoney(floating, currency));
+            renderPositionsMoneyCard(positions, floating, currency);
             closeAllButton.setEnabled(mt5 && positions > 0);
             suppressAutoSwitch = true;
             boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
@@ -804,10 +805,7 @@ public class MainActivity extends Activity {
                             "\nБаланс: " + money(balance, currency) +
                             "\nEquity: " + money(equity, currency)
                     );
-                    positionsText.setText(
-                            "Открытые позиции: " + positions +
-                            "\nТекущий P/L: " + signedMoney(floating, currency)
-                    );
+                    renderPositionsMoneyCard(positions, floating, currency);
                     getSharedPreferences("fxm1", MODE_PRIVATE).edit()
                             .putBoolean("mt5_connected_snapshot", serverOk && mt5Ok)
                             .putString("mt5_account_type_snapshot", accountType)
@@ -1295,57 +1293,121 @@ public class MainActivity extends Activity {
 
     private void refreshStatsAndPositions() {
         final String base = serverBaseFromPrefs();
-        if (base.isEmpty() || !serverConnected) return;
+        if (base.isEmpty()) return;
         executor.execute(() -> {
             try {
-                JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
                 JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
-                JSONObject log = FeatureEngine.httpJson("GET", base + "/trade-log?limit=200", null);
-                String stText = FeatureEngine.formatStats(st);
-                String posText = FeatureEngine.formatPositions(pos);
-                String logText = FeatureEngine.formatTradeLog(log);
+                JSONObject ledger30 = FeatureEngine.httpJson("GET", base + "/trade-ledger?days=30&limit=1000", null);
+                JSONObject ledgerAll = FeatureEngine.httpJson("GET", base + "/trade-ledger?days=3650&limit=1000", null);
+
+                String currency = getSharedPreferences("fxm1", MODE_PRIVATE).getString("mt5_currency_snapshot", "USD");
+                String stText = FeatureEngine.formatLedgerStats(ledger30);
+                String logText = FeatureEngine.formatTradeLog(ledger30);
+                String fullText = FeatureEngine.formatFullTradeHistory(ledgerAll, currency);
+                String moneySummary = FeatureEngine.formatRealizedMoneySummary(ledgerAll, currency);
+                int openCount = pos.optInt("count", 0);
+                double floating = pos.optDouble("floating_pl", 0.0);
+
+                getSharedPreferences("fxm1", MODE_PRIVATE).edit()
+                        .putString("trade_log_snapshot", logText)
+                        .putString("trade_log_full_snapshot", fullText)
+                        .putString("stats_snapshot", stText)
+                        .putString("money_realized_snapshot", moneySummary)
+                        .putInt("mt5_positions_snapshot", openCount)
+                        .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
+                        .apply();
+
                 runOnUiThread(() -> {
                     if (statsText != null) statsText.setText("СТАТИСТИКА\n" + stText);
-                    if (positionsText != null) positionsText.setText(posText);
                     if (tradeHistoryText != null) tradeHistoryText.setText(logText);
-                    getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("trade_log_snapshot", logText).putString("stats_snapshot", stText).apply();
+                    renderPositionsMoneyCard(openCount, floating, currency);
+                    // The lower JOURNAL card must never look empty while MT5 history exists.
+                    if (journalText != null) {
+                        String local = journalText.getText() == null ? "" : journalText.getText().toString().trim();
+                        if (local.isEmpty() || local.equalsIgnoreCase("Журнал пока пуст.")) {
+                            journalText.setText(logText);
+                        }
+                    }
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> { if (statsText != null) statsText.setText("СТАТИСТИКА: " + safeMessage(e)); });
+                runOnUiThread(() -> {
+                    String cachedStats = getSharedPreferences("fxm1", MODE_PRIVATE).getString("stats_snapshot", "");
+                    String cachedLog = getSharedPreferences("fxm1", MODE_PRIVATE).getString("trade_log_snapshot", "");
+                    if (statsText != null && !cachedStats.trim().isEmpty()) statsText.setText("СТАТИСТИКА\n" + cachedStats);
+                    if (tradeHistoryText != null && !cachedLog.trim().isEmpty()) tradeHistoryText.setText(cachedLog);
+                });
             }
         });
     }
 
-    private void syncSymbolsFromMt5() {
+    private void renderPositionsMoneyCard(int openCount, double floating, String currency) {
+        if (positionsText == null) return;
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        String realized = p.getString("money_realized_snapshot", "");
+        StringBuilder sb = new StringBuilder();
+        sb.append("Открытые позиции: ").append(openCount)
+          .append("\nТекущий P/L: ").append(signedMoney(floating, currency));
+        if (realized != null && !realized.trim().isEmpty()) {
+            sb.append("\n").append(realized.trim());
+        } else {
+            sb.append("\nСегодня: —")
+              .append("\nВсего: —");
+        }
+        positionsText.setText(sb.toString());
+    }
+
+    private void showMoneyHistoryDialog() {
         final String base = serverBaseFromPrefs();
-        if (base.isEmpty() || !serverConnected) {
-            Toast.makeText(this, "Сначала подключите MT5 Bridge", Toast.LENGTH_SHORT).show();
+        final SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        final String currency = p.getString("mt5_currency_snapshot", "USD");
+
+        // Show cached data immediately; then refresh from MT5 Bridge if reachable.
+        String cachedSummary = p.getString("money_realized_snapshot", "Сегодня: —\nВсего: —");
+        String cachedHistory = p.getString("trade_log_full_snapshot", p.getString("trade_log_snapshot", "Пока пусто"));
+        if (base.isEmpty()) {
+            showMoneyHistoryDialogText(cachedSummary, cachedHistory);
             return;
         }
-        syncMt5SymbolsButton.setEnabled(false);
+
         executor.execute(() -> {
             try {
-                JSONObject root = FeatureEngine.httpJson("GET", base + "/symbols", null);
-                JSONArray arr = root.optJSONArray("symbols");
-                final ArrayList<String> incoming = new ArrayList<>();
-                if (arr != null) for (int i=0;i<arr.length();i++) {
-                    JSONObject o=arr.optJSONObject(i); if(o==null) continue;
-                    String name=o.optString("symbol","").trim(); if(!name.isEmpty() && !incoming.contains(name)) incoming.add(name);
-                    if (incoming.size() >= 300) break;
-                }
+                JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
+                JSONObject ledger = FeatureEngine.httpJson("GET", base + "/trade-ledger?days=3650&limit=1000", null);
+                String summary = FeatureEngine.formatMoneyHistoryHeader(pos, ledger, currency);
+                String history = FeatureEngine.formatFullTradeHistory(ledger, currency);
+                String realized = FeatureEngine.formatRealizedMoneySummary(ledger, currency);
+                p.edit()
+                        .putString("money_realized_snapshot", realized)
+                        .putString("trade_log_full_snapshot", history)
+                        .putString("trade_log_snapshot", FeatureEngine.formatTradeLog(ledger))
+                        .apply();
                 runOnUiThread(() -> {
-                    syncMt5SymbolsButton.setEnabled(true);
-                    if (incoming.isEmpty()) { Toast.makeText(this,"MT5 не вернул символы",Toast.LENGTH_SHORT).show(); return; }
-                    String selected = String.valueOf(symbolSpinner.getSelectedItem());
-                    symbolItems.clear(); symbolItems.addAll(incoming); symbolItems.add("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
-                    getSharedPreferences("fxm1", MODE_PRIVATE).edit().putString("mt5_symbols_cache", android.text.TextUtils.join("|", incoming)).apply();
-                    symbolAdapter = darkSpinnerAdapter(symbolItems.toArray(new String[0]));
-                    symbolSpinner.setAdapter(symbolAdapter);
-                    int idx=symbolItems.indexOf(selected); symbolSpinner.setSelection(idx>=0?idx:0);
-                    Toast.makeText(this,"Загружено символов MT5: "+incoming.size(),Toast.LENGTH_LONG).show();
+                    renderPositionsMoneyCard(pos.optInt("count", 0), pos.optDouble("floating_pl", 0.0), currency);
+                    showMoneyHistoryDialogText(summary, history);
                 });
-            } catch(Exception e) { runOnUiThread(() -> { syncMt5SymbolsButton.setEnabled(true); Toast.makeText(this,"Символы MT5: "+safeMessage(e),Toast.LENGTH_LONG).show(); }); }
+            } catch (Exception e) {
+                runOnUiThread(() -> showMoneyHistoryDialogText(
+                        cachedSummary + "\n\nBridge: " + safeMessage(e), cachedHistory));
+            }
         });
+    }
+
+    private void showMoneyHistoryDialogText(String summary, String history) {
+        ScrollView scroll = new ScrollView(this);
+        TextView tv = new TextView(this);
+        tv.setTextColor(C_TEXT);
+        tv.setTextSize(12f);
+        tv.setPadding(dp(16), dp(12), dp(16), dp(18));
+        tv.setText((summary == null ? "" : summary) +
+                "\n\nВСЯ ИСТОРИЯ ЗАКРЫТЫХ СДЕЛОК\n" +
+                ((history == null || history.trim().isEmpty()) ? "Пока пусто" : history));
+        scroll.addView(tv);
+        new AlertDialog.Builder(this)
+                .setTitle("Деньги / история MT5")
+                .setView(scroll)
+                .setPositiveButton("ОБНОВИТЬ", (d, w) -> showMoneyHistoryDialog())
+                .setNegativeButton("ЗАКРЫТЬ", null)
+                .show();
     }
 
     private void showPositionManagementHub() {
