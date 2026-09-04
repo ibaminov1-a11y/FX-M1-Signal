@@ -2216,155 +2216,37 @@ public class MainActivity extends Activity {
         }
 
         String mode = selectedSignalMode();
-
-        boolean buySetup;
-        boolean sellSetup;
-
-        if ("CONSERVATIVE".equals(mode)) {
-            buySetup =
-                    sHigher2 >= 0 &&
-                    sHigher1 > 0 &&
-                    sEntry > 0 &&
-                    sFast >= 0 &&
-                    structure >= 0 &&
-                    breakout > 0;
-
-            sellSetup =
-                    sHigher2 <= 0 &&
-                    sHigher1 < 0 &&
-                    sEntry < 0 &&
-                    sFast <= 0 &&
-                    structure <= 0 &&
-                    breakout < 0;
-
-        } else if ("SCALP".equals(mode)) {
-            // V8.0: SCALP anchor is M5/M10/M15; the next faster series is timing confirmation.
-            int impulse = scalpImpulse(entrySeries);
-            boolean scalpTf = isScalpTimeframe(entryTf);
-            buySetup = scalpTf && impulse > 0 && sEntry >= 0 && sFast >= 0;
-            sellSetup = scalpTf && impulse < 0 && sEntry <= 0 && sFast <= 0;
-
-        } else if ("AGGRESSIVE".equals(mode)) {
-            int buyVotes = 0;
-            int sellVotes = 0;
-
-            if (sHigher2 > 0) buyVotes++; else if (sHigher2 < 0) sellVotes++;
-            if (sHigher1 > 0) buyVotes++; else if (sHigher1 < 0) sellVotes++;
-            if (sEntry > 0) buyVotes++; else if (sEntry < 0) sellVotes++;
-            if (sFast > 0) buyVotes++; else if (sFast < 0) sellVotes++;
-            if (structure > 0) buyVotes++; else if (structure < 0) sellVotes++;
-
-            buySetup =
-                    sEntry > 0 &&
-                    sHigher1 >= 0 &&
-                    breakout >= 0 &&
-                    buyVotes >= 3 &&
-                    sellVotes <= 1;
-
-            sellSetup =
-                    sEntry < 0 &&
-                    sHigher1 <= 0 &&
-                    breakout <= 0 &&
-                    sellVotes >= 3 &&
-                    buyVotes <= 1;
-
-        } else {
-            // NORMAL: таймфрейм входа + два старших ТФ должны смотреть
-            // в одну сторону. Младший ТФ не должен идти явно против.
-            // Пробой желателен, но отсутствие пробоя не блокирует вход.
-            buySetup =
-                    sHigher2 >= 0 &&
-                    sHigher1 > 0 &&
-                    sEntry > 0 &&
-                    sFast >= 0 &&
-                    structure >= 0 &&
-                    breakout >= 0;
-
-            sellSetup =
-                    sHigher2 <= 0 &&
-                    sHigher1 < 0 &&
-                    sEntry < 0 &&
-                    sFast <= 0 &&
-                    structure <= 0 &&
-                    breakout <= 0;
-        }
-
-        String signal = buySetup
-                ? "BUY"
-                : sellSetup
-                ? "SELL"
-                : "WAIT";
-
-        // V8.0 unified execution engine: every mode produces one executionSignal.
-        String executionSignal = signal;
-        double scalpAtr = atr;
-        if ("WAIT".equals(signal)) {
-            if ("SCALP".equals(mode) && isScalpTimeframe(entryTf)) {
-                int anchorMicro = scalpExecutionDirection(entrySeries, scalpAtr);
-                double fastAtr = atr(fast, 14);
-                if (fastAtr <= 0 && fast != null && !fast.isEmpty()) {
-                    Candle f = fast.get(fast.size() - 1);
-                    fastAtr = Math.max(minStopDistance(symbol), f.high - f.low);
-                }
-                int timingMicro = scalpExecutionDirection(fast, fastAtr);
-                if ((anchorMicro > 0 && sFast >= 0) || (sEntry > 0 && structure >= 0 && timingMicro > 0) || (sEntry > 0 && sFast > 0 && structure > 0)) executionSignal = "BUY";
-                else if ((anchorMicro < 0 && sFast <= 0) || (sEntry < 0 && structure <= 0 && timingMicro < 0) || (sEntry < 0 && sFast < 0 && structure < 0)) executionSignal = "SELL";
-            } else if ("NORMAL".equals(mode)) {
-                boolean earlyBuy = sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && structure >= 0 && breakout >= 0
-                        && (sHigher2 >= 0 || sHigher1 > 0);
-                boolean earlySell = sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && structure <= 0 && breakout <= 0
-                        && (sHigher2 <= 0 || sHigher1 < 0);
-                if (earlyBuy) executionSignal = "BUY";
-                else if (earlySell) executionSignal = "SELL";
-            } else if ("AGGRESSIVE".equals(mode)) {
-                int buyVotes = 0, sellVotes = 0;
-                int[] votes = {sHigher1, sEntry, sFast, structure, breakout};
-                for (int v : votes) { if (v > 0) buyVotes++; else if (v < 0) sellVotes++; }
-                if (sEntry > 0 && buyVotes >= 3 && sellVotes <= 1 && sHigher2 >= 0) executionSignal = "BUY";
-                else if (sEntry < 0 && sellVotes >= 3 && buyVotes <= 1 && sHigher2 <= 0) executionSignal = "SELL";
-            }
-        }
-
-        int quality = setupQualityAdaptive(
-                signal,
-                sHigher2,
-                sHigher1,
-                sEntry,
-                sFast,
-                structure,
-                breakout
-        );
-
-        
-        // V10 NORMAL ONLY: pattern quality + exact timing gate.
+        // V10 NORMAL PATTERN -> CONFIRM -> ENTRY.
+        // Entry starts from a recognised price pattern/structure, not from quality alone.
         int patternV10 = patternScoreV10(entrySeries);
-        if ("BUY".equals(executionSignal)) quality = Math.max(0, Math.min(100, quality + patternV10 * 3));
-        else if ("SELL".equals(executionSignal)) quality = Math.max(0, Math.min(100, quality - patternV10 * 3));
+        int buyVotesV10 = 0, sellVotesV10 = 0;
+        int[] votesV10 = {sHigher2, sHigher1, sEntry, sFast, structure};
+        for (int v : votesV10) { if (v > 0) buyVotesV10++; else if (v < 0) sellVotesV10++; }
+
+        boolean buyPatternV10 = patternV10 > 0;
+        boolean sellPatternV10 = patternV10 < 0;
+        boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && structure >= 0 && buyVotesV10 >= 3 && sellVotesV10 <= 1;
+        boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && structure <= 0 && sellVotesV10 >= 3 && buyVotesV10 <= 1;
+
+        String candidateSignalV10 = buyPatternV10 && buyContextV10 ? "BUY" :
+                (sellPatternV10 && sellContextV10 ? "SELL" : "WAIT");
+
+        int quality = setupQualityAdaptive(candidateSignalV10, sHigher2, sHigher1, sEntry, sFast, structure, breakout);
+        if ("BUY".equals(candidateSignalV10)) quality = Math.min(100, quality + Math.max(0, patternV10) * 5);
+        if ("SELL".equals(candidateSignalV10)) quality = Math.min(100, quality + Math.max(0, -patternV10) * 5);
 
         int timingV10 = entryTimingV10(entrySeries);
-        int wantedV10 = "BUY".equals(executionSignal) ? 1 : ("SELL".equals(executionSignal) ? -1 : 0);
+        int wantedV10 = "BUY".equals(candidateSignalV10) ? 1 : ("SELL".equals(candidateSignalV10) ? -1 : 0);
+        int momentumV10 = momentumConfirmV10(entrySeries);
 
-        // NORMAL V10 final gate:
-        // 1) quality must be strong;
-        // 2) structure/pattern must agree with direction;
-        // 3) accept either a fresh pullback/retest trigger OR a very strong aligned continuation.
-        // This prevents the old bug where 87-93/100 stayed WAIT forever only because
-        // the last candle did not match one exact 4-candle pullback formula.
-        boolean patternAlignedV10 = wantedV10 > 0 ? patternV10 > 0 : wantedV10 < 0 && patternV10 < 0;
-        boolean trendAlignedV10 = wantedV10 > 0
-                ? (sEntry > 0 && sHigher1 >= 0 && sFast >= 0 && structure >= 0)
-                : wantedV10 < 0 && (sEntry < 0 && sHigher1 <= 0 && sFast <= 0 && structure <= 0);
-        boolean exactTimingV10 = timingV10 == wantedV10;
-        boolean strongContinuationV10 = quality >= 88 && trendAlignedV10 && patternAlignedV10;
-        boolean entryReadyV10 = wantedV10 != 0 && quality >= 82 && patternAlignedV10
-                && (exactTimingV10 || strongContinuationV10);
+        // A scheme must exist. Confirmation can be a clean pullback/retest OR a fresh
+        // directional continuation candle. We no longer require a standalone breakout.
+        boolean confirmationV10 = wantedV10 != 0 && (timingV10 == wantedV10 || momentumV10 == wantedV10);
+        boolean entryReadyV10 = wantedV10 != 0 && quality >= 78 && confirmationV10;
 
-        if (wantedV10 != 0 && !entryReadyV10) {
-            signal = "WAIT";
-            executionSignal = "WAIT";
-        } else if (entryReadyV10) {
-            signal = executionSignal;
-        }
+        String signal = entryReadyV10 ? candidateSignalV10 : "WAIT";
+        String executionSignal = signal;
+        double scalpAtr = atr; // compatibility field only; NORMAL is the only runtime mode.
 
         double slMult = 1.8;
         double tp1R = 1.5;
@@ -2397,7 +2279,7 @@ public class MainActivity extends Activity {
         } else if (breakout < 0) {
             reason = entryLabel + ": подтверждён пробой/импульс вниз";
         } else {
-            reason = entryLabel + ": подтверждённого пробоя нет";
+            reason = patternV10 != 0 ? entryLabel + ": схема найдена · ждём/проверяем подтверждение" : entryLabel + ": подходящая схема ещё не сформирована";
         }
 
         String filter;
@@ -2436,7 +2318,7 @@ public class MainActivity extends Activity {
         if (sEntry == 0) whyParts.add(entryLabel + " без направления");
         if (sEntry != 0 && sFast != 0 && sFast != sEntry) whyParts.add(fastLabel + " против входа");
         if (structure == 0) whyParts.add("структура не подтверждена");
-        if (breakout == 0) whyParts.add("нет подтверждённого пробоя");
+        if (breakout == 0) whyParts.add("отдельный пробой не обязателен");
         String why;
         if ("WAIT".equals(signal)) {
             why = whyParts.isEmpty() ? "условия режима " + mode + " не совпали одновременно" : android.text.TextUtils.join("; ", whyParts);
@@ -2462,6 +2344,21 @@ public class MainActivity extends Activity {
 
     // V10 NORMAL pattern/structure confirmation.
     // Positive = bullish structure, negative = bearish structure.
+    private int momentumConfirmV10(List<Candle> s) {
+        if (s == null || s.size() < 5) return 0;
+        int n = s.size();
+        Candle a = s.get(n-3), b = s.get(n-2), x = s.get(n-1);
+        double body = x.close - x.open;
+        double range = Math.max(1e-12, x.high - x.low);
+        boolean buy = body > range * 0.18 && x.close > b.close && b.close >= a.close
+                && x.close >= b.high - (b.high-b.low)*0.20;
+        boolean sell = -body > range * 0.18 && x.close < b.close && b.close <= a.close
+                && x.close <= b.low + (b.high-b.low)*0.20;
+        if (buy && !sell) return 1;
+        if (sell && !buy) return -1;
+        return 0;
+    }
+
     private int patternScoreV10(List<Candle> s) {
         if (s == null || s.size() < 12) return 0;
         int n = s.size();

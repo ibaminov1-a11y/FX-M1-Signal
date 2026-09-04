@@ -41,7 +41,7 @@ public final class FeatureEngine {
                 .putBoolean("trailing_enabled", true)
                 .putFloat("trailing_start_r", 1.5f)
                 .putFloat("trailing_distance_r", 0.8f)
-                .putBoolean("partial_close_enabled", true)
+                .putBoolean("partial_close_enabled", false)
                 .putFloat("partial_close_at_r", 1.5f)
                 .putFloat("partial_close_pct", 50.0f)
                 .putBoolean("spread_filter_enabled", true)
@@ -91,12 +91,12 @@ public final class FeatureEngine {
         o.put("trailing_enabled", p.getBoolean("trailing_enabled", true));
         o.put("trailing_start_r", p.getFloat("trailing_start_r", 1.5f));
         o.put("trailing_distance_r", p.getFloat("trailing_distance_r", 0.8f));
-        o.put("partial_close_enabled", p.getBoolean("partial_close_enabled", true));
+        o.put("partial_close_enabled", false);
         o.put("partial_close_at_r", p.getFloat("partial_close_at_r", 1.5f));
         o.put("partial_close_pct", p.getFloat("partial_close_pct", 50.0f));
         boolean scalp = false;
-        o.put("scalp_mode", scalp);
-        if (scalp) {
+        o.put("scalp_mode", false);
+        if (false) {
             // SCALP positions must be managed much faster than normal intraday positions.
             o.put("break_even_at_r", Math.min(p.getFloat("break_even_at_r", 1.0f), 0.35f));
             o.put("trailing_start_r", Math.min(p.getFloat("trailing_start_r", 1.5f), 0.55f));
