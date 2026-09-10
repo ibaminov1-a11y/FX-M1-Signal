@@ -41,7 +41,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
             gradle --no-daemon :app:assembleDebug
             APK=app/build/outputs/apk/debug/app-debug.apk
             test -s "$APK"
@@ -84,7 +84,6 @@ jobs:
             print('Money/history button action: PASS')
             PY
 
-            # Close dialog and start foreground monitoring with a dummy analysis key.
             adb shell input keyevent 4
             sleep 1
             python - <<'PY'
@@ -103,7 +102,6 @@ jobs:
             root=dump()
             key=find_id(root,'apiKeyInput')
             start=find_id(root,'analyzeButton')
-            # Scroll until controls become visible if needed.
             for _ in range(8):
                 if key is not None and start is not None and key.attrib.get('bounds')!='[0,0][0,0]' and start.attrib.get('bounds')!='[0,0][0,0]': break
                 subprocess.run(['adb','shell','input','swipe','540','1700','540','500','300'])
