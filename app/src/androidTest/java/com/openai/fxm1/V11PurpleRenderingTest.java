@@ -2,6 +2,7 @@ package com.openai.fxm1;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.ParcelFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.ColorDrawable;
@@ -16,6 +17,7 @@ import android.widget.TextView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
+import androidx.test.uiautomator.UiDevice;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -24,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import static org.junit.Assert.*;
 
 /** Render production views. These tests never connect to a real trading account. */
@@ -33,10 +36,20 @@ public class V11PurpleRenderingTest {
     private Context context;
     @Before public void prepare() throws Exception {
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+        UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        device.wakeUp();device.pressHome();
+        // Grant before Activity launch: a permission dialog must not escape this test.
+        shell("pm grant "+context.getPackageName()+" android.permission.POST_NOTIFICATIONS");
         context.stopService(new Intent(context,V11Service.class));
         Thread.sleep(700);
         V11Api.prefs(context).edit().clear().commit();
         rule.launchActivity(new Intent());
+    }
+    private void shell(String command) throws Exception {
+        try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
+            InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){
+            byte[] buffer=new byte[4096];while(in.read(buffer)!=-1){}
+        }
     }
     @Test public void oldPaletteAndBuySellTextAreApplied() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
@@ -83,6 +96,10 @@ public class V11PurpleRenderingTest {
         try(FileOutputStream out=new FileOutputStream(new File(context.getExternalFilesDir(null),"purple-candle-render.png"))){
             assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));
         }
+        // Gradle removes the test app after instrumentation. Keep evidence outside its data directory.
+        shell("mkdir -p /sdcard/Download/v11-qa && cp "
+                +new File(context.getExternalFilesDir(null),"purple-candle-render.png").getAbsolutePath()
+                +" /sdcard/Download/v11-qa/purple-candle-render.png");
         bitmap.recycle();
     }
     @Test public void notificationLayoutsArePurpleWithReadableControls() {

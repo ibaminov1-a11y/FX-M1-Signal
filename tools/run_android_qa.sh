@@ -10,7 +10,6 @@ gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest > evidence/androi
 adb logcat -d > evidence/logcat.txt || true
 adb shell dumpsys notification --noredact > evidence/notification.txt || true
 adb pull /sdcard/Download/v11-qa evidence/ui || true
-adb pull /sdcard/Android/data/com.openai.fxm1.v11/files/purple-candle-render.png evidence/ui/ || true
 cat evidence/android-runtime.txt
 if [ "$result" -ne 0 ]; then exit "$result"; fi
 python - <<'PY'
@@ -28,6 +27,6 @@ assert not any(c.find('skipped') is not None for c in cases), 'Skipped instrumen
 for name in ['01-trading','02-history','03-settings','04-notification','05-emergency']:
     matches=list(Path('evidence/ui').rglob(name+'.png'))
     assert len(matches)==1 and matches[0].stat().st_size>1000, 'Missing screenshot: '+name
-assert (Path('evidence/ui')/'purple-candle-render.png').stat().st_size>1000, 'Missing actual candle rendering evidence'
+assert (Path('evidence/ui/v11-qa')/'purple-candle-render.png').stat().st_size>1000, 'Missing actual candle rendering evidence'
 print('Executed Android cases:',len(cases),'; required screenshots: 5; candle render: present')
 PY
