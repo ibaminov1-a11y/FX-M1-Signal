@@ -9,8 +9,13 @@ from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from campaign_core import *
-from bridge_v11 import Engine,create_app,day_id
+from coordinator import Engine
+from mt5_session import day_id
 from fake_mt5 import FakeMT5,Clock
+try:
+    from bridge_v11 import create_app
+except ModuleNotFoundError:
+    create_app=None
 
 class CoreTests(unittest.TestCase):
     def bars(self,n=90,seconds=300,now=1789045205.):
@@ -163,7 +168,7 @@ class EngineTests(unittest.TestCase):
         self.engine.step();self.assertFalse(self.mt.ps)
     def test_exit_prevents_entry_same_cycle(self):
         self.open();self.mt.bid=self.engine.s['campaign']['guard']-.00001;self.mt.ask=self.mt.bid+.00001
-        with patch('bridge_v11.analyse',return_value=self.setup(1)) as analyse_mock:
+        with patch('coordinator.analyse',return_value=self.setup(1)) as analyse_mock:
             self.engine.step();analyse_mock.assert_not_called()
         self.assertFalse(self.mt.ps)
     def test_ambiguous_send_never_retries_entry(self):
@@ -199,6 +204,7 @@ class EngineTests(unittest.TestCase):
     def test_no_auto_permission_after_restart(self):
         self.engine.save();other=Engine(self.mt,Path(self.tmp.name)/'state.db',self.clock)
         self.assertFalse(other.s['auto']);other.store.db.close()
+    @unittest.skipIf(create_app is None,'Flask not installed; full CI installs Flask')
     def test_auth_and_protocol(self):
         app=create_app(self.engine,'fixture-token-1234567890');client=app.test_client()
         self.assertEqual(client.get('/v11/state').status_code,401)
@@ -210,5 +216,28 @@ class EngineTests(unittest.TestCase):
     def test_no_history_emergency_must_still_close(self):
         self.open();self.mt.history_failure=True;self.command('emergency');self.engine.step()
         self.assertFalse(self.mt.ps)
+    def test_structural_exit_with_history_down(self):
+        self.open();self.mt.history_failure=True
+        self.mt.bid=self.engine.s['campaign']['guard']-.00001;self.mt.ask=self.mt.bid+.00001
+        self.engine.step();self.assertFalse(self.mt.ps);self.assertFalse(self.engine.money_ok)
+        self.assertTrue(self.engine.s['campaign']['closing'])
+    def test_failed_command_retry_is_not_false_success(self):
+        self.engine.s['fee_per_lot']=None
+        b=dict(id='same-failed',generation=self.engine.s['generation'],expires=self.clock()+8)
+        for _ in range(2):
+            with self.assertRaises(Blocked):self.engine.command('enable',b)
+    def test_expired_control_does_not_enable(self):
+        self.engine.s['auto']=False
+        with self.assertRaises(Blocked):self.engine.command('enable',dict(id='expired',generation=self.engine.s['generation'],expires=self.clock()-1))
+        self.assertFalse(self.engine.s['auto'])
+    def test_mt5_permission_required(self):
+        self.mt.ai.trade_allowed=False
+        with self.assertRaises(Blocked):self.open()
+        self.assertFalse(self.mt.sent)
+    def test_restart_with_ambiguous_intent_preserves_recovery(self):
+        self.mt.send_mode='ambiguous'
+        with self.assertRaises(Blocked):self.open()
+        other=Engine(self.mt,Path(self.tmp.name)/'state.db',self.clock)
+        self.assertTrue(other.s['recovery']);self.assertTrue(other.s['campaign']['closing']);other.store.db.close()
 
 if __name__=='__main__':unittest.main(verbosity=2)
