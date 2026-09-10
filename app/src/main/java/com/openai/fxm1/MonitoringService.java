@@ -770,19 +770,27 @@ public class MonitoringService extends Service {
                 if (arr != null) {
                     String wantSide = exitDir > 0 ? "BUY" : "SELL";
                     String selected = currentSymbol().replace("/", "").toUpperCase(Locale.US);
-                    for (int i=0; i<arr.length(); i++) {
-                        JSONObject pos = arr.optJSONObject(i); if (pos == null) continue;
-                        String sym = pos.optString("symbol", "").replace("/", "").toUpperCase(Locale.US);
-                        String side = pos.optString("side", "").toUpperCase(Locale.US);
-                        double profit = pos.optDouble("profit", 0.0) + pos.optDouble("swap", 0.0);
-                        if (!sym.startsWith(selected) || !wantSide.equals(side) || profit <= 0.0) continue;
-                        JSONObject req = new JSONObject();
-                        req.put("ticket", pos.optLong("ticket", 0));
-                        req.put("action", "close");
-                        JSONObject cr = FeatureEngine.httpJson("POST", base + "/position-action", req);
-                        FeatureEngine.appendSignalHistory(p, currentSymbol(), currentTf(), "CLOSE", p.getInt("state_quality", -1),
-                                cr.optBoolean("ok", false) ? "PEAK/STRUCTURE EXIT" : "PEAK EXIT ERROR: "+cr.optString("message",""));
-                    }
+                    ArrayList<JSONObject> campaign = new ArrayList<>();
+          double campaignPnl = 0.0;
+          for (int i=0; i<arr.length(); i++) {
+              JSONObject pos = arr.optJSONObject(i); if (pos == null) continue;
+              String sym = pos.optString("symbol", "").replace("/", "").toUpperCase(Locale.US);
+              String side = pos.optString("side", "").toUpperCase(Locale.US);
+              int magic = pos.optInt("magic", 0);
+              if (!sym.startsWith(selected) || !wantSide.equals(side) || magic != 720072) continue;
+              campaign.add(pos);
+              campaignPnl += pos.optDouble("profit", 0.0) + pos.optDouble("swap", 0.0);
+          }
+          for (JSONObject pos : campaign) {
+              JSONObject req = new JSONObject();
+              req.put("ticket", pos.optLong("ticket", 0));
+              req.put("action", "close");
+              JSONObject cr = FeatureEngine.httpJson("POST", base + "/position-action", req);
+              FeatureEngine.appendSignalHistory(p, currentSymbol(), currentTf(), "CLOSE", p.getInt("state_quality", -1),
+                      cr.optBoolean("ok", false)
+                              ? "CAMPAIGN SWING/PEAK EXIT · basket before close " + String.format(Locale.US, "%+.2f", campaignPnl)
+                              : "CAMPAIGN EXIT ERROR: "+cr.optString("message",""));
+          }
                 }
             }
             long last = p.getLong("smart_snapshot_ms", 0L);
@@ -1143,8 +1151,13 @@ public class MonitoringService extends Service {
         // V10.2 FAST SWING ENTRY. Confirmed pivots define the setup, but they must not
         // delay execution until another complete swing is printed. Once the pattern/context
         // is aligned, the first live continuation in that direction is enough to execute.
+        // V10.7: first NORMAL probe must be a retest/resume entry, not a raw momentum chase.
+        // Momentum still contributes to quality, but execution needs pullback timing or swing retest timing.
+        boolean earlyProbeV10 = wantedV10 != 0 && quality < 84;
+        // Early 72-83 quality probe: only explicit pullback/retest + resume may execute.
+        // Mature 84+ setup may also use confirmed swing timing.
         boolean preciseConfirmV10 = wantedV10 != 0 &&
-                (timingV10 == wantedV10 || swingTimingV10 == wantedV10 || momentumV10 == wantedV10);
+                (timingV10 == wantedV10 || (!earlyProbeV10 && swingTimingV10 == wantedV10));
         boolean strongSetupV10 = wantedV10 != 0 && quality >= 84 &&
                 (effectiveStructureV10 == wantedV10 || swingV10.patternDirection == wantedV10);
         boolean fastConfirmV10 = strongSetupV10 && liveResumeV10 == wantedV10;
