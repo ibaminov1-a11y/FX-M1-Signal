@@ -1,19 +1,25 @@
-plugins {
-    id 'com.android.application'
-}
-
+plugins { id 'com.android.application' }
 android {
     namespace 'com.openai.fxm1'
     compileSdk 35
-
     defaultConfig {
-        applicationId "com.openai.fxm1"
+        applicationId 'com.openai.fxm1.v11'
         minSdk 26
         targetSdk 35
-        versionCode 914
-        versionName "10.0"
+        versionCode 110001
+        versionName '11.0.0-rc1'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    testOptions { animationsDisabled true }
 }
-
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
 }
