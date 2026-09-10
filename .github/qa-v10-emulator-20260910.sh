@@ -8,10 +8,16 @@ test -s "$APK"
 adb install -r "$APK"
 adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS || true
 
+seed_prefs() {
+  xml="$1"
+  adb shell run-as "$PKG" mkdir -p shared_prefs
+  printf '%s' "$xml" | adb shell run-as "$PKG" tee shared_prefs/fxm1.xml >/dev/null
+}
+
 # Start foreground monitoring safely: DEMO, AUTO off, no bridge URL.
 adb shell am force-stop "$PKG"
 PREF_XML='<?xml version="1.0" encoding="utf-8" standalone="yes" ?><map><boolean name="auto_user_enabled" value="false" /><boolean name="auto_trading" value="false" /><string name="apikey">QA_DUMMY_KEY</string><string name="target_trade_mode">DEMO</string></map>'
-printf '%s' "$PREF_XML" | adb shell run-as "$PKG" sh -c 'mkdir -p shared_prefs; cat > shared_prefs/fxm1.xml'
+seed_prefs "$PREF_XML"
 adb shell am start-foreground-service -n "$PKG/.MonitoringService" -a com.openai.fxm1.action.START_MONITORING >/dev/null
 sleep 4
 
@@ -49,7 +55,7 @@ PY
 # Seed AUTO=true, invoke confirmed Emergency, verify AUTO cannot survive/re-arm from saved permission.
 adb shell am force-stop "$PKG"
 PREF_XML='<?xml version="1.0" encoding="utf-8" standalone="yes" ?><map><boolean name="auto_user_enabled" value="true" /><boolean name="auto_trading" value="true" /><string name="apikey">QA_DUMMY_KEY</string><string name="target_trade_mode">DEMO</string></map>'
-printf '%s' "$PREF_XML" | adb shell run-as "$PKG" sh -c 'mkdir -p shared_prefs; cat > shared_prefs/fxm1.xml'
+seed_prefs "$PREF_XML"
 adb shell am start-foreground-service -n "$PKG/.MonitoringService" -a com.openai.fxm1.action.EMERGENCY_CONFIRMED >/dev/null || true
 sleep 2
 adb shell run-as "$PKG" cat shared_prefs/fxm1.xml >/tmp/fxm1-prefs-after-emergency.xml
