@@ -1,0 +1,135 @@
+name: QA V10 early NORMAL entry
+
+on:
+  push:
+    branches: [qa/v10-early-normal-entry]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Apply minimal NORMAL early-entry change
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java')
+          s=p.read_text(encoding='utf-8')
+          old='''        boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && effectiveStructureV10 >= 0 && buyVotesV10 >= 3 && sellVotesV10 <= 1;
+          boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && effectiveStructureV10 <= 0 && sellVotesV10 >= 3 && buyVotesV10 <= 1;'''
+          new='''        // V10.6 EARLY NORMAL PROBE: the first small tranche may start on an emerging
+          // continuation before M5/structure become fully directional. We still require a
+          // recognised directional pattern, at least two aligned votes, zero opposite votes,
+          // and the existing timing/momentum + no-chase confirmation below. Bridge pyramiding
+          // remains responsible for no-average-down and profitable-continuation add-ons.
+          boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && effectiveStructureV10 >= 0 && buyVotesV10 >= 2 && sellVotesV10 == 0;
+          boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && effectiveStructureV10 <= 0 && sellVotesV10 >= 2 && buyVotesV10 == 0;'''
+          if old in s:
+              s=s.replace(old,new,1)
+              p.write_text(s,encoding='utf-8')
+              print('PATCHED')
+          elif new in s:
+              print('ALREADY PATCHED')
+          else:
+              raise SystemExit('expected NORMAL context block not found exactly')
+          PY
+
+      - name: Verify intended entry scenarios
+        run: |
+          python - <<'PY'
+          # Mirrors the boolean gate changed above. This is not a market backtest;
+          # it verifies the exact control-flow scenarios that caused the user's WAIT.
+          def gate(h2,h1,entry,fast,structure,pattern,momentum=0,timing=0,swing_timing=0,chasing=False):
+              vals=(h2,h1,entry,fast,structure)
+              buys=sum(v>0 for v in vals); sells=sum(v<0 for v in vals)
+              buy_pattern=pattern>0; sell_pattern=pattern<0
+              buy_ctx=entry>=0 and fast>=0 and structure>=0 and buys>=2 and sells==0
+              sell_ctx=entry<=0 and fast<=0 and structure<=0 and sells>=2 and buys==0
+              sig='BUY' if buy_pattern and buy_ctx else ('SELL' if sell_pattern and sell_ctx else 'WAIT')
+              if sig=='WAIT': return sig,0,False
+              d=1 if sig=='BUY' else -1
+              q=60
+              if h2==d: q+=8
+              if h1==d: q+=8
+              if entry==d: q+=8
+              if fast==d: q+=4
+              if structure==d: q+=5
+              q=min(100,q + (max(0,pattern)*5 if d>0 else max(0,-pattern)*5))
+              confirm=(timing==d or swing_timing==d or momentum==d)
+              return sig,q,(q>=72 and confirm and not chasing)
+
+          # Screenshot-like emerging BUY: H1 neutral, M15 up, M5 neutral, M1 up, structure neutral.
+          sig,q,ready=gate(0,1,0,1,0,1,momentum=1)
+          assert sig=='BUY' and q>=72 and ready, (sig,q,ready)
+          # Symmetric emerging SELL.
+          sig,q,ready=gate(0,-1,0,-1,0,-1,momentum=-1)
+          assert sig=='SELL' and q>=72 and ready, (sig,q,ready)
+          # Any opposite vote blocks the early probe.
+          sig,q,ready=gate(-1,1,0,1,0,1,momentum=1)
+          assert sig=='WAIT' and not ready, (sig,q,ready)
+          # No timing/momentum confirmation still blocks execution.
+          sig,q,ready=gate(0,1,0,1,0,1,momentum=0)
+          assert sig=='BUY' and not ready, (sig,q,ready)
+          print('EARLY NORMAL ENTRY SCENARIOS: PASS')
+          PY
+
+      - name: Verify safety invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          m=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java').read_text(encoding='utf-8')
+          b=Path('mt5_bridge/bridge_v10_0.py').read_text(encoding='utf-8')
+          f=Path('app/src/main/java/com/openai/fxm1/FeatureEngine.java').read_text(encoding='utf-8')
+          assert 'private String currentMode() { return "NORMAL"; }' in m
+          assert 'payload.put("basket_no_average_down", true);' in m
+          assert 'payload.put("basket_add_only_if_profitable", true);' in m
+          assert 'maxPos = 10;' in m
+          assert 'peakExitDirectionV10(entrySeries)' in m
+          assert 'FXM1_ALLOW_REAL", "0"' in b
+          assert 'NORMAL ADD WAIT: basket P/L' in b
+          assert 'NORMAL ADD #' in b
+          assert 'o.put("scalp_mode", false);' in f
+          assert 'BE: OFF · Trailing: OFF · EXIT: SWING/PEAK' in f
+          print('SAFETY / PYRAMID / EXIT INVARIANTS: PASS')
+          PY
+
+      - name: Android build
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Verify APK
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Commit tested source change
+        shell: bash
+        run: |
+          if git diff --quiet -- app/src/main/java/com/openai/fxm1/MonitoringService.java; then
+            echo 'Source already committed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/com/openai/fxm1/MonitoringService.java
+          git commit -m 'V10.6: allow early NORMAL probe on emerging continuation'
+          git push origin HEAD:qa/v10-early-normal-entry
+
+      - name: Upload candidate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-V10.6-EARLY-NORMAL-QA
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
