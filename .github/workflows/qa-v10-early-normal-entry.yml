@@ -30,37 +30,35 @@ jobs:
           from pathlib import Path
           p=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java')
           s=p.read_text(encoding='utf-8')
-          old='''        boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && effectiveStructureV10 >= 0 && buyVotesV10 >= 3 && sellVotesV10 <= 1;
-          boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && effectiveStructureV10 <= 0 && sellVotesV10 >= 3 && buyVotesV10 <= 1;'''
-          new='''        // V10.6 EARLY NORMAL PROBE: the first small tranche may start on an emerging
-          // continuation before M5/structure become fully directional. We still require a
-          // recognised directional pattern, at least two aligned votes, zero opposite votes,
-          // and the existing timing/momentum + no-chase confirmation below. Bridge pyramiding
-          // remains responsible for no-average-down and profitable-continuation add-ons.
-          boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && effectiveStructureV10 >= 0 && buyVotesV10 >= 2 && sellVotesV10 == 0;
-          boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && effectiveStructureV10 <= 0 && sellVotesV10 >= 2 && buyVotesV10 == 0;'''
-          if old in s:
-              s=s.replace(old,new,1)
+          a='buyVotesV10 >= 3 && sellVotesV10 <= 1'
+          b='buyVotesV10 >= 2 && sellVotesV10 == 0'
+          c='sellVotesV10 >= 3 && buyVotesV10 <= 1'
+          d='sellVotesV10 >= 2 && buyVotesV10 == 0'
+          ca=s.count(a); cc=s.count(c)
+          if ca==1 and cc==1:
+              s=s.replace(a,b,1).replace(c,d,1)
+              marker='        boolean buyContextV10 = '
+              idx=s.find(marker)
+              comment='''        // V10.6 EARLY NORMAL PROBE: allow an emerging continuation to become\n        // directional with two aligned votes and no opposite vote. Timing/momentum and\n        // no-chase confirmation still gate execution; Bridge still forbids averaging down.\n'''
+              if idx>=0 and 'V10.6 EARLY NORMAL PROBE' not in s[max(0,idx-400):idx]:
+                  s=s[:idx]+comment+s[idx:]
               p.write_text(s,encoding='utf-8')
               print('PATCHED')
-          elif new in s:
+          elif b in s and d in s:
               print('ALREADY PATCHED')
           else:
-              raise SystemExit('expected NORMAL context block not found exactly')
+              raise SystemExit(f'unexpected gate counts buy={ca} sell={cc}')
           PY
 
       - name: Verify intended entry scenarios
         run: |
           python - <<'PY'
-          # Mirrors the boolean gate changed above. This is not a market backtest;
-          # it verifies the exact control-flow scenarios that caused the user's WAIT.
           def gate(h2,h1,entry,fast,structure,pattern,momentum=0,timing=0,swing_timing=0,chasing=False):
               vals=(h2,h1,entry,fast,structure)
               buys=sum(v>0 for v in vals); sells=sum(v<0 for v in vals)
-              buy_pattern=pattern>0; sell_pattern=pattern<0
               buy_ctx=entry>=0 and fast>=0 and structure>=0 and buys>=2 and sells==0
               sell_ctx=entry<=0 and fast<=0 and structure<=0 and sells>=2 and buys==0
-              sig='BUY' if buy_pattern and buy_ctx else ('SELL' if sell_pattern and sell_ctx else 'WAIT')
+              sig='BUY' if pattern>0 and buy_ctx else ('SELL' if pattern<0 and sell_ctx else 'WAIT')
               if sig=='WAIT': return sig,0,False
               d=1 if sig=='BUY' else -1
               q=60
@@ -72,17 +70,12 @@ jobs:
               q=min(100,q + (max(0,pattern)*5 if d>0 else max(0,-pattern)*5))
               confirm=(timing==d or swing_timing==d or momentum==d)
               return sig,q,(q>=72 and confirm and not chasing)
-
-          # Screenshot-like emerging BUY: H1 neutral, M15 up, M5 neutral, M1 up, structure neutral.
           sig,q,ready=gate(0,1,0,1,0,1,momentum=1)
           assert sig=='BUY' and q>=72 and ready, (sig,q,ready)
-          # Symmetric emerging SELL.
           sig,q,ready=gate(0,-1,0,-1,0,-1,momentum=-1)
           assert sig=='SELL' and q>=72 and ready, (sig,q,ready)
-          # Any opposite vote blocks the early probe.
           sig,q,ready=gate(-1,1,0,1,0,1,momentum=1)
           assert sig=='WAIT' and not ready, (sig,q,ready)
-          # No timing/momentum confirmation still blocks execution.
           sig,q,ready=gate(0,1,0,1,0,1,momentum=0)
           assert sig=='BUY' and not ready, (sig,q,ready)
           print('EARLY NORMAL ENTRY SCENARIOS: PASS')
@@ -95,6 +88,8 @@ jobs:
           m=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java').read_text(encoding='utf-8')
           b=Path('mt5_bridge/bridge_v10_0.py').read_text(encoding='utf-8')
           f=Path('app/src/main/java/com/openai/fxm1/FeatureEngine.java').read_text(encoding='utf-8')
+          assert 'buyVotesV10 >= 2 && sellVotesV10 == 0' in m
+          assert 'sellVotesV10 >= 2 && buyVotesV10 == 0' in m
           assert 'private String currentMode() { return "NORMAL"; }' in m
           assert 'payload.put("basket_no_average_down", true);' in m
           assert 'payload.put("basket_add_only_if_profitable", true);' in m
