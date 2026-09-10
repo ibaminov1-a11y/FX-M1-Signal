@@ -1560,7 +1560,9 @@ def close_all():
 def history_deals(days=30):
     now = datetime.now()
     start = now - timedelta(days=max(1, min(days, 3650)))
-    deals = mt5.history_deals_get(start, now) or []
+    deals = mt5.history_deals_get(start, now)
+    if deals is None:
+        raise RuntimeError(f"history_deals_get failed: {mt5.last_error()}")
     return deals
 
 
@@ -1946,11 +1948,17 @@ def position_action_alias():
         p = arr[0]
         if action == 'close':
             ok, result = close_position_internal(p)
-            return jsonify(ok=ok, message=result.get('message','close'), **result), (200 if ok else 500)
+            response = dict(result)
+            response.setdefault('message', 'close')
+            response.update(ok=bool(ok), bridge_version=BRIDGE_VERSION)
+            return jsonify(response), (200 if ok else 500)
         if action == 'partial':
             pct = max(1.0, min(float(data.get('pct') or 50.0), 99.0))
             ok, result = close_position_internal(p, volume=float(p.volume)*pct/100.0, comment=f'FXM1 V{BRIDGE_VERSION} PARTIAL')
-            return jsonify(ok=ok, message=result.get('message','partial'), **result), (200 if ok else 500)
+            response = dict(result)
+            response.setdefault('message', 'partial')
+            response.update(ok=bool(ok), bridge_version=BRIDGE_VERSION)
+            return jsonify(response), (200 if ok else 500)
         if action == 'breakeven':
             req = {'action': mt5.TRADE_ACTION_SLTP, 'position': int(ticket), 'symbol': p.symbol,
                    'sl': float(p.price_open), 'tp': float(p.tp), 'magic': MAGIC, 'comment':safe_mt5_comment('FXM1 BE', 'FXM1 BE')}

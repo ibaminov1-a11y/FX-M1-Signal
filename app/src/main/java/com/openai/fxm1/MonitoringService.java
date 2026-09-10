@@ -301,6 +301,7 @@ public class MonitoringService extends Service {
     private void emergencyStop() {
         SharedPreferences p = prefs();
         p.edit()
+                .putBoolean("auto_user_enabled", false)
                 .putBoolean("auto_trading", false)
                 .putBoolean("trading_paused", false)
                 .putBoolean("stop_all_requested", true)
@@ -788,7 +789,7 @@ public class MonitoringService extends Service {
             if (System.currentTimeMillis() - last > 60000L) {
                 JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
                 JSONObject rs = FeatureEngine.httpJson("GET", base + "/risk-state?daily_loss_limit_pct=" + p.getFloat("daily_loss_limit_pct",3f) + "&max_drawdown_pct=" + p.getFloat("max_drawdown_pct",5f) + "&max_consecutive_losses=" + p.getInt("max_consecutive_losses",3), null);
-                p.edit().putString("stats_snapshot", FeatureEngine.formatStats(st))
+                p.edit().putString("risk_stats_snapshot", FeatureEngine.formatStats(st))
                         .putString("risk_snapshot", rs.optBoolean("allowed", true) ? "RISK OK" : "RISK BLOCK: " + rs.optJSONArray("blocks"))
                         .putLong("smart_snapshot_ms", System.currentTimeMillis()).apply();
             }
@@ -950,6 +951,10 @@ public class MonitoringService extends Service {
         String line = currentSymbol() + " · " + currentTf() + " · " + currentMode() + " · " + signal +
                 (quality >= 0 ? " · " + quality + "/100" : "");
 
+        boolean confirmingEmergency = text != null && text.startsWith("EMERGENCY:");
+        String visibleLine = confirmingEmergency ? text : line;
+        String expandedLine = text == null || text.trim().isEmpty() ? line : line + "\n" + text;
+
         Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
                 .setSmallIcon(R.drawable.ic_stat_fx)
                 .setOngoing(true)
@@ -958,11 +963,12 @@ public class MonitoringService extends Service {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setContentTitle("FX M1 Bot · " + state)
-                .setContentText(line)
+                .setContentText(visibleLine)
+                .setStyle(new Notification.BigTextStyle().bigText(expandedLine))
                 .setContentIntent(openAppIntent())
-                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "PLAY", playPi).build())
-                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "PAUSE", pausePi).build())
-                .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());
+                .addAction(new Notification.Action.Builder(android.R.drawable.ic_media_play, "PLAY", playPi).build())
+                .addAction(new Notification.Action.Builder(android.R.drawable.ic_media_pause, "PAUSE", pausePi).build())
+                .addAction(new Notification.Action.Builder(android.R.drawable.ic_delete, "EMERGENCY STOP", emergencyPi).build());
 
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH);
