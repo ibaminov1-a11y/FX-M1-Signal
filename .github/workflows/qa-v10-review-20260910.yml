@@ -1,0 +1,353 @@
+name: QA V10 review 2026-09-10
+
+on:
+  push:
+    branches:
+      - qa/v10-review-20260910
+
+permissions:
+  contents: write
+
+jobs:
+  qa-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact QA branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Apply exact reviewed source changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path, old, new, label):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              old_count = text.count(old)
+              new_count = text.count(new)
+              if old_count == 1:
+                  p.write_text(text.replace(old, new, 1), encoding='utf-8')
+                  print('PATCHED:', label)
+              elif old_count == 0 and new_count == 1:
+                  print('ALREADY PATCHED:', label)
+              else:
+                  raise SystemExit(f'{label}: expected exactly one old or one new block; old={old_count} new={new_count}')
+
+          main = 'app/src/main/java/com/openai/fxm1/MainActivity.java'
+          service = 'app/src/main/java/com/openai/fxm1/MonitoringService.java'
+          bridge = 'mt5_bridge/bridge_v10_0.py'
+
+          replace_exact(main,
+          '''                        .putString("stats_snapshot", stText)
+                          .putString("money_realized_snapshot", moneySummary)
+                          .putInt("mt5_positions_snapshot", openCount)''',
+          '''                        .putString("stats_snapshot", stText)
+                          .putString("money_realized_snapshot", moneySummary)
+                          .putString("money_refresh_error", "")
+                          .putLong("money_refresh_success_ms", System.currentTimeMillis())
+                          .putInt("mt5_positions_snapshot", openCount)''',
+          'MainActivity successful money refresh timestamp/error reset')
+
+          replace_exact(main,
+          '''            } catch (Exception e) {
+                  runOnUiThread(() -> {
+                      String cachedStats = getSharedPreferences("fxm1", MODE_PRIVATE).getString("stats_snapshot", "");
+                      String cachedLog = getSharedPreferences("fxm1", MODE_PRIVATE).getString("trade_log_snapshot", "");''',
+          '''            } catch (Exception e) {
+                  getSharedPreferences("fxm1", MODE_PRIVATE).edit()
+                          .putString("money_refresh_error", safeMessage(e)).apply();
+                  runOnUiThread(() -> {
+                      SharedPreferences cached = getSharedPreferences("fxm1", MODE_PRIVATE);
+                      renderPositionsMoneyCard(cached.getInt("mt5_positions_snapshot", 0),
+                              Double.longBitsToDouble(cached.getLong("mt5_floating_bits", Double.doubleToLongBits(0.0))),
+                              cached.getString("mt5_currency_snapshot", "USD"));
+                      String cachedStats = getSharedPreferences("fxm1", MODE_PRIVATE).getString("stats_snapshot", "");
+                      String cachedLog = getSharedPreferences("fxm1", MODE_PRIVATE).getString("trade_log_snapshot", "");''',
+          'MainActivity preserve cached money on refresh error')
+
+          replace_exact(main,
+          '''        } else {
+              sb.append("\\nСегодня: —")
+                .append("\\nВсего: —");
+          }
+          positionsText.setText(sb.toString());''',
+          '''        } else {
+              sb.append("\\nСегодня: —")
+                .append("\\nВсего: —");
+          }
+          String refreshError = p.getString("money_refresh_error", "");
+          if (refreshError != null && !refreshError.trim().isEmpty()) {
+              long savedAt = p.getLong("money_refresh_success_ms", 0L);
+              sb.append("\\nИстория не обновлена")
+                .append(savedAt > 0L ? " · сохранённые данные на " + formatClock(savedAt) : " · сохранённые данные")
+                .append("\\n").append(refreshError);
+          }
+          positionsText.setText(sb.toString());''',
+          'MainActivity expose stale-history state instead of false zero')
+
+          replace_exact(service,
+          '''        p.edit()
+                  .putBoolean("auto_trading", false)
+                  .putBoolean("trading_paused", false)''',
+          '''        p.edit()
+                  .putBoolean("auto_user_enabled", false)
+                  .putBoolean("auto_trading", false)
+                  .putBoolean("trading_paused", false)''',
+          'MonitoringService emergency clears persisted AUTO permission')
+
+          replace_exact(service,
+          '''                p.edit().putString("stats_snapshot", FeatureEngine.formatStats(st))
+                          .putString("risk_snapshot", rs.optBoolean("allowed", true) ? "RISK OK" : "RISK BLOCK: " + rs.optJSONArray("blocks"))''',
+          '''                p.edit().putString("risk_stats_snapshot", FeatureEngine.formatStats(st))
+                          .putString("risk_snapshot", rs.optBoolean("allowed", true) ? "RISK OK" : "RISK BLOCK: " + rs.optJSONArray("blocks"))''',
+          'MonitoringService separate risk stats from money ledger cache')
+
+          replace_exact(service,
+          '''        Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
+                  .setSmallIcon(R.drawable.ic_stat_fx)
+                  .setOngoing(true)
+                  .setOnlyAlertOnce(true)
+                  .setShowWhen(false)
+                  .setVisibility(Notification.VISIBILITY_PUBLIC)
+                  .setCategory(Notification.CATEGORY_SERVICE)
+                  .setContentTitle("FX M1 Bot · " + state)
+                  .setContentText(line)
+                  .setContentIntent(openAppIntent())
+                  .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "PLAY", playPi).build())
+                  .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "PAUSE", pausePi).build())
+                  .addAction(new Notification.Action.Builder(R.drawable.ic_stat_fx, "EMERGENCY STOP", emergencyPi).build());''',
+          '''        // The confirmation text supplied by ACTION_EMERGENCY must be visible.
+          boolean confirmingEmergency = text != null && text.startsWith("EMERGENCY:");
+          String visibleLine = confirmingEmergency ? text : line;
+          String expandedLine = text == null || text.trim().isEmpty() ? line : line + "\\n" + text;
+          Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
+                  .setSmallIcon(R.drawable.ic_stat_fx)
+                  .setOngoing(true)
+                  .setOnlyAlertOnce(true)
+                  .setShowWhen(false)
+                  .setVisibility(Notification.VISIBILITY_PUBLIC)
+                  .setCategory(Notification.CATEGORY_SERVICE)
+                  .setContentTitle("FX M1 Bot · " + state)
+                  .setContentText(visibleLine)
+                  .setStyle(new Notification.BigTextStyle().bigText(expandedLine))
+                  .setContentIntent(openAppIntent())
+                  .addAction(new Notification.Action.Builder(android.R.drawable.ic_media_play, "PLAY", playPi).build())
+                  .addAction(new Notification.Action.Builder(android.R.drawable.ic_media_pause, "PAUSE", pausePi).build())
+                  .addAction(new Notification.Action.Builder(android.R.drawable.ic_delete, "EMERGENCY STOP", emergencyPi).build());''',
+          'MonitoringService notification actions and emergency confirmation text')
+
+          replace_exact(bridge,
+          '''def history_deals(days=30):
+              now = datetime.now()
+              start = now - timedelta(days=max(1, min(days, 3650)))
+              deals = mt5.history_deals_get(start, now) or []
+              return deals''',
+          '''def history_deals(days=30):
+              now = datetime.now()
+              start = now - timedelta(days=max(1, min(days, 3650)))
+              deals = mt5.history_deals_get(start, now)
+              # None means an MT5/API failure; it must not be presented as an empty history.
+              if deals is None:
+                  raise RuntimeError(f"history_deals_get failed: {mt5.last_error()}")
+              return deals''',
+          'Bridge distinguish MT5 history error from empty history')
+
+          replace_exact(bridge,
+          '''        if action == 'close':
+              ok, result = close_position_internal(p)
+              return jsonify(ok=ok, message=result.get('message','close'), **result), (200 if ok else 500)''',
+          '''        if action == 'close':
+              ok, result = close_position_internal(p)
+              response = dict(result)
+              response.setdefault('message', 'close')
+              response.update(ok=bool(ok), bridge_version=BRIDGE_VERSION)
+              return jsonify(response), (200 if ok else 500)''',
+          'Bridge close response has one message field')
+
+          replace_exact(bridge,
+          '''        if action == 'partial':
+              pct = max(1.0, min(float(data.get('pct') or 50.0), 99.0))
+              ok, result = close_position_internal(p, volume=float(p.volume)*pct/100.0, comment=f'FXM1 V{BRIDGE_VERSION} PARTIAL')
+              return jsonify(ok=ok, message=result.get('message','partial'), **result), (200 if ok else 500)''',
+          '''        if action == 'partial':
+              pct = max(1.0, min(float(data.get('pct') or 50.0), 99.0))
+              ok, result = close_position_internal(p, volume=float(p.volume)*pct/100.0, comment=f'FXM1 V{BRIDGE_VERSION} PARTIAL')
+              response = dict(result)
+              response.setdefault('message', 'partial')
+              response.update(ok=bool(ok), bridge_version=BRIDGE_VERSION)
+              return jsonify(response), (200 if ok else 500)''',
+          'Bridge partial response has one message field')
+          PY
+
+      - name: Verify change scope and source invariants
+        shell: bash
+        run: |
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          changed = {x.strip() for x in __import__('subprocess').check_output(['git','diff','--name-only'], text=True).splitlines() if x.strip()}
+          allowed = {
+              'app/src/main/java/com/openai/fxm1/MainActivity.java',
+              'app/src/main/java/com/openai/fxm1/MonitoringService.java',
+              'mt5_bridge/bridge_v10_0.py',
+          }
+          if not changed.issubset(allowed):
+              raise SystemExit(f'Unexpected source changes: {sorted(changed - allowed)}')
+          main = Path('app/src/main/java/com/openai/fxm1/MainActivity.java').read_text(encoding='utf-8')
+          svc = Path('app/src/main/java/com/openai/fxm1/MonitoringService.java').read_text(encoding='utf-8')
+          feature = Path('app/src/main/java/com/openai/fxm1/FeatureEngine.java').read_text(encoding='utf-8')
+          xml = Path('app/src/main/res/layout/activity_main.xml').read_text(encoding='utf-8')
+          bridge = Path('mt5_bridge/bridge_v10_0.py').read_text(encoding='utf-8')
+          assert 'android:id="@+id/moneyHistoryButton"' in xml and 'ДЕНЬГИ / ИСТОРИЯ' in xml
+          assert 'Сегодня: —' in xml and 'Всего: —' in xml
+          assert 'formatRealizedMoneySummary' in feature
+          assert '.putString("target_trade_mode", "DEMO")' in feature
+          assert 'BE: OFF · Trailing: OFF · EXIT: SWING/PEAK' in feature
+          assert 'boolean scalp = false;' in feature and 'o.put("scalp_mode", false);' in feature
+          assert 'NORMAL runtime: ACTIVE · SCALP supervisor DISABLED' in bridge
+          assert 'FXM1_ALLOW_REAL", "0"' in bridge
+          assert 'history_deals_get failed:' in bridge
+          assert "response.setdefault('message', 'close')" in bridge
+          assert "response.setdefault('message', 'partial')" in bridge
+          assert '.putBoolean("auto_user_enabled", false)' in svc
+          assert '.putString("risk_stats_snapshot", FeatureEngine.formatStats(st))' in svc
+          assert '"PLAY", playPi' in svc and '"PAUSE", pausePi' in svc and '"EMERGENCY STOP", emergencyPi' in svc
+          assert 'setContentText(visibleLine)' in svc
+          assert 'money_refresh_error' in main and 'money_refresh_success_ms' in main
+          assert 'refreshStatsAndPositions();' in main
+          print('Source invariants: PASS')
+          PY
+
+      - name: Python syntax
+        run: python -m py_compile mt5_bridge/bridge_v10_0.py
+
+      - name: Install lightweight Bridge test dependency
+        run: python -m pip install --disable-pip-version-check -q Flask
+
+      - name: Bridge regression tests with mocked MT5
+        shell: bash
+        run: |
+          python - <<'PY'
+          import importlib.util, sys, types
+          from pathlib import Path
+
+          class DummyMT5(types.ModuleType):
+              ACCOUNT_TRADE_MODE_DEMO = 1
+              ACCOUNT_TRADE_MODE_REAL = 2
+              ACCOUNT_TRADE_MODE_CONTEST = 3
+              POSITION_TYPE_BUY = 0
+              POSITION_TYPE_SELL = 1
+              DEAL_ENTRY_IN = 0
+              DEAL_ENTRY_OUT = 1
+              DEAL_ENTRY_INOUT = 2
+              DEAL_ENTRY_OUT_BY = 3
+              DEAL_TYPE_BUY = 0
+              DEAL_TYPE_SELL = 1
+              ORDER_TYPE_BUY = 0
+              ORDER_TYPE_SELL = 1
+              TRADE_RETCODE_DONE = 10009
+              TRADE_RETCODE_DONE_PARTIAL = 10010
+              TRADE_ACTION_DEAL = 1
+              TRADE_ACTION_SLTP = 6
+              ORDER_TIME_GTC = 0
+              ORDER_FILLING_IOC = 1
+              ORDER_FILLING_FOK = 0
+              ORDER_FILLING_RETURN = 2
+              TIMEFRAME_M1 = 1
+              TIMEFRAME_M5 = 5
+              def __getattr__(self, name):
+                  if name.startswith(('TIMEFRAME_', 'ORDER_', 'TRADE_', 'POSITION_', 'DEAL_', 'ACCOUNT_')):
+                      return 0
+                  raise AttributeError(name)
+
+          mt5 = DummyMT5('MetaTrader5')
+          mt5.initialize = lambda: True
+          mt5.last_error = lambda: (0, 'ok')
+          sys.modules['MetaTrader5'] = mt5
+
+          spec = importlib.util.spec_from_file_location('bridgeqa', Path('mt5_bridge/bridge_v10_0.py'))
+          b = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(b)
+
+          # Safety: DEMO allowed, REAL blocked by default.
+          demo = types.SimpleNamespace(trade_mode=mt5.ACCOUNT_TRADE_MODE_DEMO)
+          real = types.SimpleNamespace(trade_mode=mt5.ACCOUNT_TRADE_MODE_REAL)
+          assert b.ALLOW_REAL is False
+          assert b.trading_allowed(demo)[0] is True
+          assert b.trading_allowed(real)[0] is False
+
+          # History API failure must not become a false empty/zero history.
+          mt5.history_deals_get = lambda start, now: None
+          mt5.last_error = lambda: (500, 'history unavailable')
+          try:
+              b.history_deals(30)
+              raise AssertionError('None history was silently accepted')
+          except RuntimeError as e:
+              assert 'history_deals_get failed' in str(e)
+          mt5.history_deals_get = lambda start, now: ()
+          assert b.history_deals(30) == ()
+
+          # /position-action close and partial must return one message without TypeError.
+          b.ensure_mt5 = lambda: True
+          b.trading_allowed = lambda account: (True, '')
+          mt5.account_info = lambda: object()
+          pos = types.SimpleNamespace(ticket=77, volume=0.10)
+          mt5.positions_get = lambda ticket=None, **kw: [pos]
+          def fake_close(p, volume=None, comment=None):
+              return True, {'ticket': int(p.ticket), 'message': 'done', 'volume': volume if volume is not None else p.volume}
+          b.close_position_internal = fake_close
+          for payload in ({'ticket':77,'action':'close'}, {'ticket':77,'action':'partial','pct':50}):
+              with b.app.test_request_context('/position-action', method='POST', json=payload):
+                  out = b.position_action_alias()
+                  response, status = out
+                  assert status == 200
+                  data = response.get_json()
+                  assert data['ok'] is True and data['message'] == 'done' and data['bridge_version'] == '10.0'
+          print('Bridge regression tests: PASS')
+          PY
+
+      - name: Android assembleDebug
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Verify APK exists
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Commit tested source fixes to QA branch
+        shell: bash
+        run: |
+          if git diff --quiet -- app/src/main/java/com/openai/fxm1/MainActivity.java app/src/main/java/com/openai/fxm1/MonitoringService.java mt5_bridge/bridge_v10_0.py; then
+            echo "Reviewed source fixes already committed; this is the recheck build."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/com/openai/fxm1/MainActivity.java app/src/main/java/com/openai/fxm1/MonitoringService.java mt5_bridge/bridge_v10_0.py
+          git commit -m "V10 QA source fixes: money history and emergency controls"
+          git push origin HEAD:qa/v10-review-20260910
+
+      - name: Upload debug APK for QA evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-V10-QA-debug-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
