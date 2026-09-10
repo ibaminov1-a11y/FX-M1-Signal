@@ -1,0 +1,137 @@
+name: QA V10 campaign exit fix
+
+on:
+  push:
+    branches: [qa/v10-early-normal-entry]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-campaign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Apply NORMAL retest-entry and whole-campaign exit
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java')
+          s=p.read_text(encoding='utf-8')
+
+          old='''        boolean preciseConfirmV10 = wantedV10 != 0 &&
+                  (timingV10 == wantedV10 || swingTimingV10 == wantedV10 || momentumV10 == wantedV10);'''
+          new='''        // V10.7: first NORMAL probe must be a retest/resume entry, not a raw momentum chase.
+          // Momentum still contributes to quality, but execution needs pullback timing or swing retest timing.
+          boolean preciseConfirmV10 = wantedV10 != 0 &&
+                  (timingV10 == wantedV10 || swingTimingV10 == wantedV10);'''
+          if old in s:
+              s=s.replace(old,new,1)
+          elif new not in s:
+              raise SystemExit('preciseConfirm block not found')
+
+          old2='''                    for (int i=0; i<arr.length(); i++) {
+                          JSONObject pos = arr.optJSONObject(i); if (pos == null) continue;
+                          String sym = pos.optString("symbol", "").replace("/", "").toUpperCase(Locale.US);
+                          String side = pos.optString("side", "").toUpperCase(Locale.US);
+                          double profit = pos.optDouble("profit", 0.0) + pos.optDouble("swap", 0.0);
+                          if (!sym.startsWith(selected) || !wantSide.equals(side) || profit <= 0.0) continue;
+                          JSONObject req = new JSONObject();
+                          req.put("ticket", pos.optLong("ticket", 0));
+                          req.put("action", "close");
+                          JSONObject cr = FeatureEngine.httpJson("POST", base + "/position-action", req);
+                          FeatureEngine.appendSignalHistory(p, currentSymbol(), currentTf(), "CLOSE", p.getInt("state_quality", -1),
+                                  cr.optBoolean("ok", false) ? "PEAK/STRUCTURE EXIT" : "PEAK EXIT ERROR: "+cr.optString("message",""));
+                      }'''
+          new2='''                    ArrayList<JSONObject> campaign = new ArrayList<>();
+                      double campaignPnl = 0.0;
+                      for (int i=0; i<arr.length(); i++) {
+                          JSONObject pos = arr.optJSONObject(i); if (pos == null) continue;
+                          String sym = pos.optString("symbol", "").replace("/", "").toUpperCase(Locale.US);
+                          String side = pos.optString("side", "").toUpperCase(Locale.US);
+                          int magic = pos.optInt("magic", 0);
+                          if (!sym.startsWith(selected) || !wantSide.equals(side) || magic != 720072) continue;
+                          campaign.add(pos);
+                          campaignPnl += pos.optDouble("profit", 0.0) + pos.optDouble("swap", 0.0);
+                      }
+                      for (JSONObject pos : campaign) {
+                          JSONObject req = new JSONObject();
+                          req.put("ticket", pos.optLong("ticket", 0));
+                          req.put("action", "close");
+                          JSONObject cr = FeatureEngine.httpJson("POST", base + "/position-action", req);
+                          FeatureEngine.appendSignalHistory(p, currentSymbol(), currentTf(), "CLOSE", p.getInt("state_quality", -1),
+                                  cr.optBoolean("ok", false)
+                                          ? "CAMPAIGN SWING/PEAK EXIT · basket before close " + String.format(Locale.US, "%+.2f", campaignPnl)
+                                          : "CAMPAIGN EXIT ERROR: "+cr.optString("message",""));
+                      }'''
+          if old2 in s:
+              s=s.replace(old2,new2,1)
+          elif new2 not in s:
+              raise SystemExit('campaign exit block not found')
+
+          p.write_text(s,encoding='utf-8')
+          print('PATCHED')
+          PY
+
+      - name: Verify intended logic and safety
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java').read_text(encoding='utf-8')
+          b=Path('mt5_bridge/bridge_v10_0.py').read_text(encoding='utf-8')
+          f=Path('app/src/main/java/com/openai/fxm1/FeatureEngine.java').read_text(encoding='utf-8')
+          assert '(timingV10 == wantedV10 || swingTimingV10 == wantedV10);' in s
+          assert 'momentumV10 == wantedV10' not in s[s.index('boolean preciseConfirmV10'):s.index('boolean strongSetupV10')]
+          assert 'magic != 720072' in s
+          assert 'ArrayList<JSONObject> campaign' in s
+          assert 'profit <= 0.0' not in s[s.index('int exitDir ='):s.index('long last = p.getLong("smart_snapshot_ms"')]
+          assert 'CAMPAIGN SWING/PEAK EXIT' in s
+          assert 'payload.put("basket_no_average_down", true);' in s
+          assert 'payload.put("basket_add_only_if_profitable", true);' in s
+          assert 'maxPos = 10;' in s
+          assert 'FXM1_ALLOW_REAL", "0"' in b
+          assert 'NORMAL ADD WAIT: basket P/L' in b
+          assert 'NORMAL ADD #' in b
+          assert 'o.put("scalp_mode", false);' in f
+          print('LOGIC / SAFETY INVARIANTS: PASS')
+          PY
+
+      - name: Android build
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Verify APK
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Commit tested source change
+        shell: bash
+        run: |
+          if git diff --quiet -- app/src/main/java/com/openai/fxm1/MonitoringService.java; then
+            echo 'Source already committed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/com/openai/fxm1/MonitoringService.java
+          git commit -m 'V10.7: require retest entry and close whole NORMAL campaign'
+          git push origin HEAD:qa/v10-early-normal-entry
+
+      - name: Upload candidate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-V10.7-CAMPAIGN-QA
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
