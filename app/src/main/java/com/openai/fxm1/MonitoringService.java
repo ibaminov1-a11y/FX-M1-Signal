@@ -1153,8 +1153,11 @@ public class MonitoringService extends Service {
         // is aligned, the first live continuation in that direction is enough to execute.
         // V10.7: first NORMAL probe must be a retest/resume entry, not a raw momentum chase.
         // Momentum still contributes to quality, but execution needs pullback timing or swing retest timing.
+        boolean earlyProbeV10 = wantedV10 != 0 && quality < 84;
+        // Early 72-83 quality probe: only explicit pullback/retest + resume may execute.
+        // Mature 84+ setup may also use confirmed swing timing.
         boolean preciseConfirmV10 = wantedV10 != 0 &&
-                (timingV10 == wantedV10 || swingTimingV10 == wantedV10);
+                (timingV10 == wantedV10 || (!earlyProbeV10 && swingTimingV10 == wantedV10));
         boolean strongSetupV10 = wantedV10 != 0 && quality >= 84 &&
                 (effectiveStructureV10 == wantedV10 || swingV10.patternDirection == wantedV10);
         boolean fastConfirmV10 = strongSetupV10 && liveResumeV10 == wantedV10;
