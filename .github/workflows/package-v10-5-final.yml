@@ -1,0 +1,47 @@
+name: Package V10.5 final
+on:
+  push:
+    branches: ["release/v10.5-final"]
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build APK
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Prepare final package
+        run: |
+          set -eu
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s mt5_bridge/bridge_v10_0.py
+          mkdir -p final
+          cp app/build/outputs/apk/debug/app-debug.apk final/FXM1_V10_5_FINAL.apk
+          cp mt5_bridge/bridge_v10_0.py final/bridge_v10_0.py
+          cat > final/README_RU.txt <<'EOF'
+          FX M1 Bot V10.5 FINAL — DEMO
+
+          1. На ПК должен быть запущен MetaTrader 5 с DEMO-счётом.
+          2. Рядом с MT5 запустите bridge_v10_0.py.
+          3. На Android установите FXM1_V10_5_FINAL.apk.
+          4. В приложении укажите Twelve Data API key и адрес MT5 Bridge.
+          5. Убедитесь, что приложение видит MT5/Bridge и счёт DEMO.
+          6. Только после соединения включайте AUTO TRADING.
+
+          Торговая логика релиза: NORMAL only; SCALP supervisor disabled; pyramiding только по подтверждённому прибыльному движению; усреднение вниз запрещено; выход SWING/PEAK/structure; REAL по умолчанию отключён.
+          EOF
+      - name: Upload final package
+        uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-V10.5-FINAL
+          path: final/
+          if-no-files-found: error
