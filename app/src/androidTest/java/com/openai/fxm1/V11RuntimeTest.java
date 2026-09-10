@@ -1,6 +1,5 @@
 package com.openai.fxm1;
 
-import android.app.NotificationManager;
 import android.content.*;
 import android.os.*;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -11,7 +10,6 @@ import org.json.JSONObject;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import java.io.*;
-import java.net.*;
 import java.util.function.BooleanSupplier;
 import static org.junit.Assert.*;
 
@@ -40,7 +38,10 @@ public class V11RuntimeTest {
         while(SystemClock.elapsedRealtime()<end){if(condition.getAsBoolean())return;Thread.sleep(200);}
         fail("Timed out: "+name+" state="+V11Api.state(context)+" error="+V11Api.prefs(context).getString("command_message",""));
     }
-    void screenshot(String name){File directory=new File(context.getExternalFilesDir(null),"qa");directory.mkdirs();assertTrue(device.takeScreenshot(new File(directory,name+".png")));}
+    void screenshot(String name) throws Exception {
+        shell("mkdir -p /sdcard/Download/v11-qa");
+        shell("screencap -p /sdcard/Download/v11-qa/"+name+".png");
+    }
     UiObject2 text(String s){return device.wait(Until.findObject(By.text(s)),10000);}
     @Test public void dashboardAndHistoryAreRealViews() throws Exception {
         assertNotNull(text("FX M1   /   NORMAL"));screenshot("01-trading");
