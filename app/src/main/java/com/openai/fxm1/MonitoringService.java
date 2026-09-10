@@ -1120,8 +1120,11 @@ public class MonitoringService extends Service {
 
         boolean buyPatternV10 = patternV10 > 0;
         boolean sellPatternV10 = patternV10 < 0;
-        boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && effectiveStructureV10 >= 0 && buyVotesV10 >= 3 && sellVotesV10 <= 1;
-        boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && effectiveStructureV10 <= 0 && sellVotesV10 >= 3 && buyVotesV10 <= 1;
+        // V10.6 EARLY NORMAL PROBE: allow an emerging continuation to become
+        // directional with two aligned votes and no opposite vote. Timing/momentum and
+        // no-chase confirmation still gate execution; Bridge still forbids averaging down.
+        boolean buyContextV10 = sEntry >= 0 && sFast >= 0 && effectiveStructureV10 >= 0 && buyVotesV10 >= 2 && sellVotesV10 == 0;
+        boolean sellContextV10 = sEntry <= 0 && sFast <= 0 && effectiveStructureV10 <= 0 && sellVotesV10 >= 2 && buyVotesV10 == 0;
 
         String candidateSignalV10 = buyPatternV10 && buyContextV10 ? "BUY" :
                 (sellPatternV10 && sellContextV10 ? "SELL" : "WAIT");
