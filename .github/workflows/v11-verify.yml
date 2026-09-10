@@ -19,12 +19,13 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install Flask==3.1.2
       - name: Compile production Python
-        run: python -m py_compile v11_bridge/campaign_core.py v11_bridge/bridge_v11.py
+        run: python -m compileall -q v11_bridge
       - name: Execute real-component regressions against fake MT5
         shell: bash
         run: |
           mkdir -p evidence
           python -m unittest discover -s v11_bridge/tests -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.txt
+          if grep -q 'skipped=' evidence/python-tests.txt; then echo 'Skipped tests are not accepted in CI'; exit 1; fi
       - name: Export exact source and provenance
         if: always()
         run: |
@@ -67,17 +68,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
-          script: |
-            mkdir -p evidence/ui
-            python v11_bridge/tests/ui_fixture_server.py > evidence/fixture-server.log 2>&1 &
-            sleep 2
-            result=0
-            gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest > evidence/android-runtime.txt 2>&1 || result=$?
-            adb logcat -d > evidence/logcat.txt
-            adb shell dumpsys notification --noredact > evidence/notification.txt
-            adb pull /sdcard/Android/data/com.openai.fxm1.v11/files/qa evidence/ui || true
-            cat evidence/android-runtime.txt
-            exit $result
+          script: bash tools/run_android_qa.sh
       - name: APK evidence
         if: always()
         run: |
