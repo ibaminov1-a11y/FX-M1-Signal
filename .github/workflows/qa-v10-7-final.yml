@@ -1,0 +1,113 @@
+name: QA V10.7 final
+
+on:
+  push:
+    branches: [qa/v10-7-final]
+
+permissions:
+  contents: write
+
+jobs:
+  final-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Apply strict retest gate for early probe
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java')
+          s=p.read_text(encoding='utf-8')
+          if 'boolean earlyProbeV10 = wantedV10 != 0 && quality < 84;' not in s:
+              pattern=r'boolean preciseConfirmV10 = wantedV10 != 0 &&\s*\(timingV10 == wantedV10 \|\| swingTimingV10 == wantedV10\);'
+              replacement='''boolean earlyProbeV10 = wantedV10 != 0 && quality < 84;\n        // Early 72-83 quality probe: only explicit pullback/retest + resume may execute.\n        // Mature 84+ setup may also use confirmed swing timing.\n        boolean preciseConfirmV10 = wantedV10 != 0 &&\n                (timingV10 == wantedV10 || (!earlyProbeV10 && swingTimingV10 == wantedV10));'''
+              s,n=re.subn(pattern,replacement,s,count=1)
+              if n != 1:
+                  raise SystemExit(f'preciseConfirm patch count={n}')
+              p.write_text(s,encoding='utf-8')
+              print('PATCHED')
+          else:
+              print('ALREADY PATCHED')
+          PY
+
+      - name: Verify retest gate scenarios
+        run: |
+          python - <<'PY'
+          def ready(q,timing,swing,live,wanted=1,chasing=False,structure=0,pattern=1):
+              early = wanted != 0 and q < 84
+              precise = wanted != 0 and (timing == wanted or ((not early) and swing == wanted))
+              strong = wanted != 0 and q >= 84 and (structure == wanted or pattern == wanted)
+              fast = strong and live == wanted
+              return wanted != 0 and q >= 72 and (precise or fast) and not chasing
+          assert ready(72,1,0,0)
+          assert not ready(72,0,1,0)
+          assert not ready(72,0,0,1)
+          assert ready(84,0,1,0,structure=1)
+          assert ready(84,0,0,1,structure=1)
+          assert not ready(90,1,1,1,chasing=True,structure=1)
+          print('RETEST GATE: PASS')
+          PY
+
+      - name: Verify campaign and safety invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java').read_text(encoding='utf-8')
+          b=Path('mt5_bridge/bridge_v10_0.py').read_text(encoding='utf-8')
+          f=Path('app/src/main/java/com/openai/fxm1/FeatureEngine.java').read_text(encoding='utf-8')
+          assert 'boolean earlyProbeV10 = wantedV10 != 0 && quality < 84;' in s
+          assert '(timingV10 == wantedV10 || (!earlyProbeV10 && swingTimingV10 == wantedV10));' in s
+          exit_block=s[s.index('int exitDir ='):s.index('long last = p.getLong("smart_snapshot_ms"')]
+          assert 'ArrayList<JSONObject> campaign' in exit_block
+          assert 'magic != 720072' in exit_block
+          assert 'profit <= 0.0' not in exit_block
+          assert 'CAMPAIGN SWING/PEAK EXIT' in exit_block
+          assert 'payload.put("basket_no_average_down", true);' in s
+          assert 'payload.put("basket_add_only_if_profitable", true);' in s
+          assert 'maxPos = 10;' in s
+          assert 'private String currentMode() { return "NORMAL"; }' in s
+          assert 'FXM1_ALLOW_REAL", "0"' in b
+          assert 'NORMAL ADD WAIT: basket P/L' in b
+          assert 'NORMAL ADD #' in b
+          assert 'o.put("scalp_mode", false);' in f
+          print('CAMPAIGN / SAFETY: PASS')
+          PY
+
+      - name: Android build
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Verify APK
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Commit tested source only
+        shell: bash
+        run: |
+          if git diff --quiet -- app/src/main/java/com/openai/fxm1/MonitoringService.java; then
+            echo 'Source already committed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/com/openai/fxm1/MonitoringService.java
+          git commit -m 'V10.7: strict retest probe and whole-campaign exit'
+          git push origin HEAD:qa/v10-7-final
+
+      - name: Upload final QA APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-V10.7-FINAL-QA
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
