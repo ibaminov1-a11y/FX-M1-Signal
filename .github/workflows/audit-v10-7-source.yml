@@ -1,0 +1,29 @@
+name: Audit V10.7 source snapshot
+on:
+  push:
+    branches: [qa/v10-7-audit-20260910]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ee2352de1b195f3ab5c3664d7d465127e65299f4
+          persist-credentials: false
+      - name: Export exact production commit without Git credentials
+        run: |
+          test "$(git rev-parse HEAD)" = ee2352de1b195f3ab5c3664d7d465127e65299f4
+          mkdir -p audit-evidence
+          git archive --format=zip HEAD -o audit-evidence/source-ee2352de.zip
+          git ls-tree -r HEAD > audit-evidence/tree.txt
+          git rev-parse HEAD > audit-evidence/COMMIT.txt
+          sha256sum audit-evidence/source-ee2352de.zip > audit-evidence/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audit-source-ee2352de
+          path: audit-evidence/
+          retention-days: 7
+          if-no-files-found: error
