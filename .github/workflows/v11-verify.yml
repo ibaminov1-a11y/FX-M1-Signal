@@ -1,0 +1,98 @@
+name: V11 verify and assemble DEMO RC
+on:
+  push:
+    branches: [v11/normal-campaign]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: v11-verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2
+      - name: Compile production Python
+        run: python -m py_compile v11_bridge/campaign_core.py v11_bridge/bridge_v11.py
+      - name: Execute real-component regressions against fake MT5
+        shell: bash
+        run: |
+          mkdir -p evidence
+          python -m unittest discover -s v11_bridge/tests -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.txt
+      - name: Export exact source and provenance
+        if: always()
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+          git ls-tree -r HEAD > evidence/tree.txt
+          git archive --format=zip --output=evidence/source.zip HEAD
+          sha256sum evidence/source.zip > evidence/source.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: V11-source-and-python-${{ github.run_number }}
+          path: evidence/
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2
+      - name: Build both APKs from committed sources
+        run: gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+      - name: Android 35 SystemUI and activity tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: |
+            mkdir -p evidence/ui
+            python v11_bridge/tests/ui_fixture_server.py > evidence/fixture-server.log 2>&1 &
+            sleep 2
+            result=0
+            gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest > evidence/android-runtime.txt 2>&1 || result=$?
+            adb logcat -d > evidence/logcat.txt
+            adb shell dumpsys notification --noredact > evidence/notification.txt
+            adb pull /sdcard/Android/data/com.openai.fxm1.v11/files/qa evidence/ui || true
+            cat evidence/android-runtime.txt
+            exit $result
+      - name: APK evidence
+        if: always()
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+          if test -f app/build/outputs/apk/debug/app-debug.apk; then
+            cp app/build/outputs/apk/debug/app-debug.apk evidence/FXM1-V11-DEMO-RC1.apk
+            sha256sum evidence/FXM1-V11-DEMO-RC1.apk > evidence/apk.sha256
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: V11-android-runtime-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error
