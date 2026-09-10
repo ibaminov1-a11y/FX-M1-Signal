@@ -1,0 +1,143 @@
+name: QA V10 Android emulator 2026-09-10
+
+on:
+  push:
+    branches:
+      - qa/v10-review-20260910
+
+permissions:
+  contents: read
+
+jobs:
+  emulator-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout committed QA sources
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build and exercise UI on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            gradle --no-daemon :app:assembleDebug
+            APK=app/build/outputs/apk/debug/app-debug.apk
+            test -s "$APK"
+            adb install -r "$APK"
+            adb shell pm grant com.openai.fxm1 android.permission.POST_NOTIFICATIONS || true
+            adb shell am force-stop com.openai.fxm1
+            adb shell monkey -p com.openai.fxm1 -c android.intent.category.LAUNCHER 1
+            sleep 4
+
+            adb shell uiautomator dump /sdcard/fxm1.xml >/dev/null
+            adb pull /sdcard/fxm1.xml /tmp/fxm1.xml >/dev/null
+            python - <<'PY'
+            import xml.etree.ElementTree as ET
+            root=ET.parse('/tmp/fxm1.xml').getroot()
+            texts=[n.attrib.get('text','') for n in root.iter()]
+            joined='\n'.join(texts)
+            assert 'ПОЗИЦИИ (MT5)' in joined, joined
+            assert 'ДЕНЬГИ / ИСТОРИЯ' in joined, joined
+            print('Initial positions/money UI: PASS')
+            target=None
+            for n in root.iter():
+                if n.attrib.get('resource-id')=='com.openai.fxm1:id/moneyHistoryButton':
+                    target=n; break
+            assert target is not None, 'moneyHistoryButton not found'
+            b=target.attrib['bounds'].replace('][',',').replace('[','').replace(']','').split(',')
+            x1,y1,x2,y2=map(int,b)
+            open('/tmp/tap.txt','w').write(f'{(x1+x2)//2} {(y1+y2)//2}')
+            PY
+            read X Y < /tmp/tap.txt
+            adb shell input tap "$X" "$Y"
+            sleep 2
+            adb shell uiautomator dump /sdcard/fxm1-dialog.xml >/dev/null
+            adb pull /sdcard/fxm1-dialog.xml /tmp/fxm1-dialog.xml >/dev/null
+            python - <<'PY'
+            import xml.etree.ElementTree as ET
+            root=ET.parse('/tmp/fxm1-dialog.xml').getroot()
+            joined='\n'.join(n.attrib.get('text','') for n in root.iter())
+            assert 'Деньги / история MT5' in joined, joined
+            assert 'ВСЯ ИСТОРИЯ ЗАКРЫТЫХ СДЕЛОК' in joined, joined
+            print('Money/history button action: PASS')
+            PY
+
+            # Close dialog and start foreground monitoring with a dummy analysis key.
+            adb shell input keyevent 4
+            sleep 1
+            python - <<'PY'
+            import subprocess, time, xml.etree.ElementTree as ET, re
+            def dump(path='/tmp/ui.xml'):
+                subprocess.run(['adb','shell','uiautomator','dump','/sdcard/ui.xml'],check=True,stdout=subprocess.DEVNULL)
+                subprocess.run(['adb','pull','/sdcard/ui.xml',path],check=True,stdout=subprocess.DEVNULL)
+                return ET.parse(path).getroot()
+            def center(node):
+                v=list(map(int,re.findall(r'\d+',node.attrib['bounds'])))
+                return (v[0]+v[2])//2,(v[1]+v[3])//2
+            def find_id(root,suffix):
+                for n in root.iter():
+                    if n.attrib.get('resource-id','').endswith('/'+suffix): return n
+                return None
+            root=dump()
+            key=find_id(root,'apiKeyInput')
+            start=find_id(root,'analyzeButton')
+            # Scroll until controls become visible if needed.
+            for _ in range(8):
+                if key is not None and start is not None and key.attrib.get('bounds')!='[0,0][0,0]' and start.attrib.get('bounds')!='[0,0][0,0]': break
+                subprocess.run(['adb','shell','input','swipe','540','1700','540','500','300'])
+                time.sleep(.5); root=dump(); key=find_id(root,'apiKeyInput'); start=find_id(root,'analyzeButton')
+            assert key is not None and start is not None, 'monitoring controls not found'
+            x,y=center(key); subprocess.run(['adb','shell','input','tap',str(x),str(y)],check=True)
+            subprocess.run(['adb','shell','input','text','QA_DUMMY_KEY'],check=True)
+            subprocess.run(['adb','shell','input','keyevent','4'],check=True)
+            x,y=center(start); subprocess.run(['adb','shell','input','tap',str(x),str(y)],check=True)
+            print('Monitoring start action invoked')
+            PY
+            sleep 4
+            adb shell cmd statusbar expand-notifications
+            sleep 2
+            adb shell uiautomator dump /sdcard/shade.xml >/dev/null
+            adb pull /sdcard/shade.xml /tmp/shade.xml >/dev/null
+            python - <<'PY'
+            import xml.etree.ElementTree as ET
+            root=ET.parse('/tmp/shade.xml').getroot()
+            joined='\n'.join(n.attrib.get('text','')+' '+n.attrib.get('content-desc','') for n in root.iter())
+            assert 'FX M1 Bot' in joined, joined
+            missing=[x for x in ('PLAY','PAUSE','EMERGENCY STOP') if x not in joined]
+            if missing:
+                raise AssertionError('Notification action labels missing in emulator accessibility tree: '+repr(missing)+'\n'+joined)
+            print('Notification PLAY/PAUSE/EMERGENCY STOP labels: PASS')
+            PY
+
+      - name: Upload emulator evidence files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-V10-emulator-evidence-${{ github.run_number }}
+          path: |
+            /tmp/fxm1.xml
+            /tmp/fxm1-dialog.xml
+            /tmp/shade.xml
+          if-no-files-found: warn
