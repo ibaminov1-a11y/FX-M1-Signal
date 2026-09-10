@@ -31,7 +31,7 @@ class FakeMT5:
     SYMBOL_TRADE_EXECUTION_MARKET=2
     def __init__(self,clock=None):
         self.clock=clock or time.time
-        self.ai=N(trade_mode=0,currency='USD',margin_mode=2,login=123,server='Fixture-Demo',balance=100000.,equity=100000.,margin_free=100000.)
+        self.ai=N(trade_mode=0,trade_allowed=True,currency='USD',margin_mode=2,login=123,server='Fixture-Demo',balance=100000.,equity=100000.,margin_free=100000.)
         self.info=N(name='EURUSD',currency_base='EUR',currency_profit='USD',point=.00001,trade_tick_size=.00001,
                     volume_min=.01,volume_step=.01,volume_max=100.,trade_stops_level=0,trade_freeze_level=0,
                     filling_mode=3,trade_exemode=2)
