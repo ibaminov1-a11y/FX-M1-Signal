@@ -97,7 +97,8 @@ public class V11PurpleRenderingTest {
             assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));
         }
         // Gradle removes the test app after instrumentation. Keep evidence outside its data directory.
-        shell("mkdir -p /sdcard/Download/v11-qa && cp "
+        shell("mkdir -p /sdcard/Download/v11-qa");
+        shell("cp "
                 +new File(context.getExternalFilesDir(null),"purple-candle-render.png").getAbsolutePath()
                 +" /sdcard/Download/v11-qa/purple-candle-render.png");
         bitmap.recycle();

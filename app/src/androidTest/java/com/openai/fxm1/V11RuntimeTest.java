@@ -43,8 +43,19 @@ public class V11RuntimeTest {
         shell("screencap -p /sdcard/Download/v11-qa/"+name+".png");
     }
     UiObject2 text(String s){return device.wait(Until.findObject(By.text(s)),10000);}
+    void clickNotification(String label) throws Exception {
+        // SystemUI replaces RemoteViews after state updates. Re-find only when the old node is stale.
+        for(int attempt=0;attempt<3;attempt++){
+            try{
+                UiObject2 button=text(label);
+                assertNotNull("Visible notification action: "+label,button);
+                button.click();return;
+            }catch(StaleObjectException e){if(attempt==2)throw e;Thread.sleep(100);}
+        }
+    }
     @Test public void dashboardAndHistoryAreRealViews() throws Exception {
-        assertNotNull(text("FX M1   /   NORMAL"));screenshot("01-trading");
+        assertNotNull(text("FX M1   /   NORMAL"));
+        assertNotNull(text("● MT5 подключён   ·   DEMO   ·   база $100"));screenshot("01-trading");
         UiObject2 history=text("История");assertNotNull(history);history.click();
         assertNotNull(text("РЕЗУЛЬТАТ БОТА · USD · ДЕНЬ UTC+5"));screenshot("02-history");
         UiObject2 settings=text("Настройки");assertNotNull(settings);settings.click();
@@ -58,12 +69,12 @@ public class V11RuntimeTest {
         if(pause==null){UiObject2 expand=device.findObject(By.res("android","expand_button"));if(expand!=null)expand.click();pause=text("PAUSE");}
         assertNotNull("Actual notification PAUSE must be visible",pause);
         assertNotNull(text("PLAY"));assertNotNull(text("EMERGENCY STOP"));screenshot("04-notification");
-        pause.click();await(()->V11Api.state(context).optBoolean("paused",false),15000,"notification PAUSE");
-        assertNotNull(text("PLAY"));text("PLAY").click();await(()->!V11Api.state(context).optBoolean("paused",true),15000,"notification PLAY");
-        UiObject2 emergency=text("EMERGENCY STOP");assertNotNull(emergency);emergency.click();Thread.sleep(250);
-        text("EMERGENCY STOP").click();
+        clickNotification("PAUSE");await(()->V11Api.state(context).optBoolean("paused",false),15000,"notification PAUSE");
+        assertNotNull(text("PLAY"));clickNotification("PLAY");await(()->!V11Api.state(context).optBoolean("paused",true),15000,"notification PLAY");
+        assertNotNull(text("EMERGENCY STOP"));clickNotification("EMERGENCY STOP");Thread.sleep(250);
+        clickNotification("EMERGENCY STOP");
         await(()->V11Api.state(context).optBoolean("emergency",false),15000,"emergency latch on server");
-        text("PLAY").click();Thread.sleep(1500);
+        clickNotification("PLAY");Thread.sleep(1500);
         assertFalse("PLAY must not re-enable AUTO",V11Api.state(context).optBoolean("auto",true));
         assertTrue(V11Api.prefs(context).getBoolean("local_emergency",false));screenshot("05-emergency");device.pressBack();
     }
