@@ -28,7 +28,11 @@ def create_app(engine, token):
     def state():
         with engine.lock:
             engine.heartbeat=engine.clock()
-            return jsonify(engine.snapshot)
+            value=dict(engine.snapshot)
+            if not engine.money_ok:
+                value['ok']=False
+                value['reason']=value.get('reason','')+' · История не обновлена: '+engine.money_error
+            return jsonify(value)
     @app.get('/v11/history')
     def history():
         with engine.lock:
@@ -70,7 +74,6 @@ def main():
         while True:
             try: engine.step()
             except Exception:
-                # No new risk is allowed after an unexpected top-level failure.
                 with engine.lock:
                     engine.s['auto']=False;engine.s['paused']=True
                     try: engine.save()
