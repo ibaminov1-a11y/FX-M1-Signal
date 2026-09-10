@@ -1,0 +1,85 @@
+name: QA NORMAL campaign release
+on:
+  push:
+    branches: [qa/v10-review-20260910]
+permissions:
+  contents: read
+jobs:
+  verify-normal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q Flask
+      - name: Verify NORMAL pyramiding/no-average-down gates
+        run: |
+          python - <<'PY'
+          import importlib.util, sys, types
+          class MT5(types.ModuleType):
+              ACCOUNT_TRADE_MODE_DEMO=1; ACCOUNT_TRADE_MODE_REAL=2; ACCOUNT_TRADE_MODE_CONTEST=3
+              POSITION_TYPE_BUY=0; POSITION_TYPE_SELL=1; DEAL_ENTRY_IN=0; DEAL_ENTRY_OUT=1; DEAL_ENTRY_OUT_BY=3
+              ORDER_TYPE_BUY=0; ORDER_TYPE_SELL=1; TRADE_RETCODE_DONE=10009; TRADE_RETCODE_DONE_PARTIAL=10010
+              TRADE_ACTION_DEAL=1; TRADE_ACTION_SLTP=6; ORDER_TIME_GTC=0; ORDER_FILLING_IOC=1; ORDER_FILLING_FOK=0; ORDER_FILLING_RETURN=2
+              TIMEFRAME_M1=1; TIMEFRAME_M5=5
+              def __getattr__(self,n):
+                  if n.startswith(('TIMEFRAME_','ORDER_','TRADE_','POSITION_','DEAL_','ACCOUNT_')): return 0
+                  raise AttributeError(n)
+          mt5=MT5('MetaTrader5'); mt5.initialize=lambda: True; mt5.last_error=lambda:(0,'ok')
+          sys.modules['MetaTrader5']=mt5
+          spec=importlib.util.spec_from_file_location('b','mt5_bridge/bridge_v10_0.py'); b=importlib.util.module_from_spec(spec); spec.loader.exec_module(b)
+          info=types.SimpleNamespace(point=0.0001)
+          rates=[{'high':1.1008,'low':1.1000} for _ in range(8)]
+          mt5.copy_rates_from_pos=lambda *a: rates
+          data={'normal_campaign_spacing_atr':0.10}
+          tick=types.SimpleNamespace(bid=1.1000,ask=1.1001)
+          ok,msg,meta=b.normal_campaign_entry_gate('EURUSD','BUY',[],tick,info,data)
+          assert ok and meta['campaign_stage']=='FIRST_ENTRY', (ok,msg,meta)
+          losing=[types.SimpleNamespace(profit=-1.0,swap=0.0,price_open=1.1000)]
+          ok,msg,meta=b.normal_campaign_entry_gate('EURUSD','BUY',losing,tick,info,data)
+          assert not ok and meta['campaign_stage']=='NO_AVERAGING_DOWN', (ok,msg,meta)
+          winning=[types.SimpleNamespace(profit=2.0,swap=0.0,price_open=1.1000)]
+          near=types.SimpleNamespace(bid=1.1002,ask=1.1003)
+          ok,msg,meta=b.normal_campaign_entry_gate('EURUSD','BUY',winning,near,info,data)
+          assert not ok and meta['campaign_stage']=='WAIT_PROGRESS', (ok,msg,meta)
+          far=types.SimpleNamespace(bid=1.1010,ask=1.1011)
+          ok,msg,meta=b.normal_campaign_entry_gate('EURUSD','BUY',winning,far,info,data)
+          assert ok and meta['campaign_stage']=='ADD', (ok,msg,meta)
+          sellwin=[types.SimpleNamespace(profit=2.0,swap=0.0,price_open=1.1000)]
+          far_sell=types.SimpleNamespace(bid=1.0989,ask=1.0990)
+          ok,msg,meta=b.normal_campaign_entry_gate('EURUSD','SELL',sellwin,far_sell,info,data)
+          assert ok and meta['campaign_stage']=='ADD', (ok,msg,meta)
+          assert b.ALLOW_REAL is False
+          print('NORMAL campaign gate: PASS')
+          PY
+      - name: Verify Android campaign and exit wiring
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('app/src/main/java/com/openai/fxm1/MonitoringService.java').read_text()
+          f=Path('app/src/main/java/com/openai/fxm1/FeatureEngine.java').read_text()
+          b=Path('mt5_bridge/bridge_v10_0.py').read_text()
+          required=[
+            'maxPos = 10;', 'payload.put("basket_mode", true);', 'payload.put("allow_same_symbol_multiple", true);',
+            'payload.put("basket_add_only_if_profitable", true);', 'payload.put("basket_no_average_down", true);',
+            'state_exit_direction_v10', 'profit <= 0.0', 'req.put("action", "close");', 'private String currentMode() { return "NORMAL"; }'
+          ]
+          for x in required: assert x in s, x
+          assert 'o.put("scalp_mode", false);' in f
+          assert 'BE: OFF · Trailing: OFF · EXIT: SWING/PEAK' in f
+          assert 'NORMAL runtime: ACTIVE · SCALP supervisor DISABLED' in b
+          assert 'auto_user_enabled", false' in s
+          print('Android NORMAL campaign/exit wiring: PASS')
+          PY
+      - name: Build release candidate debug APK
+        run: gradle --no-daemon :app:assembleDebug
+      - run: test -s app/build/outputs/apk/debug/app-debug.apk
