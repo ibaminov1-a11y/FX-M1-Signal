@@ -6,8 +6,8 @@ android {
         applicationId 'com.openai.fxm1.v11'
         minSdk 26
         targetSdk 35
-        versionCode 110001
-        versionName '11.0.0-rc1'
+        versionCode 110002
+        versionName '11.0.1-purple'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     compileOptions {

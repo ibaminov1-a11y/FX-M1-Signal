@@ -9,6 +9,11 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.*;
 import android.provider.Settings;
 import android.text.InputType;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import android.view.*;
 import android.widget.*;
 import org.json.*;
@@ -16,8 +21,18 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class V11Activity extends Activity {
-    static final int BG=Color.rgb(17,21,27),CARD=Color.rgb(27,33,42),TEXT=Color.rgb(235,241,250),
-            MUTED=Color.rgb(156,171,191),BLUE=Color.rgb(85,145,246),GREEN=Color.rgb(90,203,161),RED=Color.rgb(243,120,136);
+    // Exact legacy palette. BLUE is the existing UI accent variable, now violet.
+    static final int BG=Color.rgb(7,8,22),CARD=Color.rgb(17,18,39),TEXT=Color.rgb(244,241,255),
+            MUTED=Color.rgb(176,170,199),BLUE=Color.rgb(145,77,255),GREEN=Color.rgb(66,214,122),RED=Color.rgb(255,72,87);
+    private static final Pattern SIDE_WORD=Pattern.compile("\\b(BUY|SELL)\\b",Pattern.CASE_INSENSITIVE);
+    static int sideColor(String side){return "BUY".equalsIgnoreCase(side)?GREEN:"SELL".equalsIgnoreCase(side)?RED:BLUE;}
+    static CharSequence colorizeSides(CharSequence value){
+        SpannableString styled=new SpannableString(value==null?"":value);
+        Matcher matcher=SIDE_WORD.matcher(styled);
+        while(matcher.find())styled.setSpan(new ForegroundColorSpan(sideColor(matcher.group())),
+                matcher.start(),matcher.end(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return styled;
+    }
     private LinearLayout root,body,tabs;
     private TextView connection,signal,reason,money,today,account,action,notice,historyText;
     private CandleChart chart;
@@ -28,7 +43,7 @@ public class V11Activity extends Activity {
     private final Runnable refreshTick=new Runnable(){ public void run(){ refresh(); handler.postDelayed(this,2000); } };
     int dp(float x){ return Math.round(x*getResources().getDisplayMetrics().density); }
     GradientDrawable shape(int color,int radius){ GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d; }
-    TextView text(String s,int size,int color){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);t.setFontFeatureSettings("tnum");return t;}
+    TextView text(String s,int size,int color){TextView t=new TextView(this);t.setText(colorizeSides(s));t.setTextSize(size);t.setTextColor(color);t.setFontFeatureSettings("tnum");return t;}
     LinearLayout column(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);return l;}
     LinearLayout card(String label){
         LinearLayout l=column();l.setPadding(dp(18),dp(15),dp(18),dp(15));l.setBackground(shape(CARD,18));
@@ -38,7 +53,7 @@ public class V11Activity extends Activity {
     void space(LinearLayout l,int h){View v=new View(this);l.addView(v,new LinearLayout.LayoutParams(1,dp(h)));}
     TextView button(String s,int color,Runnable task){
         TextView b=text(s,14,color);b.setGravity(Gravity.CENTER);b.setPadding(dp(10),dp(10),dp(10),dp(10));
-        b.setMinHeight(dp(48));b.setBackground(shape(Color.rgb(36,44,57),12));b.setOnClickListener(v->task.run());b.setFocusable(true);return b;
+        b.setMinHeight(dp(48));b.setBackground(shape(color==BLUE?Color.rgb(78,37,153):Color.rgb(24,20,48),12));if(color==BLUE)b.setTextColor(TEXT);b.setOnClickListener(v->task.run());b.setFocusable(true);return b;
     }
     void addButton(LinearLayout l,String s,int color,Runnable task){TextView b=button(s,color,task);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(8);l.addView(b,p);}
     @Override public void onCreate(Bundle saved){
@@ -50,7 +65,7 @@ public class V11Activity extends Activity {
         root=column();root.setBackgroundColor(BG);root.setFitsSystemWindows(true);root.setPadding(dp(16),dp(10),dp(16),0);
         setContentView(root);
         TextView title=text("FX M1   /   NORMAL",20,TEXT);title.setTypeface(null,Typeface.BOLD);root.addView(title);
-        TextView version=text("V11 · DEMO-100 · кандидат для испытаний",12,MUTED);root.addView(version);space(root,12);
+        TextView version=text("V11.0.1 · DEMO-100 · Purple",12,MUTED);root.addView(version);space(root,12);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setClipToPadding(false);
         body=column();scroll.addView(body);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         tabs=new LinearLayout(this);tabs.setPadding(0,dp(8),0,dp(10));root.addView(tabs,new LinearLayout.LayoutParams(-1,-2));
@@ -66,8 +81,8 @@ public class V11Activity extends Activity {
     void showPage(int next){
         page=next;body.removeAllViews();tabs.removeAllViews();connection=signal=reason=money=today=account=action=notice=historyText=null;chart=null;renderedHistory="";
         String[] names={"Торговля","История","Настройки"};
-        for(int i=0;i<3;i++){final int n=i;TextView b=button(names[i],i==page?BLUE:MUTED,()->showPage(n));
-            b.setBackground(shape(i==page?Color.rgb(31,49,72):BG,12));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(48),1);p.setMargins(dp(2),0,dp(2),0);tabs.addView(b,p);}
+        for(int i=0;i<3;i++){final int n=i;TextView b=button(names[i],i==page?TEXT:MUTED,()->showPage(n));
+            b.setBackground(shape(i==page?Color.rgb(78,37,153):BG,12));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(48),1);p.setMargins(dp(2),0,dp(2),0);tabs.addView(b,p);}
         if(page==0) trading(); else if(page==1) history(); else settings();refresh();
     }
     void trading(){
@@ -103,7 +118,7 @@ public class V11Activity extends Activity {
         JSONObject s=V11Api.state(this);JSONArray a=s.optJSONArray("positions");StringBuilder b=new StringBuilder("Только позиции нашего бота.\n\n");
         if(a==null||a.length()==0)b.append("Открытых позиций нет.");
         else for(int i=0;i<a.length();i++){JSONObject p=a.optJSONObject(i);if(p==null)continue;b.append(p.optString("symbol")).append(" ").append(p.optString("side")).append(" · ").append(p.optDouble("volume")).append(" lot\nВход ").append(price(p.optDouble("price"))).append(" · SL ").append(price(p.optDouble("sl"))).append("\nP/L ").append(cash(p.optDouble("pnl"))).append(" USD\n\n");}
-        new AlertDialog.Builder(this).setTitle("Позиции / кампания").setMessage(b.toString()).setNegativeButton("Назад",null)
+        new AlertDialog.Builder(this).setTitle("Позиции / кампания").setMessage(colorizeSides(b.toString())).setNegativeButton("Назад",null)
                 .setPositiveButton("Закрыть кампанию",(d,w)->new AlertDialog.Builder(this).setTitle("Закрыть позиции бота?")
                         .setMessage("Ручные позиции не затрагиваются. AUTO останется заблокирован до явной сверки.")
                         .setNegativeButton("Отмена",null).setPositiveButton("Закрыть",(x,y)->command("close",new JSONObject())).show()).show();
@@ -146,15 +161,15 @@ public class V11Activity extends Activity {
         JSONObject s=V11Api.state(this);boolean online=V11Api.prefs(this).getBoolean("online",false)&&SystemClock.elapsedRealtime()-V11Api.prefs(this).getLong("received_elapsed",0)<15000;
         boolean healthy=online&&s.optBoolean("ok",false);JSONArray ps=s.optJSONArray("positions");int n=ps==null?0:ps.length();
         if(connection!=null){connection.setText(healthy?"● MT5 подключён   ·   DEMO   ·   база $100":online?"● Bridge доступен · MT5 / данные требуют проверки":"○ Нет связи · сохранённые данные");connection.setTextColor(healthy?GREEN:MUTED);}
-        if(signal!=null){String tag=s.optBoolean("emergency")?"Аварийный стоп":n>0?"Кампания · "+n+" / "+s.optInt("max_positions",5):"Ожидание входа";signal.setText(tag);}
-        if(reason!=null){String r=online?s.optString("reason","Ожидание MT5"):V11Api.prefs(this).getString("network_error","Откройте настройки и подключите Bridge V11");double stamp=s.optDouble("quote_time",0);r+="\nКотировка: "+(stamp>0?clock((long)stamp,false):"—")+" · источник MT5";reason.setText(r);}
+        if(signal!=null){String tag=s.optBoolean("emergency")?"Аварийный стоп":n>0?"Кампания · "+n+" / "+s.optInt("max_positions",5):"Ожидание входа";signal.setText(tag);signal.setTextColor(s.optBoolean("emergency")?RED:BLUE);}
+        if(reason!=null){String r=online?s.optString("reason","Ожидание MT5"):V11Api.prefs(this).getString("network_error","Откройте настройки и подключите Bridge V11");double stamp=s.optDouble("quote_time",0);r+="\nКотировка: "+(stamp>0?clock((long)stamp,false):"—")+" · источник MT5";reason.setText(colorizeSides(r));}
         if(money!=null){money.setText(s.isNull("floating")||!s.has("floating")?"— USD":cash(s.optDouble("floating"))+" USD");money.setTextColor(!healthy?MUTED:s.optDouble("floating",0)>=0?GREEN:RED);}
         if(account!=null)account.setText("Позиции: "+n+" · расчётный капитал "+String.format(Locale.US,"%.2f",s.optDouble("virtual_equity",100))+" USD\nБаланс MT5: "+(s.has("balance")&&!s.isNull("balance")?String.format(Locale.US,"%.2f",s.optDouble("balance")):"—")+" USD");
         if(today!=null)today.setText("Сегодня: "+summary(s.optJSONObject("today"))+"\nВсего: "+summary(s.optJSONObject("all"))+(healthy?"":"\nСохранённые данные, не свежий результат"));
         if(action!=null)action.setText(s.optBoolean("auto")?(s.optBoolean("paused",true)?"Продолжить":"Пауза"):"Включить AUTO");
         if(notice!=null){String msg=V11Api.prefs(this).getString("command_message","");boolean allowed=getSystemService(NotificationManager.class).areNotificationsEnabled();if(!allowed)msg="Уведомления отключены в системе. Разрешите их в настройках.\n"+msg;notice.setText(msg);}
         if(chart!=null)chart.update(s.optJSONArray("bars"),ps,s.optDouble("bid",0));
-        if(historyText!=null){String raw=V11Api.prefs(this).getString("history","{}");if(!raw.equals(renderedHistory)){renderedHistory=raw;try{JSONObject h=new JSONObject(raw);JSONArray a=h.optJSONArray("rows");StringBuilder b=new StringBuilder();if(a!=null)for(int i=0;i<a.length();i++){JSONObject r=a.getJSONObject(i);b.append(clock(r.optLong("time"),true)).append(" · ").append(r.optString("symbol")).append(" ").append(r.optString("side")).append("\n").append(r.optDouble("volume")).append(" lot   ").append(cash(r.optDouble("net"))).append(" USD\n").append("Позиция #").append(r.optLong("position_id")).append("\n\n");}if(b.length()==0)b.append("Закрытий пока нет. История появится после получения данных MT5.");if(h.optInt("total",0)>200)b.append("Показаны последние 200 закрытий. Итоги включают весь доступный период.");historyText.setText(b.toString());}catch(Exception e){historyText.setText("Ошибка отображения истории");}}}
+        if(historyText!=null){String raw=V11Api.prefs(this).getString("history","{}");if(!raw.equals(renderedHistory)){renderedHistory=raw;try{JSONObject h=new JSONObject(raw);JSONArray a=h.optJSONArray("rows");StringBuilder b=new StringBuilder();if(a!=null)for(int i=0;i<a.length();i++){JSONObject r=a.getJSONObject(i);b.append(clock(r.optLong("time"),true)).append(" · ").append(r.optString("symbol")).append(" ").append(r.optString("side")).append("\n").append(r.optDouble("volume")).append(" lot   ").append(cash(r.optDouble("net"))).append(" USD\n").append("Позиция #").append(r.optLong("position_id")).append("\n\n");}if(b.length()==0)b.append("Закрытий пока нет. История появится после получения данных MT5.");if(h.optInt("total",0)>200)b.append("Показаны последние 200 закрытий. Итоги включают весь доступный период.");historyText.setText(colorizeSides(b.toString()));}catch(Exception e){historyText.setText("Ошибка отображения истории");}}}
     }
     static String cash(double d){return String.format(Locale.US,"%+.2f",d);}
     static String price(double d){return String.format(Locale.US,"%.5f",d);}
@@ -174,11 +189,11 @@ public class V11Activity extends Activity {
             if(positions!=null)for(int i=0;i<positions.length();i++){JSONObject p=positions.optJSONObject(i);if(p!=null&&p.optDouble("sl")>0){lo=Math.min(lo,p.optDouble("sl"));hi=Math.max(hi,p.optDouble("sl"));}}
             if(!Double.isFinite(lo)||hi<=lo)return;double pad=(hi-lo)*.10;lo-=pad;hi+=pad;
             float left=dp(2),right=getWidth()-dp(62),top=dp(16),bottom=getHeight()-dp(27);float w=(right-left)/n;
-            for(int j=0;j<5;j++){float y=top+(bottom-top)*j/4f;paint.setColor(Color.rgb(47,57,71));paint.setStrokeWidth(dp(.5f));c.drawLine(left,y,right,y,paint);paint.setColor(MUTED);c.drawText(price(hi-(hi-lo)*j/4),right+dp(6),y+dp(3),paint);}
+            for(int j=0;j<5;j++){float y=top+(bottom-top)*j/4f;paint.setColor(Color.rgb(47,39,67));paint.setStrokeWidth(dp(.5f));c.drawLine(left,y,right,y,paint);paint.setColor(MUTED);c.drawText(price(hi-(hi-lo)*j/4),right+dp(6),y+dp(3),paint);}
             for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b==null)continue;float x=left+(i-start+.5f)*w;double o=b.optDouble("open"),cl=b.optDouble("close");paint.setColor(cl>=o?GREEN:RED);paint.setStrokeWidth(dp(1));
                 c.drawLine(x,y(b.optDouble("high"),lo,hi,top,bottom),x,y(b.optDouble("low"),lo,hi,top,bottom),paint);
                 float a=y(o,lo,hi,top,bottom),z=y(cl,lo,hi,top,bottom);c.drawRect(x-w*.3f,Math.min(a,z),x+w*.3f,Math.max(Math.min(a,z)+dp(1),Math.max(a,z)),paint);}
-            if(positions!=null)for(int i=0;i<positions.length();i++){JSONObject p=positions.optJSONObject(i);if(p==null)continue;for(String field:new String[]{"price","sl"}){double v=p.optDouble(field);if(v<=0)continue;paint.setColor(field.equals("sl")?RED:BLUE);paint.setStrokeWidth(dp(1));paint.setPathEffect(new DashPathEffect(new float[]{dp(4),dp(4)},0));float yy=y(v,lo,hi,top,bottom);c.drawLine(left,yy,right,yy,paint);paint.setPathEffect(null);}}
+            if(positions!=null)for(int i=0;i<positions.length();i++){JSONObject p=positions.optJSONObject(i);if(p==null)continue;for(String field:new String[]{"price","sl"}){double v=p.optDouble(field);if(v<=0)continue;paint.setColor(field.equals("sl")?RED:sideColor(p.optString("side")));paint.setStrokeWidth(dp(1));paint.setPathEffect(new DashPathEffect(new float[]{dp(4),dp(4)},0));float yy=y(v,lo,hi,top,bottom);c.drawLine(left,yy,right,yy,paint);paint.setPathEffect(null);}}
             paint.setColor(MUTED);c.drawText(clock(bars.optJSONObject(start).optLong("time"),false).substring(0,5),left,bottom+dp(18),paint);
             String end=clock(bars.optJSONObject(bars.length()-1).optLong("time"),false).substring(0,5);c.drawText(end,right-dp(32),bottom+dp(18),paint);
         }

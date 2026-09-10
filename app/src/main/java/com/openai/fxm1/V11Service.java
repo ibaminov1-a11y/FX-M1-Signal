@@ -139,11 +139,11 @@ public class V11Service extends Service {
             v.setTextViewText(R.id.n_status,subtitle);
             v.setOnClickPendingIntent(R.id.n_play,play); v.setOnClickPendingIntent(R.id.n_pause,pause); v.setOnClickPendingIntent(R.id.n_stop,stop);
         }
-        expanded.setTextViewText(R.id.n_reason,reason);
+        expanded.setTextViewText(R.id.n_reason,V11Activity.colorizeSides(reason));
         Intent open=new Intent(this,V11Activity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent openPi=PendingIntent.getActivity(this,1100,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_stat_fx)
-                .setContentTitle("FX M1 · V11").setContentText(subtitle).setContentIntent(openPi)
+                .setColor(V11Activity.BLUE).setContentTitle("FX M1 · V11").setContentText(subtitle).setContentIntent(openPi)
                 .setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false).setCategory(Notification.CATEGORY_SERVICE)
                 .setVisibility(Notification.VISIBILITY_PUBLIC).setStyle(new Notification.DecoratedCustomViewStyle())
                 .setCustomContentView(compact).setCustomBigContentView(expanded).build();

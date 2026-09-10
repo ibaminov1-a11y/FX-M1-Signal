@@ -1,10 +1,11 @@
-name: V11 verify and assemble DEMO RC
+name: V11 Purple APK and runtime verification
 on:
   push:
     branches: [v11/normal-campaign]
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: v11-verify-${{ github.ref }}
   cancel-in-progress: true
@@ -14,10 +15,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install Flask==3.1.2
+      - name: Verify theme-only scope
+        run: python tools/verify_purple_scope.py
       - name: Compile production Python
         run: python -m compileall -q v11_bridge
       - name: Execute real-component regressions against fake MT5
@@ -44,6 +49,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -55,8 +62,30 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install Flask==3.1.2
+      - name: Download previous V11 for signing comparison
+        uses: actions/download-artifact@v4
+        with:
+          name: V11-android-runtime-14
+          path: previous-v11
+          run-id: 34469077464
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build both APKs from committed sources
         run: gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Inspect APK identity and signatures
+        shell: bash
+        run: |
+          mkdir -p evidence
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$tools/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk > evidence/current-signature.txt
+          "$tools/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk > evidence/apk-identity.txt
+          old=$(find previous-v11 -name 'FXM1-V11-DEMO-RC1.apk' | head -1)
+          test -n "$old"
+          "$tools/apksigner" verify --verbose --print-certs "$old" > evidence/previous-signature.txt
+          if diff <(grep 'certificate SHA-256' evidence/current-signature.txt) <(grep 'certificate SHA-256' evidence/previous-signature.txt); then
+            echo 'MATCH: normal update allowed by certificate' > evidence/update-compatibility.txt
+          else
+            echo 'DIFFERENT: previous test V11 requires reinstall; preserve Bridge state and connection details' > evidence/update-compatibility.txt
+          fi
       - name: Enable KVM
         run: sudo chmod 666 /dev/kvm
       - name: Android 35 SystemUI and activity tests
@@ -75,8 +104,8 @@ jobs:
           mkdir -p evidence
           git rev-parse HEAD > evidence/COMMIT.txt
           if test -f app/build/outputs/apk/debug/app-debug.apk; then
-            cp app/build/outputs/apk/debug/app-debug.apk evidence/FXM1-V11-DEMO-RC1.apk
-            sha256sum evidence/FXM1-V11-DEMO-RC1.apk > evidence/apk.sha256
+            cp app/build/outputs/apk/debug/app-debug.apk evidence/FXM1-V11.0.1-PURPLE.apk
+            sha256sum evidence/FXM1-V11.0.1-PURPLE.apk > evidence/apk.sha256
           fi
       - uses: actions/upload-artifact@v4
         if: always()
