@@ -105,7 +105,7 @@
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:baselineAligned="false" android:orientation="horizontal">
 
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginRight="5dp" android:layout_weight="1" android:orientation="vertical">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="РИСК НА СДЕЛКУ" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="РИСК НА КАМПАНИЮ" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
                     <Spinner android:id="@+id/riskSpinner" android:layout_width="match_parent" android:layout_height="40dp" android:backgroundTint="#914DFF" />
                 </LinearLayout>
 

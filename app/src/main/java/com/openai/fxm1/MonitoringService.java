@@ -75,7 +75,7 @@ public class MonitoringService extends Service {
         large.setTextColor(R.id.notifCore,"BUY".equals(signal)?0xff42d67a:"SELL".equals(signal)?0xffff4857:0xffb0aac7);
         PendingIntent open=PendingIntent.getActivity(this,100,new Intent(this,MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder b=new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_stat_fx).setColor(0xff914dff).setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false)
-            .setContentTitle("FX M1 · "+label).setContentText(core).setContentIntent(open).setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setContentTitle("FX M1 EC1 · "+label).setContentText(core).setContentIntent(open).setVisibility(Notification.VISIBILITY_PUBLIC)
             .setStyle(new Notification.DecoratedCustomViewStyle()).setCustomContentView(small).setCustomBigContentView(large);
         if(Build.VERSION.SDK_INT>=31)b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         try{if(Build.VERSION.SDK_INT>=34)startForeground(ID,b.build(),ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);else startForeground(ID,b.build());}

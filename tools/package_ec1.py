@@ -18,6 +18,7 @@ for distribution in ('Flask','Werkzeug','Jinja2','MarkupSafe','itsdangerous','cl
         if not source.is_file():continue
         target=vendor/p;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target)
 shutil.copy2(root/'docs/EVENT_CORE_RU.md',package/'READ_ME_RU.md')
+shutil.copy2(root/'docs/INSTALL_EC1_RU.md',package/'INSTALL_RU.md')
 commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 metadata={'commit':commit,'apk_sha256':hashlib.sha256((package/'FXM1_10_9_EVENT_CORE_DEMO.apk').read_bytes()).hexdigest(),
           'status':'DEMO_RESEARCH_CANDIDATE','market_backtest':'not_run','physical_phone':'not_tested','real_trading':'blocked'}
