@@ -416,6 +416,13 @@ public class MainActivity extends Activity {
             if (suppressAutoSwitch) return;
 
             if (isChecked) {
+                if (prefs.getBoolean("emergency_latched_v108",false)) {
+                    forceAutoOff("EMERGENCY: требуется явное разрешение");
+                    new AlertDialog.Builder(this).setTitle("Снять аварийную блокировку?")
+                        .setMessage("Это не включает AUTO и не сбрасывает лимиты риска. После проверки MT5 включение AUTO выполняется отдельно.")
+                        .setNegativeButton("Отмена",null).setPositiveButton("Разрешить проверку",(d,w)->prefs.edit().putBoolean("emergency_latched_v108",false).apply()).show();
+                    return;
+                }
                 if (!serverConnected || !mt5Connected) {
                     forceAutoOff("AUTO не включён: сервер/MT5 не подключены.");
                     Toast.makeText(this, "Сначала подключите сервер и MT5", Toast.LENGTH_LONG).show();
@@ -695,14 +702,14 @@ public class MainActivity extends Activity {
             serverConnected = true;
             mt5Connected = mt5;
             demoAccount = "DEMO".equalsIgnoreCase(accountType);
-            serverStatusText.setText("APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
+            serverStatusText.setText("APP V" + appVersionName() + " · исправление 10.8   •   BRIDGE V" + bridgeVersion + "\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
             accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             renderPositionsMoneyCard(positions, floating, currency);
             closeAllButton.setEnabled(mt5 && positions > 0);
             suppressAutoSwitch = true;
             boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
-            boolean autoSaved = p.getBoolean("auto_user_enabled", p.getBoolean("auto_trading", false)) && mt5 && targetAllowed;
+            boolean autoSaved = p.getBoolean("auto_user_enabled", p.getBoolean("auto_trading", false)) && mt5 && targetAllowed && !p.getBoolean("emergency_latched_v108",false);
             autoTradingSwitch.setChecked(autoSaved);
             p.edit().putBoolean("auto_trading", autoSaved).apply();
             suppressAutoSwitch = false;
@@ -785,7 +792,7 @@ public class MainActivity extends Activity {
                     realTradingEnabled = bridgeRealEnabled;
 
                     serverStatusText.setText(
-                            "APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n" +
+                            "APP V" + appVersionName() + " · исправление 10.8   •   BRIDGE V" + bridgeVersion + "\n" +
                             (versionMatch ? "" : "⚠ VERSION MISMATCH · AUTO BLOCKED\n") +
                             "SERVER: " + (serverOk ? "CONNECTED" : "ERROR") +
                             "   •   MT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
@@ -848,6 +855,8 @@ public class MainActivity extends Activity {
     }
 
     private void maybeSendSignalToServer(Analysis a) {
+        SharedPreferences guard=getSharedPreferences("fxm1",MODE_PRIVATE);
+        if (guard.getBoolean("bg_running",false) || guard.getBoolean("emergency_latched_v108",false) || guard.getBoolean("trading_paused",false)) return;
         if (!isForexMarketOpen()) {
             addJournal("MARKET CLOSED · новый ордер заблокирован");
             return;
@@ -923,6 +932,7 @@ public class MainActivity extends Activity {
     }
 
     private void executeEmergencyStop() {
+        getSharedPreferences("fxm1",MODE_PRIVATE).edit().putBoolean("emergency_latched_v108",true).remove("pending_trade_json").apply();
         forceAutoOff("EMERGENCY STOP: AUTO выключен, запрошено закрытие всех позиций.");
         getSharedPreferences("fxm1", MODE_PRIVATE).edit()
                 .putBoolean("stop_all_requested", true)
@@ -1207,6 +1217,12 @@ public class MainActivity extends Activity {
         watchlistEdit.setTextColor(C_TEXT); watchlistEdit.setHintTextColor(C_MUTED); watchlistEdit.setHint("EUR/USD,GBP/USD,USD/JPY");
         box.addView(watchlistEdit, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)));
         Switch session = smartSwitch("Фильтр торговых сессий", p.getBoolean("session_filter_enabled", false)); box.addView(session);
+        box.addView(smartLabel("Разрешённые сессии — изменения только по кнопке СОХРАНИТЬ"));
+        String sessions=p.getString("allowed_sessions","LONDON,NEW_YORK");
+        Switch asia=smartSwitch("ASIA",V10Repair.sessionAllowed(sessions,"ASIA"));box.addView(asia);
+        Switch london=smartSwitch("LONDON",V10Repair.sessionAllowed(sessions,"LONDON"));box.addView(london);
+        Switch newYork=smartSwitch("NEW_YORK",V10Repair.sessionAllowed(sessions,"NEW_YORK"));box.addView(newYork);
+        V10Repair.addRecoveryButton(this,box,p,()->forceAutoOff("Проверка серии: AUTO остаётся выключенным"));
         Switch positionManager = smartSwitch("Автосопровождение позиций", p.getBoolean("position_manager_enabled", true)); box.addView(positionManager);
         Switch hardStop = smartSwitch("SCALP Hard Cash Stop", p.getBoolean("scalp_hard_stop_enabled", true));
         Switch peakLock = smartSwitch("SCALP Peak Profit Lock", p.getBoolean("scalp_peak_lock_enabled", true));
@@ -1241,6 +1257,7 @@ public class MainActivity extends Activity {
                             .putString("watchlist", watchlistEdit.getText().toString().trim())
                             .putString("favorite_symbols", watchlistEdit.getText().toString().trim())
                             .putBoolean("session_filter_enabled", session.isChecked())
+                            .putString("allowed_sessions",(asia.isChecked()?"ASIA,":"")+(london.isChecked()?"LONDON,":"")+(newYork.isChecked()?"NEW_YORK":""))
                             .putBoolean("position_manager_enabled", positionManager.isChecked())
                             .putBoolean("scalp_hard_stop_enabled", hardStop.isChecked())
                             .putBoolean("scalp_peak_lock_enabled", peakLock.isChecked())
@@ -1660,8 +1677,8 @@ public class MainActivity extends Activity {
             );
         }
         contextText.setText(context);
-        if (whyWaitText != null) whyWaitText.setText(("WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "ПОЧЕМУ ВХОД: ") + (why == null || why.isEmpty() ? "—" : why));
-        if (componentScoresText != null) componentScoresText.setText("КОМПОНЕНТЫ КАЧЕСТВА: " + (components == null || components.isEmpty() ? "—" : components));
+        if (whyWaitText != null) whyWaitText.setText(V10Repair.display(p,symbol,tf,why));
+        if (componentScoresText != null) componentScoresText.setText("РАСЧЁТ ОЦЕНКИ: " + (components == null || components.isEmpty() ? "—" : components));
         refreshSmartUi();
 
         if (!Double.isNaN(entry)) {
@@ -2380,12 +2397,7 @@ public class MainActivity extends Activity {
                 ("SCALP".equals(mode) ? "\nSCALP " + entryTf + ": " + executionSignal + " · timing " + arrow(sFast) : "") +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
-        int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);
-        int entryScore = sEntry == 0 ? 6 : 18;
-        int fastScore = (sEntry != 0 && sFast == sEntry) ? 15 : (sFast == 0 ? 8 : 3);
-        int structureScorePart = structure == 0 ? 5 : 15;
-        int breakoutScorePart = Math.abs(breakout) >= 2 ? 20 : (Math.abs(breakout) == 1 ? 14 : 4);
-        String components = "HTF " + htfScore + "/20 · Entry " + entryScore + "/20 · Fast " + fastScore + "/15 · Structure " + structureScorePart + "/15 · Breakout " + breakoutScorePart + "/20";
+        String components = V10Repair.qualityDetails(candidateSignalV10, sHigher2, sHigher1, sEntry, sFast, structure, breakout, patternV10);
 
         ArrayList<String> whyParts = new ArrayList<>();
         if (sHigher1 != 0 && sHigher2 != 0 && sHigher1 != sHigher2) whyParts.add("старшие ТФ расходятся");
@@ -2397,7 +2409,7 @@ public class MainActivity extends Activity {
         if ("WAIT".equals(signal)) {
             why = whyParts.isEmpty() ? "условия режима " + mode + " не совпали одновременно" : android.text.TextUtils.join("; ", whyParts);
         } else {
-            why = signal + " открыт: направление ТФ согласовано; структура/фильтр разрешили вход; качество " + quality + "/100";
+            why = signal + " — сценарий анализа подтверждён; исполнение проверяется отдельно. Оценка " + quality + "/100";
         }
 
         return new Analysis(
@@ -2872,7 +2884,7 @@ public class MainActivity extends Activity {
 
         contextText.setText(a.context);
         if (whyWaitText != null) whyWaitText.setText(("WAIT".equals(a.signal) ? "ПОЧЕМУ WAIT: " : "ПОЧЕМУ ВХОД: ") + a.why);
-        if (componentScoresText != null) componentScoresText.setText("КОМПОНЕНТЫ КАЧЕСТВА: " + a.components);
+        if (componentScoresText != null) componentScoresText.setText("РАСЧЁТ ОЦЕНКИ: " + a.components);
         FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), a.signal, a.quality, "analysis");
         refreshSmartUi();
 

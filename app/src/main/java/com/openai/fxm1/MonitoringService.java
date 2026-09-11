@@ -8,6 +8,7 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.*;
 import android.graphics.Color;
+import android.widget.RemoteViews;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -137,6 +138,11 @@ public class MonitoringService extends Service {
         }
 
         if (ACTION_RESUME.equals(action)) {
+            if (prefs().getBoolean("emergency_latched_v108",false)) {
+                prefs().edit().putBoolean("auto_user_enabled",false).putBoolean("auto_trading",false).putString("bg_status","EMERGENCY: PLAY не снимает блокировку").apply();
+                updateNotification(currentSymbol(),"EMERGENCY: блокировка сохранена",prefs().getString("state_signal","WAIT"),prefs().getInt("state_quality",-1));
+                return START_STICKY;
+            }
             paused = false;
             prefs().edit()
                     .putBoolean("bg_paused", false)
@@ -300,7 +306,7 @@ public class MonitoringService extends Service {
 
     private void emergencyStop() {
         SharedPreferences p = prefs();
-        p.edit()
+        p.edit().putBoolean("emergency_latched_v108",true).remove("pending_trade_json")
                 .putBoolean("auto_user_enabled", false)
                 .putBoolean("auto_trading", false)
                 .putBoolean("trading_paused", false)
@@ -607,14 +613,19 @@ public class MonitoringService extends Service {
 
     private void maybeSendToTradingServer(Analysis a, String tf, String mode) {
         SharedPreferences p = prefs();
+        V10Repair.record(p,"WAIT","Проверяются условия исполнения",a.symbol,tf);
+        V10Repair.fetchRisk(p,normalizeUrl(p.getString("server_url","")));
         if (!isForexMarketOpen()) {
+            V10Repair.record(p,"BLOCKED","Рынок закрыт",a.symbol,tf);
             p.edit().putString("bg_status", "MARKET CLOSED · торговля заблокирована").apply();
             FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "SKIP: MARKET CLOSED");
             return;
         }
-        if (paused || p.getBoolean("trading_paused", false)) return;
-        if (!p.getBoolean("auto_trading", false)) return;
+        if (p.getBoolean("emergency_latched_v108",false)) { V10Repair.record(p,"BLOCKED","EMERGENCY: AUTO заблокирован",a.symbol,tf); return; }
+        if (paused || p.getBoolean("trading_paused", false)) { V10Repair.record(p,"BLOCKED","PAUSE: новые входы запрещены",a.symbol,tf); return; }
+        if (!p.getBoolean("auto_trading", false)) { V10Repair.record(p,"BLOCKED","AUTO выключен",a.symbol,tf); return; }
         if (!p.getBoolean("bridge_version_match_snapshot", false)) {
+            V10Repair.record(p,"BLOCKED","Версии APP/Bridge несовместимы",a.symbol,tf);
             FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "SKIP: APP/BRIDGE version mismatch");
             return;
         }
@@ -630,6 +641,7 @@ public class MonitoringService extends Service {
                 return;
             }
         } else if ("WAIT".equals(tradeSignal)) {
+            V10Repair.record(p,"WAIT","Нет подтверждения входа: "+a.why,a.symbol,tf);
             FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality,
                     "SKIP: NO EXECUTION SETUP · " + mode);
             return;
@@ -638,28 +650,23 @@ public class MonitoringService extends Service {
         if (p.getBoolean("session_filter_enabled", false)) {
             String session = FeatureEngine.currentSession();
             String allowed = p.getString("allowed_sessions", "LONDON,NEW_YORK");
-            boolean sessionAllowed = false;
-            if (allowed != null) {
-                if (session.contains("+")) {
-                    for (String part : session.split("\\+")) if (allowed.contains(part)) sessionAllowed = true;
-                } else sessionAllowed = allowed.contains(session);
-            }
+            boolean sessionAllowed = V10Repair.sessionAllowed(allowed, session);
             if (!sessionAllowed) {
+                V10Repair.record(p,"BLOCKED",V10Repair.sessionBlock(p),a.symbol,tf);
                 FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "SKIP: session " + session);
                 return;
             }
         }
 
         final String base = normalizeUrl(p.getString("server_url", ""));
-        if (base.isEmpty()) return;
-
+        if (base.isEmpty()) { V10Repair.record(p,"BLOCKED","Адрес Bridge не задан",a.symbol,tf); return; }
         try {
             JSONObject health = httpJson("GET", base + "/health", null);
-            if (!health.optBoolean("ok", false) || !health.optBoolean("mt5_connected", false)) return;
+            if (!health.optBoolean("ok", false) || !health.optBoolean("mt5_connected", false)) { V10Repair.record(p,"BLOCKED","MT5 не подключён",a.symbol,tf); return; }
             String targetMode = p.getString("target_trade_mode", "DEMO");
             String accountType = health.optString("account_type", "").toUpperCase(Locale.US);
             boolean accountAllowed = "REAL".equals(targetMode) ? ("REAL".equals(accountType) && health.optBoolean("real_trading_enabled", false)) : "DEMO".equals(accountType);
-            if (!accountAllowed) return;
+            if (!accountAllowed) { V10Repair.record(p,"BLOCKED","Счёт не разрешён для DEMO",a.symbol,tf); return; }
 
             int riskPos = p.getInt("risk_pos", 1);
             double[] risks = {0.25, 0.50, 1.00};
@@ -676,14 +683,14 @@ public class MonitoringService extends Service {
             payload.put("tp1", a.tp1);
             payload.put("tp2", a.tp2);
             double basketRiskPct = risks[Math.max(0, Math.min(riskPos, risks.length - 1))];
-            maxPos = 10;
+            maxPos = Math.max(1, Math.min(10, maxPos));
             payload.put("risk_pct", basketRiskPct);
             payload.put("max_positions", maxPos);
             if ("NORMAL".equals(mode)) {
                 payload.put("basket_mode", true);
                 payload.put("allow_same_symbol_multiple", true);
                 payload.put("basket_risk_pct", basketRiskPct);
-                payload.put("risk_pct", basketRiskPct / Math.max(1, maxPos));
+                payload.put("risk_pct", basketRiskPct / 10.0); // keep the existing V10 tranche risk when lowering max positions
                 payload.put("basket_add_only_if_profitable", true);
                 payload.put("basket_no_average_down", true);
                 payload.put("basket_require_structure_confirmation", true);
@@ -709,7 +716,12 @@ public class MonitoringService extends Service {
             FeatureEngine.applySignalFeatures(payload, p, a.why, a.components);
 
             String endpoint = "SCALP".equals(mode) ? "/scalp-intent" : "/signal";
+            if (!p.getBoolean("auto_trading",false) || p.getBoolean("trading_paused",false) || p.getBoolean("emergency_latched_v108",false)) {
+                V10Repair.record(p,"BLOCKED","Команда отменена: AUTO/PAUSE/EMERGENCY изменились",a.symbol,tf); return;
+            }
+            V10Repair.record(p,"SENT","Ожидание подтверждения Bridge/MT5",a.symbol,tf);
             JSONObject response = httpJson("POST", base + endpoint, payload);
+            V10Repair.response(p,response,a.symbol,tf);
             boolean accepted = response.optBoolean("accepted", false);
             String message = response.optString("message", accepted ? "DEMO order opened" : "signal rejected");
             FeatureEngine.appendSignalHistory(p, a.symbol, tf, "SCALP".equals(mode) ? scalpIntent : tradeSignal, a.quality,
@@ -721,6 +733,7 @@ public class MonitoringService extends Service {
                 notifyApprovalRequired(a, message);
             }
         } catch (Exception e) {
+            V10Repair.failure(p,e,a.symbol,tf);
             FeatureEngine.appendSignalHistory(p, a.symbol, tf, a.signal, a.quality, "ERROR: " + safeMessage(e));
         }
     }
@@ -729,7 +742,8 @@ public class MonitoringService extends Service {
         SharedPreferences p = prefs();
         final String raw = p.getString("pending_trade_json", "");
         final String base = normalizeUrl(p.getString("server_url", ""));
-        if (raw == null || raw.trim().isEmpty() || base.isEmpty()) return;
+        if (raw == null || raw.trim().isEmpty() || base.isEmpty() || p.getBoolean("emergency_latched_v108",false)
+                || !p.getBoolean("auto_trading",false) || p.getBoolean("trading_paused",false)) return;
         executor.execute(() -> {
             try {
                 JSONObject payload = new JSONObject(raw);
@@ -797,8 +811,9 @@ public class MonitoringService extends Service {
             if (System.currentTimeMillis() - last > 60000L) {
                 JSONObject st = FeatureEngine.httpJson("GET", base + "/stats?days=30", null);
                 JSONObject rs = FeatureEngine.httpJson("GET", base + "/risk-state?daily_loss_limit_pct=" + p.getFloat("daily_loss_limit_pct",3f) + "&max_drawdown_pct=" + p.getFloat("max_drawdown_pct",5f) + "&max_consecutive_losses=" + p.getInt("max_consecutive_losses",3), null);
+                V10Repair.saveRisk(p,rs);
                 p.edit().putString("risk_stats_snapshot", FeatureEngine.formatStats(st))
-                        .putString("risk_snapshot", rs.optBoolean("allowed", true) ? "RISK OK" : "RISK BLOCK: " + rs.optJSONArray("blocks"))
+                        .putString("risk_snapshot", rs.optBoolean("allowed", false) ? "RISK OK" : "RISK BLOCK: " + rs.optJSONArray("blocks"))
                         .putLong("smart_snapshot_ms", System.currentTimeMillis()).apply();
             }
         } catch (Exception e) {
@@ -950,37 +965,28 @@ public class MonitoringService extends Service {
     }
 
     private Notification buildNotification(String title, String text, String signal, int quality) {
-        // Keep three explicit native actions. MediaStyle is intentionally NOT used:
-        // on the user's Android skin it rendered only anonymous icons instead of PLAY/PAUSE/STOP text.
-        PendingIntent playPi = serviceActionIntent(ACTION_RESUME, 101);
-        PendingIntent pausePi = serviceActionIntent(ACTION_PAUSE, 102);
-        PendingIntent emergencyPi = serviceActionIntent(ACTION_EMERGENCY, 103);
-        String state = paused ? "PAUSE" : "PLAY";
-        String line = currentSymbol() + " · " + currentTf() + " · " + currentMode() + " · " + signal +
-                (quality >= 0 ? " · " + quality + "/100" : "");
-
-        boolean confirmingEmergency = text != null && text.startsWith("EMERGENCY:");
-        String visibleLine = confirmingEmergency ? text : line;
-        String expandedLine = text == null || text.trim().isEmpty() ? line : line + "\n" + text;
-
-        Notification.Builder b = new Notification.Builder(this, CHANNEL_MONITOR)
-                .setSmallIcon(R.drawable.ic_stat_fx)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .setShowWhen(false)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .setContentTitle("FX M1 Bot · " + state)
-                .setContentText(visibleLine)
-                .setStyle(new Notification.BigTextStyle().bigText(expandedLine))
-                .setContentIntent(openAppIntent())
-                .addAction(new Notification.Action.Builder(android.R.drawable.ic_media_play, "PLAY", playPi).build())
-                .addAction(new Notification.Action.Builder(android.R.drawable.ic_media_pause, "PAUSE", pausePi).build())
-                .addAction(new Notification.Action.Builder(android.R.drawable.ic_delete, "EMERGENCY STOP", emergencyPi).build());
-
-        if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
-        if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH);
-        return b.build();
+        PendingIntent play=serviceActionIntent(ACTION_RESUME,101),pause=serviceActionIntent(ACTION_PAUSE,102),stop=serviceActionIntent(ACTION_EMERGENCY,103);
+        String state=prefs().getBoolean("emergency_latched_v108",false)?"EMERGENCY":paused?"PAUSE":prefs().getBoolean("auto_trading",false)?"AUTO":"НАБЛЮДЕНИЕ";
+        String line=currentSymbol()+" · "+currentTf()+" · "+signal+(quality>=0?" · "+quality+"/100":"");
+        String detail=prefs().getLong("emergency_confirm_until_ms",0)>System.currentTimeMillis()?"EMERGENCY: нажмите ещё раз за 2,5 сек":line;
+        Notification.Builder builder=new Notification.Builder(this,CHANNEL_MONITOR)
+                .setSmallIcon(R.drawable.ic_stat_fx).setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false)
+                .setColor(Color.rgb(145,77,255)).setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setCategory(Notification.CATEGORY_SERVICE).setContentTitle("FX M1 Bot · "+state).setContentText(detail)
+                .setStyle(new Notification.DecoratedCustomViewStyle())
+                .setCustomContentView(notificationView(R.layout.notification_v108_compact,detail,play,pause,stop))
+                .setCustomBigContentView(notificationView(R.layout.notification_v108_expanded,detail,play,pause,stop))
+                .setContentIntent(openAppIntent());
+        if(Build.VERSION.SDK_INT>=31)builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+        return builder.build();
+    }
+    private RemoteViews notificationView(int layout,String detail,PendingIntent play,PendingIntent pause,PendingIntent stop) {
+        RemoteViews view=new RemoteViews(getPackageName(),layout);
+        view.setTextViewText(R.id.v108_notification_text,detail);
+        view.setOnClickPendingIntent(R.id.v108_play,play);
+        view.setOnClickPendingIntent(R.id.v108_pause,pause);
+        view.setOnClickPendingIntent(R.id.v108_stop,stop);
+        return view;
     }
 
     private void updateNotification(String title, String text, String signal, int quality) {
@@ -1216,12 +1222,7 @@ public class MonitoringService extends Service {
                         ("WAIT".equals(signal) && !"WAIT".equals(executionSignal) ? " · EARLY ENTRY" : "")) +
                 "\nATR " + entryLabel + ": " + fmt(atr);
 
-        int htfScore = (sHigher2 != 0 && sHigher2 == sHigher1) ? 20 : (sHigher2 == 0 || sHigher1 == 0 ? 11 : 3);
-        int entryScore = sEntry == 0 ? 6 : 18;
-        int fastScore = (sEntry != 0 && sFast == sEntry) ? 15 : (sFast == 0 ? 8 : 3);
-        int structureScorePart = effectiveStructureV10 == 0 ? 5 : 15;
-        int breakoutScorePart = Math.abs(breakout) >= 2 ? 20 : (Math.abs(breakout) == 1 ? 14 : 4);
-        String components = "HTF " + htfScore + "/20 · Entry " + entryScore + "/20 · Fast " + fastScore + "/15 · Structure " + structureScorePart + "/15 · Breakout " + breakoutScorePart + "/20";
+        String components = V10Repair.qualityDetails(candidateSignalV10, sHigher2, sHigher1, sEntry, sFast, effectiveStructureV10, breakout, patternV10);
 
         ArrayList<String> whyParts = new ArrayList<>();
         if (sHigher1 != 0 && sHigher2 != 0 && sHigher1 != sHigher2) whyParts.add("старшие ТФ расходятся");
@@ -1236,7 +1237,7 @@ public class MonitoringService extends Service {
         if ("WAIT".equals(signal)) {
             why = whyParts.isEmpty() ? "условия режима " + mode + " не совпали одновременно" : android.text.TextUtils.join("; ", whyParts);
         } else {
-            why = signal + " открыт: направление ТФ согласовано; структура/фильтр разрешили вход; качество " + quality + "/100";
+            why = signal + " — сценарий анализа подтверждён; исполнение проверяется отдельно. Оценка " + quality + "/100";
         }
 
         int exitDirectionV10 = peakExitDirectionV10(entrySeries);
