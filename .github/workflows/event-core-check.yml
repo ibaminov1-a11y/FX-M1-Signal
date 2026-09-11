@@ -1,0 +1,139 @@
+name: EC1 isolated APK build and runtime tests
+on:
+  push:
+    branches: [rebuild/event-campaign-mt5]
+    paths: [.github/workflows/event-core-check.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: ec1-isolated-final
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Commit exact display and installation text before building
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          changes = [
+              ('app/src/main/res/layout/activity_main.xml','РИСК НА СДЕЛКУ','РИСК НА КАМПАНИЮ'),
+              ('app/src/main/java/com/openai/fxm1/MonitoringService.java','"FX M1 · "+label','"FX M1 EC1 · "+label'),
+              ('tools/package_ec1.py',"shutil.copy2(root/'docs/EVENT_CORE_RU.md',package/'READ_ME_RU.md')", "shutil.copy2(root/'docs/EVENT_CORE_RU.md',package/'READ_ME_RU.md')\nshutil.copy2(root/'docs/INSTALL_EC1_RU.md',package/'INSTALL_RU.md')"),
+          ]
+          for name, old, new in changes:
+              p=Path(name);text=p.read_text(encoding='utf-8')
+              if new in text: continue
+              assert text.count(old)==1,name
+              p.write_text(text.replace(old,new,1),encoding='utf-8')
+          PY
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app tools docs
+            git diff --cached --check
+            git commit -m 'EC1: clarify campaign risk and include side-by-side install instructions'
+            git push origin HEAD:rebuild/event-campaign-mt5
+          fi
+          test -z "$(git status --porcelain)"
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Python compile and real-component tests against fake MT5
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m compileall -q mt5_bridge/event_core tests/event_core
+          PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Retain explicit EC1 DEMO signing file outside source and artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Select persistent DEMO signing identity
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.fxm1-signing"
+          key="$HOME/.fxm1-signing/ec1-demo.jks"
+          if ! test -s "$key"; then
+            keytool -genkeypair -keystore "$key" -storetype PKCS12 -storepass android -keypass android -alias ec1-demo -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=FXM1 EC1 DEMO'
+          fi
+          chmod 600 "$key"
+          echo "EC1_KEYSTORE=$key" >> "$GITHUB_ENV"
+      - name: Download old V10.8 only to verify side-by-side installation
+        uses: actions/download-artifact@v4
+        with:
+          name: V10.8-build-and-test-1
+          run-id: 34577850019
+          github-token: ${{ github.token }}
+          path: previous-v108
+      - name: Build app and native test APK; verify binary identity
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.log
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$tools/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk > evidence/signature.txt
+          "$tools/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk > evidence/apk-identity.txt
+          grep "name='com.openai.fxm1.ec1'" evidence/apk-identity.txt
+          echo 'SIDE_BY_SIDE: com.openai.fxm1.ec1, old com.openai.fxm1 is not removed' > evidence/update-compatibility.txt
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+      - name: API35 side-by-side installation, Activity, candles and notification controls
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: |
+            old=$(find previous-v108 -name 'FXM1-V10.8-DEMO.apk' | head -1); test -n "$old"; adb install "$old"
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm list packages com.openai.fxm1 | tee evidence/coexistence.txt
+            grep -x 'package:com.openai.fxm1' evidence/coexistence.txt
+            grep -x 'package:com.openai.fxm1.ec1' evidence/coexistence.txt
+            bash tools/run_ec1_qa.sh
+      - name: Package exact tested APK and engine with pure Python HTTP dependencies
+        run: python tools/package_ec1.py
+      - name: Verify shipping vendored HTTP dependencies in clean Python
+        shell: bash
+        run: |
+          python -m venv /tmp/ec1-clean
+          /tmp/ec1-clean/bin/python - <<'PY'
+          import sys
+          from pathlib import Path
+          base=Path('evidence/package/Bridge').resolve()
+          sys.path[:0]=[str(base/'_vendor'),str(base),str(Path('tests/event_core').resolve())]
+          import flask, werkzeug, jinja2, markupsafe, colorama
+          from event_core.server import create_app
+          assert str(base/'_vendor') in flask.__file__
+          print('SHIPPING_VENDOR_IMPORTS_OK')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: EC1-isolated-verified-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error

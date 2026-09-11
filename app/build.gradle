@@ -3,12 +3,24 @@ android {
     namespace 'com.openai.fxm1'
     compileSdk 35
     defaultConfig {
-        applicationId "com.openai.fxm1"
+        // Separate research identity preserves the user's installed V10.8 and its data.
+        applicationId "com.openai.fxm1.ec1"
         minSdk 26
         targetSdk 35
         versionCode 916
         versionName "10.9-EC1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    signingConfigs {
+        debug {
+            def path = System.getenv('EC1_KEYSTORE')
+            if (path != null && !path.isEmpty()) {
+                storeFile file(path)
+                storePassword 'android'
+                keyAlias 'ec1-demo'
+                keyPassword 'android'
+            }
+        }
     }
 }
 dependencies {
