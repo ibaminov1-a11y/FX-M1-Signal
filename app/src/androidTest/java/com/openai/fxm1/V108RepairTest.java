@@ -63,6 +63,8 @@ public class V108RepairTest {
         V10Repair.failure(p,new java.net.SocketTimeoutException("timeout"),"EUR/USD","M5");assertEquals("UNKNOWN",p.getString("execution_stage",""));
     }
     @Test public void legacyUiBalanceAndDiagnosticsRemain()throws Exception {
+        Method unavailablePrice=MainActivity.class.getDeclaredMethod("fmt",double.class);unavailablePrice.setAccessible(true);assertEquals("—",unavailablePrice.invoke(rule.getActivity(),Double.NaN));
+
         p.edit().putBoolean("server_verified",true).putBoolean("mt5_connected_snapshot",true).putString("mt5_account_type_snapshot","DEMO")
             .putLong("mt5_balance_bits",Double.doubleToLongBits(99868.35)).putLong("mt5_equity_bits",Double.doubleToLongBits(99868.35))
             .putString("bridge_version_snapshot","10.0").putString("state_symbol","EUR/USD").putString("state_tf","M5")
@@ -71,7 +73,7 @@ public class V108RepairTest {
         V10Repair.record(p,"BLOCKED","Сессия ASIA запрещена","EUR/USD","M5");V10Repair.fetchRisk(p,"http://10.0.2.2:8000");
         await(()->((TextView)rule.getActivity().findViewById(R.id.accountText)).getText().toString().contains("99868.35"),"Actual MT5 balance remains visible");
         onMain(()->{assertNotNull(rule.getActivity().findViewById(R.id.moneyHistoryButton));assertNotNull(rule.getActivity().findViewById(R.id.maxPositionsSpinner));});capture("01-legacy-ui");
-        UiScrollable scroll=new UiScrollable(new UiSelector().scrollable(true));scroll.scrollIntoView(new UiSelector().resourceId(context.getPackageName()+":id/whyWaitText"));capture("02-execution-status");
+        UiScrollable scroll=new UiScrollable(new UiSelector().scrollable(true));scroll.scrollIntoView(new UiSelector().resourceId(context.getPackageName()+":id/whyWaitText"));device.swipe(device.getDisplayWidth()/2,device.getDisplayHeight()*4/5,device.getDisplayWidth()/2,device.getDisplayHeight()/3,35);capture("02-execution-status");
     }
     @Test public void notificationActionsAndEmergencyLatch()throws Exception {
         onMain(()->context.startForegroundService(new Intent(context,MonitoringService.class).setAction(MonitoringService.ACTION_START)));

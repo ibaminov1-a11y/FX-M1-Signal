@@ -28,6 +28,7 @@ public final class FeatureEngine {
     }
 
     public static void ensureDefaults(SharedPreferences p) {
+        if (!p.getBoolean("v108_migration_done", false)) p.edit().putBoolean("v108_migration_done", true).putBoolean("auto_trading", false).putBoolean("auto_user_enabled", false).putString("target_trade_mode", "DEMO").remove("pending_trade_json").commit();
         if (p.getBoolean("v71_defaults_done", false)) return;
         p.edit()
                 .putBoolean("v71_defaults_done", true)

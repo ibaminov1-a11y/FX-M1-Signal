@@ -2894,7 +2894,7 @@ public class MainActivity extends Activity {
     }
 
     private String fmt(double x) {
-        if (x == 0) return "—";
+        if (x == 0 || Double.isNaN(x) || Double.isInfinite(x)) return "—";
 
         if (x >= 100) {
             return String.format(
