@@ -1,0 +1,125 @@
+# V10.8: inline recovery code; standard library only, no trading orders.
+import sqlite3
+import secrets
+import hashlib
+import json
+from pathlib import Path
+_RISK_REVIEWS = {}
+
+def _risk_db():
+    path = Path(os.environ.get('FXM1_RISK_STATE_PATH', str(Path(__file__).with_name('risk_v108.sqlite3'))))
+    db = sqlite3.connect(str(path), timeout=5)
+    db.execute('CREATE TABLE IF NOT EXISTS checkpoints (account TEXT PRIMARY KEY, cutoff_ms INTEGER NOT NULL, cutoff_ticket INTEGER NOT NULL, acknowledged_at REAL NOT NULL)')
+    return db
+
+def _risk_account(account):
+    if account is None or not getattr(account, 'login', None) or not getattr(account, 'server', None):
+        raise ValueError('Не удалось определить счёт MT5')
+    return str(account.server) + ':' + str(account.login)
+
+def _deal_key(d):
+    return (int(getattr(d, 'time_msc', 0) or int(d.time)*1000), int(d.ticket))
+
+def _risk_history():
+    now = datetime.now().astimezone()
+    deals = mt5.history_deals_get(now - timedelta(days=30), now)
+    if deals is None: raise RuntimeError('История MT5 недоступна: ' + str(mt5.last_error()))
+    closing = sorted((d for d in deals if d.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY)), key=_deal_key)
+    today = mt5.history_deals_get(now.replace(hour=0, minute=0, second=0, microsecond=0), now)
+    if today is None: raise RuntimeError('Дневная история MT5 недоступна: ' + str(mt5.last_error()))
+    return closing, today
+
+def _deal_pl(d):
+    x = float(d.profit) + float(d.commission) + float(d.swap) + float(getattr(d,'fee',0.0) or 0.0)
+    if not math.isfinite(x): raise ValueError('Некорректный результат сделки MT5')
+    return x
+
+def _risk_limits(daily, dd, streak):
+    daily, dd, streak = float(daily), float(dd), int(streak)
+    if not math.isfinite(daily) or not math.isfinite(dd) or daily <= 0 or dd <= 0 or streak < 1:
+        raise ValueError('Некорректные лимиты риска')
+    return daily, dd, streak
+
+def _risk_result(account, daily, dd, streak_limit, closing, today):
+    daily, dd, streak_limit = _risk_limits(daily, dd, streak_limit)
+    account_key = _risk_account(account)
+    db = _risk_db()
+    try: row = db.execute('SELECT cutoff_ms,cutoff_ticket,acknowledged_at FROM checkpoints WHERE account=?', (account_key,)).fetchone()
+    finally: db.close()
+    cutoff = (row[0],row[1]) if row else (0,0)
+    streak = 0
+    for d in reversed(closing):
+        if _deal_key(d) <= cutoff: break
+        if _deal_pl(d) < 0: streak += 1
+        else: break
+    day_pl = sum(_deal_pl(d) for d in today if d.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY))
+    bal, eq = float(account.balance), float(account.equity)
+    if not math.isfinite(bal) or not math.isfinite(eq) or bal <= 0: raise ValueError('Некорректный баланс MT5')
+    day_loss_pct = max(0.0, -day_pl/bal*100.0)
+    dd_pct = max(0.0, (bal-eq)/bal*100.0)
+    blocks = []
+    if day_loss_pct >= daily: blocks.append('DAILY_LOSS')
+    if dd_pct >= dd: blocks.append('DRAWDOWN')
+    if streak >= streak_limit: blocks.append('LOSS_STREAK')
+    return dict(allowed=not blocks,blocks=blocks,daily_pl=day_pl,daily_loss_pct=day_loss_pct,
+                drawdown_pct=dd_pct,consecutive_losses=streak,streak_limit=streak_limit,
+                streak_window_days=30,streak_ack_at=row[2] if row else None,
+                recovery_supported=True,account_login=int(account.login),account_server=str(account.server))
+
+def compute_risk_state(account, daily_limit, dd_limit, streak_limit):
+    try:
+        closing, today = _risk_history()
+        return _risk_result(account,daily_limit,dd_limit,streak_limit,closing,today)
+    except Exception as e:
+        return dict(allowed=False,blocks=['RISK_DATA_UNAVAILABLE'],message=str(e),recovery_supported=True)
+
+def _review_context(limits):
+    if not ensure_mt5(): raise ValueError('MT5 недоступен')
+    ai=mt5.account_info()
+    if account_type_name(ai)!='DEMO': raise ValueError('Восстановление доступно только на DEMO')
+    positions, orders=mt5.positions_get(),mt5.orders_get()
+    if positions is None or orders is None: raise ValueError('Позиции или ордера MT5 не подтверждены')
+    if len(positions) or len(orders): raise ValueError('Проверка возможна без открытых позиций и отложенных ордеров. Эта кнопка их не закрывает.')
+    closing,today=_risk_history()
+    rs=_risk_result(ai,*limits,closing,today)
+    if rs['blocks']!=['LOSS_STREAK']:
+        raise ValueError('Нельзя подтвердить серию: '+(', '.join(rs['blocks']) if rs['blocks'] else 'активной блокировки серии нет'))
+    fingerprint=hashlib.sha256(json.dumps([[_deal_key(d),_deal_pl(d)] for d in closing],sort_keys=True).encode()).hexdigest()
+    return ai,closing,rs,fingerprint
+
+@app.post('/risk-review')
+def risk_review():
+    with LOCK:
+        try:
+            if not request.is_json: raise ValueError('Нужна команда JSON из приложения')
+            data=request.get_json(silent=True) or {}
+            limits=_risk_limits(data.get('daily_loss_limit_pct',3),data.get('max_drawdown_pct',5),data.get('max_consecutive_losses',3))
+            ai,closing,rs,fingerprint=_review_context(limits)
+            token=secrets.token_urlsafe(32)
+            now=time.time()
+            for old in list(_RISK_REVIEWS):
+                if _RISK_REVIEWS[old]['expires']<now: del _RISK_REVIEWS[old]
+            _RISK_REVIEWS[token]=dict(account=_risk_account(ai),fingerprint=fingerprint,limits=limits,expires=now+120)
+            return jsonify(ok=True,token=token,risk_state=rs,
+                message=f"DEMO {ai.login}. Серия: {rs['consecutive_losses']}/{rs['streak_limit']}. Позиции и ордера отсутствуют.\nПодтвердить просмотр убытков и начать отсчёт новой серии?")
+        except Exception as e: return jsonify(ok=False,message=str(e)),409
+
+@app.post('/risk-ack')
+def risk_ack():
+    with LOCK:
+        try:
+            if not request.is_json: raise ValueError('Нужна команда JSON из приложения')
+            data=request.get_json(silent=True) or {}
+            if data.get('confirm') is not True: raise ValueError('Нужно явное подтверждение')
+            review=_RISK_REVIEWS.pop(str(data.get('token','')),None)
+            if review is None or time.time()>review['expires']: raise ValueError('Проверка истекла или уже использована — выполните её заново')
+            ai,closing,rs,fingerprint=_review_context(review['limits'])
+            if _risk_account(ai)!=review['account'] or fingerprint!=review['fingerprint']:
+                raise ValueError('Счёт или история изменились. Нужна повторная проверка')
+            cutoff=_deal_key(closing[-1])
+            db=_risk_db()
+            try:
+                with db: db.execute('INSERT OR REPLACE INTO checkpoints VALUES (?,?,?,?)',(review['account'],cutoff[0],cutoff[1],time.time()))
+            finally: db.close()
+            return jsonify(ok=True,message='Просмотр серии подтверждён. Начат новый отсчёт серии; история, баланс и денежные лимиты сохранены. Эта команда не включает AUTO.')
+        except Exception as e: return jsonify(ok=False,message=str(e)),409
