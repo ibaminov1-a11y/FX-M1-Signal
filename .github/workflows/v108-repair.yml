@@ -1,0 +1,89 @@
+name: V10.8 repair build and behavior tests
+on:
+  push:
+    branches: [repair/v10-8-status-controls]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: v108-repair
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare and COMMIT repaired production sources before compilation
+        shell: bash
+        run: |
+          python qa/prepare_v108.py
+          git diff --check
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main app/build.gradle gradle.properties mt5_bridge/bridge_v10_0.py
+            git commit -m 'V10.8: execution truth, exact score explanation, explicit streak review and notification controls'
+            git push origin HEAD:repair/v10-8-status-controls
+          fi
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+          git diff --exit-code
+          git archive --format=zip HEAD -o evidence/source.zip
+      - name: Install test dependency
+        run: python -m pip install Flask==3.1.2
+      - name: Syntax and actual Bridge regression tests
+        shell: bash
+        run: |
+          python -m py_compile mt5_bridge/bridge_v10_0.py
+          set -o pipefail
+          python -m unittest discover -s qa -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.txt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile actual Android APK and test APK
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.txt
+          cp app/build/outputs/apk/debug/app-debug.apk evidence/FXM1_V10_8_DEMO.apk
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$tools/apksigner" verify --verbose --print-certs evidence/FXM1_V10_8_DEMO.apk > evidence/apk-signature.txt
+          "$tools/aapt" dump badging evidence/FXM1_V10_8_DEMO.apk > evidence/apk-identity.txt
+          cp "$tools/lib/apksigner.jar" evidence/apksigner.jar
+          sha256sum evidence/FXM1_V10_8_DEMO.apk > evidence/apk.sha256
+      - name: Enable emulator hardware acceleration
+        run: sudo chmod 666 /dev/kvm
+      - name: Install, launch, click notification actions on Android 35
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: |
+            python qa/v108_fixture.py > evidence/fixture.log 2>&1 &
+            sleep 2
+            gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest > evidence/android-tests.txt 2>&1; result=$?; adb pull /sdcard/Download/v108-qa evidence/ui || true; adb logcat -d -b crash > evidence/crashes.txt; cat evidence/android-tests.txt; exit $result
+      - name: Verify code unchanged by tests
+        run: git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: V108-repair-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error
