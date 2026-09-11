@@ -23,12 +23,34 @@ jobs:
         shell: bash
         run: |
           python qa/prepare_v108.py
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/openai/fxm1/MainActivity.java')
+          t=p.read_text();old='if (x == 0) return "—";';new='if (x == 0 || Double.isNaN(x) || Double.isInfinite(x)) return "—";'
+          if old in t:
+              assert t.count(old)==1;t=t.replace(old,new);p.write_text(t)
+          else: assert new in t
+          p=Path('app/src/main/java/com/openai/fxm1/FeatureEngine.java');t=p.read_text()
+          if 'v108_migration_done' not in t:
+              old='    public static void ensureDefaults(SharedPreferences p) {'
+              new=old+'\n        if (!p.getBoolean("v108_migration_done", false)) p.edit().putBoolean("v108_migration_done", true).putBoolean("auto_trading", false).putBoolean("auto_user_enabled", false).putString("target_trade_mode", "DEMO").remove("pending_trade_json").commit();'
+              assert t.count(old)==1;p.write_text(t.replace(old,new))
+          p=Path('app/src/androidTest/java/com/openai/fxm1/V108RepairTest.java');t=p.read_text()
+          old='capture("02-execution-status");'
+          if 'device.swipe' not in t:
+              t=t.replace(old,'device.swipe(device.getDisplayWidth()/2,device.getDisplayHeight()*4/5,device.getDisplayWidth()/2,device.getDisplayHeight()/3,35);capture("02-execution-status");')
+          anchor='    @Test public void legacyUiBalanceAndDiagnosticsRemain()throws Exception {'
+          if 'unavailablePrice' not in t:
+              insertion='\n        Method unavailablePrice=MainActivity.class.getDeclaredMethod("fmt",double.class);unavailablePrice.setAccessible(true);assertEquals("—",unavailablePrice.invoke(rule.getActivity(),Double.NaN));\n'
+              assert anchor in t;t=t.replace(anchor,anchor+insertion)
+          p.write_text(t)
+          PY
           git diff --check
           if ! git diff --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add app/src/main app/build.gradle gradle.properties mt5_bridge/bridge_v10_0.py
-            git commit -m 'V10.8: execution truth, exact score explanation, explicit streak review and notification controls'
+            git add app/src/main app/src/androidTest app/build.gradle gradle.properties mt5_bridge/bridge_v10_0.py
+            git commit -m 'V10.8: final UI and safe first-start migration'
             git push origin HEAD:repair/v10-8-status-controls
           fi
           mkdir -p evidence
