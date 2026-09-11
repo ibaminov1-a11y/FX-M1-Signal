@@ -1,6 +1,9 @@
 from flask import Flask, jsonify, request
 import MetaTrader5 as mt5
 import math
+import json
+from pathlib import Path
+import tempfile
 import os
 import socket
 import threading
@@ -749,31 +752,117 @@ def pip_size(info):
     return point * 10.0 if int(getattr(info, "digits", 0) or 0) in (3, 5) else point
 
 
-def compute_risk_state(account, daily_limit, dd_limit, streak_limit):
-    now = datetime.now()
-    start = now - timedelta(days=30)
-    deals = mt5.history_deals_get(start, now) or []
+def _risk_ack_path():
+    return Path(os.environ.get('FXM1_RISK_ACK_PATH', str(Path(__file__).with_name('risk_ack_v10.json'))))
+
+
+def _risk_account_key(account):
+    login = int(getattr(account, 'login', 0) or 0)
+    server = str(getattr(account, 'server', '') or '')
+    if login <= 0 or not server:
+        raise ValueError('Cannot identify MT5 account for risk acknowledgement')
+    return str(login) + '@' + server
+
+
+def _risk_ack_load():
+    path = _risk_ack_path()
+    if not path.exists(): return {}
+    data = json.loads(path.read_text(encoding='utf-8'))
+    if not isinstance(data, dict): raise ValueError('Risk acknowledgement file is invalid')
+    return data
+
+
+def _deal_key(deal):
+    return (int(getattr(deal, 'time_msc', 0) or int(deal.time)*1000), int(deal.ticket))
+
+
+def _closing_history(start, end):
+    deals = mt5.history_deals_get(start, end)
+    if deals is None: raise ValueError('MT5 history unavailable: ' + str(mt5.last_error()))
     closing = [d for d in deals if d.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY)]
-    pnl = [float(d.profit)+float(d.commission)+float(d.swap)+float(getattr(d,'fee',0.0) or 0.0) for d in closing]
-    streak = 0
-    for x in reversed(pnl):
-        if x < 0: streak += 1
-        else: break
-    day_start = datetime(now.year, now.month, now.day)
-    day_deals = mt5.history_deals_get(day_start, now) or []
-    day_pl = sum(float(d.profit)+float(d.commission)+float(d.swap)+float(getattr(d,'fee',0.0) or 0.0)
-                 for d in day_deals if d.entry in (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY))
-    bal = max(float(account.balance), 1e-9)
-    day_loss_pct = max(0.0, -day_pl / bal * 100.0)
-    dd_pct = max(0.0, (float(account.balance) - float(account.equity)) / bal * 100.0)
-    blocks = []
-    if day_loss_pct >= daily_limit: blocks.append('DAILY_LOSS')
-    if dd_pct >= dd_limit: blocks.append('DRAWDOWN')
-    if streak >= streak_limit: blocks.append('LOSS_STREAK')
-    return {
-        'allowed': not blocks, 'blocks': blocks, 'daily_pl': day_pl,
-        'daily_loss_pct': day_loss_pct, 'drawdown_pct': dd_pct, 'consecutive_losses': streak
-    }
+    return sorted(closing, key=_deal_key)
+
+
+def _deal_net(deal):
+    net = float(deal.profit)+float(deal.commission)+float(deal.swap)+float(getattr(deal,'fee',0.0) or 0.0)
+    if not math.isfinite(net): raise ValueError('Non-finite deal result')
+    return net
+
+
+def compute_risk_state(account, daily_limit, dd_limit, streak_limit):
+    # Explicit DEMO review only changes the loss-series window, not day/DD or history.
+    try:
+        if account is None: raise ValueError('No MT5 account')
+        if not all(math.isfinite(float(x)) and float(x)>0 for x in (daily_limit,dd_limit,streak_limit)):
+            raise ValueError('Invalid risk limits')
+        now = datetime.now()
+        closing = _closing_history(now-timedelta(days=30), now)
+        saved = _risk_ack_load().get(_risk_account_key(account))
+        anchor = (-1,-1)
+        if saved is not None:
+            if not isinstance(saved,dict): raise ValueError('Invalid risk acknowledgement')
+            anchor = (int(saved['time_msc']),int(saved['ticket']))
+            if min(anchor)<0: raise ValueError('Invalid risk acknowledgement anchor')
+        series = [d for d in closing if _deal_key(d)>anchor]
+        streak=0
+        for d in reversed(series):
+            if _deal_net(d)<0: streak+=1
+            else: break
+        day_start=datetime(now.year,now.month,now.day)
+        day_pl=sum(_deal_net(d) for d in _closing_history(day_start,now))
+        bal=float(account.balance); equity=float(account.equity)
+        if not math.isfinite(bal) or not math.isfinite(equity) or bal<=0: raise ValueError('Invalid MT5 account values')
+        day_loss_pct=max(0.0,-day_pl/bal*100.0)
+        dd_pct=max(0.0,(bal-equity)/bal*100.0)
+        blocks=[]
+        if day_loss_pct>=daily_limit: blocks.append('DAILY_LOSS')
+        if dd_pct>=dd_limit: blocks.append('DRAWDOWN')
+        if streak>=streak_limit: blocks.append('LOSS_STREAK')
+        return dict(allowed=not blocks,blocks=blocks,daily_pl=day_pl,daily_loss_pct=day_loss_pct,
+            drawdown_pct=dd_pct,consecutive_losses=streak,ack_supported=True,
+            can_acknowledge=blocks==['LOSS_STREAK'] and account_type_name(account)=='DEMO',
+            last_closing_ticket=int(closing[-1].ticket) if closing else 0,
+            last_closing_time=int(closing[-1].time) if closing else 0,
+            last_closing_time_msc=_deal_key(closing[-1])[0] if closing else 0)
+    except Exception as e:
+        return dict(allowed=False,blocks=['HISTORY_UNAVAILABLE'],daily_pl=None,daily_loss_pct=None,
+            drawdown_pct=None,consecutive_losses=None,ack_supported=True,can_acknowledge=False,
+            message=str(e))
+
+
+@app.post('/risk-acknowledge')
+def risk_acknowledge():
+    with LOCK:
+        try:
+            data=request.get_json(silent=True) or {}
+            if not isinstance(data,dict) or data.get('confirmation')!='ACK_LOSS_STREAK_DEMO':
+                return jsonify(ok=False,message='Explicit DEMO acknowledgement is required'),409
+            if not ensure_mt5(): raise ValueError('MT5 offline')
+            account=mt5.account_info()
+            if account_type_name(account)!='DEMO': raise ValueError('Risk acknowledgement is DEMO only')
+            positions=mt5.positions_get(); orders=mt5.orders_get()
+            if positions is None or orders is None: raise ValueError('Cannot verify open exposure')
+            if len(positions) or len(orders): raise ValueError('Close or resolve existing positions/orders before acknowledgement')
+            daily=float(data.get('daily_loss_limit_pct',3));dd=float(data.get('max_drawdown_pct',5));limit=int(data.get('max_consecutive_losses',3))
+            rs=compute_risk_state(account,daily,dd,limit)
+            if not rs.get('can_acknowledge'): raise ValueError('Acknowledgement not allowed: '+','.join(rs['blocks']))
+            if int(data.get('expected_last_deal',0))!=rs['last_closing_ticket']: raise ValueError('History changed; review the loss sequence again')
+            cooldown=max(60,int(data.get('cooldown_sec',600)))
+            if time.time()-rs['last_closing_time']<cooldown: raise ValueError('Loss cooldown has not elapsed')
+            all_ack=_risk_ack_load()
+            all_ack[_risk_account_key(account)]=dict(time_msc=rs['last_closing_time_msc'],ticket=rs['last_closing_ticket'],ack_at=int(time.time()))
+            path=_risk_ack_path();path.parent.mkdir(parents=True,exist_ok=True)
+            temp=None
+            try:
+                with tempfile.NamedTemporaryFile('w',encoding='utf-8',dir=path.parent,prefix='risk-ack-',suffix='.tmp',delete=False) as f:
+                    temp=f.name;json.dump(all_ack,f);f.flush();os.fsync(f.fileno())
+                os.replace(temp,path)
+            finally:
+                if temp and os.path.exists(temp): os.unlink(temp)
+            return jsonify(ok=True,message='Серия убытков подтверждена и сброшена для DEMO. История, дневной лимит и лимит просадки сохранены. AUTO не включён.')
+        except Exception as e:
+            return jsonify(ok=False,message=str(e)),409
+
 
 
 def latest_bot_entry_epoch(symbol=None):
