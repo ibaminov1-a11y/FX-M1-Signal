@@ -1,0 +1,23 @@
+from flask import Flask,jsonify
+import time
+app=Flask(__name__)
+@app.get('/health')
+def health():return jsonify(ok=True,mt5_connected=True,account_type='DEMO',balance=99868.35,equity=99868.35,currency='USD',positions=0,floating_pl=0,bridge_version='10.0',heartbeat=int(time.time()),uptime_sec=60)
+@app.get('/risk-state')
+def risk():return jsonify(ok=True,allowed=False,blocks=['LOSS_STREAK'],consecutive_losses=3,streak_limit=3,daily_pl=0)
+@app.get('/positions')
+def positions():return jsonify(ok=True,positions=[])
+@app.post('/close-all')
+def close():return jsonify(ok=True,closed=0,failed=0,message='QA: no positions')
+@app.post('/manage-positions')
+def manage():return jsonify(ok=True,message='ACTIVE')
+@app.get('/quote')
+def quote():return jsonify(ok=True,bid=1.16051,ask=1.16052,symbol='EURUSD',mt5_connected=True)
+@app.get('/stats')
+def stats():return jsonify(ok=True,closed_trades=173,net_pl=-131.65)
+@app.get('/trade-ledger')
+@app.get('/trade-log')
+def history():return jsonify(ok=True,trades=[])
+@app.post('/signal')
+def reject():return jsonify(ok=False,accepted=False,message='RISK BLOCK: LOSS_STREAK',risk_state={'allowed':False,'blocks':['LOSS_STREAK'],'consecutive_losses':3,'streak_limit':3}),409
+if __name__=='__main__':app.run(host='0.0.0.0',port=8000,debug=False)
