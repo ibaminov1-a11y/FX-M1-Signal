@@ -1,0 +1,106 @@
+name: Event Core DEMO build and integration tests
+on:
+  push:
+    branches: [fix/v10-8-status-notification]
+    paths: [.github/workflows/ec1-build.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: ec1-isolated-verify
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rebuild/event-campaign-mt5
+          fetch-depth: 0
+      - name: Materialize verified source transport and commit readable source before build
+        shell: bash
+        run: |
+          if test -f tools/ec1_transport/decode.py; then
+            python tools/ec1_transport/decode.py
+            git rm -r tools/ec1_transport
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app mt5_bridge tests tools docs
+            git diff --cached --check
+            git commit -m 'Event core: causal MT5 scenarios, SCALP/NORMAL profiles, risk-budget pyramiding, persistent execution and retained purple Android UI'
+            git push origin HEAD:rebuild/event-campaign-mt5
+          fi
+          test -z "$(git status --porcelain)"
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Python compile and full execution regression tests (fake MT5 only)
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m compileall -q mt5_bridge/event_core tests/event_core
+          PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore exact V10.8 DEMO signing identity
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: fxm1-v108-demo-debug-keystore-v1
+      - name: Obtain previous actual APK for signature verification
+        uses: actions/download-artifact@v4
+        with:
+          name: V10.8-build-and-test-1
+          run-id: 34577850019
+          github-token: ${{ github.token }}
+          path: previous-v108
+      - name: Compile actual Android app and instrumentation APK
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.log
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$tools/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk > evidence/signature.txt
+          "$tools/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk > evidence/apk-identity.txt
+          old=$(find previous-v108 -name 'FXM1-V10.8-DEMO.apk' | head -1)
+          test -n "$old"
+          "$tools/apksigner" verify --verbose --print-certs "$old" > evidence/previous-signature.txt
+          if diff <(grep 'certificate SHA-256' evidence/signature.txt) <(grep 'certificate SHA-256' evidence/previous-signature.txt); then
+            echo MATCH > evidence/update-compatibility.txt
+          else
+            echo DIFFERENT > evidence/update-compatibility.txt
+          fi
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+      - name: API35 install, actual Activity, candle drawing and SystemUI buttons against real Flask test server
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_ec1_qa.sh
+      - name: Package only passed APK and matched engine, with pure Python HTTP dependencies
+        run: python tools/package_ec1.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: EC1-build-and-test-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error
