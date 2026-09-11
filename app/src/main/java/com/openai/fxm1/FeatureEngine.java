@@ -162,7 +162,7 @@ public final class FeatureEngine {
     public static void appendSignalHistory(SharedPreferences p, String symbol, String tf, String signal, int quality, String result) {
         String old = p.getString("signal_history", "");
         String ts = new SimpleDateFormat("dd.MM HH:mm:ss", Locale.US).format(new Date());
-        String line = ts + " · " + symbol + " · " + tf + " · " + signal + " " + quality + "/100" + (result == null || result.isEmpty() ? "" : " · " + result);
+        String line = ts + " · " + symbol + " · " + tf + " · " + signal + (quality>=0?" " + quality + "/100":"") + (result == null || result.isEmpty() ? "" : " · " + result);
         String merged = line + (old.trim().isEmpty() ? "" : "\n" + old);
         String[] rows = merged.split("\\n");
         StringBuilder out = new StringBuilder();
@@ -213,25 +213,7 @@ public final class FeatureEngine {
         return out;
     }
 
-    public static JSONObject httpJson(String method, String url, JSONObject payload) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setConnectTimeout(8000);
-        conn.setReadTimeout(12000);
-        conn.setRequestMethod(method);
-        conn.setRequestProperty("Accept", "application/json");
-        if (payload != null) {
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(payload.toString().getBytes(StandardCharsets.UTF_8));
-            }
-        }
-        int code = conn.getResponseCode();
-        InputStream is = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
-        String body = readAll(is);
-        if (code < 200 || code >= 300) throw new Exception("HTTP " + code + ": " + body);
-        return new JSONObject(body);
-    }
+    public static JSONObject httpJson(String method,String url,JSONObject body) throws Exception { return EventClient.http(method,url,body); }
 
     public static String formatStats(JSONObject s) {
         if (s == null) return "Статистика недоступна";
@@ -250,6 +232,7 @@ public final class FeatureEngine {
     }
 
     public static String formatLedgerStats(JSONObject root) {
+        if(root!=null&&root.optJSONObject("summary")!=null){JSONObject a=root.optJSONObject("summary");int count=a.optInt("count");return "Закрытых: "+count+" · Win rate: "+String.format(Locale.US,"%.1f%%",count==0?0:a.optInt("wins")*100.0/count)+"\n"+formatRealizedMoneySummary(root,"USD");}
         JSONArray arr = root == null ? null : root.optJSONArray("trades");
         if (arr == null) return "ДЕНЬГИ MT5: недоступно";
         double profit = 0, loss = 0, net = 0, todayProfit = 0, todayLoss = 0, todayNet = 0;
@@ -274,6 +257,7 @@ public final class FeatureEngine {
     }
 
     public static String formatRealizedMoneySummary(JSONObject root, String currency) {
+        if(root!=null&&root.has("summary")&&root.has("today"))return "Сегодня: "+EventClient.moneySummary(root.optJSONObject("today"))+"\nВсего: "+EventClient.moneySummary(root.optJSONObject("summary"));
         JSONArray arr = root == null ? null : root.optJSONArray("trades");
         if (arr == null) return "Сегодня: —\nВсего: —";
         double allProfit = 0.0, allLoss = 0.0, allNet = 0.0;

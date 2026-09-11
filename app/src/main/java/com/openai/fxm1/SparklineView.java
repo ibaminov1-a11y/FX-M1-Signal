@@ -1,97 +1,51 @@
 package com.openai.fxm1;
-
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
+import android.graphics.*;
 import android.util.AttributeSet;
 import android.view.View;
-import java.util.ArrayList;
-import java.util.List;
+import org.json.*;
+import java.util.*;
 
+/** Japanese candles and decision levels from the SAME MT5 snapshot used by the engine. */
 public class SparklineView extends View {
-    private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final List<Double> values = new ArrayList<>();
-
-    public SparklineView(Context context) { super(context); init(); }
-    public SparklineView(Context context, AttributeSet attrs) { super(context, attrs); init(); }
-    public SparklineView(Context context, AttributeSet attrs, int defStyleAttr) { super(context, attrs, defStyleAttr); init(); }
-
-    private void init() {
-        setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        line.setStyle(Paint.Style.STROKE);
-        line.setStrokeWidth(dp(1.8f));
-        line.setStrokeCap(Paint.Cap.ROUND);
-        line.setStrokeJoin(Paint.Join.ROUND);
-        glow.setStyle(Paint.Style.STROKE);
-        glow.setStrokeWidth(dp(5.2f));
-        glow.setStrokeCap(Paint.Cap.ROUND);
-        glow.setStrokeJoin(Paint.Join.ROUND);
-        dot.setStyle(Paint.Style.FILL);
-        setSignal("WAIT");
-    }
-
-    public void setValues(List<Double> newValues) {
-        values.clear();
-        if (newValues != null) {
-            int from = Math.max(0, newValues.size() - 48);
-            for (int i = from; i < newValues.size(); i++) values.add(newValues.get(i));
+    private JSONArray bars=new JSONArray(),levels=new JSONArray(),positions=new JSONArray();
+    private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+    private String signal="WAIT";
+    public SparklineView(Context c){super(c);}
+    public SparklineView(Context c,AttributeSet a){super(c,a);}
+    public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);}
+    public void setSignal(String s){signal=s;invalidate();}
+    public void setValues(List<Double> ignored){/* The legacy decorative interpolation is intentionally not used. */}
+    public void setMarket(JSONArray b,JSONArray l,JSONArray p){bars=b==null?new JSONArray():b;levels=l==null?new JSONArray():l;positions=p==null?new JSONArray():p;invalidate();}
+    private float dp(float x){return x*getResources().getDisplayMetrics().density;}
+    private float y(double value,double min,double max,float top,float h){return top+(float)((max-value)/(max-min))*h;}
+    @Override protected void onDraw(Canvas c){super.onDraw(c);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(11));paint.setColor(0xffb0aac7);
+        if(bars.length()<2){c.drawText("Ожидаем закрытые свечи MT5",dp(8),dp(28),paint);return;}
+        int start=Math.max(0,bars.length()-48),count=bars.length()-start;double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
+        for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b==null)continue;min=Math.min(min,b.optDouble("low"));max=Math.max(max,b.optDouble("high"));}
+        if(!Double.isFinite(min)||!Double.isFinite(max)||max<=min)return;
+        double range=max-min;min-=range*.12;max+=range*.12;
+        float left=dp(5),top=dp(16),width=getWidth()-dp(69),height=getHeight()-dp(40),step=width/count;
+        if(width<=0||height<=0)return;
+        paint.setStrokeWidth(dp(.6f));
+        for(int i=0;i<4;i++){float yy=top+height*i/3;paint.setColor(0xff302647);c.drawLine(left,yy,left+width,yy,paint);paint.setColor(0xffb0aac7);c.drawText(String.format(Locale.US,"%.5f",max-(max-min)*i/3),left+width+dp(4),yy+dp(4),paint);}
+        for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b==null)continue;
+            double open=b.optDouble("open"),close=b.optDouble("close");float x=left+step*(i-start+.5f);
+            paint.setColor(close>=open?0xff42d67a:0xffff4857);paint.setStrokeWidth(dp(1));
+            c.drawLine(x,y(b.optDouble("high"),min,max,top,height),x,y(b.optDouble("low"),min,max,top,height),paint);
+            float a=y(open,min,max,top,height),z=y(close,min,max,top,height),half=Math.max(dp(.7f),step*.32f);
+            c.drawRect(x-half,Math.min(a,z),x+half,Math.max(Math.min(a,z)+dp(1),Math.max(a,z)),paint);
         }
-        invalidate();
-    }
-
-    public void setSignal(String signal) {
-        int color = "BUY".equals(signal) ? Color.rgb(66, 214, 122)
-                : "SELL".equals(signal) ? Color.rgb(255, 72, 87)
-                : Color.rgb(166, 107, 255);
-        line.setColor(color);
-        glow.setColor(Color.argb(58, Color.red(color), Color.green(color), Color.blue(color)));
-        dot.setColor(color);
-        invalidate();
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        if (values.size() < 2 || getWidth() <= 0 || getHeight() <= 0) return;
-
-        ArrayList<Double> clean = new ArrayList<>();
-        for (Double v : values) if (v != null && !v.isNaN() && !v.isInfinite()) clean.add(v);
-        if (clean.size() < 2) return;
-
-        double min = Double.MAX_VALUE, max = -Double.MAX_VALUE;
-        for (double v : clean) { min = Math.min(min, v); max = Math.max(max, v); }
-        double range = max - min;
-        if (range < 1e-12) range = Math.max(Math.abs(max) * 0.00002, 1e-6);
-        double center = (max + min) / 2.0;
-        double paddedRange = range * 1.18;
-        min = center - paddedRange / 2.0;
-        max = center + paddedRange / 2.0;
-
-        float padX = dp(5), padY = dp(7);
-        float w = getWidth() - padX * 2;
-        float h = getHeight() - padY * 2;
-        int n = clean.size();
-        float[] xs = new float[n];
-        float[] ys = new float[n];
-        for (int i = 0; i < n; i++) {
-            xs[i] = padX + w * i / Math.max(1f, n - 1f);
-            ys[i] = padY + h * (float)((max - clean.get(i)) / (max - min));
+        for(int i=0;i<levels.length();i++){JSONObject l=levels.optJSONObject(i);if(l==null)continue;double v=l.optDouble("price");if(v<min||v>max)continue;
+            String kind=l.optString("kind");paint.setColor("invalidation".equals(kind)?0xffff4857:"trigger".equals(kind)?0xff42d67a:0xff914dff);
+            float yy=y(v,min,max,top,height);paint.setStrokeWidth(dp(1));c.drawLine(left,yy,left+width,yy,paint);
+            c.drawText("invalidation".equals(kind)?"Отмена":"trigger".equals(kind)?"Триггер":"Уровень",left+dp(3),Math.max(top+dp(9),yy-dp(3)),paint);
         }
-
-        Path p = new Path();
-        p.moveTo(xs[0], ys[0]);
-        for (int i = 1; i < n; i++) {
-            float midX = (xs[i - 1] + xs[i]) / 2f;
-            p.cubicTo(midX, ys[i - 1], midX, ys[i], xs[i], ys[i]);
+        for(int i=0;i<positions.length();i++){JSONObject p=positions.optJSONObject(i);if(p==null)continue;double v=p.optDouble("price_open");if(v<min||v>max)continue;
+            paint.setColor(p.optInt("side",1)>0?0xff42d67a:0xffff4857);float yy=y(v,min,max,top,height);c.drawLine(left,yy,left+width,yy,paint);
         }
-        canvas.drawPath(p, glow);
-        canvas.drawPath(p, line);
-        canvas.drawCircle(xs[n - 1], ys[n - 1], dp(2.5f), dot);
+        paint.setColor(0xffb0aac7);paint.setTextSize(dp(10));
+        long t=bars.optJSONObject(bars.length()-1).optLong("time");
+        c.drawText("MT5 · закрытая свеча "+new java.text.SimpleDateFormat("HH:mm",Locale.US).format(new Date(t*1000)),left,getHeight()-dp(5),paint);
     }
-
-    private float dp(float v) { return v * getResources().getDisplayMetrics().density; }
 }

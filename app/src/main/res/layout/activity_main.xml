@@ -26,11 +26,11 @@
 
                 <Spinner android:id="@+id/symbolSpinner" android:layout_width="match_parent" android:layout_height="44dp" android:backgroundTint="#914DFF" />
 
-                <TextView android:id="@+id/apiKeyLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="API KEY · TWELVE DATA" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
+                <TextView android:id="@+id/apiKeyLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="КЛЮЧ BRIDGE · TWELVE DATA" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
                 <EditText android:id="@+id/apiKeyInput" android:layout_width="match_parent" android:layout_height="42dp" android:hint="••••••••••••" android:inputType="textPassword" android:singleLine="true" android:textColor="#F7F4FF" android:textColorHint="#777087" />
 
-                <Button android:id="@+id/saveKeyButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp" android:text="СОХРАНИТЬ API KEY" android:textAllCaps="true" android:textSize="11sp" android:textStyle="bold" />
+                <Button android:id="@+id/saveKeyButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp" android:text="СОХРАНИТЬ КЛЮЧ BRIDGE" android:textAllCaps="true" android:textSize="11sp" android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout android:id="@+id/marketStatusCard" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="198dp" android:layout_marginLeft="5dp" android:layout_weight="1" android:orientation="vertical" android:padding="12dp">
@@ -73,7 +73,7 @@
 
             <TextView android:id="@+id/signalText" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="WAIT" android:textColor="#A66BFF" android:textSize="36sp" android:textStyle="bold" />
 
-            <com.openai.fxm1.SparklineView android:id="@+id/sparklineView" android:layout_width="match_parent" android:layout_height="78dp" android:layout_marginTop="2dp" />
+            <com.openai.fxm1.SparklineView android:id="@+id/sparklineView" android:layout_width="match_parent" android:layout_height="220dp" android:layout_marginTop="2dp" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:gravity="center_vertical" android:orientation="horizontal">
 
@@ -110,7 +110,7 @@
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:orientation="vertical">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="МАКС. ПОЗИЦИЙ" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ДОБАВЛЕНИЯ" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
                     <Spinner android:id="@+id/maxPositionsSpinner" android:layout_width="match_parent" android:layout_height="40dp" android:backgroundTint="#914DFF" />
                 </LinearLayout>
             </LinearLayout>
@@ -131,7 +131,7 @@
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:gravity="center_vertical" android:orientation="horizontal">
 
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="МАКС. ОТКЛОНЕНИЕ MT5" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="ЕДИНЫЙ ИСТОЧНИК MT5" android:textColor="#A66BFF" android:textSize="10sp" android:textStyle="bold" />
 
                 <Spinner android:id="@+id/maxDriftSpinner" android:layout_width="115dp" android:layout_height="40dp" android:backgroundTint="#914DFF" />
             </LinearLayout>

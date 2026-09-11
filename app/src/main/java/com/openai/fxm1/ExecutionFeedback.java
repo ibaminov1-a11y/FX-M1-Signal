@@ -9,7 +9,7 @@ import java.util.Locale;
 /** Presentation of execution facts, separate from the price analysis and its score. */
 public final class ExecutionFeedback {
     private ExecutionFeedback() {}
-    public static boolean bridgeCompatible(String version){return "10.0".equals(version);}
+    public static boolean bridgeCompatible(String version){return EventClient.VERSION.equals(version);}
     public static void record(SharedPreferences p,String symbol,String tf,String stage,String detail){
         p.edit().putString("execution_symbol",symbol).putString("execution_tf",tf)
             .putString("execution_stage",stage).putString("execution_detail",detail)
@@ -31,7 +31,7 @@ public final class ExecutionFeedback {
     }
     public static String riskText(String value){
         if(value==null||value.isEmpty())return "не проверен";
-        return value.replace("LOSS_STREAK","серия убытков (история 30 дней)")
+        return value.replace("LOSS_STREAK","серия убытков (учтённая история)")
             .replace("DAILY_LOSS","дневной лимит убытка").replace("DRAWDOWN","лимит просадки")
             .replace("HISTORY_UNAVAILABLE","история MT5 недоступна — новые входы запрещены")
             .replace("RISK BLOCK:","вход запрещён:").replace("RISK OK","разрешён по последней проверке");
