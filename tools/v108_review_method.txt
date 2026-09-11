@@ -1,0 +1,32 @@
+    private void reviewLossStreak() {
+        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);
+        forceAutoOff("Проверка серии убытков: AUTO выключен");
+        final String base=normalizeServerUrl(p.getString("server_url",""));
+        if(base.isEmpty()){Toast.makeText(this,"Сначала подключите Bridge",Toast.LENGTH_LONG).show();return;}
+        executor.execute(()->{
+            try {
+                String query="?daily_loss_limit_pct="+p.getFloat("daily_loss_limit_pct",3f)+"&max_drawdown_pct="+p.getFloat("max_drawdown_pct",5f)+"&max_consecutive_losses="+p.getInt("max_consecutive_losses",3);
+                JSONObject rs=FeatureEngine.httpJson("GET",base+"/risk-state"+query,null);
+                if(!rs.optBoolean("ack_supported",false))throw new Exception("Для проверки и сброса серии нужен обновлённый bridge_v10_0.py из комплекта V10.8. Другие защиты не отключайте.");
+                String info="Последовательных убытков: "+rs.optInt("consecutive_losses")+" / "+p.getInt("max_consecutive_losses",3)+".\n"+
+                    ExecutionFeedback.riskText(rs.optBoolean("allowed",false)?"RISK OK":"RISK BLOCK: "+rs.optJSONArray("blocks"))+"\n\nСброс доступен только на DEMO, без открытых позиций и ордеров и после cooldown. Дневной лимит, просадка и история сохраняются. AUTO останется выключенным.";
+                runOnUiThread(()->{
+                    AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle("Проверка LOSS_STREAK").setMessage(info).setNegativeButton("Назад",null);
+                    if(rs.optBoolean("can_acknowledge",false))dialog.setPositiveButton("Проверено — сбросить серию",(d,w)->executor.execute(()->{
+                        try{
+                            JSONObject body=new JSONObject().put("confirmation","ACK_LOSS_STREAK_DEMO")
+                                .put("expected_last_deal",rs.optLong("last_closing_ticket"))
+                                .put("daily_loss_limit_pct",p.getFloat("daily_loss_limit_pct",3f))
+                                .put("max_drawdown_pct",p.getFloat("max_drawdown_pct",5f))
+                                .put("max_consecutive_losses",p.getInt("max_consecutive_losses",3))
+                                .put("cooldown_sec",Math.max(60,p.getInt("cooldown_minutes",10)*60));
+                            JSONObject out=FeatureEngine.httpJson("POST",base+"/risk-acknowledge",body);
+                            p.edit().putLong("smart_snapshot_ms",0).putString("risk_snapshot","Нужна новая проверка риска").apply();
+                            runOnUiThread(()->{forceAutoOff(null);addJournal(out.optString("message"));new AlertDialog.Builder(this).setMessage(out.optString("message")+"\nAUTO остаётся выключенным.").setPositiveButton("OK",null).show();});
+                        }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Серия не сброшена").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
+                    }));
+                    dialog.show();
+                });
+            }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Проверка риска").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
+        });
+    }

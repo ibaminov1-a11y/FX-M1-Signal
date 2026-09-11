@@ -1,0 +1,98 @@
+name: V10.8 legacy UI repair build and runtime tests
+on:
+  push:
+    branches: [fix/v10-8-status-notification]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: v108-repair
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Commit exact repaired production sources before building
+        shell: bash
+        run: |
+          if test -f tools/stage_v108.py; then
+            python tools/stage_v108.py
+            git rm tools/stage_v108.py tools/v108_review_method.txt tools/v108_notification_method.txt tools/v108_risk_methods.txt
+            git diff --check
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main/java/com/openai/fxm1/MainActivity.java app/src/main/java/com/openai/fxm1/MonitoringService.java mt5_bridge/bridge_v10_0.py
+            git commit -m 'V10.8: truthful execution status, legacy notification actions, explicit DEMO loss-series review'
+            git push origin HEAD:fix/v10-8-status-notification
+          fi
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+          git archive --format=zip HEAD > evidence/FXM1-V10.8-SOURCE.zip
+          git diff ee2352de1b195f3ab5c3664d7d465127e65299f4 HEAD > evidence/CHANGES.patch
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2
+      - name: Bridge syntax and executed regressions
+        shell: bash
+        run: |
+          python -m py_compile mt5_bridge/bridge_v10_0.py
+          set -o pipefail
+          python tools/test_v10_8_risk.py 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Retain DEMO debug signing identity for subsequent repair builds
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: fxm1-v108-demo-debug-keystore-v1
+      - name: Build APK and test APK
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.log
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$tools/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk > evidence/signature.txt
+          "$tools/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk > evidence/apk-identity.txt
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+      - name: Android API 35 install, UI and SystemUI button tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_v108_qa.sh
+      - name: Record exact binary and Bridge
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+          if test -f app/build/outputs/apk/debug/app-debug.apk; then
+            cp app/build/outputs/apk/debug/app-debug.apk evidence/FXM1-V10.8-DEMO.apk
+            sha256sum evidence/FXM1-V10.8-DEMO.apk > evidence/apk.sha256
+          fi
+          cp mt5_bridge/bridge_v10_0.py evidence/bridge_v10_0.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: V10.8-build-and-test-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error

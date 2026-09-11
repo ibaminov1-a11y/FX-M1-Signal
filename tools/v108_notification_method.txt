@@ -1,0 +1,29 @@
+    private Notification buildNotification(String title, String text, String signal, int quality) {
+        PendingIntent playPi=serviceActionIntent(ACTION_RESUME,101);
+        PendingIntent pausePi=serviceActionIntent(ACTION_PAUSE,102);
+        PendingIntent emergencyPi=serviceActionIntent(ACTION_EMERGENCY,103);
+        boolean emergency=prefs().getBoolean("v108_emergency_latched",false);
+        String state=emergency?"EMERGENCY":paused?"PAUSE":prefs().getBoolean("auto_trading",false)?"PLAY":"AUTO OFF";
+        boolean confirm=System.currentTimeMillis()<=prefs().getLong("emergency_confirm_until_ms",0L);
+        String line=currentSymbol()+" · "+currentTf()+" · "+signal+(quality>=0?" · "+quality+"/100":"");
+        String detail=confirm?"EMERGENCY: нажмите ещё раз в течение 2,5 сек":prefs().getString("execution_detail",text==null?"Мониторинг":text);
+        RemoteViews compact=new RemoteViews(getPackageName(),R.layout.notification_monitoring_compact);
+        RemoteViews expanded=new RemoteViews(getPackageName(),R.layout.notification_monitoring_expanded);
+        for(RemoteViews rv:new RemoteViews[]{compact,expanded}) {
+            rv.setOnClickPendingIntent(R.id.notifPlay,playPi);
+            rv.setOnClickPendingIntent(R.id.notifPause,pausePi);
+            rv.setOnClickPendingIntent(R.id.notifEmergency,emergencyPi);
+        }
+        expanded.setTextViewText(R.id.notifCore,line);
+        expanded.setTextColor(R.id.notifCore,"BUY".equals(signal)?Color.rgb(66,214,122):"SELL".equals(signal)?Color.rgb(255,72,87):Color.rgb(176,170,199));
+        expanded.setTextViewText(R.id.notifConnection,detail);
+        Notification.Builder b=new Notification.Builder(this,CHANNEL_MONITOR)
+            .setSmallIcon(R.drawable.ic_stat_fx).setColor(Color.rgb(145,77,255))
+            .setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false)
+            .setVisibility(Notification.VISIBILITY_PUBLIC).setCategory(Notification.CATEGORY_SERVICE)
+            .setContentTitle("FX M1 Bot · "+state).setContentText(confirm?detail:line)
+            .setContentIntent(openAppIntent()).setStyle(new Notification.DecoratedCustomViewStyle())
+            .setCustomContentView(compact).setCustomBigContentView(expanded).setCustomHeadsUpContentView(expanded);
+        if(Build.VERSION.SDK_INT>=31)b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+        return b.build();
+    }
