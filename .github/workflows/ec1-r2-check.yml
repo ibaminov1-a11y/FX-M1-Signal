@@ -69,7 +69,7 @@ jobs:
           test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Enable KVM
         run: sudo chmod 666 /dev/kvm
-      - name: Android tests
+      - name: Android EC1 runtime tests with Flask fixture
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -78,7 +78,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
-          script: gradle --no-daemon :app:connectedDebugAndroidTest
+          script: bash tools/run_ec1_qa.sh
       - name: Package tested APK and Bridge
         run: python tools/package_ec1.py
       - name: Record R2 identity
@@ -98,6 +98,9 @@ jobs:
             evidence/APK_SHA256.txt
             evidence/python-tests.log
             evidence/android-build.log
+            evidence/android-runtime.log
+            evidence/android-logcat.txt
+            evidence/ui/
             evidence/R2_NOTES.md
             app/build/reports/androidTests/
           if-no-files-found: error
