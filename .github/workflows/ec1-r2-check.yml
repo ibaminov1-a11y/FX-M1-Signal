@@ -4,20 +4,45 @@ on:
     branches: [rebuild/event-campaign-mt5]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
   actions: read
+concurrency:
+  group: ec1-r2-final
+  cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Materialize R2 production patch once
+        shell: bash
+        run: |
+          if test -f tools/ec1_r2_patch/apply.py; then
+            python tools/ec1_r2_patch/apply.py
+            rm -rf tools/ec1_r2_patch
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app mt5_bridge tests tools docs
+            git diff --cached --check
+            git commit -m 'EC1 R2: own-campaign risk only, actual MT5 sizing, retain R1 market-state fixes'
+            git push origin HEAD:rebuild/event-campaign-mt5
+          fi
+          test -z "$(git status --porcelain)"
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install Flask==3.1.2 colorama==0.4.6
       - name: Python tests
-        run: PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m compileall -q mt5_bridge/event_core tests/event_core
+          PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -25,8 +50,23 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Restore EC1 DEMO signing identity
+        uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Require persistent EC1 signing identity
+        shell: bash
+        run: |
+          key="$HOME/.fxm1-signing/ec1-demo.jks"
+          test -s "$key"
+          echo "EC1_KEYSTORE=$key" >> "$GITHUB_ENV"
       - name: Build APK and instrumentation APK
-        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.log
+          test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Enable KVM
         run: sudo chmod 666 /dev/kvm
       - name: Android tests
@@ -39,3 +79,25 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
           script: gradle --no-daemon :app:connectedDebugAndroidTest
+      - name: Package tested APK and Bridge
+        run: python tools/package_ec1.py
+      - name: Record R2 identity
+        shell: bash
+        run: |
+          grep -R "BUILD = '10.9-EC1-R2'" mt5_bridge/event_core/__init__.py
+          sha256sum evidence/FXM1_10_9_EVENT_CORE_DEMO.apk > evidence/APK_SHA256.txt
+          cp docs/EVENT_CORE_RU.md evidence/R2_NOTES.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EC1-R2-verified-${{ github.run_number }}
+          path: |
+            evidence/FXM1_10_9_EVENT_CORE_DEMO.apk
+            evidence/FXM1_10_9_EVENT_CORE_PACKAGE.zip
+            evidence/FXM1_EVENT_CORE_SOURCE.zip
+            evidence/COMMIT.txt
+            evidence/APK_SHA256.txt
+            evidence/python-tests.log
+            evidence/android-build.log
+            evidence/R2_NOTES.md
+            app/build/reports/androidTests/
+          if-no-files-found: error
