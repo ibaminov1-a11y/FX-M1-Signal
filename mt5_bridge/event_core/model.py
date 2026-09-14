@@ -85,10 +85,10 @@ class Config:
     loss_streak: int = 3
     fee_per_lot: float | None = None
     lot_cap: float = .01
-    # 0 means actual account equity. A non-zero value is a separate simulation base,
-    # never a substitute for the MT5 balance displayed to the user.
-    test_capital: float = 100.0
-    absolute_risk_cap: float = .50
+    # Legacy compatibility fields. EC1-R2 always sizes campaigns from the actual MT5
+    # balance/equity; these values no longer cap or replace the live account base.
+    test_capital: float = 0.0
+    absolute_risk_cap: float = 0.0
     margin_fraction: float = .30
     spread_pips: float = 3.0
     slippage_ticks: int = 3
@@ -106,11 +106,11 @@ class Config:
             raise Blocked('Неизвестный режим или таймфрейм')
         if not self.symbol or len(self.symbol) > 32:
             raise Blocked('Некорректный инструмент')
-        for name in ('risk_pct','daily_loss_pct','drawdown_pct','lot_cap','absolute_risk_cap',
-                     'margin_fraction','spread_pips'):
+        for name in ('risk_pct','lot_cap','margin_fraction','spread_pips'):
             number(getattr(self,name),name,positive=True)
         number(self.test_capital, 'test_capital')
-        if self.test_capital < 0 or self.risk_pct > 1 or self.margin_fraction > .5:
+        number(self.absolute_risk_cap, 'absolute_risk_cap')
+        if self.test_capital < 0 or self.absolute_risk_cap < 0 or self.risk_pct > 1 or self.margin_fraction > .5:
             raise Blocked('Профиль превышает пределы DEMO-испытаний')
         if self.daily_loss_pct>5 or self.drawdown_pct>10:
             raise Blocked('Дневной лимит/просадка превышают пределы DEMO-профиля')
@@ -127,12 +127,16 @@ class Config:
         return self
 
     def base(self, account):
+        # Campaign sizing is based on the actual MT5 account only. Historical V10/manual
+        # trades may affect the live balance/equity, but there is no artificial $100 base.
         equity = number(account['equity'], 'equity', positive=True)
         balance = number(account['balance'], 'balance', positive=True)
-        return min(balance, equity, self.test_capital if self.test_capital else balance)
+        return min(balance, equity)
 
     def budget(self, account):
-        return min(self.absolute_risk_cap, self.base(account)*self.risk_pct/100)
+        # One campaign receives the selected percentage of current usable account equity.
+        # The legacy absolute dollar cap is intentionally ignored in EC1-R2.
+        return self.base(account)*self.risk_pct/100
 
 
 @dataclass

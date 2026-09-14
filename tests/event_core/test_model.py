@@ -27,7 +27,7 @@ class ModelTests(unittest.TestCase):
         self.assertNotEqual(PROFILES['SCALP'],PROFILES['NORMAL'])
     def test_no_artificial_balance(self):
         a={'balance':99868.35,'equity':99868.35};cfg=Config(test_capital=100)
-        self.assertEqual(cfg.base(a),100);self.assertEqual(a['balance'],99868.35)
+        self.assertEqual(cfg.base(a),99868.35);self.assertEqual(a['balance'],99868.35)
     def test_config_nan(self):
         with self.assertRaises(Blocked):Config(risk_pct=float('nan')).validate()
     def test_no_current_bar_in_strategy(self):

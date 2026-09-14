@@ -23,8 +23,10 @@ public final class EventClient {
             .putBoolean("bg_running",false).putBoolean("server_verified",false)
             .remove("state_symbol").remove("state_tf").remove("state_sparkline").putString("state_signal","WAIT")
             .putString("target_trade_mode","DEMO").putInt("ec_limit",0)
-            .putString("ec_test_capital","100").putString("ec_risk_cap","0.50")
             .putString("ec_lot_cap","0.01").apply();
+        if(!p.getBoolean("ec1_r2_risk_migrated",false))p.edit().putBoolean("ec1_r2_risk_migrated",true)
+            .remove("ec_test_capital").remove("ec_risk_cap").remove("daily_loss_limit_pct")
+            .remove("max_drawdown_pct").remove("max_consecutive_losses").apply();
         if(!p.contains("ec_client_id"))p.edit().putString("ec_client_id",UUID.randomUUID().toString()).commit();
     }
     public static SharedPreferences prefs(){if(app==null)throw new IllegalStateException("Client not initialized");return app.getSharedPreferences("fxm1",Context.MODE_PRIVATE);}
@@ -62,11 +64,8 @@ public final class EventClient {
         String fee=p.getString("ec_fee","").trim();
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
             .put("timeframe",tf()).put("mode",mode()).put("risk_pct",risks[Math.max(0,Math.min(2,p.getInt("risk_pos",0)))])
-            .put("daily_loss_pct",p.getFloat("daily_loss_limit_pct",3f)).put("drawdown_pct",p.getFloat("max_drawdown_pct",5f))
-            .put("loss_streak",p.getInt("max_consecutive_losses",3)).put("optional_position_limit",p.getInt("ec_limit",0))
+            .put("optional_position_limit",p.getInt("ec_limit",0))
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
-            .put("test_capital",Double.parseDouble(p.getString("ec_test_capital","100").replace(',','.')))
-            .put("absolute_risk_cap",Double.parseDouble(p.getString("ec_risk_cap","0.50").replace(',','.')))
             .put("lot_cap",Double.parseDouble(p.getString("ec_lot_cap","0.01").replace(',','.')))
             .put("spread_pips",p.getFloat("max_spread_pips",3f)).put("cooldown_sec",p.getInt("cooldown_minutes",10)*60)
             .put("dynamic_adds",p.getBoolean("ec_dynamic_adds",true)).put("session_filter",p.getBoolean("session_filter_enabled",false))

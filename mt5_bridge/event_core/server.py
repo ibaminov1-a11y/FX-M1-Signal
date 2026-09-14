@@ -3,7 +3,7 @@ from dataclasses import asdict
 import argparse, hmac, json, logging, secrets, socket, threading, time, uuid
 from pathlib import Path
 from flask import Flask, jsonify, request
-from . import VERSION, PROTOCOL
+from . import VERSION, PROTOCOL, BUILD
 from .engine import Engine
 from .model import Blocked
 from .mt5_adapter import MT5Broker, MAGIC
@@ -39,7 +39,7 @@ def create_app(engine,token):
     @app.get('/health')
     def health():
         s=snap();a=s['account'];pos=s['all_positions']
-        return jsonify(ok=healthy(s),protocol=PROTOCOL,bridge_version=VERSION,real_trading_enabled=False,
+        return jsonify(ok=healthy(s),protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,real_trading_enabled=False,
             mt5_connected=healthy(s),account_type=a.get('type','UNKNOWN'),currency=a.get('currency','USD'),
             balance=a.get('balance'),equity=a.get('equity'),positions=len(pos),
             floating_pl=sum(p['profit']+p.get('swap',0) for p in pos),message=s['execution'])
@@ -161,7 +161,7 @@ def main():
     threading.Thread(target=worker,name='event-core',daemon=True).start()
     try:ip=socket.gethostbyname(socket.gethostname())
     except OSError:ip='PC_IP'
-    print(f'FX M1 Bridge {VERSION} | DEMO ONLY | AUTO OFF | MT5 source',flush=True)
+    print(f'FX M1 Bridge {BUILD} | DEMO ONLY | AUTO OFF | MT5 source',flush=True)
     print(f'Адрес для телефона: http://{ip}:{args.port}',flush=True)
     print('Ключ Bridge (не публикуйте): '+token,flush=True)
     print('Только доверенная локальная сеть. Не открывать порт в Интернет.',flush=True)

@@ -354,7 +354,7 @@ public class MainActivity extends Activity {
                     .setPositiveButton("OK",null).show();return;
             }
             new AlertDialog.Builder(this).setTitle("Разрешить AUTO только на DEMO?")
-                .setMessage("Источник — MT5. Первый вход после отката и нового триггера. Добавления только в плюс и в пределах общего риска.\n\nБаза проверки риска: "+prefs.getString("ec_test_capital","100")+" USD (0 = фактический счёт). Предел кампании: "+prefs.getString("ec_risk_cap","0.50")+" USD. Баланс MT5 не подменяется. Комиссию укажите в настройках.")
+                .setMessage("Источник — MT5. Первый вход после отката и нового триггера. Добавления только в плюс и в пределах общего риска текущей кампании.\n\nРиск кампании рассчитывается от фактического Balance/Equity MT5 по выбранному проценту. Старые V10 и ручные сделки не блокируют EC1. Комиссию укажите в настройках.")
                 .setNegativeButton("Отмена",null).setPositiveButton("Подтвердить DEMO",(d,w)->executor.execute(()->{
                     try{EventClient.configure();EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
                         JSONObject out=EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));EventClient.poll();
@@ -954,17 +954,11 @@ public class MainActivity extends Activity {
         ScrollView scroll=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(18),dp(12),dp(18),dp(12));scroll.addView(box);
         box.addView(smartLabel("EventCore · только DEMO. Режим и ТФ независимы. Изменение профиля выключает AUTO; во время кампании профиль фиксирован."));
         EditText fee=eventNumber(box,"Комиссия полного круга USD за 1 lot. 0 — только при известном отсутствии комиссии",p.getString("ec_fee",""));
-        EditText capital=eventNumber(box,"База DEMO-проверки риска; 0 = фактический счёт. Не меняет баланс MT5",p.getString("ec_test_capital","100"));
-        EditText cap=eventNumber(box,"Предел планового риска всей кампании, USD",p.getString("ec_risk_cap","0.50"));
         EditText lot=eventNumber(box,"Верхний предел объёма одной ступени, lot",p.getString("ec_lot_cap","0.01"));
-        EditText daily=eventNumber(box,"Дневной лимит убытка, % базы риска",String.valueOf(p.getFloat("daily_loss_limit_pct",3f)));
-        EditText dd=eventNumber(box,"Лимит просадки, % базы риска",String.valueOf(p.getFloat("max_drawdown_pct",5f)));
-        EditText streak=eventNumber(box,"Предел последовательных убыточных позиций",String.valueOf(p.getInt("max_consecutive_losses",3)));
         EditText spread=eventNumber(box,"Максимальный спред, pips",String.valueOf(p.getFloat("max_spread_pips",3f)));
         EditText cooldown=eventNumber(box,"Пауза после кампании, минут",String.valueOf(p.getInt("cooldown_minutes",10)));
         Switch dynamic=smartSwitch("Добавления по новым событиям (не усреднение)",p.getBoolean("ec_dynamic_adds",true));box.addView(dynamic);
         Switch sessions=smartSwitch("Фильтр сессий: "+p.getString("allowed_sessions","LONDON,NEW_YORK"),p.getBoolean("session_filter_enabled",false));box.addView(sessions);
-        Button review=new Button(this);review.setText("Проверить блокировку серии убытков");styleOutlineButton(review,C_PURPLE);review.setOnClickListener(v->reviewLossStreak());box.addView(review);
         Button reset=new Button(this);reset.setText("Сверить и снять Emergency");styleOutlineButton(reset,C_PURPLE);box.addView(reset);
         reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Сверить DEMO-состояние?")
             .setMessage("Только без позиций/ордеров бота и неизвестных исполнений. AUTO остаётся выключенным.")
@@ -973,26 +967,14 @@ public class MainActivity extends Activity {
             .setPositiveButton("СОХРАНИТЬ",(d,w)->{
                 try{
                     double f=Double.parseDouble(fee.getText().toString().replace(',','.'));
-                    double c=Double.parseDouble(capital.getText().toString().replace(',','.'));
-                    double r=Double.parseDouble(cap.getText().toString().replace(',','.'));
                     double l=Double.parseDouble(lot.getText().toString().replace(',','.'));
-                    if(!Double.isFinite(f)||!Double.isFinite(c)||!Double.isFinite(r)||!Double.isFinite(l)||f<0||c<0||r<=0||l<=0)throw new Exception("Проверьте числа профиля");
-                    p.edit().putString("ec_fee",String.valueOf(f)).putString("ec_test_capital",String.valueOf(c)).putString("ec_risk_cap",String.valueOf(r)).putString("ec_lot_cap",String.valueOf(l))
-                        .putFloat("daily_loss_limit_pct",Float.parseFloat(daily.getText().toString().replace(',','.'))).putFloat("max_drawdown_pct",Float.parseFloat(dd.getText().toString().replace(',','.')))
-                        .putInt("max_consecutive_losses",Integer.parseInt(streak.getText().toString())).putFloat("max_spread_pips",Float.parseFloat(spread.getText().toString().replace(',','.')))
+                    if(!Double.isFinite(f)||!Double.isFinite(l)||f<0||l<=0)throw new Exception("Проверьте числа профиля");
+                    p.edit().putString("ec_fee",String.valueOf(f)).putString("ec_lot_cap",String.valueOf(l))
+                        .putFloat("max_spread_pips",Float.parseFloat(spread.getText().toString().replace(',','.')))
                         .putInt("cooldown_minutes",Integer.parseInt(cooldown.getText().toString())).putBoolean("ec_dynamic_adds",dynamic.isChecked()).putBoolean("session_filter_enabled",sessions.isChecked()).apply();
                     executor.execute(()->{try{EventClient.configure();EventClient.poll();}catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
                 }catch(Exception e){new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show();}
             }).show();
-    }
-
-    private void reviewLossStreak() {
-        eventCommand("disable",new JSONObject());
-        executor.execute(()->{try{JSONObject rs=EventClient.http("GET",EventClient.base()+"/risk-state",null);
-            String info="Последовательных убытков: "+rs.optInt("consecutive_losses")+" / "+getSharedPreferences("fxm1",MODE_PRIVATE).getInt("max_consecutive_losses",3)+"\n"+(rs.optBoolean("allowed")?"Риск разрешён":ExecutionFeedback.riskText("RISK BLOCK: "+rs.optJSONArray("blocks")));
-            runOnUiThread(()->{AlertDialog.Builder b=new AlertDialog.Builder(this).setTitle("Проверка LOSS_STREAK").setMessage(info+"\nСброс не удаляет историю и не включает AUTO.").setNegativeButton("Назад",null);
-                if(rs.optBoolean("can_acknowledge"))b.setPositiveButton("Проверено — сбросить серию",(d,w)->{try{eventCommand("ack_losses",new JSONObject().put("confirmation","ACK_LOSS_STREAK_DEMO").put("expected_last_deal",rs.optLong("last_closing_ticket")));}catch(Exception ignored){}});b.show();});
-        }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Риск").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
     }
 
     private void refreshSmartUi() {

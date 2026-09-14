@@ -21,11 +21,11 @@ class RiskTests(unittest.TestCase):
                           kw.get('positions',[]),kw.get('campaign'),self.now)
     def test_stop_adjusted_before_lot(self):
         self.b.info['stops_level']=100
-        p=self.plan(cfg=replace(self.cfg,absolute_risk_cap=2,lot_cap=.1))
+        p=self.plan(cfg=replace(self.cfg,lot_cap=.1))
         self.assertLessEqual(p.stop, self.b.bid-.001)
-        self.assertLessEqual(p.total_risk,2+1e-7)
+        self.assertLessEqual(p.total_risk,replace(self.cfg,lot_cap=.1).budget(self.b.account())+1e-7)
     def test_tiny_budget_skips_not_minimum_lot_override(self):
-        with self.assertRaises(Blocked):self.plan(cfg=replace(self.cfg,absolute_risk_cap=.001))
+        with self.assertRaises(Blocked):self.plan(cfg=replace(self.cfg,risk_pct=.000001))
     def test_unknown_fees_not_zero(self):
         with self.assertRaises(Blocked):self.plan(cfg=replace(self.cfg,fee_per_lot=None))
     def test_nan_profit_blocks(self):
@@ -48,7 +48,7 @@ class RiskTests(unittest.TestCase):
         p=dict(symbol='EURUSD',side=1,sl=0,volume=.01,price_open=1.101,profit=2,swap=0)
         with self.assertRaises(Blocked):self.plan(positions=[p],campaign={'budget':10,'last_entry':1.102,'add_step_atr':.3})
     def test_bad_margin_blocks(self):
-        self.b.calc_margin=lambda *a:10000
+        self.b.calc_margin=lambda *a:100000
         with self.assertRaises(Blocked):self.plan()
     def test_fee_accounted_before_add(self):
         p=dict(symbol='EURUSD',side=1,sl=1.102,volume=.01,price_open=1.101,profit=.01,swap=0)
@@ -56,6 +56,31 @@ class RiskTests(unittest.TestCase):
     def test_price_must_advance_since_last_entry(self):
         p=dict(symbol='EURUSD',side=1,sl=1.102,volume=.01,price_open=1.101,profit=2,swap=0)
         with self.assertRaisesRegex(Blocked,'следующий шаг'):self.plan(positions=[p],campaign={'budget':10,'last_entry':1.103,'add_step_atr':.3})
+
+    def test_account_wide_old_losses_and_manual_float_do_not_block_ec1(self):
+        foreign_position=dict(ticket=900,identifier=900,magic=999,symbol='EURUSD',side=1,volume=.01,price_open=1.10,sl=1.09,tp=0,profit=-25,swap=0,time=int(self.now),comment='manual')
+        deals=[]
+        for i in range(4):
+            pid=800+i
+            deals.extend([
+                dict(ticket=pid*10,position_id=pid,magic=999,symbol='EURUSD',comment='legacy',type=0,entry=0,time_msc=int((self.now-100+i)*1000),volume=.01,profit=0.,commission=0.,swap=0.,fee=0.),
+                dict(ticket=pid*10+1,position_id=pid,magic=999,symbol='EURUSD',comment='legacy',type=1,entry=1,time_msc=int((self.now-90+i)*1000),volume=.01,profit=-5.,commission=0.,swap=0.,fee=0.)])
+        account=dict(self.b.account());account['equity']=account['balance']-25
+        rs=risk_state(account,[foreign_position],deals,self.cfg,self.now)
+        self.assertTrue(rs['allowed'])
+        self.assertEqual(rs['blocks'],[])
+
+    def test_campaign_budget_uses_actual_mt5_equity_not_artificial_base_or_dollar_cap(self):
+        account=dict(self.b.account());account['balance']=100000.;account['equity']=99800.
+        cfg=replace(self.cfg,risk_pct=.25,test_capital=100,absolute_risk_cap=.50)
+        self.assertAlmostEqual(cfg.base(account),99800.)
+        self.assertAlmostEqual(cfg.budget(account),249.50)
+
+    def test_margin_guard_uses_actual_account_not_test_capital(self):
+        self.b.calc_margin=lambda *a:500
+        cfg=replace(self.cfg,risk_pct=.25,test_capital=100,absolute_risk_cap=.50,margin_fraction=.30,lot_cap=.01)
+        plan=self.plan(cfg=cfg)
+        self.assertGreater(plan.volume,0)
 
 
 class EngineTests(unittest.TestCase):
@@ -136,6 +161,7 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(Blocked):self.e._entry(self.decision(),self.now)
         self.assertFalse(self.b.sent)
     def test_post_fill_excess_risk_forces_exit(self):
+        self.e.config=replace(self.e.config,risk_pct=.05)
         send=self.b.send
         def bad_fill(p,comment):
             out=send(p,comment)

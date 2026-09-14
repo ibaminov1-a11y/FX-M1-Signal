@@ -3,6 +3,7 @@ from dataclasses import dataclass, asdict
 from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING
 from datetime import datetime, timezone, timedelta
 from .model import Config, Quote, Decision, Blocked, number
+from .mt5_adapter import MAGIC
 
 LOCAL_DAY = timezone(timedelta(hours=5))
 
@@ -54,6 +55,12 @@ def summary(rows):
 
 
 def risk_state(account, positions, deals, cfg: Config, now: float, ack=(0,0), daily_latch=''):
+    """Only EC1-owned exposure is considered for EC1 risk telemetry.
+
+    Legacy V10/manual trades remain visible in the account and journal but never create
+    DAILY_LOSS, DRAWDOWN or LOSS_STREAK entry blocks for EC1. Campaign stop risk and
+    margin are enforced in plan_order().
+    """
     cfg.validate()
     if account.get('type')!='DEMO':
         raise Blocked('REAL запрещён: нужен DEMO-счёт')
@@ -61,26 +68,23 @@ def risk_state(account, positions, deals, cfg: Config, now: float, ack=(0,0), da
         raise Blocked('Для отдельных ступеней нужен DEMO hedging')
     if not account.get('trade_allowed'):
         raise Blocked('Торговля отключена в MT5')
-    base=cfg.base(account)
-    rows=ledger(deals,positions)
+
+    owned_positions=[p for p in positions if int(p.get('magic',0) or 0)==MAGIC]
+    owned_deals=[d for d in deals if int(d.get('magic',0) or 0)==MAGIC]
+    rows=ledger(owned_deals,owned_positions)
     series=[r for r in rows if (r['time_msc'],r['last_ticket'])>tuple(ack)]
     streak=0
     for r in reversed(series):
         if r['net']<0:streak+=1
         else:break
-    # Calendar-day costs include entry commissions, not only realized exits.
-    closed_today=sum(money(d) for d in deals if d.get('type') in (0,1) and d['time_msc']/1000>=day_start(now))
-    floating=number(account['equity'],'equity')-number(account['balance'],'balance')
-    day_loss=max(0,-(closed_today+floating))
-    dd=max(0,-floating)
+    closed_today=sum(money(d) for d in owned_deals if d.get('type') in (0,1) and d['time_msc']/1000>=day_start(now))
+    floating=sum(number(p.get('profit',0),'EC1 floating')+number(p.get('swap',0),'EC1 swap') for p in owned_positions)
+    base=cfg.base(account)
     day=datetime.fromtimestamp(now,LOCAL_DAY).date().isoformat()
-    blocks=[]
-    if day_loss>=base*cfg.daily_loss_pct/100 or daily_latch==day: blocks.append('DAILY_LOSS')
-    if dd>=base*cfg.drawdown_pct/100: blocks.append('DRAWDOWN')
-    if streak>=cfg.loss_streak: blocks.append('LOSS_STREAK')
-    return dict(allowed=not blocks,blocks=blocks,daily_pl=closed_today,floating=floating,
-        daily_loss_pct=day_loss/base*100,drawdown_pct=dd/base*100,consecutive_losses=streak,
-        ack_supported=True,can_acknowledge=blocks==['LOSS_STREAK'],
+    return dict(allowed=True,blocks=[],daily_pl=closed_today,floating=floating,
+        daily_loss_pct=max(0,-(closed_today+floating))/base*100,
+        drawdown_pct=max(0,-floating)/base*100,consecutive_losses=streak,
+        ack_supported=False,can_acknowledge=False,
         last_closing_ticket=rows[-1]['last_ticket'] if rows else 0,
         last_closing_time_msc=rows[-1]['time_msc'] if rows else 0,
         last_closing_time=rows[-1]['time'] if rows else 0,

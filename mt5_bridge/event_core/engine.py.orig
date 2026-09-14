@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import asdict, fields
 import copy, hashlib, math, threading, time
-from .model import Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered
+from .model import Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number
 from .strategy import Strategy
 from .risk import risk_state, plan_order, ledger, summary, quantize, day_start
 from .mt5_adapter import MAGIC
@@ -34,8 +34,6 @@ class Engine:
         self.rows=[];self.account={};self.account_time=0.;self.positions=[];self.orders=[]
         self.risk={'allowed':False,'blocks':['HISTORY_UNAVAILABLE']}
         self.last_bars_at=0.;self.bars=[];self.context=[];self.quote=None;self.info={}
-        self.market_time=0.;self.market_errors=[];self.quote_ready=False
-        self.last_market_attempt=-1.;self.bar_errors=[]
         self.analysis_time=0.;self.decision=Decision();self.execution='AUTO выключен: только анализ'
         self.rate_times=[];self.next_close=0.;self.last_persist=0.;self.last_audit_key=None
         self.save()
@@ -56,13 +54,7 @@ class Engine:
             self.risk=risk_state(self.account,self.positions,self.deals,self.config,now,self.ack,self.daily_latch)
             self.rows=ledger(self.deals,self.positions)
             if 'DAILY_LOSS' in self.risk['blocks']:
-                previous=(self.daily_latch,self.auto,self.paused,self.exit_pending)
-                self.daily_latch=self.risk['day'];self.auto=False;self.paused=True
-                # Account risk blocks entries, but does not create a fictitious EC1 exit.
-                if self._has_exit_targets():
-                    self.exit_pending=True
-                if previous!=(self.daily_latch,self.auto,self.paused,self.exit_pending):
-                    self.save()
+                self.daily_latch=self.risk['day'];self.auto=False;self.paused=True;self.exit_pending=True;self.save()
         except (Blocked,ValueError,TypeError,KeyError) as e:
             self.risk={'allowed':False,'blocks':['DATA_UNAVAILABLE'],'message':str(e),'ack_supported':True,'can_acknowledge':False}
 
@@ -108,12 +100,6 @@ class Engine:
             self.campaign['realized']=sum(d['profit']+d.get('swap',0)+d.get('commission',0)+d.get('fee',0)
                 for d in self.deals if d.get('position_id') in ids and d.get('entry') in (1,3))
             if not owned and not self._owned_orders() and not self.store.pending():
-                closed_ids={row['position_id'] for row in ledger(self.deals,self.positions)}
-                if not ids.issubset(closed_ids):
-                    # A recently disappeared position is not a confirmed ledger close.
-                    self.history_time=0.
-                    self.execution='Позиций EC1 нет; ожидается подтверждение закрытия в истории MT5'
-                    return False
                 self.campaign['end']=self.clock()
                 self.campaign['net']=sum(d['profit']+d.get('swap',0)+d.get('commission',0)+d.get('fee',0)
                     for d in self.deals if d.get('position_id') in ids)
@@ -122,99 +108,9 @@ class Engine:
                 self.campaign=None;self.last_exit=self.clock();self.exit_pending=False
                 self.strategy.clear();self.save()
                 return True
-        # Heal only the obsolete action flag after an authoritative exposure refresh.
-        # Never erase daily/emergency/recovery latches or a pending/unknown intent.
-        if self.exit_pending and not self._has_exit_targets():
-            self.exit_pending=False
-            self.execution=self._idle_status()
-            self.save()
         return False
 
-    def _has_exit_targets(self):
-        return bool(self.campaign or self._owned() or self._owned_orders() or self.store.pending())
-
-    def _idle_status(self):
-        if self.emergency:
-            return 'EMERGENCY сохранён. Собственных позиций/ордеров EC1 нет; AUTO выключен'
-        if self.recovery or self.store.pending():
-            return 'Нужна сверка исполнения; новые входы запрещены'
-        names={'DAILY_LOSS':'дневной лимит','DRAWDOWN':'просадка',
-               'LOSS_STREAK':'серия убытков','DATA_UNAVAILABLE':'нет свежей проверки риска',
-               'HISTORY_UNAVAILABLE':'история недоступна'}
-        blocks=self.risk.get('blocks',[])
-        if blocks:
-            message='Новые входы запрещены: '+', '.join(names.get(x,x) for x in blocks)
-            if 'base' in self.risk:
-                message+=f". Риск всего счёта относительно базы {self.risk['base']:.2f} USD"
-                message+=f"; плавающий результат {self.risk.get('floating',0):+.2f} USD"
-        else:
-            message=('AUTO выключен' if not self.auto else 'PAUSE' if self.paused else 'Новые входы не отправлены')
-            message+='; сопровождение сохраняется'
-        foreign=sum(p.get('magic')!=MAGIC for p in self.positions)
-        foreign_orders=sum(o.get('magic')!=MAGIC for o in self.orders)
-        if foreign or foreign_orders:
-            message+=f'\nСтарые/ручные позиции: {foreign}, ордера: {foreign_orders}. EC1 ими не управляет'
-        return message
-
-    def _suspend_trigger(self,now):
-        # A data outage must not turn an old crossing into a fresh entry on reconnect.
-        self.strategy.previous_quote=None
-        setup=self.strategy.setup
-        if setup:
-            setup.seen_safe_side=False
-            setup.armed_msc=max(setup.armed_msc,int(now*1000))
-
-    def _refresh_market(self,now):
-        """Read-only market snapshot, independent of AUTO, risk and exit state.
-
-        Historical bars stay visible with stale/missing quotes. Any failure still blocks
-        trading and is explicitly reported; old cached bars are not called live analysis.
-        """
-        self.market_errors=[];self.quote_ready=False
-        try:
-            self.info=self.broker.symbol(self.config.symbol)
-        except Exception as exc:
-            self.market_errors=['Инструмент MT5 недоступен: '+str(exc)]
-            return
-        symbol=self.info['name']
-        try:
-            self.quote=self.broker.quote(symbol)
-            self.quote.validate(now)
-            self.quote_ready=True
-        except Exception as exc:
-            self.market_errors.append('Нет пригодной свежей котировки: '+str(exc))
-        if self.last_market_attempt<0 or now-self.last_market_attempt>=1:
-            self.last_market_attempt=now;self.bar_errors=[]
-            for attr,tf in (('bars',self.config.timeframe),('context',CONTEXT[self.config.timeframe])):
-                try:
-                    values=list(self.broker.bars(symbol,tf))
-                    if not values:
-                        raise Blocked('MT5 вернул пустую историю '+tf)
-                    ordered(values)
-                    if tf!='MN1' and values[-1].time+TF_SECONDS[tf]>now:
-                        raise Blocked('MT5 вернул незакрытую свечу '+tf)
-                    setattr(self,attr,values)
-                except Exception as exc:
-                    self.bar_errors.append('История '+tf+' не обновлена: '+str(exc))
-            if not self.bar_errors:
-                self.last_bars_at=now;self.market_time=now
-        self.market_errors.extend(self.bar_errors)
-        ctf=CONTEXT[self.config.timeframe]
-        if not self.bars or not self.context:
-            self.market_errors.append('Нет полной истории рабочего и старшего таймфреймов')
-        elif ctf!='MN1' and now-self.context[-1].time>TF_SECONDS[ctf]*2.5:
-            self.market_errors.append('Контекст старшего таймфрейма устарел')
-        if self.bars and self.config.timeframe!='MN1':
-            tf=TF_SECONDS[self.config.timeframe]
-            if now-(self.bars[-1].time+tf)>tf*1.5:
-                self.market_errors.append('Закрытые свечи MT5 исторические; для входа нужны новые данные')
-
     def _close_campaign(self,reason):
-        if not self._has_exit_targets():
-            self.exit_pending=False
-            self.execution=self._idle_status()
-            self.save()
-            return
         self.exit_pending=True;self.auto=False if self.emergency else self.auto
         self.execution='Выход кампании: '+reason;self.save()
         now=self.clock()
@@ -237,7 +133,7 @@ class Engine:
         self.positions=self.broker.positions()
         if not self._owned() and not self._owned_orders():self.execution='Позиции бота закрыты; ожидается сверка истории'
 
-    def _manage(self,now,price_ready=True):
+    def _manage(self,now):
         owned=self._owned()
         if self.emergency or self.exit_pending:
             self._close_campaign('Emergency' if self.emergency else 'ожидаем завершения');return True
@@ -248,8 +144,6 @@ class Engine:
         c['peak']=max(float(c.get('peak',0)),net)
         if net<=-c['budget'] or any(p['sl']<=0 for p in owned):
             self._close_campaign('превышен риск или отсутствует брокерский SL');return True
-        if not price_ready:
-            return False
         q.validate(now)
         mark=q.bid if side==1 else q.ask
         if (mark-c['invalidation'])*side<=0:
@@ -263,7 +157,7 @@ class Engine:
         if (mark-c.get('best_price',c['last_entry']))*side>0:
             c['best_price']=mark;c['last_progress']=now
         # Tighten broker protection only after sufficient progress, and only from closed data.
-        if c['peak']>=profile.protect_at_r*r and self.bars and not self.market_errors:
+        if c['peak']>=profile.protect_at_r*r and self.bars:
             a=atr(self.bars);pts=pivots(self.bars)
             levels=[p['price'] for p in pts if p['kind']==('L' if side==1 else 'H')]
             candidate=(min(b.low for b in self.bars[-2:])-a*.05 if side==1 else max(b.high for b in self.bars[-2:])+a*.05) if c['mode']=='SCALP' else (levels[-1]-side*a*.05 if levels else c['invalidation'])
@@ -291,27 +185,21 @@ class Engine:
             try:
                 self._refresh(now)
                 just_closed=self._reconcile()
-                exit_cycle=bool(just_closed or self.emergency or self.exit_pending)
                 if self.emergency or self.exit_pending:
-                    # Mandatory exit is attempted before the read-only chart refresh.
-                    try:
-                        self._close_campaign('Emergency' if self.emergency else 'ожидаем завершения')
-                    except Exception as exc:
-                        self.execution='Закрытие EC1 пока не подтверждено: '+str(exc)
-                # Even an exit, daily stop, foreign position or weekend must not hide history.
-                self._refresh_market(now)
-                if exit_cycle:
-                    self._suspend_trigger(now)
-                    message=self.execution
-                    if self.market_errors:
-                        message+='\nВход запрещён: '+'; '.join(self.market_errors)
-                    self.decision=Decision(phase='DATA_BLOCK' if self.market_errors else 'SEARCH',reason=message)
+                    self._close_campaign('Emergency' if self.emergency else 'ожидаем завершения')
                     return self.snapshot()
-                if self._manage(now,price_ready=self.quote_ready):
-                    return self.snapshot()
-                if self.market_errors:
-                    raise Blocked('; '.join(self.market_errors))
+                if just_closed:return self.snapshot()
+                self.info=self.broker.symbol(self.config.symbol)
+                self.quote=self.broker.quote(self.info['name'])
+                if self._manage(now):return self.snapshot()
                 q=self.quote;q.validate(now)
+                if now-self.last_bars_at>=1 or not self.bars:
+                    self.bars=self.broker.bars(self.info['name'],self.config.timeframe)
+                    self.context=self.broker.bars(self.info['name'],CONTEXT[self.config.timeframe])
+                    self.last_bars_at=now
+                ctf=CONTEXT[self.config.timeframe]
+                if ctf!='MN1' and (not self.context or now-self.context[-1].time>TF_SECONDS[ctf]*2.5):
+                    raise Blocked('Контекст старшего таймфрейма устарел')
                 d=self.strategy.update(self.bars,self.context,q,now,self.campaign['side'] if self.campaign else 0)
                 self.decision=d;self.analysis_time=now
                 if now-self.last_persist>=1:
@@ -321,11 +209,11 @@ class Engine:
                 if key!=self.last_audit_key:
                     self.store.event('ANALYSIS',dict(decision=d.json(),quote=asdict(q),bar=asdict(self.bars[-1]),mode=self.config.mode),now)
                     self.last_audit_key=key
-                if not self.auto or self.paused:self.execution=self._idle_status()
+                if not self.auto or self.paused:self.execution='AUTO выключен / PAUSE; сопровождение сохраняется'
                 elif now-self.heartbeat>30:
                     self.auto=False;self.paused=True;self.execution='Нет связи с телефоном 30 секунд: новые входы остановлены';self.save()
                 elif self.recovery:self.execution='Нужна сверка неизвестного исполнения; новые входы запрещены'
-                elif not self.risk.get('allowed',False):self.execution=self._idle_status()
+                elif not self.risk.get('allowed',False):self.execution='Риск: '+','.join(self.risk.get('blocks',[]))
                 elif not self._session_allowed(now):self.execution='Текущая сессия не разрешена выбранным фильтром'
                 elif d.signal=='WAIT':self.execution='Нет нового подтверждённого входа; ордер не отправлен'
                 else:
@@ -336,14 +224,8 @@ class Engine:
                 # when AUTO is enabled after a crossing that already happened.
                 if d.event_id:self.strategy.consume(d.event_id);self.save()
             except Exception as e:
-                self._suspend_trigger(now)
-                self.execution=str(e)+'\n'+self._idle_status()
-                if self.exit_pending:
-                    self.execution+='\nВыход собственных позиций EC1 ещё не завершён'
-                detail=str(e)
-                if self.bars:
-                    detail+='\nПоказаны последние доступные закрытые свечи MT5; это не свежий торговый сигнал'
-                self.decision=Decision(phase='DATA_BLOCK',reason=detail)
+                self.execution=str(e)
+                self.decision=Decision(phase='DATA_BLOCK',reason=str(e))
                 # Existing broker stops remain in force. Data failure never becomes an entry.
             return self.snapshot()
 
@@ -441,9 +323,6 @@ class Engine:
                     raise Blocked('Профиль фиксирован до завершения кампании')
                 new.approved=False;self.auto=False;self.paused=True
                 self.config=new;self.strategy=Strategy(new);self.bars=[];self.context=[];self.last_bars_at=0
-                self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
-                self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.
-                self.decision=Decision()
                 self.save();message='Профиль сохранён. Подтвердите комиссию и риск; AUTO выключен'
             elif command=='approve_profile':
                 if data.get('confirmation')!='APPROVE_DEMO_RISK':raise Blocked('Нужно явное подтверждение риска DEMO')
@@ -482,13 +361,11 @@ class Engine:
             return out
 
     def snapshot(self):
-        from . import VERSION, PROTOCOL, BUILD
+        from . import VERSION, PROTOCOL
         with self.lock:
             q=self.quote;now=self.clock();owned=self._owned()
-            return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,server_time=now,
+            return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,server_time=now,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
-                market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
-                risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),
                 emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
                 quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-100:]],
