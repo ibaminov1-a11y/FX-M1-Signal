@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
-from .model import Bar, Quote, Blocked, number
+import time
+from .model import Bar, Quote, Blocked, number, TF_SECONDS
 
 MAGIC=260911109
 
@@ -57,8 +58,26 @@ class MT5Broker:
     def bars(self,symbol,tf,count=240):
         timeframe=getattr(self.mt5,'TIMEFRAME_'+tf,None)
         if timeframe is None: raise Blocked('Таймфрейм MT5 не поддерживается')
-        rows=required(self.mt5.copy_rates_from_pos(symbol,timeframe,1,count),'закрытые свечи '+tf)
-        return [Bar(int(x['time']),float(x['open']),float(x['high']),float(x['low']),float(x['close']),float(x['tick_volume'])) for x in rows]
+        # Request the live bar as well and decide closure from timestamps ourselves.
+        # Some terminals/brokers can expose a forming bar while history is synchronising;
+        # one such row must never make us discard all already closed history.
+        start_pos=1 if tf=='MN1' else 0
+        request_count=count if tf=='MN1' else count+2
+        rows=self.mt5.copy_rates_from_pos(symbol,timeframe,start_pos,request_count)
+        if rows is None:
+            raise Blocked('MT5 не вернул историю '+tf+': '+str(self.mt5.last_error()))
+        values=[Bar(int(x['time']),float(x['open']),float(x['high']),float(x['low']),float(x['close']),float(x['tick_volume'])) for x in rows]
+        # Normalize order and de-duplicate by opening timestamp. The strategy sees only
+        # bars that are certainly closed according to the same UTC epoch as MT5 ticks.
+        values=list({b.time:b for b in values}.values())
+        values.sort(key=lambda b:b.time)
+        if tf!='MN1':
+            now=time.time()
+            span=TF_SECONDS[tf]
+            values=[b for b in values if b.time+span<=now+1.0]
+        if not values:
+            raise Blocked('MT5 не вернул ни одной закрытой свечи '+tf+': '+str(self.mt5.last_error()))
+        return values[-count:]
 
     def positions(self):
         rows=required(self.mt5.positions_get(),'открытые позиции')
