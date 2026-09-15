@@ -193,13 +193,23 @@ def atr(bars: list[Bar], period=14):
 
 
 def pivots(bars: list[Bar], width=2):
-    """A pivot is available only after `width` bars to its right have closed."""
+    """Confirmed pivots with deterministic plateau handling.
+
+    A pivot becomes usable only after `width` bars on its right are closed. Equal-price
+    plateaus are common in MT5 data; choosing the right-most member avoids losing the
+    level while still producing one deterministic point without future leakage.
+    """
     result=[]
     for i in range(width,len(bars)-width):
-        b=bars[i]; window=bars[i-width:i]+bars[i+1:i+width+1]
-        if all(b.high>x.high for x in window):
+        b=bars[i]
+        left=bars[i-width:i]
+        right=bars[i+1:i+width+1]
+        window=left+right
+        high=max([b.high]+[x.high for x in window])
+        low=min([b.low]+[x.low for x in window])
+        if b.high==high and any(b.high>x.high for x in window) and not any(x.high==b.high for x in right):
             result.append({'kind':'H','time':b.time,'price':b.high,'known_at':bars[i+width].time})
-        if all(b.low<x.low for x in window):
+        if b.low==low and any(b.low<x.low for x in window) and not any(x.low==b.low for x in right):
             result.append({'kind':'L','time':b.time,'price':b.low,'known_at':bars[i+width].time})
     return result
 
