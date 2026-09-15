@@ -241,11 +241,14 @@ public class MainActivity extends Activity {
         riskSpinner.setAdapter(riskAdapter);
         riskSpinner.setSelection(prefs.getInt("risk_pos", 0));
 
+        // EventCore EC1 uses event-driven pyramiding with one shared campaign budget.
+        // There is no strategy-level fixed position count such as 10.
+        prefs.edit().putInt("ec_limit", 0).putString("maxpos_label", "По риску").apply();
         ArrayAdapter<String> maxPosAdapter = darkSpinnerAdapter(
-                new String[]{"По риску", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
+                new String[]{"По риску"}
         );
         maxPositionsSpinner.setAdapter(maxPosAdapter);
-        maxPositionsSpinner.setSelection(prefs.getInt("ec_limit", 0));
+        maxPositionsSpinner.setSelection(0);
 
         ArrayAdapter<String> driftAdapter = darkSpinnerAdapter(
                 new String[]{"0.03%", "0.05%", "0.10%", "0.20%"}
@@ -302,7 +305,7 @@ public class MainActivity extends Activity {
         maxPositionsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.edit().putInt("ec_limit", position).putString("maxpos_label", String.valueOf(maxPositionsSpinner.getSelectedItem())).apply();
+                prefs.edit().putInt("ec_limit", 0).putString("maxpos_label", "По риску").apply();
                 if(monitoring)sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
@@ -597,6 +600,7 @@ public class MainActivity extends Activity {
         suppressAutoSwitch=true;autoTradingSwitch.setChecked(false);suppressAutoSwitch=false;
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);boolean was=p.getBoolean("auto_user_enabled",false);
         p.edit().putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).apply();
+        if(autoStatusText!=null){autoStatusText.setText("AUTO выключен · DEMO ONLY");autoStatusText.setTextColor(C_MUTED);}
         if(was)eventCommand("disable",new JSONObject());
         if(journalMessage!=null)addJournal(journalMessage);
     }
@@ -628,9 +632,19 @@ public class MainActivity extends Activity {
             closeAllButton.setEnabled(mt5 && positions > 0);
             suppressAutoSwitch = true;
             boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
-            boolean autoSaved = !p.getBoolean("v108_emergency_latched", false) && p.getBoolean("auto_user_enabled", p.getBoolean("auto_trading", false)) && mt5 && targetAllowed;
+            JSONObject bridgeState = EventClient.state();
+            boolean emergency = p.getBoolean("v108_emergency_latched", false) || bridgeState.optBoolean("emergency", false);
+            boolean paused = bridgeState.optBoolean("paused", true);
+            boolean bridgeAuto = bridgeState.optBoolean("auto", false) && !emergency;
+            boolean autoSaved = bridgeAuto && mt5 && targetAllowed;
             autoTradingSwitch.setChecked(autoSaved);
-            p.edit().putBoolean("auto_trading", autoSaved).apply();
+            p.edit().putBoolean("auto_trading", autoSaved).putBoolean("auto_user_enabled", autoSaved).putInt("ec_limit", 0).apply();
+            if (autoStatusText != null) {
+                autoStatusText.setText(emergency ? "EMERGENCY · AUTO заблокирован" :
+                        autoSaved ? "AUTO включён · DEMO ONLY" :
+                        paused ? "AUTO выключен · PAUSE" : "AUTO выключен · DEMO ONLY");
+                autoStatusText.setTextColor(emergency ? C_RED : autoSaved ? C_GREEN : C_MUTED);
+            }
             suppressAutoSwitch = false;
         } else {
             setTradingControlsOffline();
@@ -977,11 +991,23 @@ public class MainActivity extends Activity {
             }).show();
     }
 
+    private String bridgeOperationalText(JSONObject s) {
+        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);
+        boolean emergency=p.getBoolean("v108_emergency_latched",false)||s.optBoolean("emergency",false);
+        boolean auto=s.optBoolean("auto",false)&&!emergency;
+        boolean paused=s.optBoolean("paused",true);
+        if(emergency)return "EMERGENCY: новые входы заблокированы; требуется явная сверка";
+        if(auto&&!paused)return "AUTO DEMO включён; новые входы и добавления разрешены только по новому подтверждённому событию";
+        if(paused)return "PAUSE: новые входы и добавления остановлены; сопровождение открытой кампании продолжается";
+        return "AUTO выключен; новые входы и добавления не отправляются";
+    }
+
     private void refreshSmartUi() {
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);JSONObject s=EventClient.state(),cfg=s.optJSONObject("config");
+        p.edit().putInt("ec_limit",0).putString("maxpos_label","По риску").apply();
         if(smartStatusText!=null)smartStatusText.setText("Режим: "+(cfg==null?EventClient.mode():cfg.optString("mode"))+" · только DEMO\nИсточник: MT5\n"+
             "Наращивание: "+(cfg!=null&&cfg.optBoolean("dynamic_adds")?"по новым подтверждениям и общему риску":"один вход")+
-            "\nСопровождение: независимый Bridge\n"+ExecutionFeedback.riskText(p.getString("risk_snapshot","не проверен"))+"\n"+p.getString("ec_message",""));
+            "\nСопровождение: независимый Bridge\n"+ExecutionFeedback.riskText(p.getString("risk_snapshot","не проверен"))+"\n"+bridgeOperationalText(s));
         if(statsText!=null)statsText.setText("СТАТИСТИКА\n"+p.getString("stats_snapshot","—"));
         if(signalHistoryText!=null)signalHistoryText.setText("ИСТОРИЯ СИГНАЛОВ\n"+p.getString("signal_history","—"));
         if(tradeHistoryText!=null)tradeHistoryText.setText(p.getString("trade_log_snapshot","ТОРГОВЫЙ ЖУРНАЛ"));

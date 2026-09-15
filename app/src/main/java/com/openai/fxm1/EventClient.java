@@ -64,7 +64,7 @@ public final class EventClient {
         String fee=p.getString("ec_fee","").trim();
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
             .put("timeframe",tf()).put("mode",mode()).put("risk_pct",risks[Math.max(0,Math.min(2,p.getInt("risk_pos",0)))])
-            .put("optional_position_limit",p.getInt("ec_limit",0))
+            .put("optional_position_limit",0)
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
             .put("lot_cap",Double.parseDouble(p.getString("ec_lot_cap","0.01").replace(',','.')))
             .put("spread_pips",p.getFloat("max_spread_pips",3f)).put("cooldown_sec",p.getInt("cooldown_minutes",10)*60)
