@@ -569,7 +569,21 @@ public class MainActivity extends Activity {
         lastMt5Ask = Double.NaN;
         updatePriceComparison();
         closeAllButton.setEnabled(false);
-        forceAutoOff(null);
+
+        // Phone-side connectivity is NOT authority to change Bridge trading state.
+        // A brief Wi-Fi/mobile handoff or Activity recreation must never send DISABLE.
+        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        boolean lastKnownAuto = p.getBoolean("auto_trading", false);
+        suppressAutoSwitch = true;
+        autoTradingSwitch.setChecked(lastKnownAuto);
+        autoTradingSwitch.setEnabled(false);
+        suppressAutoSwitch = false;
+        if (autoStatusText != null) {
+            autoStatusText.setText(lastKnownAuto
+                    ? "Связь потеряна · последнее состояние AUTO: включён · Bridge не изменён"
+                    : "Связь потеряна · последнее состояние AUTO: выключен · Bridge не изменён");
+            autoStatusText.setTextColor(C_YELLOW);
+        }
     }
 
     private String targetTradeMode() { return "DEMO"; }
@@ -630,6 +644,7 @@ public class MainActivity extends Activity {
             accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             renderPositionsMoneyCard(positions, floating, currency);
             closeAllButton.setEnabled(mt5 && positions > 0);
+            autoTradingSwitch.setEnabled(true);
             suppressAutoSwitch = true;
             boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
             JSONObject bridgeState = EventClient.state();
