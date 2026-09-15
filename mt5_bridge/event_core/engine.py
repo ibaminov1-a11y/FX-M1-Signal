@@ -322,8 +322,6 @@ class Engine:
                     self.store.event('ANALYSIS',dict(decision=d.json(),quote=asdict(q),bar=asdict(self.bars[-1]),mode=self.config.mode),now)
                     self.last_audit_key=key
                 if not self.auto or self.paused:self.execution=self._idle_status()
-                elif now-self.heartbeat>30:
-                    self.auto=False;self.paused=True;self.execution='Нет связи с телефоном 30 секунд: новые входы остановлены';self.save()
                 elif self.recovery:self.execution='Нужна сверка неизвестного исполнения; новые входы запрещены'
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
                 elif not self._session_allowed(now):self.execution='Текущая сессия не разрешена выбранным фильтром'
