@@ -60,6 +60,21 @@ public class EventCoreUiTest {
   try(FileOutputStream out=new FileOutputStream(new File(context.getExternalFilesDir(null),"candles.png"))){bitmap[0].compress(Bitmap.CompressFormat.PNG,100,out);}
   shell("mkdir -p /sdcard/Download/ec1-qa");shell("cp "+new File(context.getExternalFilesDir(null),"candles.png")+" /sdcard/Download/ec1-qa/candles.png");bitmap[0].recycle();
  }
+ @Test public void autoUiUsesBridgeStateAndAddsAreRiskOnly()throws Exception{
+  p.edit().putInt("ec_limit",10).putString("ec_message","Новые входы и добавления остановлены; сопровождение продолжается").commit();
+  EventClient.configure();
+  EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
+  EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));
+  EventClient.poll();
+  main(()->{MainActivity a=rule.getActivity();
+   Spinner adds=a.findViewById(R.id.maxPositionsSpinner);
+   assertEquals(1,adds.getCount());
+   assertEquals("По риску",String.valueOf(adds.getSelectedItem()));
+  });
+  await(()->{final boolean[] ok={false};main(()->{MainActivity a=rule.getActivity();Switch sw=a.findViewById(R.id.autoTradingSwitch);TextView status=a.findViewById(R.id.autoStatusText);TextView smart=a.findViewById(R.id.smartStatusText);ok[0]=sw.isChecked()&&status.getText().toString().contains("AUTO включён")&&!smart.getText().toString().contains("остановлены");});return ok[0];},"AUTO UI must reflect Bridge state and clear stale pause text");
+  assertEquals(0,p.getInt("ec_limit",-1));
+  shot("05-auto-synced");
+ }
  @Test public void notificationsControlActualEngineAndEmergencyPersists()throws Exception{
   main(()->rule.getActivity().findViewById(R.id.analyzeButton).performClick());await(()->p.getBoolean("bg_running",false),"monitoring start");Thread.sleep(800);
   EventClient.configure();EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
