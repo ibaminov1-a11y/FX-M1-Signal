@@ -106,12 +106,35 @@ class Strategy:
             return Decision(reason='Нет согласованного структурного сценария',atr=a)
         if ctx and ctx!=side:
             return Decision(reason='Контекст старшего ТФ против сценария; новый вход запрещён',atr=a)
-        if kind=='IMPULSE_PULLBACK' and (last.close-bars[-4].close)*side<a*.8:
-            return Decision(reason='Структура есть; нового импульса ещё нет',atr=a)
         invalidation=lows[-1]['price']-pad if side==1 else highs[-1]['price']+pad
         if (last.close-invalidation)*side<=0:
             return Decision(reason='Уровень отмены сценария уже пробит',atr=a)
         event=f'{self.config.symbol}|{self.config.timeframe}|{self.config.mode}|{last.time:014d}|{side}'
+        if kind=='IMPULSE_PULLBACK' and (last.close-bars[-4].close)*side<a*.8:
+            # The process may first observe an already established trend during its pullback.
+            # Do not require witnessing the original impulse live: reconstruct only from
+            # confirmed closed bars, then still require a NEW quote crossing after arming.
+            recent=bars[-5:-1]
+            opposing=(last.close-last.open)*side<0
+            extreme=max(x.high for x in recent) if side==1 else min(x.low for x in recent)
+            retrace=(extreme-last.low) if side==1 else (last.high-extreme)
+            if opposing and retrace>=profile.pullback_atr*a:
+                if event in self.consumed:
+                    return Decision(reason='Это событие уже обработано',atr=a)
+                pullback=last.low if side==1 else last.high
+                trigger=last.high+pad if side==1 else last.low-pad
+                level=highs[-1]['price'] if side==1 else lows[-1]['price']
+                self.setup=Setup(event,side,kind,'TRIGGER',last.time,int(now+profile.setup_bars*tf),
+                                 invalidation,level,extreme,pullback=pullback,trigger=trigger,
+                                 trigger_bar=last.time,armed_msc=q.time_msc,last_bid=q.bid,
+                                 seen_safe_side=False,last_bar=last.time)
+                lines=({'kind':'invalidation','price':invalidation,'time':last.time},
+                       {'kind':'level','price':level,'time':last.time},
+                       {'kind':'trigger','price':trigger,'time':last.time})
+                return Decision(phase='TRIGGER',
+                    reason='Подтверждённый тренд; откат уже сформирован; ждём свежий пробой локального уровня',
+                    side=side,stop=invalidation,trigger=trigger,invalidation=invalidation,atr=a,levels=lines)
+            return Decision(reason='Структура есть; нового импульса или завершённого отката ещё нет',atr=a)
         if event in self.consumed:
             return Decision(reason='Это событие уже обработано',atr=a)
         self.setup=Setup(event,side,kind,'PULLBACK',last.time,int(now+profile.setup_bars*tf),
