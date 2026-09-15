@@ -84,7 +84,7 @@ jobs:
       - name: Record R2 identity
         shell: bash
         run: |
-          grep -R "BUILD = '10.9-EC1-R2'" mt5_bridge/event_core/__init__.py
+          grep -E "BUILD = '10\.9-EC1-R2(\.[0-9]+)?'" mt5_bridge/event_core/__init__.py
           sha256sum evidence/FXM1_10_9_EVENT_CORE_DEMO.apk > evidence/APK_SHA256.txt
           cp docs/EVENT_CORE_RU.md evidence/R2_NOTES.md
       - uses: actions/upload-artifact@v4
