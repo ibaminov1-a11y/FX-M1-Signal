@@ -16,6 +16,10 @@ class MT5Broker:
     magic=MAGIC
     def __init__(self,mt5,terminal_path=None):
         self.mt5=mt5;self.terminal_path=terminal_path;self.initialized=False
+        # Per-symbol tick clock normalization. Some terminals expose broker/server tick
+        # timestamps that are offset from the Windows clock. Trading freshness therefore
+        # depends on observed tick progression, not on absolute wall-clock equality.
+        self._tick_seen={}
 
     def connect(self):
         if not self.initialized:
@@ -53,7 +57,24 @@ class MT5Broker:
 
     def quote(self,symbol):
         t=required(self.mt5.symbol_info_tick(symbol),'котировку')
-        return Quote(int(t.time_msc),float(t.bid),float(t.ask))
+        raw=int(t.time_msc)
+        bid=float(t.bid);ask=float(t.ask)
+        mono=time.monotonic();wall=time.time()
+        state=self._tick_seen.get(symbol)
+        if state is None or raw < state['raw']:
+            # First observation (or a terminal clock reset) is not enough to prove liveness.
+            self._tick_seen[symbol]={'raw':raw,'mono':mono,'confirmed':False}
+            normalized=wall-3600.0
+        elif raw > state['raw']:
+            state={'raw':raw,'mono':mono,'confirmed':True}
+            self._tick_seen[symbol]=state
+            normalized=wall
+        elif state.get('confirmed'):
+            age=max(0.0,mono-state['mono'])
+            normalized=wall-age
+        else:
+            normalized=wall-3600.0
+        return Quote(int(normalized*1000),bid,ask)
 
     def bars(self,symbol,tf,count=240):
         timeframe=getattr(self.mt5,'TIMEFRAME_'+tf,None)
@@ -68,7 +89,7 @@ class MT5Broker:
             raise Blocked('MT5 не вернул историю '+tf+': '+str(self.mt5.last_error()))
         values=[Bar(int(x['time']),float(x['open']),float(x['high']),float(x['low']),float(x['close']),float(x['tick_volume'])) for x in rows]
         # Normalize order and de-duplicate by opening timestamp. The strategy sees only
-        # bars that are certainly closed according to the same UTC epoch as MT5 ticks.
+        # bars that are certainly closed according to the local observation clock.
         values=list({b.time:b for b in values}.values())
         values.sort(key=lambda b:b.time)
         if tf!='MN1':
