@@ -347,8 +347,18 @@ public class MainActivity extends Activity {
             public void onNothingSelected(AdapterView<?> parent){}
         });
         maxDriftSpinner.setEnabled(false);
-        autoTradingSwitch.setOnCheckedChangeListener((buttonView,isChecked)->{
+        // Remote AUTO state is owned by Bridge. Programmatic/system restoration of the
+        // Android Switch must NEVER become a trading command; only an actual user click can.
+        autoTradingSwitch.setOnClickListener(v->{
             if(suppressAutoSwitch)return;
+            boolean isChecked=autoTradingSwitch.isChecked();
+            if(!serverConnected||!mt5Connected){
+                suppressAutoSwitch=true;
+                autoTradingSwitch.setChecked(prefs.getBoolean("auto_trading",false));
+                suppressAutoSwitch=false;
+                Toast.makeText(this,"Нет свежей связи с Bridge · AUTO на Bridge не изменён",Toast.LENGTH_LONG).show();
+                return;
+            }
             if(!isChecked){eventCommand("disable",new JSONObject());return;}
             suppressAutoSwitch=true;autoTradingSwitch.setChecked(false);suppressAutoSwitch=false;
             if(prefs.getBoolean("v108_emergency_latched",false)){
