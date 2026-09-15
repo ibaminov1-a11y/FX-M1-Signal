@@ -87,20 +87,24 @@ class Strategy:
                         stop,s.trigger,s.invalidation,a,q.time_msc,lines)
                 return Decision(phase='TRIGGER',reason='Откат есть; ждём пересечение локального уровня',
                                 side=s.side,stop=s.invalidation,trigger=s.trigger,invalidation=s.invalidation,atr=a,levels=lines)
-            return Decision(phase='PULLBACK',reason='Импульс подтверждён; ждём откат/ретест',
+            return Decision(phase='PULLBACK',reason='Импульс/структура подтверждены; ждём откат/ретест',
                             side=s.side,invalidation=s.invalidation,atr=a,levels=lines)
         if last.time<=self.last_scanned:
             return Decision(reason='Нового структурного события пока нет',atr=a)
         self.last_scanned=last.time
-        # Only pivots known before this impulse candle. No retrospective pivot at entry.
-        known=[p for p in points if p['known_at']<last.time]
+
+        # A pivot confirmed by the just-closed bar is known NOW and is therefore safe to use.
+        # The previous strict '< last.time' skipped exactly those fresh structure events.
+        known=[p for p in points if p['known_at']<=last.time]
+        fresh=[p for p in known if p['known_at']==last.time]
         highs=[p for p in known if p['kind']=='H']; lows=[p for p in known if p['kind']=='L']
         if not highs or not lows:
             return Decision(reason='Нужны подтверждённые вершина и впадина',atr=a)
         prev=bars[-2]
         up=last.close>highs[-1]['price']+pad and prev.close<=highs[-1]['price']+pad
         down=last.close<lows[-1]['price']-pad and prev.close>=lows[-1]['price']-pad
-        side=1 if up else -1 if down else direction(known)
+        structural_side=direction(known)
+        side=1 if up else -1 if down else structural_side
         kind='BREAK_RETEST' if up or down else 'IMPULSE_PULLBACK'
         if not side or (campaign_side and side!=campaign_side):
             return Decision(reason='Нет согласованного структурного сценария',atr=a)
@@ -110,7 +114,59 @@ class Strategy:
         if (last.close-invalidation)*side<=0:
             return Decision(reason='Уровень отмены сценария уже пробит',atr=a)
         event=f'{self.config.symbol}|{self.config.timeframe}|{self.config.mode}|{last.time:014d}|{side}'
-        if kind=='IMPULSE_PULLBACK' and (last.close-bars[-4].close)*side<a*.8:
+        if event in self.consumed:
+            return Decision(reason='Это событие уже обработано',atr=a)
+
+        impulse_ok=kind!='IMPULSE_PULLBACK' or (last.close-bars[-4].close)*side>=a*.8
+        fresh_structure=bool(fresh) and structural_side==side
+
+        if kind=='IMPULSE_PULLBACK' and not impulse_ok and fresh_structure:
+            # Smooth stair-step trends often confirm a new HH/HL or LH/LL without one large
+            # 3-bar candle burst. A newly CONFIRMED pivot is itself a fresh structural event.
+            # It may arm a scenario, but it still cannot open a trade without a later quote
+            # crossing, so this does not turn trend recognition into an immediate order.
+            favorable_kind='H' if side==1 else 'L'
+            favorable=[p for p in fresh if p['kind']==favorable_kind]
+            level=highs[-1]['price'] if side==1 else lows[-1]['price']
+            extreme=(favorable[-1]['price'] if favorable else
+                     (last.high if side==1 else last.low))
+            setup_kind='STRUCTURE_PULLBACK'
+            self.setup=Setup(event,side,setup_kind,'PULLBACK',last.time,int(now+profile.setup_bars*tf),
+                             invalidation,level,extreme,last_bar=last.time)
+
+            # If the pivot being confirmed is the favorable impulse extreme, the two bars
+            # that confirmed it may already form the pullback. Arm a NEW future crossing
+            # from that closed-bar information instead of discarding the completed pullback.
+            if favorable:
+                pivot=favorable[-1]
+                after=[b for b in bars if b.time>pivot['time']]
+                opposing=[b for b in after if (b.close-b.open)*side<0]
+                if after and opposing:
+                    pullback=min(b.low for b in after) if side==1 else max(b.high for b in after)
+                    retrace=(extreme-pullback) if side==1 else (pullback-extreme)
+                    if retrace>=profile.pullback_atr*a:
+                        source=opposing[-1]
+                        self.setup.phase='TRIGGER'
+                        self.setup.pullback=pullback
+                        self.setup.trigger=source.high+pad if side==1 else source.low-pad
+                        self.setup.trigger_bar=source.time
+                        self.setup.armed_msc=q.time_msc
+                        self.setup.seen_safe_side=False
+                        self.setup.last_bid=q.bid
+                        lines=({'kind':'invalidation','price':invalidation,'time':last.time},
+                               {'kind':'level','price':level,'time':last.time},
+                               {'kind':'trigger','price':self.setup.trigger,'time':source.time})
+                        return Decision(phase='TRIGGER',
+                            reason='Свежая структура подтверждена; откат уже есть; ждём новое пересечение триггера',
+                            side=side,stop=invalidation,trigger=self.setup.trigger,
+                            invalidation=invalidation,atr=a,levels=lines)
+            return Decision(phase='PULLBACK',
+                reason='Свежая подтверждённая структура; ждём откат/ретест, ордер не отправлен',
+                side=side,invalidation=invalidation,atr=a,
+                levels=({'kind':'invalidation','price':invalidation,'time':last.time},
+                        {'kind':'level','price':level,'time':last.time}))
+
+        if kind=='IMPULSE_PULLBACK' and not impulse_ok:
             # The process may first observe an already established trend during its pullback.
             # Do not require witnessing the original impulse live: reconstruct only from
             # confirmed closed bars, then still require a NEW quote crossing after arming.
@@ -119,8 +175,6 @@ class Strategy:
             extreme=max(x.high for x in recent) if side==1 else min(x.low for x in recent)
             retrace=(extreme-last.low) if side==1 else (last.high-extreme)
             if opposing and retrace>=profile.pullback_atr*a:
-                if event in self.consumed:
-                    return Decision(reason='Это событие уже обработано',atr=a)
                 pullback=last.low if side==1 else last.high
                 trigger=last.high+pad if side==1 else last.low-pad
                 level=highs[-1]['price'] if side==1 else lows[-1]['price']
@@ -135,8 +189,7 @@ class Strategy:
                     reason='Подтверждённый тренд; откат уже сформирован; ждём свежий пробой локального уровня',
                     side=side,stop=invalidation,trigger=trigger,invalidation=invalidation,atr=a,levels=lines)
             return Decision(reason='Структура есть; нового импульса или завершённого отката ещё нет',atr=a)
-        if event in self.consumed:
-            return Decision(reason='Это событие уже обработано',atr=a)
+
         self.setup=Setup(event,side,kind,'PULLBACK',last.time,int(now+profile.setup_bars*tf),
                          invalidation,highs[-1]['price'] if side==1 else lows[-1]['price'],
                          last.high if side==1 else last.low,last_bar=last.time)
