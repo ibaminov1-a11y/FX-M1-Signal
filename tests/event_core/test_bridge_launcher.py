@@ -1,5 +1,6 @@
-import runpy
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -17,12 +18,17 @@ class BridgeLauncherTests(unittest.TestCase):
             broken = td / '_vendor' / 'flask'
             broken.mkdir(parents=True)
             (broken / '__init__.py').write_text("raise RuntimeError('BROKEN_VENDOR_SHADOW')\n", encoding='utf-8')
-            old = list(sys.path)
-            sys.path.insert(0, str(root / 'mt5_bridge'))
-            try:
-                runpy.run_path(str(target), run_name='ec1_launcher_import_test')
-            finally:
-                sys.path[:] = old
+            env = os.environ.copy()
+            env['PYTHONPATH'] = str(root / 'mt5_bridge')
+            code = (
+                "import runpy; "
+                f"runpy.run_path({str(target)!r}, run_name='ec1_launcher_import_test'); "
+                "print('IMPORT_OK')"
+            )
+            result = subprocess.run([sys.executable, '-c', code], env=env, text=True,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertIn('IMPORT_OK', result.stdout)
 
 
 if __name__ == '__main__':
