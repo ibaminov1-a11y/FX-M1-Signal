@@ -75,6 +75,19 @@ public class EventCoreUiTest {
   assertEquals(0,p.getInt("ec_limit",-1));
   shot("05-auto-synced");
  }
+ @Test public void transientOfflineAndActivityReturnDoNotDisableBridgeAuto()throws Exception{
+  EventClient.configure();
+  EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
+  EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));
+  JSONObject armed=EventClient.poll();assertTrue(armed.optBoolean("auto",false));assertFalse(armed.optBoolean("paused",true));
+  EventClient.offline(new IOException("simulated phone network handoff"));
+  assertFalse(p.getBoolean("server_verified",true));
+  main(()->rule.getActivity().recreate());
+  Thread.sleep(1200);
+  JSONObject after=EventClient.poll();
+  assertTrue("temporary phone-side offline state must never send disable to Bridge",after.optBoolean("auto",false));
+  assertFalse("temporary phone-side offline state must not pause Bridge",after.optBoolean("paused",true));
+ }
  @Test public void notificationsControlActualEngineAndEmergencyPersists()throws Exception{
   main(()->rule.getActivity().findViewById(R.id.analyzeButton).performClick());await(()->p.getBoolean("bg_running",false),"monitoring start");Thread.sleep(800);
   EventClient.configure();EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
