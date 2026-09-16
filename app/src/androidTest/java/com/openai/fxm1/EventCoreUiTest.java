@@ -80,6 +80,20 @@ public class EventCoreUiTest {
   assertTrue("confirmed swing overlay must be visible",violet>20);
   bitmap[0].recycle();
  }
+ @Test public void r3DecisionPathAndStructureComeFromActualBridgeState()throws Exception{
+  JSONObject initial=EventClient.poll(),initialDecision=initial.getJSONObject("decision");
+  assertTrue("Bridge decision must expose R3 path",initialDecision.has("path"));
+  assertTrue("Bridge decision must expose confirmed structure",initialDecision.has("structure"));
+  EventClient.http("POST",EventClient.base()+"/test/r3/impulse",new JSONObject().put("side",1));
+  JSONObject impulse=EventClient.poll(),decision=impulse.getJSONObject("decision");
+  assertEquals("IMPULSE",decision.optString("path"));
+  JSONArray structure=decision.optJSONArray("structure");
+  assertNotNull("R3 structure must come from Bridge",structure);
+  assertTrue("R3 structure must contain confirmed swings",structure.length()>0);
+  JSONObject cached=EventClient.state().getJSONObject("decision");
+  assertEquals("IMPULSE",cached.optString("path"));
+  assertTrue("Android cache must present Bridge path",p.getString("state_context","").contains("Путь: Импульс"));
+ }
  @Test public void autoUiUsesBridgeStateAndAddsAreRiskOnly()throws Exception{
   p.edit().putInt("ec_limit",10).putString("ec_message","Новые входы и добавления остановлены; сопровождение продолжается").commit();
   EventClient.configure();
