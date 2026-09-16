@@ -60,6 +60,26 @@ public class EventCoreUiTest {
   try(FileOutputStream out=new FileOutputStream(new File(context.getExternalFilesDir(null),"candles.png"))){bitmap[0].compress(Bitmap.CompressFormat.PNG,100,out);}
   shell("mkdir -p /sdcard/Download/ec1-qa");shell("cp "+new File(context.getExternalFilesDir(null),"candles.png")+" /sdcard/Download/ec1-qa/candles.png");bitmap[0].recycle();
  }
+ @Test public void r3StructureAndPathAreRenderedFromBridgeState()throws Exception{
+  JSONArray bars=new JSONArray()
+    .put(new JSONObject().put("time",1800000000).put("open",1.1000).put("high",1.1020).put("low",1.0990).put("close",1.1010))
+    .put(new JSONObject().put("time",1800000300).put("open",1.1010).put("high",1.1040).put("low",1.1000).put("close",1.1030))
+    .put(new JSONObject().put("time",1800000600).put("open",1.1030).put("high",1.1050).put("low",1.1020).put("close",1.1040));
+  JSONArray structure=new JSONArray()
+    .put(new JSONObject().put("time",1800000000).put("price",1.0995).put("label","HL"))
+    .put(new JSONObject().put("time",1800000300).put("price",1.1040).put("label","HH"));
+  final Bitmap[] bitmap={null};
+  main(()->{SparklineView c=new SparklineView(rule.getActivity());c.layout(0,0,800,500);
+   c.setMarket(bars,new JSONArray(),new JSONArray(),structure,"IMPULSE");
+   bitmap[0]=Bitmap.createBitmap(800,500,Bitmap.Config.ARGB_8888);c.draw(new Canvas(bitmap[0]));});
+  assertEquals("Импульс",EventClient.pathName("IMPULSE"));
+  assertEquals("Продолжение",EventClient.pathName("CONTINUATION"));
+  assertEquals("Откат",EventClient.pathName("PULLBACK"));
+  int violet=0;int[]pixels=new int[800*500];bitmap[0].getPixels(pixels,0,800,0,0,800,500);
+  for(int v:pixels)if(v==0xff914dff)violet++;
+  assertTrue("confirmed swing overlay must be visible",violet>20);
+  bitmap[0].recycle();
+ }
  @Test public void autoUiUsesBridgeStateAndAddsAreRiskOnly()throws Exception{
   p.edit().putInt("ec_limit",10).putString("ec_message","Новые входы и добавления остановлены; сопровождение продолжается").commit();
   EventClient.configure();
