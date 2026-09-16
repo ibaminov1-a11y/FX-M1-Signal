@@ -22,7 +22,11 @@ class FakeBroker:
         self.balance=100000.;self.bid=1.103;self.ask=self.bid+.00001;self.demo=True
         self.margin_mode='HEDGING';self.trade_allowed=True;self.history_failure=False
         self.quote_age=0;self.result='FILLED';self.visible=True;self.next_id=100
-        self.bar_data=wave(int(clock()));self.ctx_data=wave(int(clock()),tf=900)
+        now=int(clock())
+        self.m1_data=wave(now,tf=60,trend=.000006)
+        self.bar_data=wave(now,tf=300,trend=.00003)
+        self.ctx_data=wave(now,tf=900,trend=.00004)
+        self.h1_data=wave(now,tf=3600,trend=.00008)
         self.info=dict(name='EURUSD',point=.00001,digits=5,tick_size=.00001,stops_level=1,
                        freeze_level=0,volume_min=.01,volume_step=.01,volume_max=100,
                        filling_mode=2,trade_exemode=2)
@@ -35,7 +39,16 @@ class FakeBroker:
                     margin_free=self.balance+pnl,trade_allowed=self.trade_allowed)
     def symbol(self,symbol): return dict(self.info,name=symbol.replace('/',''))
     def quote(self,symbol):return Quote(int((self.clock()-self.quote_age)*1000),self.bid,self.ask)
-    def bars(self,symbol,tf):return self.bar_data if tf=='M5' else self.ctx_data
+    def bars(self,symbol,tf):
+        if tf=='M1':return self.m1_data
+        if tf=='M5':return self.bar_data
+        if tf=='M15':return self.ctx_data
+        if tf=='H1':return self.h1_data
+        return self.ctx_data
+    def current_bar(self,symbol,tf):
+        if tf!='M5':raise AssertionError('FakeBroker current_bar supports M5 only')
+        t=int(self.clock())//300*300
+        return Bar(t,self.bid,max(self.bid,self.ask),min(self.bid,self.ask),self.bid,1)
     def positions(self):
         rows=copy.deepcopy(self._positions)
         for p in rows:p['profit']=self.calc_profit(p['side'],p['symbol'],p['volume'],p['price_open'],self.bid if p['side']==1 else self.ask)
