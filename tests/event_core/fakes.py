@@ -27,6 +27,7 @@ class FakeBroker:
         self.bar_data=wave(now,tf=300,trend=.00003)
         self.ctx_data=wave(now,tf=900,trend=.00004)
         self.h1_data=wave(now,tf=3600,trend=.00008)
+        self.live_bar_data=None
         self.info=dict(name='EURUSD',point=.00001,digits=5,tick_size=.00001,stops_level=1,
                        freeze_level=0,volume_min=.01,volume_step=.01,volume_max=100,
                        filling_mode=2,trade_exemode=2)
@@ -47,6 +48,7 @@ class FakeBroker:
         return self.ctx_data
     def current_bar(self,symbol,tf):
         if tf!='M5':raise AssertionError('FakeBroker current_bar supports M5 only')
+        if self.live_bar_data is not None:return self.live_bar_data
         t=int(self.clock())//300*300
         return Bar(t,self.bid,max(self.bid,self.ask),min(self.bid,self.ask),self.bid,1)
     def positions(self):
