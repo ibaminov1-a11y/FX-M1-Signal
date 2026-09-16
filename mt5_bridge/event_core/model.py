@@ -66,7 +66,7 @@ class Profile:
 
 
 PROFILES = {
-    'NORMAL': Profile('NORMAL', .35, .65, .60, 8, 12, 1.5, .50),
+    'NORMAL': Profile('NORMAL', .35, .65, .60, 3, 12, 1.5, .50),
     'SCALP': Profile('SCALP', .20, .30, .30, 4, 4, 1.0, .35),
 }
 # Parameters are fixed research hypotheses, not fitted performance claims.

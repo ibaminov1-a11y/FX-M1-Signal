@@ -77,6 +77,52 @@ class Strategy:
             event,side,invalidation,trigger,invalidation,a,q.time_msc,lines,
             path='IMPULSE',structure=structure)
 
+    def _r3_continuation(self,bars,m1,m15,h1,q,now,a,pad,profile,points,campaign_side=0):
+        """Arm a shallow-pause continuation; execution still needs a later fresh tick cross."""
+        if self.config.timeframe!='M5' or not m1 or not m15 or not h1 or len(bars)<6:
+            return None
+        side=direction(points)
+        if not side or (campaign_side and side!=campaign_side):
+            return None
+        if context_direction(m15)==-side or context_direction(h1)==-side:
+            return None
+        highs=[x for x in points if x['kind']=='H'];lows=[x for x in points if x['kind']=='L']
+        if not highs or not lows:
+            return None
+        source=bars[-1]
+        # A continuation needs an actual pause/micro-leg, not uninterrupted chasing.
+        if (source.close-source.open)*side>=0:
+            return None
+        recent=bars[-5:-1]
+        extreme=max(x.high for x in recent) if side==1 else min(x.low for x in recent)
+        pullback=source.low if side==1 else source.high
+        retrace=(extreme-pullback) if side==1 else (pullback-extreme)
+        if retrace<a*.10 or retrace>=profile.pullback_atr*a:
+            return None
+        trigger=source.high+pad if side==1 else source.low-pad
+        invalidation=lows[-1]['price']-pad if side==1 else highs[-1]['price']+pad
+        if (q.bid-invalidation)*side<=0:
+            return None
+        level=highs[-1]['price'] if side==1 else lows[-1]['price']
+        event=(f'{self.config.symbol}|M5|{self.config.mode}|CONTINUATION|'
+               f'{source.time:014d}|{side}|{trigger:.8f}')
+        if event in self.consumed:
+            return None
+        setup=Setup(event,side,'CONTINUATION','TRIGGER',source.time,
+                    int(now+profile.setup_bars*TF_SECONDS['M5']),invalidation,level,extreme,
+                    pullback=pullback,trigger=trigger,trigger_bar=source.time,
+                    armed_msc=q.time_msc,last_bid=q.bid,
+                    seen_safe_side=(q.bid-trigger)*side<=0,last_bar=source.time)
+        structure=tuple(swing_labels(bars)[-12:])
+        lines=({'kind':'invalidation','price':invalidation,'time':source.time},
+               {'kind':'level','price':level,'time':source.time},
+               {'kind':'trigger','price':trigger,'time':source.time})
+        decision=Decision(phase='TRIGGER',
+            reason='Неглубокая пауза в подтверждённом тренде; ждём свежее продолжение',
+            side=side,stop=invalidation,trigger=trigger,invalidation=invalidation,atr=a,levels=lines,
+            path='CONTINUATION',structure=structure)
+        return setup,decision
+
     def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0, *,
                m1=None, m15=None, h1=None, live_bar=None):
         q.validate(now); ordered(bars); ordered(context)
@@ -95,12 +141,25 @@ class Strategy:
         ctx=direction(pivots(ctx_bars))
         last=bars[-1]
         s=self.setup
-        # R3 fast path is evaluated only when no older setup currently owns the state.
-        # Task 4 will add explicit safe supersession rules for an existing pullback setup.
-        if s is None and self.config.timeframe=='M5':
-            fast=self._r3_impulse(bars,m1,m15,h1,live_bar,q,a,pad,profile,points,campaign_side)
-            if fast is not None:
-                return fast
+        if self.config.timeframe=='M5':
+            # A genuine same-side live acceleration may replace a stale pullback immediately.
+            if s is None or s.phase=='PULLBACK':
+                fast=self._r3_impulse(bars,m1,m15,h1,live_bar,q,a,pad,profile,points,campaign_side)
+                if fast is not None and (s is None or fast.side==s.side):
+                    self.setup=None
+                    return fast
+            # Confirmed opposite higher-timeframe context invalidates a pending new-entry idea.
+            if s and ((m15 and context_direction(m15)==-s.side) or
+                      (h1 and context_direction(h1)==-s.side)):
+                old_id=s.id;self.consume(old_id)
+                return Decision(phase='CANCELLED',reason='Сценарий отменён: старший контекст развернулся',
+                                atr=a,path='SEARCH',structure=tuple(swing_labels(bars)[-12:]))
+            # With no setup, a shallow 0.10-0.35 ATR pause can arm CONTINUATION.
+            if s is None:
+                continuation=self._r3_continuation(bars,m1,m15,h1,q,now,a,pad,profile,points,campaign_side)
+                if continuation is not None:
+                    self.setup,decision=continuation
+                    return decision
         if s and (now>s.expires or (s.side==1 and q.bid<=s.invalidation) or
                   (s.side==-1 and q.bid>=s.invalidation) or (campaign_side and s.side!=campaign_side)):
             self.consume(s.id)
@@ -126,6 +185,8 @@ class Strategy:
                 s.seen_safe_side=False
                 s.last_bid=q.bid
         if s:
+            setup_path='CONTINUATION' if s.kind=='CONTINUATION' else 'PULLBACK'
+            structure=tuple(swing_labels(bars)[-12:]) if self.config.timeframe=='M5' else ()
             lines=({'kind':'invalidation','price':s.invalidation,'time':s.born},
                    {'kind':'level','price':s.level,'time':s.born})
             if s.phase=='TRIGGER':
@@ -142,12 +203,18 @@ class Strategy:
                     if self.config.mode=='NORMAL':
                         stop=min(stop,s.invalidation) if s.side==1 else max(stop,s.invalidation)
                     return Decision('BUY' if s.side==1 else 'SELL','ENTRY_READY',
+                        'Продолжение подтверждено; свежая котировка пересекла триггер' if setup_path=='CONTINUATION' else
                         'Откат/ретест завершён; свежая котировка пересекла триггер',s.id,s.side,
-                        stop,s.trigger,s.invalidation,a,q.time_msc,lines)
-                return Decision(phase='TRIGGER',reason='Откат есть; ждём пересечение локального уровня',
-                                side=s.side,stop=s.invalidation,trigger=s.trigger,invalidation=s.invalidation,atr=a,levels=lines)
+                        stop,s.trigger,s.invalidation,a,q.time_msc,lines,
+                        path=setup_path,structure=structure)
+                return Decision(phase='TRIGGER',
+                                reason='Неглубокая пауза есть; ждём пересечение локального уровня' if setup_path=='CONTINUATION' else
+                                       'Откат есть; ждём пересечение локального уровня',
+                                side=s.side,stop=s.invalidation,trigger=s.trigger,invalidation=s.invalidation,atr=a,levels=lines,
+                                path=setup_path,structure=structure)
             return Decision(phase='PULLBACK',reason='Импульс/структура подтверждены; ждём откат/ретест',
-                            side=s.side,invalidation=s.invalidation,atr=a,levels=lines)
+                            side=s.side,invalidation=s.invalidation,atr=a,levels=lines,
+                            path='PULLBACK',structure=structure)
         if last.time<=self.last_scanned:
             return Decision(reason='Нового структурного события пока нет',atr=a)
         self.last_scanned=last.time
@@ -167,8 +234,10 @@ class Strategy:
         kind='BREAK_RETEST' if up or down else 'IMPULSE_PULLBACK'
         if not side or (campaign_side and side!=campaign_side):
             return Decision(reason='Нет согласованного структурного сценария',atr=a)
-        if ctx and ctx!=side:
-            return Decision(reason='Контекст старшего ТФ против сценария; новый вход запрещён',atr=a)
+        h1_dir=context_direction(h1) if self.config.timeframe=='M5' and h1 else 0
+        if (ctx and ctx!=side) or h1_dir==-side:
+            return Decision(reason='Контекст старшего ТФ против сценария; новый вход запрещён',atr=a,
+                            structure=tuple(swing_labels(bars)[-12:]) if self.config.timeframe=='M5' else ())
         invalidation=lows[-1]['price']-pad if side==1 else highs[-1]['price']+pad
         if (last.close-invalidation)*side<=0:
             return Decision(reason='Уровень отмены сценария уже пробит',atr=a)
