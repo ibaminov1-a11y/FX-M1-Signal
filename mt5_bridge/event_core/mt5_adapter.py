@@ -100,6 +100,17 @@ class MT5Broker:
             raise Blocked('MT5 не вернул ни одной закрытой свечи '+tf+': '+str(self.mt5.last_error()))
         return values[-count:]
 
+    def current_bar(self,symbol,tf):
+        """Return the currently forming MT5 bar without mixing it into closed history."""
+        timeframe=getattr(self.mt5,'TIMEFRAME_'+tf,None)
+        if timeframe is None:
+            raise Blocked('Таймфрейм MT5 не поддерживается')
+        rows=self.mt5.copy_rates_from_pos(symbol,timeframe,0,1)
+        if rows is None or len(rows)==0:
+            raise Blocked('MT5 не вернул текущую свечу '+tf+': '+str(self.mt5.last_error()))
+        x=rows[-1]
+        return Bar(int(x['time']),float(x['open']),float(x['high']),float(x['low']),float(x['close']),float(x['tick_volume']))
+
     def positions(self):
         rows=required(self.mt5.positions_get(),'открытые позиции')
         return [dict(ticket=int(p.ticket),identifier=int(p.identifier),magic=int(p.magic),symbol=p.symbol,
