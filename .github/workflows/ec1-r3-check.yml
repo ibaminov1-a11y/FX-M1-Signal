@@ -1,7 +1,7 @@
 name: EC1 R3 adaptive entry verification
 on:
   push:
-    branches: [feature/ec1-r3-adaptive-entry]
+    branches: [feature/ec1-r3-adaptive-entry, rebuild/event-campaign-mt5]
   workflow_dispatch:
 permissions:
   contents: read
