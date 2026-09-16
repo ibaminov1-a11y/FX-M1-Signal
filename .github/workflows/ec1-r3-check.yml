@@ -1,0 +1,113 @@
+name: EC1 R3 adaptive entry verification
+on:
+  push:
+    branches: [feature/ec1-r3-adaptive-entry]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ec1-r3-final
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record exact source identity
+        shell: bash
+        run: |
+          test -z "$(git status --porcelain)"
+          test ! -e tools/r3_patch/apply.py
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Full Python EventCore suite
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m compileall -q mt5_bridge/event_core tests/event_core
+          PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore EC1 DEMO signing identity
+        uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Require persistent EC1 signing identity
+        shell: bash
+        run: |
+          key="$HOME/.fxm1-signing/ec1-demo.jks"
+          test -s "$key"
+          echo "EC1_KEYSTORE=$key" >> "$GITHUB_ENV"
+      - name: Build R3 APK and instrumentation APK
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.log
+          test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+      - name: Android R3 runtime tests with Flask EventCore fixture
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_ec1_qa.sh
+      - name: Package exact tested APK and Bridge
+        run: python tools/package_ec1.py
+      - name: Verify R3 identity and package hygiene
+        shell: bash
+        run: |
+          grep -F "BUILD = '10.9-EC1-R3'" mt5_bridge/event_core/__init__.py
+          sha256sum evidence/FXM1_10_9_EVENT_CORE_DEMO.apk > evidence/APK_SHA256.txt
+          cp docs/EVENT_CORE_RU.md evidence/R3_NOTES.md
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+          z=Path('evidence/FXM1_10_9_EVENT_CORE_PACKAGE.zip')
+          assert z.is_file() and z.stat().st_size>0
+          with zipfile.ZipFile(z) as f:
+              names=[n.lower() for n in f.namelist()]
+          forbidden=('event_state','bridge-token','.jks','campaign.sqlite3')
+          bad=[n for n in names if any(x in n for x in forbidden)]
+          assert not bad, bad
+          required=('FXM1_10_9_EVENT_CORE_DEMO.apk','Bridge/event_core/strategy.py','PROVENANCE.json')
+          with zipfile.ZipFile(z) as f:
+              present=set(f.namelist())
+          missing=[n for n in required if n not in present]
+          assert not missing, missing
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EC1-R3-verified-${{ github.run_number }}
+          path: |
+            evidence/FXM1_10_9_EVENT_CORE_DEMO.apk
+            evidence/FXM1_10_9_EVENT_CORE_PACKAGE.zip
+            evidence/FXM1_EVENT_CORE_SOURCE.zip
+            evidence/COMMIT.txt
+            evidence/APK_SHA256.txt
+            evidence/python-tests.log
+            evidence/android-build.log
+            evidence/android-runtime.log
+            evidence/android-logcat.txt
+            evidence/ui/
+            evidence/R3_NOTES.md
+            app/build/reports/androidTests/
+          if-no-files-found: error
