@@ -68,7 +68,8 @@ class OppositeReversalTests(unittest.TestCase):
                 self.assertEqual(len(broker.sent), sent_before,
                                  'do not reverse into BUY in the same engine step')
                 self.assertEqual(state['decision']['signal'], 'BUY')
-                self.assertIn('противополож', state['execution'].lower())
+                self.assertTrue(state['exit_pending'],
+                                'old campaign remains in exit/reconciliation state until MT5 history confirms close')
                 self.assertIn('new-buy', engine.strategy.consumed,
                               'the event that forced exit must not be reused as a late reversal')
             finally:
