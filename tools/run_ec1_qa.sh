@@ -10,7 +10,9 @@ for i in $(seq 1 30); do
 done
 adb reverse tcp:8765 tcp:8765
 set +e
-gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest > evidence/android-runtime.log 2>&1
+gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest \
+  > evidence/android-runtime.log 2>&1
 rc=$?
 adb logcat -d > evidence/android-logcat.txt
 adb pull /sdcard/Download/ec1-qa evidence/ui || true
