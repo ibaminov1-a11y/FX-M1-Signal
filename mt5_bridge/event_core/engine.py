@@ -62,7 +62,6 @@ class Engine:
             if 'DAILY_LOSS' in self.risk['blocks']:
                 previous=(self.daily_latch,self.auto,self.paused,self.exit_pending)
                 self.daily_latch=self.risk['day'];self.auto=False;self.paused=True
-                # Account risk blocks entries, but does not create a fictitious EC1 exit.
                 if self._has_exit_targets():
                     self.exit_pending=True
                 if previous!=(self.daily_latch,self.auto,self.paused,self.exit_pending):
@@ -102,7 +101,6 @@ class Engine:
                     self.campaign['position_ids']=sorted(set(self.campaign.get('position_ids',[]))|
                         {p['identifier'] for p in matching}|{int(d['position_id']) for d in deals})
                     self.save()
-        # Unknown requests without positive evidence never become permission to retry.
         if self.store.pending():self.recovery=True;self.auto=False;self.paused=True
         if owned and not self.campaign:
             self.recovery=True;self.auto=False;self.paused=True
@@ -114,7 +112,6 @@ class Engine:
             if not owned and not self._owned_orders() and not self.store.pending():
                 closed_ids={row['position_id'] for row in ledger(self.deals,self.positions)}
                 if not ids.issubset(closed_ids):
-                    # A recently disappeared position is not a confirmed ledger close.
                     self.history_time=0.
                     self.execution='Позиций EC1 нет; ожидается подтверждение закрытия в истории MT5'
                     return False
@@ -126,8 +123,6 @@ class Engine:
                 self.campaign=None;self.last_exit=self.clock();self.exit_pending=False
                 self.strategy.clear();self.save()
                 return True
-        # Heal only the obsolete action flag after an authoritative exposure refresh.
-        # Never erase daily/emergency/recovery latches or a pending/unknown intent.
         if self.exit_pending and not self._has_exit_targets():
             self.exit_pending=False
             self.execution=self._idle_status()
@@ -161,7 +156,6 @@ class Engine:
         return message
 
     def _suspend_trigger(self,now):
-        # A data outage must not turn an old crossing into a fresh entry on reconnect.
         self.strategy.previous_quote=None
         setup=self.strategy.setup
         if setup:
@@ -169,11 +163,6 @@ class Engine:
             setup.armed_msc=max(setup.armed_msc,int(now*1000))
 
     def _refresh_market(self,now):
-        """Read-only market snapshot, independent of AUTO, risk and exit state.
-
-        Historical bars stay visible with stale/missing quotes. Any failure still blocks
-        trading and is explicitly reported; old cached bars are not called live analysis.
-        """
         self.market_errors=[];self.quote_ready=False
         try:
             self.info=self.broker.symbol(self.config.symbol)
@@ -242,7 +231,6 @@ class Engine:
         for o in self._owned_orders():
             try:self.broker.cancel(o)
             except Exception as e:self.execution='Отмена ордера пока не подтверждена: '+str(e);return
-        # Refresh before each pass. Never close manual or legacy-V10 positions.
         self.orders=self.broker.orders()
         if self._owned_orders():return
         self.positions=self.broker.positions()
@@ -281,7 +269,6 @@ class Engine:
             self._close_campaign('движение не получило продолжения за отведённое время');return True
         if (mark-c.get('best_price',c['last_entry']))*side>0:
             c['best_price']=mark;c['last_progress']=now
-        # Tighten broker protection only after sufficient progress, and only from closed data.
         if c['peak']>=profile.protect_at_r*r and self.bars and not self.market_errors:
             a=atr(self.bars);pts=pivots(self.bars)
             levels=[p['price'] for p in pts if p['kind']==('L' if side==1 else 'H')]
@@ -312,12 +299,10 @@ class Engine:
                 just_closed=self._reconcile()
                 exit_cycle=bool(just_closed or self.emergency or self.exit_pending)
                 if self.emergency or self.exit_pending:
-                    # Mandatory exit is attempted before the read-only chart refresh.
                     try:
                         self._close_campaign('Emergency' if self.emergency else 'ожидаем завершения')
                     except Exception as exc:
                         self.execution='Закрытие EC1 пока не подтверждено: '+str(exc)
-                # Even an exit, daily stop, foreign position or weekend must not hide history.
                 self._refresh_market(now)
                 if exit_cycle:
                     self._suspend_trigger(now)
@@ -331,17 +316,24 @@ class Engine:
                 if self.market_errors:
                     raise Blocked('; '.join(self.market_errors))
                 q=self.quote;q.validate(now)
-                d=self.strategy.update(self.bars,self.context,q,now,
-                    self.campaign['side'] if self.campaign else 0,
+                # Current market analysis must not be pinned to the side of an existing campaign.
+                d=self.strategy.update(self.bars,self.context,q,now,0,
                     m1=self.m1,m15=self.m15,h1=self.h1,live_bar=self.live_bar)
                 self.decision=d;self.analysis_time=now
                 if now-self.last_persist>=1:
                     self.save();self.last_persist=now
-                # Audit bar/phase changes and every entry event; no fake confidence probability.
                 key=(self.bars[-1].time,d.phase,d.signal)
                 if key!=self.last_audit_key:
                     self.store.event('ANALYSIS',dict(decision=d.json(),quote=asdict(q),bar=asdict(self.bars[-1]),mode=self.config.mode),now)
                     self.last_audit_key=key
+                # A confirmed opposite event is an exit signal for the old campaign, not
+                # permission to hedge/reverse in the same iteration. A later fresh event may enter.
+                if self.campaign and d.phase=='ENTRY_READY' and d.side in (-1,1) and d.side!=self.campaign['side']:
+                    if d.event_id:
+                        self.strategy.consume(d.event_id);self.save()
+                    old='BUY' if self.campaign['side']==1 else 'SELL'
+                    self._close_campaign('подтверждён противоположный '+d.signal+' против текущей '+old+' кампании')
+                    return self.snapshot()
                 if not self.auto or self.paused:self.execution=self._idle_status()
                 elif self.recovery:self.execution='Нужна сверка неизвестного исполнения; новые входы запрещены'
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
@@ -351,8 +343,6 @@ class Engine:
                     try:self._entry(d,now)
                     finally:
                         self.strategy.consume(d.event_id);self.save()
-                # Entry event is single-use even when it is skipped or rejected. No late entry
-                # when AUTO is enabled after a crossing that already happened.
                 if d.event_id:self.strategy.consume(d.event_id);self.save()
             except Exception as e:
                 self._suspend_trigger(now)
@@ -363,7 +353,6 @@ class Engine:
                 if self.bars:
                     detail+='\nПоказаны последние доступные закрытые свечи MT5; это не свежий торговый сигнал'
                 self.decision=Decision(phase='DATA_BLOCK',reason=detail)
-                # Existing broker stops remain in force. Data failure never becomes an entry.
             return self.snapshot()
 
     def _entry(self,d,now):
@@ -376,7 +365,6 @@ class Engine:
         if now-self.last_exit<self.config.cooldown_sec:raise Blocked('Пауза после завершения кампании')
         self.rate_times=[t for t in self.rate_times if now-t<60]
         if len(self.rate_times)>=self.config.max_orders_per_minute:raise Blocked('Предохранитель частоты заявок')
-        # Re-read tick, account, positions and risk immediately before final plan.
         self.positions=self.broker.positions();self.orders=self.broker.orders();account=self.broker.account()
         if account['key']!=self.account_key:raise Blocked('Счёт изменился перед отправкой')
         self.account=account
@@ -395,7 +383,6 @@ class Engine:
                 add_step_atr=PROFILES[self.config.mode].add_step_atr,peak=0.,position_ids=[],realized=0.,events=[])
         comment='EC1:'+hashlib.sha256(d.event_id.encode()).hexdigest()[:16]
         body=dict(plan=asdict(p),comment=comment,time=now)
-        # Persist SENDING before crossing the process/API boundary.
         self.strategy.consume(d.event_id);self.save();self.store.intent(d.event_id,'SENDING',body)
         self.rate_times.append(now)
         try:out=self.broker.send(p,comment)
@@ -406,7 +393,6 @@ class Engine:
         if out['status']=='REJECTED':
             self.store.intent(d.event_id,'REJECTED',dict(body,response=out))
             self.execution='MT5 отклонил: '+out.get('reason','');return
-        # A broker response alone is not a confirmed live position.
         self.store.intent(d.event_id,'UNKNOWN',dict(body,response=out))
         self.positions=self.broker.positions();self.orders=self.broker.orders()
         matches=[x for x in self._owned() if x.get('comment')==comment]
@@ -417,7 +403,6 @@ class Engine:
             self.campaign['events'].append(d.event_id)
             self.execution='MT5 подтвердил '+d.signal+': '+', '.join('#'+str(x['ticket']) for x in matches)
             self.save()
-            # Check accepted SL and actual risk before allowing another stage.
             try:
                 reserve=max(self.config.slippage_ticks*self.info['tick_size'],q.spread)
                 actual=max(0,-float(self.campaign.get('realized',0)))
