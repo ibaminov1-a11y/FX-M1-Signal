@@ -38,7 +38,7 @@ class Strategy:
             return None
         body=live_bar.close-live_bar.open
         side=1 if body>0 else -1 if body<0 else 0
-        if not side or (campaign_side and campaign_side!=side):
+        if not side:
             return None
         full_range=live_bar.high-live_bar.low
         if full_range<=0 or abs(body)<.70*a or full_range<1.00*a or abs(body)/full_range<.65:
@@ -85,7 +85,7 @@ class Strategy:
             return None
         points=pivots(bars)
         side=direction(points)
-        if not side or (campaign_side and campaign_side!=side):
+        if not side:
             return None
         if not self._context_allows(side,m15,h1):
             return None
@@ -135,6 +135,8 @@ class Strategy:
 
     def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0,
                *, m1=None, m15=None, h1=None, live_bar=None):
+        # Market analysis is deliberately independent from any already-open campaign.
+        # campaign_side remains in the signature for compatibility with older callers.
         m1=[] if m1 is None else m1
         m15=context if m15 is None else m15
         h1=[] if h1 is None else h1
@@ -170,7 +172,7 @@ class Strategy:
         s=self.setup
 
         if s and (now>s.expires or (s.side==1 and q.bid<=s.invalidation) or
-                  (s.side==-1 and q.bid>=s.invalidation) or (campaign_side and s.side!=campaign_side) or
+                  (s.side==-1 and q.bid>=s.invalidation) or
                   not self._context_allows(s.side,m15,h1)):
             old=s.id
             self.consume(old)
@@ -258,7 +260,7 @@ class Strategy:
         structural_side=direction(known)
         side=1 if up else -1 if down else structural_side
         kind='BREAK_RETEST' if up or down else 'IMPULSE_PULLBACK'
-        if not side or (campaign_side and side!=campaign_side):
+        if not side:
             return Decision(reason='Нет согласованного структурного сценария',atr=a,structure=structure)
         if not self._context_allows(side,m15,h1):
             return Decision(reason='Контекст старшего ТФ против сценария; новый вход запрещён',atr=a,structure=structure)
