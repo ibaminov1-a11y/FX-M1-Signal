@@ -1,13 +1,7 @@
-import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
-from event_core.engine import Engine
-from event_core.model import Bar
 from event_core.mt5_adapter import MT5Broker
-from event_core.store import Store
-from fakes import FakeBroker
 
 
 BASE = 1_800_000_000
@@ -41,45 +35,35 @@ class _OffsetMT5:
         ]
 
 
-class _ServerClockBroker(FakeBroker):
-    def __init__(self, clock, offset):
-        super().__init__(clock)
-        self.offset = offset
-
-    def market_time(self, symbol):
-        return self.clock() + self.offset
-
-
 class MT5MarketClockTests(unittest.TestCase):
-    def test_closed_bar_filter_uses_mt5_server_clock_not_windows_clock(self):
+    def test_closed_bar_filter_uses_same_normalized_clock_as_quote(self):
         # Screenshot shape: Windows is 17:23:17 while the MT5 server is already
-        # 17:25:17. The 17:20 MT5 candle is closed on the server and must not be
-        # discarded merely because its raw timestamp is ahead of the PC clock.
+        # 17:25:17. Ticks are normalized to Windows time, so candles must be
+        # normalized by the same observed +120 s server offset before closure checks.
         local_now = BASE + 197.0
         server_now = local_now + 120.0
         mt5 = _OffsetMT5(server_now)
         broker = MT5Broker(mt5)
         with patch('event_core.mt5_adapter.time.time', return_value=local_now), \
              patch('event_core.mt5_adapter.time.monotonic', return_value=10.0):
-            broker.quote('EURUSD')  # establish the MT5 raw clock observation
+            broker.quote('EURUSD')
             bars = broker.bars('EURUSD', 'M5')
-        self.assertEqual(bars[-1].time, BASE)
+        # Raw closed MT5 bar is BASE; normalized wall-clock opening time is BASE-120.
+        self.assertEqual(bars[-1].time, BASE - 120)
 
-    def test_engine_validates_current_m5_against_mt5_clock_domain(self):
-        local_now = [BASE + 197.0]
-        broker = _ServerClockBroker(lambda: local_now[0], offset=120.0)
-        # Raw MT5 server candle 17:25 is +103 s versus Windows, but already open
-        # for 17 s according to the MT5 server clock.
-        broker.live_bar_data = Bar(BASE + 300, 1.1533, 1.1534, 1.1532, 1.15328, 3)
-        with tempfile.TemporaryDirectory() as folder:
-            store = Store(Path(folder) / 'state.sqlite3')
-            try:
-                engine = Engine(broker, store, lambda: local_now[0])
-                engine._refresh_market(local_now[0])
-                self.assertEqual(engine.live_bar, broker.live_bar_data)
-                self.assertFalse(any('текущую M5 свечу из будущего' in x for x in engine.market_errors), engine.market_errors)
-            finally:
-                store.close()
+    def test_current_bar_uses_same_normalized_clock_as_quote(self):
+        local_now = BASE + 197.0
+        server_now = local_now + 120.0
+        mt5 = _OffsetMT5(server_now)
+        broker = MT5Broker(mt5)
+        with patch('event_core.mt5_adapter.time.time', return_value=local_now), \
+             patch('event_core.mt5_adapter.time.monotonic', return_value=10.0):
+            broker.quote('EURUSD')
+            live = broker.current_bar('EURUSD', 'M5')
+        # Raw server candle opens at BASE+300 (103 s "future" versus Windows),
+        # but on the normalized quote clock it opened at BASE+180, 17 s ago.
+        self.assertEqual(live.time, BASE + 180)
+        self.assertLessEqual(live.time, local_now)
 
 
 if __name__ == '__main__':
