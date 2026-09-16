@@ -95,6 +95,37 @@ class R3MarketSnapshotTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_small_broker_clock_skew_does_not_discard_current_m5(self):
+        # Real terminals can cross an M5 boundary a few seconds before the PC wall clock.
+        # The forming bar is isolated from closed-history pivots, so a small skew must not
+        # turn otherwise fresh MT5 data into DATA_BLOCK.
+        now = [1800000284.0]  # local 16 seconds before the next M5 boundary
+        broker = LayeredBroker(lambda: now[0])
+        broker.live_m5 = Bar(1800000300, 1.1030, 1.1037, 1.1029, 1.1036, 3)
+        with tempfile.TemporaryDirectory() as folder:
+            store = Store(Path(folder) / 'state.sqlite3')
+            try:
+                engine = Engine(broker, store, lambda: now[0])
+                engine._refresh_market(now[0])
+                self.assertEqual(engine.live_bar, broker.live_m5)
+                self.assertFalse(any('текущую M5 свечу из будущего' in x for x in engine.market_errors), engine.market_errors)
+            finally:
+                store.close()
+
+    def test_large_future_live_m5_is_still_rejected(self):
+        now = [1800000284.0]
+        broker = LayeredBroker(lambda: now[0])
+        broker.live_m5 = Bar(1800000585, 1.1030, 1.1037, 1.1029, 1.1036, 3)
+        with tempfile.TemporaryDirectory() as folder:
+            store = Store(Path(folder) / 'state.sqlite3')
+            try:
+                engine = Engine(broker, store, lambda: now[0])
+                engine._refresh_market(now[0])
+                self.assertIsNone(engine.live_bar)
+                self.assertTrue(any('текущую M5 свечу из будущего' in x for x in engine.market_errors), engine.market_errors)
+            finally:
+                store.close()
+
 
 if __name__ == '__main__':
     unittest.main()
