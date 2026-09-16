@@ -1,0 +1,26 @@
+name: EC1 R3 Rebuild Android TDD
+on:
+  push:
+    branches: [feature/ec1-r3-rebuild]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ec1-r3-rebuild-android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile app and instrumentation tests
+        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
