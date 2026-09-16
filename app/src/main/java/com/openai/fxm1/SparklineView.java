@@ -8,17 +8,25 @@ import java.util.*;
 
 /** Japanese candles and decision levels from the SAME MT5 snapshot used by the engine. */
 public class SparklineView extends View {
-    private JSONArray bars=new JSONArray(),levels=new JSONArray(),positions=new JSONArray();
+    private JSONArray bars=new JSONArray(),levels=new JSONArray(),positions=new JSONArray(),structure=new JSONArray();
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
-    private String signal="WAIT";
+    private String signal="WAIT",path="SEARCH";
     public SparklineView(Context c){super(c);}
     public SparklineView(Context c,AttributeSet a){super(c,a);}
     public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);}
     public void setSignal(String s){signal=s;invalidate();}
     public void setValues(List<Double> ignored){/* The legacy decorative interpolation is intentionally not used. */}
-    public void setMarket(JSONArray b,JSONArray l,JSONArray p){bars=b==null?new JSONArray():b;levels=l==null?new JSONArray():l;positions=p==null?new JSONArray():p;invalidate();}
+    public void setMarket(JSONArray b,JSONArray l,JSONArray p){setMarket(b,l,p,new JSONArray(),"SEARCH");}
+    public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String currentPath){
+        bars=b==null?new JSONArray():b;levels=l==null?new JSONArray():l;positions=p==null?new JSONArray():p;
+        structure=s==null?new JSONArray():s;path=currentPath==null||currentPath.isEmpty()?"SEARCH":currentPath;invalidate();
+    }
     private float dp(float x){return x*getResources().getDisplayMetrics().density;}
     private float y(double value,double min,double max,float top,float h){return top+(float)((max-value)/(max-min))*h;}
+    private float xForTime(long time,int start,float left,float step){
+        for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null&&b.optLong("time")==time)return left+step*(i-start+.5f);}
+        return Float.NaN;
+    }
     @Override protected void onDraw(Canvas c){super.onDraw(c);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(11));paint.setColor(0xffb0aac7);
         if(bars.length()<2){c.drawText("Ожидаем закрытые свечи MT5",dp(8),dp(28),paint);return;}
         int start=Math.max(0,bars.length()-48),count=bars.length()-start;double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
@@ -36,6 +44,17 @@ public class SparklineView extends View {
             float a=y(open,min,max,top,height),z=y(close,min,max,top,height),half=Math.max(dp(.7f),step*.32f);
             c.drawRect(x-half,Math.min(a,z),x+half,Math.max(Math.min(a,z)+dp(1),Math.max(a,z)),paint);
         }
+        // R3 structure comes from confirmed EventCore pivots only. Never extrapolate past the last known point.
+        paint.setColor(0xff914dff);paint.setStrokeWidth(dp(1.4f));paint.setTextSize(dp(9));
+        float previousX=Float.NaN,previousY=Float.NaN;
+        for(int i=0;i<structure.length();i++){JSONObject s=structure.optJSONObject(i);if(s==null)continue;
+            long t=s.optLong("time");double price=s.optDouble("price",Double.NaN);float x=xForTime(t,start,left,step);
+            if(Float.isNaN(x)||!Double.isFinite(price)||price<min||price>max)continue;
+            float yy=y(price,min,max,top,height);
+            if(!Float.isNaN(previousX))c.drawLine(previousX,previousY,x,yy,paint);
+            String kind=s.optString("kind","");if(!kind.isEmpty())c.drawText(kind,x+dp(2),Math.max(top+dp(10),yy-dp(3)),paint);
+            previousX=x;previousY=yy;
+        }
         for(int i=0;i<levels.length();i++){JSONObject l=levels.optJSONObject(i);if(l==null)continue;double v=l.optDouble("price");if(v<min||v>max)continue;
             String kind=l.optString("kind");paint.setColor("invalidation".equals(kind)?0xffff4857:"trigger".equals(kind)?0xff42d67a:0xff914dff);
             float yy=y(v,min,max,top,height);paint.setStrokeWidth(dp(1));c.drawLine(left,yy,left+width,yy,paint);
@@ -44,6 +63,7 @@ public class SparklineView extends View {
         for(int i=0;i<positions.length();i++){JSONObject p=positions.optJSONObject(i);if(p==null)continue;double v=p.optDouble("price_open");if(v<min||v>max)continue;
             paint.setColor(p.optInt("side",1)>0?0xff42d67a:0xffff4857);float yy=y(v,min,max,top,height);c.drawLine(left,yy,left+width,yy,paint);
         }
+        paint.setColor(0xff914dff);paint.setTextSize(dp(10));c.drawText("R3 · "+EventClient.pathName(path),left+dp(3),top+dp(11),paint);
         paint.setColor(0xffb0aac7);paint.setTextSize(dp(10));
         long t=bars.optJSONObject(bars.length()-1).optLong("time");
         c.drawText("MT5 · закрытая свеча "+new java.text.SimpleDateFormat("HH:mm",Locale.US).format(new Date(t*1000)),left,getHeight()-dp(5),paint);

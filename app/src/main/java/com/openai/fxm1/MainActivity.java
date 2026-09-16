@@ -679,7 +679,10 @@ public class MainActivity extends Activity {
     private void restoreSparklineFromPrefs(String signal) {
         if(sparklineView==null)return;
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
-        sparklineView.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"));
+        JSONArray levels=d==null?null:d.optJSONArray("levels");
+        JSONArray structure=d==null?null:d.optJSONArray("structure");
+        String path=d==null?"SEARCH":d.optString("path","SEARCH");
+        sparklineView.setMarket(s.optJSONArray("bars"),levels,s.optJSONArray("positions"),structure,path);
         sparklineView.setSignal(signal);
     }
 

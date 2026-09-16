@@ -12,6 +12,7 @@ import java.util.*;
 /** Transport and presentation only. It cannot calculate or send a BUY/SELL order. */
 public final class EventClient {
     public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
+    public static String pathName(String path){switch(path){case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";case "HOLD":return "Сопровождение";case "SEARCH":return "Поиск";default:return path==null||path.isEmpty()?"Поиск":path;}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
     private EventClient() {}
@@ -91,13 +92,14 @@ public final class EventClient {
         boolean latch=s.optBoolean("emergency",false)||p.getBoolean("v108_emergency_latched",false);
         boolean auto=s.optBoolean("auto",false)&&!latch;
         String sig=d.optString("signal","WAIT"),symbol=cfg.optString("symbol","EUR/USD"),tf=cfg.optString("timeframe","M5");
-        String phase=d.optString("phase","SEARCH");String why=d.optString("reason","Ждём MT5");
+        String phase=d.optString("phase","SEARCH");String path=d.optString("path","SEARCH");String why=d.optString("reason","Ждём MT5");
         JSONObject campaign=s.optJSONObject("campaign");
-        if(campaign!=null){sig=campaign.optInt("side",0)>0?"BUY":"SELL";phase="HOLD";}
+        if(campaign!=null){sig=campaign.optInt("side",0)>0?"BUY":"SELL";phase="HOLD";path="HOLD";}
         long since=sig.equals(p.getString("state_signal","WAIT"))?p.getLong("state_signal_since_ms",now):now;
         if("WAIT".equals(sig))since=0;
         StringBuilder context=new StringBuilder("Вход: ").append(tf).append(" · Режим: ").append(cfg.optString("mode","NORMAL"))
-            .append("\nЭтап: ").append(phaseName(phase)).append("\n").append(why)
+            .append("\nЭтап: ").append(phaseName(phase))
+            .append("\nПуть: ").append(pathName(path)).append("\n").append(why)
             .append("\nРешение и исполнение: данные MT5");
         if(q!=null)context.append("\nВремя котировки: ").append(new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date(q.optLong("time_msc"))));
         JSONArray positions=s.optJSONArray("all_positions");int n=positions==null?0:positions.length();double floating=0;
