@@ -7,6 +7,9 @@ from .risk import risk_state, plan_order, ledger, summary, quantize, day_start
 from .mt5_adapter import MAGIC
 
 CONTEXT={'M1':'M5','M5':'M15','M10':'H1','M15':'H1','H1':'H4','H4':'D1','D1':'W1','W1':'MN1','MN1':'MN1'}
+# Broker/server candle clocks can cross the M5 boundary slightly before the PC clock.
+# The forming M5 stays isolated from confirmed-pivot history; larger future jumps remain blocked.
+LIVE_M5_CLOCK_SKEW_SEC=60
 
 
 class Engine:
@@ -204,7 +207,7 @@ class Engine:
                 self.context=self.m15
                 try:
                     live=self.broker.current_bar(symbol,'M5')
-                    if live.time>now+1:
+                    if live.time>now+LIVE_M5_CLOCK_SKEW_SEC:
                         raise Blocked('MT5 вернул текущую M5 свечу из будущего')
                     self.live_bar=live
                 except Exception as exc:
