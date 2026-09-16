@@ -172,6 +172,9 @@ class Decision:
     atr: float = 0
     event_time: int = 0
     levels: tuple = ()
+    # R3 fields are appended so every old positional Decision(...) call remains valid.
+    path: str = 'SEARCH'
+    structure: tuple = ()
 
     def json(self):
         return asdict(self)
@@ -224,3 +227,25 @@ def direction(points):
     if highs[-1]['price']<highs[-2]['price'] and lows[-1]['price']<lows[-2]['price']:
         return -1
     return 0
+
+
+def swing_labels(bars: list[Bar]):
+    """Return confirmed immutable pivots with HH/HL/LH/LL chart labels."""
+    out=[]
+    previous={'H':None,'L':None}
+    for p in pivots(bars):
+        base=p['kind']; prior=previous[base]; price=p['price']
+        if prior is None or price==prior:
+            label=base
+        elif base=='H':
+            label='HH' if price>prior else 'LH'
+        else:
+            label='HL' if price>prior else 'LL'
+        out.append({**p,'pivot_kind':base,'kind':label})
+        previous[base]=price
+    return out
+
+
+def context_direction(bars: list[Bar]):
+    """Direction from confirmed pivots only; 0 means neutral/insufficient."""
+    return direction(pivots(bars))
