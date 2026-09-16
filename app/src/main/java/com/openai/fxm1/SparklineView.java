@@ -8,15 +8,26 @@ import java.util.*;
 
 /** Japanese candles and decision levels from the SAME MT5 snapshot used by the engine. */
 public class SparklineView extends View {
-    private JSONArray bars=new JSONArray(),levels=new JSONArray(),positions=new JSONArray();
+    private JSONArray bars=new JSONArray(),levels=new JSONArray(),positions=new JSONArray(),structure=new JSONArray();
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
-    private String signal="WAIT";
+    private String signal="WAIT",path="SEARCH";
     public SparklineView(Context c){super(c);}
     public SparklineView(Context c,AttributeSet a){super(c,a);}
     public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);}
     public void setSignal(String s){signal=s;invalidate();}
     public void setValues(List<Double> ignored){/* The legacy decorative interpolation is intentionally not used. */}
-    public void setMarket(JSONArray b,JSONArray l,JSONArray p){bars=b==null?new JSONArray():b;levels=l==null?new JSONArray():l;positions=p==null?new JSONArray():p;invalidate();}
+    public void setMarket(JSONArray b,JSONArray l,JSONArray p){
+        JSONArray s=null;String r3Path="SEARCH";
+        try{
+            JSONObject state=EventClient.state(),decision=state.optJSONObject("decision");
+            if(decision!=null){s=decision.optJSONArray("structure");r3Path=decision.optString("path","SEARCH");}
+        }catch(Exception ignored){/* Standalone chart tests may not have an initialized client. */}
+        setMarket(b,l,p,s,r3Path);
+    }
+    public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String r3Path){
+        bars=b==null?new JSONArray():b;levels=l==null?new JSONArray():l;positions=p==null?new JSONArray():p;
+        structure=s==null?new JSONArray():s;path=r3Path==null?"SEARCH":r3Path;invalidate();
+    }
     private float dp(float x){return x*getResources().getDisplayMetrics().density;}
     private float y(double value,double min,double max,float top,float h){return top+(float)((max-value)/(max-min))*h;}
     @Override protected void onDraw(Canvas c){super.onDraw(c);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(11));paint.setColor(0xffb0aac7);
@@ -29,12 +40,23 @@ public class SparklineView extends View {
         if(width<=0||height<=0)return;
         paint.setStrokeWidth(dp(.6f));
         for(int i=0;i<4;i++){float yy=top+height*i/3;paint.setColor(0xff302647);c.drawLine(left,yy,left+width,yy,paint);paint.setColor(0xffb0aac7);c.drawText(String.format(Locale.US,"%.5f",max-(max-min)*i/3),left+width+dp(4),yy+dp(4),paint);}
+        HashMap<Long,Float> visibleX=new HashMap<>();
         for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b==null)continue;
-            double open=b.optDouble("open"),close=b.optDouble("close");float x=left+step*(i-start+.5f);
+            double open=b.optDouble("open"),close=b.optDouble("close");float x=left+step*(i-start+.5f);visibleX.put(b.optLong("time"),x);
             paint.setColor(close>=open?0xff42d67a:0xffff4857);paint.setStrokeWidth(dp(1));
             c.drawLine(x,y(b.optDouble("high"),min,max,top,height),x,y(b.optDouble("low"),min,max,top,height),paint);
             float a=y(open,min,max,top,height),z=y(close,min,max,top,height),half=Math.max(dp(.7f),step*.32f);
             c.drawRect(x-half,Math.min(a,z),x+half,Math.max(Math.min(a,z)+dp(1),Math.max(a,z)),paint);
+        }
+        float previousX=Float.NaN,previousY=Float.NaN;
+        paint.setColor(0xff914dff);paint.setStrokeWidth(dp(1));paint.setTextSize(dp(9));paint.setStyle(Paint.Style.FILL);
+        for(int i=0;i<structure.length();i++){
+            JSONObject s=structure.optJSONObject(i);if(s==null)continue;Float x=visibleX.get(s.optLong("time"));if(x==null)continue;
+            double price=s.optDouble("price",Double.NaN);if(!Double.isFinite(price)||price<min||price>max)continue;float yy=y(price,min,max,top,height);
+            if(!Float.isNaN(previousX))c.drawLine(previousX,previousY,x,yy,paint);
+            c.drawCircle(x,yy,dp(2.5f),paint);String label=s.optString("label","");
+            if(!label.isEmpty())c.drawText(label,x+dp(3),Math.max(top+dp(9),yy-dp(3)),paint);
+            previousX=x;previousY=yy;
         }
         for(int i=0;i<levels.length();i++){JSONObject l=levels.optJSONObject(i);if(l==null)continue;double v=l.optDouble("price");if(v<min||v>max)continue;
             String kind=l.optString("kind");paint.setColor("invalidation".equals(kind)?0xffff4857:"trigger".equals(kind)?0xff42d67a:0xff914dff);
