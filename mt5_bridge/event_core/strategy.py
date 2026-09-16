@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import asdict
-from .model import Bar, Quote, Config, Setup, Decision, PROFILES, TF_SECONDS, atr, ordered, pivots, direction, Blocked
+from .model import Bar, Quote, Config, Setup, Decision, PROFILES, TF_SECONDS, atr, ordered, pivots, direction, swing_labels, context_direction, Blocked
 
 
 class Strategy:
@@ -26,7 +26,59 @@ class Strategy:
         self.setup=None
         self.previous_quote=None
 
-    def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0):
+    def _r3_impulse(self,bars,m1,m15,h1,live_bar,q,a,pad,profile,points,campaign_side=0):
+        """Return an R3 live-M5 IMPULSE entry or None.
+
+        Confirmed pivots and higher-timeframe context remain closed-bar only. The forming
+        M5 candle is allowed solely to qualify a large impulse; a CLOSED M1 candle plus
+        the live tick must already be beyond the broken M5 level.
+        """
+        if self.config.timeframe!='M5' or live_bar is None or not m1 or not m15 or not h1:
+            return None
+        body=abs(live_bar.close-live_bar.open)
+        span=live_bar.high-live_bar.low
+        if span<=0 or body<a*.70 or span<a*1.00 or body/span<.65:
+            return None
+        side=1 if live_bar.close>live_bar.open else -1 if live_bar.close<live_bar.open else 0
+        if not side or (campaign_side and side!=campaign_side):
+            return None
+        highs=[x for x in points if x['kind']=='H'];lows=[x for x in points if x['kind']=='L']
+        if not highs or not lows:
+            return None
+        level=highs[-1]['price'] if side==1 else lows[-1]['price']
+        trigger=level+side*pad
+        # The forming M5 candle and current quote must have actually broken the level.
+        if (live_bar.close-trigger)*side<=0 or (q.bid-trigger)*side<=0:
+            return None
+        # A confirmed opposite M5/H1/M15 structure blocks a fast entry; neutral is allowed.
+        m5_dir=direction(points)
+        if m5_dir==-side or context_direction(m15)==-side or context_direction(h1)==-side:
+            return None
+        # One large spike is not enough: the latest CLOSED M1 must confirm beyond the break.
+        last_m1=m1[-1]
+        if (last_m1.close-last_m1.open)*side<=0 or (last_m1.close-trigger)*side<=0:
+            return None
+        # Do not buy/sell the end of an already overextended candle.
+        if abs(q.bid-trigger)>profile.no_chase_atr*a:
+            return None
+        invalidation=(lows[-1]['price']-pad) if side==1 else (highs[-1]['price']+pad)
+        if (q.bid-invalidation)*side<=0:
+            return None
+        event=(f'{self.config.symbol}|M5|{self.config.mode}|IMPULSE|'
+               f'{live_bar.time:014d}|{side}|{level:.8f}')
+        if event in self.consumed:
+            return None
+        structure=tuple(swing_labels(bars)[-12:])
+        lines=({'kind':'invalidation','price':invalidation,'time':live_bar.time},
+               {'kind':'level','price':level,'time':live_bar.time},
+               {'kind':'trigger','price':trigger,'time':live_bar.time})
+        return Decision('BUY' if side==1 else 'SELL','ENTRY_READY',
+            'Большая M5 свеча + закрытое M1 подтверждение: быстрый вход по импульсу',
+            event,side,invalidation,trigger,invalidation,a,q.time_msc,lines,
+            path='IMPULSE',structure=structure)
+
+    def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0, *,
+               m1=None, m15=None, h1=None, live_bar=None):
         q.validate(now); ordered(bars); ordered(context)
         if len(bars)<32 or len(context)<16:
             return Decision(reason='Недостаточно закрытых свечей MT5')
@@ -39,9 +91,16 @@ class Strategy:
         a=atr(bars); pad=max(a*.05,q.spread*1.2)
         profile=PROFILES[self.config.mode]
         points=pivots(bars)
-        ctx=direction(pivots(context))
+        ctx_bars=m15 if m15 is not None else context
+        ctx=direction(pivots(ctx_bars))
         last=bars[-1]
         s=self.setup
+        # R3 fast path is evaluated only when no older setup currently owns the state.
+        # Task 4 will add explicit safe supersession rules for an existing pullback setup.
+        if s is None and self.config.timeframe=='M5':
+            fast=self._r3_impulse(bars,m1,m15,h1,live_bar,q,a,pad,profile,points,campaign_side)
+            if fast is not None:
+                return fast
         if s and (now>s.expires or (s.side==1 and q.bid<=s.invalidation) or
                   (s.side==-1 and q.bid>=s.invalidation) or (campaign_side and s.side!=campaign_side)):
             self.consume(s.id)
