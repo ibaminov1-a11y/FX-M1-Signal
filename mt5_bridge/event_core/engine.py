@@ -187,7 +187,13 @@ class Engine:
             self.market_errors.append('Нет пригодной свежей котировки: '+str(exc))
         if self.last_market_attempt<0 or now-self.last_market_attempt>=1:
             self.last_market_attempt=now;self.bar_errors=[]
-            for attr,tf in (('bars',self.config.timeframe),('context',CONTEXT[self.config.timeframe])):
+            if self.config.timeframe=='M5':
+                # R3 reads each context independently. Swing logic sees CLOSED bars only;
+                # the forming M5 candle is isolated for the live IMPULSE detector.
+                layers=(('bars','M5'),('m1','M1'),('m15','M15'),('h1','H1'))
+            else:
+                layers=(('bars',self.config.timeframe),('context',CONTEXT[self.config.timeframe]))
+            for attr,tf in layers:
                 try:
                     values=list(self.broker.bars(symbol,tf))
                     if not values:
@@ -198,6 +204,17 @@ class Engine:
                     setattr(self,attr,values)
                 except Exception as exc:
                     self.bar_errors.append('История '+tf+' не обновлена: '+str(exc))
+            if self.config.timeframe=='M5':
+                self.context=self.m15
+                try:
+                    self.live_bar=self.broker.current_bar(symbol,'M5')
+                    if self.live_bar.time>now+1:
+                        raise Blocked('MT5 вернул текущую M5 свечу из будущего')
+                except Exception as exc:
+                    self.live_bar=None
+                    self.bar_errors.append('Текущая M5 свеча не обновлена: '+str(exc))
+            else:
+                self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
             if not self.bar_errors:
                 self.last_bars_at=now;self.market_time=now
         self.market_errors.extend(self.bar_errors)
