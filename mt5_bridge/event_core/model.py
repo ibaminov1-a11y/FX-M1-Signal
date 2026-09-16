@@ -172,6 +172,8 @@ class Decision:
     atr: float = 0
     event_time: int = 0
     levels: tuple = ()
+    path: str = 'SEARCH'
+    structure: tuple = ()
 
     def json(self):
         return asdict(self)
@@ -224,3 +226,22 @@ def direction(points):
     if highs[-1]['price']<highs[-2]['price'] and lows[-1]['price']<lows[-2]['price']:
         return -1
     return 0
+
+
+def swing_labels(bars: list[Bar]):
+    """Label only confirmed pivots; labels never depend on the forming candle."""
+    last_high=None;last_low=None;result=[]
+    for point in pivots(bars):
+        label=point['kind']
+        if point['kind']=='H':
+            label='H' if last_high is None else ('HH' if point['price']>last_high else 'LH')
+            last_high=point['price']
+        else:
+            label='L' if last_low is None else ('HL' if point['price']>last_low else 'LL')
+            last_low=point['price']
+        result.append({**point,'label':label})
+    return tuple(result)
+
+
+def context_direction(bars: list[Bar]):
+    return direction(pivots(bars))
