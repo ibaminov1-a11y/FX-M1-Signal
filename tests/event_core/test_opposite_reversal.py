@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from event_core.engine import Engine
-from event_core.model import Config, Decision
+from event_core.model import Config, Decision, Setup
 from event_core.mt5_adapter import MAGIC
 from event_core.store import Store
 from event_core.strategy import Strategy
@@ -14,15 +14,24 @@ NOW = 1_800_000_000.0
 
 
 class OppositeReversalTests(unittest.TestCase):
-    def test_open_sell_campaign_must_not_hide_confirmed_buy_analysis(self):
+    def test_open_sell_campaign_and_old_sell_setup_must_not_hide_confirmed_buy_analysis(self):
         bars, m1, m15, h1, live, quote, _, _ = impulse_fixture(1)
         strategy = Strategy(Config(timeframe='M5', mode='NORMAL', fee_per_lot=0, approved=True))
+        strategy.setup = Setup(
+            'old-sell-trigger', -1, 'IMPULSE_PULLBACK', 'TRIGGER', bars[-2].time,
+            int(NOW+900), 1.1060, 1.1040, 1.1040,
+            pullback=1.1030, trigger=1.1025, trigger_bar=bars[-2].time,
+            armed_msc=int((NOW-30)*1000), last_bid=1.1030,
+            seen_safe_side=True, last_bar=bars[-2].time,
+        )
         decision = strategy.update(
             bars, m15, quote, NOW, campaign_side=-1,
             m1=m1, m15=m15, h1=h1, live_bar=live,
         )
         self.assertEqual((decision.signal, decision.phase, decision.path),
                          ('BUY', 'ENTRY_READY', 'IMPULSE'))
+        self.assertIn('old-sell-trigger', strategy.consumed,
+                      'opposite confirmed impulse must supersede the stale SELL setup')
 
     def test_confirmed_opposite_entry_exits_old_campaign_before_any_reverse(self):
         now = [NOW]
