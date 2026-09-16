@@ -115,7 +115,7 @@ public final class EventClient {
             .putInt("mt5_positions_snapshot",n).putLong("mt5_floating_bits",Double.doubleToLongBits(floating))
             .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig)
             .putString("state_context",context.toString()).putString("state_why",why)
-            .putString("state_components","Подтверждённая структура → откат → свежий триггер. Балльное голосование не используется.")
+            .putString("state_components","R3: большой M5 импульс / неглубокое продолжение / классический откат. Вход только по подтверждённому событию MT5.")
             .putInt("state_quality",-1).putInt("state_api_count",0).putInt("state_cache_count",0)
             .putLong("state_signal_since_ms",since).putLong("state_last_update_ms",now).putLong("state_last_success_ms",(long)(s.optDouble("analysis_time",0)*1000))
             .putLong("state_entry_bits",Double.doubleToLongBits(q==null?Double.NaN:q.optDouble("bid",Double.NaN)))
@@ -127,10 +127,10 @@ public final class EventClient {
         if(s.optBoolean("emergency",false))e.putBoolean("v108_emergency_latched",true);
         if(s.optBoolean("history_ok",false))e.putString("money_realized_snapshot","Сегодня: "+moneySummary(s.optJSONObject("today"))+"\nВсего: "+moneySummary(s.optJSONObject("all"))).putString("money_refresh_error","");
         else e.putString("money_refresh_error",s.optString("history_error","История не обновлена"));
-        String historyKey=phase+"|"+sig+"|"+why;
+        String historyKey=path+"|"+phase+"|"+sig+"|"+why;
         boolean changed=!historyKey.equals(p.getString("ec_history_key",""));
         e.putString("ec_history_key",historyKey);e.apply();
-        if(changed)FeatureEngine.appendSignalHistory(p,symbol,tf,sig,-1,phaseName(phase)+": "+why);
+        if(changed)FeatureEngine.appendSignalHistory(p,symbol,tf,sig,-1,pathName(path)+" · "+phaseName(phase)+": "+why);
         ExecutionFeedback.record(p,symbol,tf,phase,s.optString("execution","—"));
     }
     public static void offline(Exception error){prefs().edit().putBoolean("server_verified",false).putBoolean("mt5_connected_snapshot",false)
