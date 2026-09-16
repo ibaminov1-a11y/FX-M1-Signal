@@ -94,12 +94,14 @@ public final class EventClient {
         String sig=d.optString("signal","WAIT"),symbol=cfg.optString("symbol","EUR/USD"),tf=cfg.optString("timeframe","M5");
         String phase=d.optString("phase","SEARCH"),path=d.optString("path","SEARCH");String why=d.optString("reason","Ждём MT5");
         JSONObject campaign=s.optJSONObject("campaign");
-        if(campaign!=null){sig=campaign.optInt("side",0)>0?"BUY":"SELL";phase="HOLD";}
+        String campaignSide="";
+        if(campaign!=null){int side=campaign.optInt("side",0);campaignSide=side>0?"BUY":side<0?"SELL":"—";}
         long since=sig.equals(p.getString("state_signal","WAIT"))?p.getLong("state_signal_since_ms",now):now;
         if("WAIT".equals(sig))since=0;
         StringBuilder context=new StringBuilder("Вход: ").append(tf).append(" · Режим: ").append(cfg.optString("mode","NORMAL"))
             .append("\nЭтап: ").append(phaseName(phase)).append("\nПуть: ").append(pathName(path)).append("\n").append(why)
             .append("\nРешение и исполнение: данные MT5");
+        if(campaign!=null)context.append("\nОткрытая кампания: ").append(campaignSide);
         if(q!=null)context.append("\nВремя котировки: ").append(new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date(q.optLong("time_msc"))));
         JSONArray positions=s.optJSONArray("all_positions");int n=positions==null?0:positions.length();double floating=0;
         if(positions!=null)for(int i=0;i<positions.length();i++){JSONObject x=positions.getJSONObject(i);floating+=x.optDouble("profit")+x.optDouble("swap");}
@@ -112,7 +114,7 @@ public final class EventClient {
             .putLong("mt5_balance_bits",Double.doubleToLongBits(a.optDouble("balance",Double.NaN)))
             .putLong("mt5_equity_bits",Double.doubleToLongBits(a.optDouble("equity",Double.NaN)))
             .putInt("mt5_positions_snapshot",n).putLong("mt5_floating_bits",Double.doubleToLongBits(floating))
-            .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig)
+            .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig).putString("state_campaign_side",campaignSide)
             .putString("state_context",context.toString()).putString("state_why",why)
             .putString("state_components","Bridge: "+pathName(path)+" · вход разрешается только подтверждённым событием; балльная оценка не даёт права на вход.")
             .putInt("state_quality",-1).putInt("state_api_count",0).putInt("state_cache_count",0)
@@ -121,7 +123,7 @@ public final class EventClient {
             .putLong("state_sl_bits",Double.doubleToLongBits(d.optDouble("stop",0)>0?d.optDouble("stop"):Double.NaN))
             .putLong("state_tp1_bits",Double.doubleToLongBits(Double.NaN)).putLong("state_tp2_bits",Double.doubleToLongBits(Double.NaN))
             .putString("risk_snapshot",risk).putString("risk_detail_json",rs.toString()).putLong("smart_snapshot_ms",now)
-            .putString("position_manager_status","Bridge EventCore · "+(campaign==null?"ожидание кампании":"сопровождение "+cfg.optString("mode")))
+            .putString("position_manager_status","Bridge EventCore · "+(campaign==null?"ожидание кампании":"сопровождение "+campaignSide+" · "+cfg.optString("mode")))
             .putString("bg_status",s.optString("execution",why));
         if(s.optBoolean("emergency",false))e.putBoolean("v108_emergency_latched",true);
         if(s.optBoolean("history_ok",false))e.putString("money_realized_snapshot","Сегодня: "+moneySummary(s.optJSONObject("today"))+"\nВсего: "+moneySummary(s.optJSONObject("all"))).putString("money_refresh_error","");
