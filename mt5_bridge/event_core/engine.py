@@ -34,6 +34,7 @@ class Engine:
         self.rows=[];self.account={};self.account_time=0.;self.positions=[];self.orders=[]
         self.risk={'allowed':False,'blocks':['HISTORY_UNAVAILABLE']}
         self.last_bars_at=0.;self.bars=[];self.context=[];self.quote=None;self.info={}
+        self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
         self.market_time=0.;self.market_errors=[];self.quote_ready=False
         self.last_market_attempt=-1.;self.bar_errors=[]
         self.analysis_time=0.;self.decision=Decision();self.execution='AUTO выключен: только анализ'
@@ -185,7 +186,10 @@ class Engine:
             self.market_errors.append('Нет пригодной свежей котировки: '+str(exc))
         if self.last_market_attempt<0 or now-self.last_market_attempt>=1:
             self.last_market_attempt=now;self.bar_errors=[]
-            for attr,tf in (('bars',self.config.timeframe),('context',CONTEXT[self.config.timeframe])):
+            layers=(('bars',self.config.timeframe),('context',CONTEXT[self.config.timeframe]))
+            if self.config.timeframe=='M5':
+                layers=(('m1','M1'),('bars','M5'),('m15','M15'),('h1','H1'))
+            for attr,tf in layers:
                 try:
                     values=list(self.broker.bars(symbol,tf))
                     if not values:
@@ -196,6 +200,18 @@ class Engine:
                     setattr(self,attr,values)
                 except Exception as exc:
                     self.bar_errors.append('История '+tf+' не обновлена: '+str(exc))
+            if self.config.timeframe=='M5':
+                self.context=self.m15
+                try:
+                    live=self.broker.current_bar(symbol,'M5')
+                    if live.time>now+1:
+                        raise Blocked('MT5 вернул текущую M5 свечу из будущего')
+                    self.live_bar=live
+                except Exception as exc:
+                    self.live_bar=None
+                    self.bar_errors.append('Текущая M5 свеча не обновлена: '+str(exc))
+            else:
+                self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
             if not self.bar_errors:
                 self.last_bars_at=now;self.market_time=now
         self.market_errors.extend(self.bar_errors)
@@ -439,6 +455,7 @@ class Engine:
                     raise Blocked('Профиль фиксирован до завершения кампании')
                 new.approved=False;self.auto=False;self.paused=True
                 self.config=new;self.strategy=Strategy(new);self.bars=[];self.context=[];self.last_bars_at=0
+                self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
                 self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
                 self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.
                 self.decision=Decision()
