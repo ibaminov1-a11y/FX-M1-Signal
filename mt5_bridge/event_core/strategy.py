@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import asdict
-from .model import Bar, Quote, Config, Setup, Decision, PROFILES, TF_SECONDS, atr, ordered, pivots, direction, context_direction, Blocked
+from .model import Bar, Quote, Config, Setup, Decision, PROFILES, TF_SECONDS, atr, ordered, pivots, direction, context_direction, swing_labels, Blocked
 
 
 class Strategy:
@@ -33,6 +33,53 @@ class Strategy:
                 return False
         return True
 
+    def _impulse_decision(self,bars,m1,m15,h1,live_bar,q,now,campaign_side,a,pad,structure):
+        if self.config.timeframe!='M5' or live_bar is None or not m1:
+            return None
+        body=live_bar.close-live_bar.open
+        side=1 if body>0 else -1 if body<0 else 0
+        if not side or (campaign_side and campaign_side!=side):
+            return None
+        full_range=live_bar.high-live_bar.low
+        if full_range<=0 or abs(body)<.70*a or full_range<1.00*a or abs(body)/full_range<.65:
+            return None
+        if not self._context_allows(side,m15,h1):
+            return None
+        points=pivots(bars)
+        highs=[p for p in points if p['kind']=='H'];lows=[p for p in points if p['kind']=='L']
+        if not highs or not lows:
+            return None
+        structural_side=direction(points)
+        # A neutral map may establish its first direction with this break. A confirmed
+        # opposite M5 structure is not overridden by one still-forming candle.
+        if structural_side and structural_side!=side:
+            return None
+        level=highs[-1]['price'] if side==1 else lows[-1]['price']
+        trigger=level+side*pad
+        if (live_bar.close-trigger)*side<=0:
+            return None
+        if (m1[-1].close-trigger)*side<=0:
+            return None
+        if (q.bid-trigger)*side<=0:
+            return None
+        profile=PROFILES[self.config.mode]
+        if abs(q.bid-trigger)>profile.no_chase_atr*a:
+            return None
+        invalidation=lows[-1]['price']-pad if side==1 else highs[-1]['price']+pad
+        if (q.bid-invalidation)*side<=0:
+            return None
+        event=(f'{self.config.symbol}|M5|{self.config.mode}|IMPULSE|'
+               f'{live_bar.time:014d}|{side}|{level:.10f}')
+        if event in self.consumed:
+            return None
+        lines=({'kind':'invalidation','price':invalidation,'time':live_bar.time},
+               {'kind':'level','price':level,'time':live_bar.time},
+               {'kind':'trigger','price':trigger,'time':live_bar.time})
+        return Decision('BUY' if side==1 else 'SELL','ENTRY_READY',
+            'Большая текущая M5 подтверждена структурой, закрытой M1 и живой котировкой',
+            event,side,invalidation,trigger,invalidation,a,q.time_msc,lines,
+            path='IMPULSE',structure=structure)
+
     def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0,
                *, m1=None, m15=None, h1=None, live_bar=None):
         m1=[] if m1 is None else m1
@@ -53,12 +100,21 @@ class Strategy:
         a=atr(bars); pad=max(a*.05,q.spread*1.2)
         profile=PROFILES[self.config.mode]
         points=pivots(bars)
+        structure=swing_labels(bars)
         last=bars[-1]
         s=self.setup
+
+        impulse=self._impulse_decision(bars,m1,m15,h1,live_bar,q,now,campaign_side,a,pad,structure)
+        if impulse is not None and (s is None or s.side==impulse.side):
+            if s is not None and s.id!=impulse.event_id:
+                self.consumed.add(s.id)
+                self.setup=None
+            return impulse
+
         if s and (now>s.expires or (s.side==1 and q.bid<=s.invalidation) or
                   (s.side==-1 and q.bid>=s.invalidation) or (campaign_side and s.side!=campaign_side)):
             self.consume(s.id)
-            return Decision(phase='CANCELLED',reason='Сценарий отменён: срок/структура',atr=a)
+            return Decision(phase='CANCELLED',reason='Сценарий отменён: срок/структура',atr=a,structure=structure)
         if s and last.time>s.last_bar:
             s.last_bar=last.time
             favorable=max if s.side==1 else min
@@ -91,19 +147,21 @@ class Strategy:
                 if crossed and s.id not in self.consumed:
                     if abs(q.bid-s.trigger)>profile.no_chase_atr*a:
                         self.consume(s.id)
-                        return Decision(phase='CANCELLED',reason='Резкий скачок за триггер: вход не догоняем',atr=a,levels=lines)
+                        return Decision(phase='CANCELLED',reason='Резкий скачок за триггер: вход не догоняем',atr=a,levels=lines,structure=structure)
                     stop=(s.pullback-pad if s.side==1 else s.pullback+pad)
                     if self.config.mode=='NORMAL':
                         stop=min(stop,s.invalidation) if s.side==1 else max(stop,s.invalidation)
                     return Decision('BUY' if s.side==1 else 'SELL','ENTRY_READY',
                         'Откат/ретест завершён; свежая котировка пересекла триггер',s.id,s.side,
-                        stop,s.trigger,s.invalidation,a,q.time_msc,lines)
+                        stop,s.trigger,s.invalidation,a,q.time_msc,lines,
+                        path='PULLBACK',structure=structure)
                 return Decision(phase='TRIGGER',reason='Откат есть; ждём пересечение локального уровня',
-                                side=s.side,stop=s.invalidation,trigger=s.trigger,invalidation=s.invalidation,atr=a,levels=lines)
+                                side=s.side,stop=s.invalidation,trigger=s.trigger,invalidation=s.invalidation,atr=a,levels=lines,
+                                path='TRIGGER',structure=structure)
             return Decision(phase='PULLBACK',reason='Импульс/структура подтверждены; ждём откат/ретест',
-                            side=s.side,invalidation=s.invalidation,atr=a,levels=lines)
+                            side=s.side,invalidation=s.invalidation,atr=a,levels=lines,path='PULLBACK',structure=structure)
         if last.time<=self.last_scanned:
-            return Decision(reason='Нового структурного события пока нет',atr=a)
+            return Decision(reason='Нового структурного события пока нет',atr=a,structure=structure)
         self.last_scanned=last.time
 
         # A pivot confirmed by the just-closed bar is known NOW and is therefore safe to use.
@@ -112,7 +170,7 @@ class Strategy:
         fresh=[p for p in known if p['known_at']==last.time]
         highs=[p for p in known if p['kind']=='H']; lows=[p for p in known if p['kind']=='L']
         if not highs or not lows:
-            return Decision(reason='Нужны подтверждённые вершина и впадина',atr=a)
+            return Decision(reason='Нужны подтверждённые вершина и впадина',atr=a,structure=structure)
         prev=bars[-2]
         up=last.close>highs[-1]['price']+pad and prev.close<=highs[-1]['price']+pad
         down=last.close<lows[-1]['price']-pad and prev.close>=lows[-1]['price']-pad
@@ -120,15 +178,15 @@ class Strategy:
         side=1 if up else -1 if down else structural_side
         kind='BREAK_RETEST' if up or down else 'IMPULSE_PULLBACK'
         if not side or (campaign_side and side!=campaign_side):
-            return Decision(reason='Нет согласованного структурного сценария',atr=a)
+            return Decision(reason='Нет согласованного структурного сценария',atr=a,structure=structure)
         if not self._context_allows(side,m15,h1):
-            return Decision(reason='Контекст старшего ТФ против сценария; новый вход запрещён',atr=a)
+            return Decision(reason='Контекст старшего ТФ против сценария; новый вход запрещён',atr=a,structure=structure)
         invalidation=lows[-1]['price']-pad if side==1 else highs[-1]['price']+pad
         if (last.close-invalidation)*side<=0:
-            return Decision(reason='Уровень отмены сценария уже пробит',atr=a)
+            return Decision(reason='Уровень отмены сценария уже пробит',atr=a,structure=structure)
         event=f'{self.config.symbol}|{self.config.timeframe}|{self.config.mode}|{last.time:014d}|{side}'
         if event in self.consumed:
-            return Decision(reason='Это событие уже обработано',atr=a)
+            return Decision(reason='Это событие уже обработано',atr=a,structure=structure)
 
         impulse_ok=kind!='IMPULSE_PULLBACK' or (last.close-bars[-4].close)*side>=a*.8
         fresh_structure=bool(fresh) and structural_side==side
@@ -172,10 +230,10 @@ class Strategy:
                         return Decision(phase='TRIGGER',
                             reason='Свежая структура подтверждена; откат уже есть; ждём новое пересечение триггера',
                             side=side,stop=invalidation,trigger=self.setup.trigger,
-                            invalidation=invalidation,atr=a,levels=lines)
+                            invalidation=invalidation,atr=a,levels=lines,path='TRIGGER',structure=structure)
             return Decision(phase='PULLBACK',
                 reason='Свежая подтверждённая структура; ждём откат/ретест, ордер не отправлен',
-                side=side,invalidation=invalidation,atr=a,
+                side=side,invalidation=invalidation,atr=a,path='PULLBACK',structure=structure,
                 levels=({'kind':'invalidation','price':invalidation,'time':last.time},
                         {'kind':'level','price':level,'time':last.time}))
 
@@ -200,13 +258,14 @@ class Strategy:
                        {'kind':'trigger','price':trigger,'time':last.time})
                 return Decision(phase='TRIGGER',
                     reason='Подтверждённый тренд; откат уже сформирован; ждём свежий пробой локального уровня',
-                    side=side,stop=invalidation,trigger=trigger,invalidation=invalidation,atr=a,levels=lines)
-            return Decision(reason='Структура есть; нового импульса или завершённого отката ещё нет',atr=a)
+                    side=side,stop=invalidation,trigger=trigger,invalidation=invalidation,atr=a,levels=lines,
+                    path='TRIGGER',structure=structure)
+            return Decision(reason='Структура есть; нового импульса или завершённого отката ещё нет',atr=a,structure=structure)
 
         self.setup=Setup(event,side,kind,'PULLBACK',last.time,int(now+profile.setup_bars*tf),
                          invalidation,highs[-1]['price'] if side==1 else lows[-1]['price'],
                          last.high if side==1 else last.low,last_bar=last.time)
         return Decision(phase='PULLBACK',reason='Новый '+kind+': ждём откат, ордер не отправлен',
-                        side=side,invalidation=invalidation,atr=a,
+                        side=side,invalidation=invalidation,atr=a,path='PULLBACK',structure=structure,
                         levels=({'kind':'invalidation','price':invalidation,'time':last.time},
                                 {'kind':'level','price':self.setup.level,'time':last.time}))
