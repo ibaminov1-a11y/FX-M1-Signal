@@ -12,6 +12,7 @@ import java.util.*;
 /** Transport and presentation only. It cannot calculate or send a BUY/SELL order. */
 public final class EventClient {
     public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
+    public static String pathName(String path){switch(path){case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
     private EventClient() {}
@@ -91,13 +92,13 @@ public final class EventClient {
         boolean latch=s.optBoolean("emergency",false)||p.getBoolean("v108_emergency_latched",false);
         boolean auto=s.optBoolean("auto",false)&&!latch;
         String sig=d.optString("signal","WAIT"),symbol=cfg.optString("symbol","EUR/USD"),tf=cfg.optString("timeframe","M5");
-        String phase=d.optString("phase","SEARCH");String why=d.optString("reason","Ждём MT5");
+        String phase=d.optString("phase","SEARCH"),path=d.optString("path","SEARCH");String why=d.optString("reason","Ждём MT5");
         JSONObject campaign=s.optJSONObject("campaign");
         if(campaign!=null){sig=campaign.optInt("side",0)>0?"BUY":"SELL";phase="HOLD";}
         long since=sig.equals(p.getString("state_signal","WAIT"))?p.getLong("state_signal_since_ms",now):now;
         if("WAIT".equals(sig))since=0;
         StringBuilder context=new StringBuilder("Вход: ").append(tf).append(" · Режим: ").append(cfg.optString("mode","NORMAL"))
-            .append("\nЭтап: ").append(phaseName(phase)).append("\n").append(why)
+            .append("\nЭтап: ").append(phaseName(phase)).append("\nПуть: ").append(pathName(path)).append("\n").append(why)
             .append("\nРешение и исполнение: данные MT5");
         if(q!=null)context.append("\nВремя котировки: ").append(new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date(q.optLong("time_msc"))));
         JSONArray positions=s.optJSONArray("all_positions");int n=positions==null?0:positions.length();double floating=0;
@@ -113,7 +114,7 @@ public final class EventClient {
             .putInt("mt5_positions_snapshot",n).putLong("mt5_floating_bits",Double.doubleToLongBits(floating))
             .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig)
             .putString("state_context",context.toString()).putString("state_why",why)
-            .putString("state_components","Подтверждённая структура → откат → свежий триггер. Балльное голосование не используется.")
+            .putString("state_components","Bridge: "+pathName(path)+" · вход разрешается только подтверждённым событием; балльная оценка не даёт права на вход.")
             .putInt("state_quality",-1).putInt("state_api_count",0).putInt("state_cache_count",0)
             .putLong("state_signal_since_ms",since).putLong("state_last_update_ms",now).putLong("state_last_success_ms",(long)(s.optDouble("analysis_time",0)*1000))
             .putLong("state_entry_bits",Double.doubleToLongBits(q==null?Double.NaN:q.optDouble("bid",Double.NaN)))
