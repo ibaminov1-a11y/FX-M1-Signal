@@ -328,7 +328,9 @@ class Engine:
                 if self.market_errors:
                     raise Blocked('; '.join(self.market_errors))
                 q=self.quote;q.validate(now)
-                d=self.strategy.update(self.bars,self.context,q,now,self.campaign['side'] if self.campaign else 0)
+                d=self.strategy.update(self.bars,self.context,q,now,
+                    self.campaign['side'] if self.campaign else 0,
+                    m1=self.m1,m15=self.m15,h1=self.h1,live_bar=self.live_bar)
                 self.decision=d;self.analysis_time=now
                 if now-self.last_persist>=1:
                     self.save();self.last_persist=now
