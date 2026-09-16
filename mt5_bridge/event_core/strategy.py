@@ -80,6 +80,59 @@ class Strategy:
             event,side,invalidation,trigger,invalidation,a,q.time_msc,lines,
             path='IMPULSE',structure=structure)
 
+    def _continuation_candidate(self,bars,m1,m15,h1,q,now,campaign_side,a,pad,structure):
+        if self.config.timeframe!='M5' or not m1:
+            return None
+        points=pivots(bars)
+        side=direction(points)
+        if not side or (campaign_side and campaign_side!=side):
+            return None
+        if not self._context_allows(side,m15,h1):
+            return None
+        last=bars[-1]
+        # A real pause must push against the trend or close neutral. An uninterrupted
+        # same-direction stair is not re-labelled as a continuation entry.
+        if (last.close-last.open)*side>0:
+            return None
+        recent=bars[-5:-1]
+        if len(recent)<4:
+            return None
+        extreme=max(x.high for x in recent) if side==1 else min(x.low for x in recent)
+        retrace=(extreme-last.low) if side==1 else (last.high-extreme)
+        if retrace<.10*a or retrace>=.35*a:
+            return None
+        highs=[p for p in points if p['kind']=='H'];lows=[p for p in points if p['kind']=='L']
+        if not highs or not lows:
+            return None
+        invalidation=lows[-1]['price']-pad if side==1 else highs[-1]['price']+pad
+        trigger=last.high+pad if side==1 else last.low-pad
+        if (q.bid-trigger)*side>0:
+            return None
+        event=(f'{self.config.symbol}|M5|{self.config.mode}|CONTINUATION|'
+               f'{last.time:014d}|{side}|{trigger:.10f}')
+        if event in self.consumed:
+            return None
+        if self.setup and self.setup.id==event:
+            return None
+        if self.setup and self.setup.side!=side:
+            return None
+        previous=self.setup
+        if previous and previous.id!=event:
+            self.consumed.add(previous.id)
+        self.setup=Setup(event,side,'CONTINUATION','TRIGGER',last.time,
+            int(now+PROFILES[self.config.mode].setup_bars*TF_SECONDS[self.config.timeframe]),
+            invalidation,trigger,extreme,
+            pullback=last.low if side==1 else last.high,
+            trigger=trigger,trigger_bar=m1[-1].time,armed_msc=q.time_msc,
+            last_bid=q.bid,seen_safe_side=True,last_bar=last.time)
+        lines=({'kind':'invalidation','price':invalidation,'time':last.time},
+               {'kind':'level','price':trigger,'time':last.time},
+               {'kind':'trigger','price':trigger,'time':last.time})
+        return Decision(phase='TRIGGER',
+            reason='Неглубокая пауза подтверждена; ждём новую закрытую M1 за локальным уровнем',
+            side=side,stop=invalidation,trigger=trigger,invalidation=invalidation,atr=a,
+            levels=lines,path='CONTINUATION',structure=structure)
+
     def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0,
                *, m1=None, m15=None, h1=None, live_bar=None):
         m1=[] if m1 is None else m1
@@ -111,11 +164,19 @@ class Strategy:
                 self.setup=None
             return impulse
 
+        continuation=self._continuation_candidate(bars,m1,m15,h1,q,now,campaign_side,a,pad,structure)
+        if continuation is not None:
+            return continuation
+        s=self.setup
+
         if s and (now>s.expires or (s.side==1 and q.bid<=s.invalidation) or
-                  (s.side==-1 and q.bid>=s.invalidation) or (campaign_side and s.side!=campaign_side)):
-            self.consume(s.id)
-            return Decision(phase='CANCELLED',reason='Сценарий отменён: срок/структура',atr=a,structure=structure)
-        if s and last.time>s.last_bar:
+                  (s.side==-1 and q.bid>=s.invalidation) or (campaign_side and s.side!=campaign_side) or
+                  not self._context_allows(s.side,m15,h1)):
+            old=s.id
+            self.consume(old)
+            return Decision(phase='CANCELLED',reason='Сценарий отменён: срок/структура/контекст',atr=a,
+                            structure=structure)
+        if s and s.kind!='CONTINUATION' and last.time>s.last_bar:
             s.last_bar=last.time
             favorable=max if s.side==1 else min
             s.extreme=favorable(s.extreme,last.high if s.side==1 else last.low)
@@ -140,6 +201,27 @@ class Strategy:
                    {'kind':'level','price':s.level,'time':s.born})
             if s.phase=='TRIGGER':
                 lines+=({'kind':'trigger','price':s.trigger,'time':s.trigger_bar},)
+                if s.kind=='CONTINUATION':
+                    fresh_m1=bool(m1) and m1[-1].time>s.trigger_bar and m1[-1].time+60<=now
+                    m1_confirm=fresh_m1 and (m1[-1].close-s.trigger)*s.side>0
+                    tick_confirm=q.time_msc>s.armed_msc and (q.bid-s.trigger)*s.side>0
+                    if m1_confirm and tick_confirm and s.id not in self.consumed:
+                        if abs(q.bid-s.trigger)>profile.no_chase_atr*a:
+                            self.consume(s.id)
+                            return Decision(phase='CANCELLED',reason='Продолжение уже убежало за допустимую цену',
+                                            atr=a,levels=lines,path='CONTINUATION',structure=structure)
+                        stop=s.pullback-pad if s.side==1 else s.pullback+pad
+                        if self.config.mode=='NORMAL':
+                            stop=min(stop,s.invalidation) if s.side==1 else max(stop,s.invalidation)
+                        return Decision('BUY' if s.side==1 else 'SELL','ENTRY_READY',
+                            'Неглубокая пауза завершена; новая закрытая M1 и тик подтвердили продолжение',
+                            s.id,s.side,stop,s.trigger,s.invalidation,a,q.time_msc,lines,
+                            path='CONTINUATION',structure=structure)
+                    return Decision(phase='TRIGGER',
+                        reason='Пауза есть; ждём новую закрытую M1 и живой тик за trigger',
+                        side=s.side,stop=s.invalidation,trigger=s.trigger,invalidation=s.invalidation,
+                        atr=a,levels=lines,path='CONTINUATION',structure=structure)
+
                 on_safe=(q.bid-s.trigger)*s.side<=0
                 crossed=s.seen_safe_side and q.time_msc>s.armed_msc and (q.bid-s.trigger)*s.side>0 and (s.last_bid-s.trigger)*s.side<=0
                 s.seen_safe_side|=on_safe
@@ -165,7 +247,6 @@ class Strategy:
         self.last_scanned=last.time
 
         # A pivot confirmed by the just-closed bar is known NOW and is therefore safe to use.
-        # The previous strict '< last.time' skipped exactly those fresh structure events.
         known=[p for p in points if p['known_at']<=last.time]
         fresh=[p for p in known if p['known_at']==last.time]
         highs=[p for p in known if p['kind']=='H']; lows=[p for p in known if p['kind']=='L']
@@ -192,10 +273,6 @@ class Strategy:
         fresh_structure=bool(fresh) and structural_side==side
 
         if kind=='IMPULSE_PULLBACK' and not impulse_ok and fresh_structure:
-            # Smooth stair-step trends often confirm a new HH/HL or LH/LL without one large
-            # 3-bar candle burst. A newly CONFIRMED pivot is itself a fresh structural event.
-            # It may arm a scenario, but it still cannot open a trade without a later quote
-            # crossing, so this does not turn trend recognition into an immediate order.
             favorable_kind='H' if side==1 else 'L'
             favorable=[p for p in fresh if p['kind']==favorable_kind]
             level=highs[-1]['price'] if side==1 else lows[-1]['price']
@@ -204,10 +281,6 @@ class Strategy:
             setup_kind='STRUCTURE_PULLBACK'
             self.setup=Setup(event,side,setup_kind,'PULLBACK',last.time,int(now+profile.setup_bars*tf),
                              invalidation,level,extreme,last_bar=last.time)
-
-            # If the pivot being confirmed is the favorable impulse extreme, the two bars
-            # that confirmed it may already form the pullback. Arm a NEW future crossing
-            # from that closed-bar information instead of discarding the completed pullback.
             if favorable:
                 pivot=favorable[-1]
                 after=[b for b in bars if b.time>pivot['time']]
@@ -238,9 +311,6 @@ class Strategy:
                         {'kind':'level','price':level,'time':last.time}))
 
         if kind=='IMPULSE_PULLBACK' and not impulse_ok:
-            # The process may first observe an already established trend during its pullback.
-            # Do not require witnessing the original impulse live: reconstruct only from
-            # confirmed closed bars, then still require a NEW quote crossing after arming.
             recent=bars[-5:-1]
             opposing=(last.close-last.open)*side<0
             extreme=max(x.high for x in recent) if side==1 else min(x.low for x in recent)
