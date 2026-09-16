@@ -33,7 +33,7 @@ class R3MarketMapTests(unittest.TestCase):
             1.1000,1.1010,1.1040,1.1020,1.1005,
             1.1020,1.1055,1.1030,1.1015,
             1.1030,1.1070,1.1040,1.1025,
-            1.1040,1.1060,1.1050,1.1055,
+            1.1040,1.1080,1.1050,1.1055,
         ])
         labels=model.swing_labels(bars)
         kinds=[p['kind'] for p in labels]
