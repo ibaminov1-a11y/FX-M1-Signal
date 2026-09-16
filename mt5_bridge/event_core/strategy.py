@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import asdict
-from .model import Bar, Quote, Config, Setup, Decision, PROFILES, TF_SECONDS, atr, ordered, pivots, direction, Blocked
+from .model import Bar, Quote, Config, Setup, Decision, PROFILES, TF_SECONDS, atr, ordered, pivots, direction, context_direction, Blocked
 
 
 class Strategy:
@@ -26,8 +26,22 @@ class Strategy:
         self.setup=None
         self.previous_quote=None
 
-    def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0):
+    def _context_allows(self, side: int, m15: list[Bar], h1: list[Bar]):
+        for values in (m15 or [], h1 or []):
+            ctx=context_direction(values)
+            if ctx and ctx!=side:
+                return False
+        return True
+
+    def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0,
+               *, m1=None, m15=None, h1=None, live_bar=None):
+        m1=[] if m1 is None else m1
+        m15=context if m15 is None else m15
+        h1=[] if h1 is None else h1
         q.validate(now); ordered(bars); ordered(context)
+        if m1: ordered(m1)
+        if m15 is not context: ordered(m15)
+        if h1: ordered(h1)
         if len(bars)<32 or len(context)<16:
             return Decision(reason='Недостаточно закрытых свечей MT5')
         tf=TF_SECONDS[self.config.timeframe]
@@ -39,7 +53,6 @@ class Strategy:
         a=atr(bars); pad=max(a*.05,q.spread*1.2)
         profile=PROFILES[self.config.mode]
         points=pivots(bars)
-        ctx=direction(pivots(context))
         last=bars[-1]
         s=self.setup
         if s and (now>s.expires or (s.side==1 and q.bid<=s.invalidation) or
@@ -108,7 +121,7 @@ class Strategy:
         kind='BREAK_RETEST' if up or down else 'IMPULSE_PULLBACK'
         if not side or (campaign_side and side!=campaign_side):
             return Decision(reason='Нет согласованного структурного сценария',atr=a)
-        if ctx and ctx!=side:
+        if not self._context_allows(side,m15,h1):
             return Decision(reason='Контекст старшего ТФ против сценария; новый вход запрещён',atr=a)
         invalidation=lows[-1]['price']-pad if side==1 else highs[-1]['price']+pad
         if (last.close-invalidation)*side<=0:
