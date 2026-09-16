@@ -19,7 +19,11 @@ class FullFlow(unittest.TestCase):
                     try:
                         e=Engine(b,store,lambda:now[0]);e.config=Config(mode=mode,test_capital=1000,risk_pct=1,absolute_risk_cap=10,fee_per_lot=0,approved=True,cooldown_sec=0)
                         e.strategy=Strategy(e.config)
-                        if side==-1:b.bar_data=[mirror(x) for x in b.bar_data];b.ctx_data=[mirror(x) for x in b.ctx_data]
+                        if side==-1:
+                            b.bar_data=[mirror(x) for x in b.bar_data]
+                            b.ctx_data=[mirror(x) for x in b.ctx_data]
+                            b.m1_data=[mirror(x) for x in b.m1_data]
+                            b.h1_data=[mirror(x) for x in b.h1_data]
                         def q(price):
                             b.bid=price if side==1 else 2.3-price;b.ask=b.bid+.00001;e.heartbeat=now[0]
                         q(1.1026);e.command('enable',{'command_id':str(uuid.uuid4()),'confirmation':'ENABLE_DEMO'})
