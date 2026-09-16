@@ -16,16 +16,18 @@ def shallow_fixture(side=1, retrace_atr=.20, *, opposite_h1=False, no_pause=Fals
         recent=bars[-5:-1]
         extreme=max(x.high for x in recent) if side==1 else min(x.low for x in recent)
         old=bars[-1]
+        # Keep the entire opposing candle INSIDE the requested retrace so the fixture's
+        # actual extreme-to-low/high distance is the stated retrace_atr value.
         if side==1:
             low=extreme-retrace_atr*a0
-            high=extreme-.03*a0
-            open_=extreme-.06*a0
-            close=extreme-.14*a0
+            high=extreme-.15*retrace_atr*a0
+            open_=extreme-.30*retrace_atr*a0
+            close=extreme-.75*retrace_atr*a0
         else:
             high=extreme+retrace_atr*a0
-            low=extreme+.03*a0
-            open_=extreme+.06*a0
-            close=extreme+.14*a0
+            low=extreme+.15*retrace_atr*a0
+            open_=extreme+.30*retrace_atr*a0
+            close=extreme+.75*retrace_atr*a0
         bars[-1]=Bar(old.time,open_,max(high,open_,close),min(low,open_,close),close,10)
     a=atr(bars)
     m1=wave(int(NOW),count=48,tf=60,trend=.000006*side)
@@ -57,7 +59,7 @@ class R3ContinuationTests(unittest.TestCase):
 
     def test_shallow_sell_pause_is_mirrored(self):
         s=self.strategy();bars,m1,m15,h1,live,q,a=shallow_fixture(-1,.20)
-        d=update(s,bars,q,m1,m15,h1,live)
+        d=update(s,bars,q,m1=m1,m15=m15,h1=h1,live=live)
         self.assertEqual((d.signal,d.phase,d.path),('WAIT','TRIGGER','CONTINUATION'))
         trigger=s.setup.trigger
         q2=Quote(q.time_msc+1000,trigger-.01*a,trigger-.01*a+.00001)
