@@ -34,6 +34,8 @@ class Engine:
         self.rows=[];self.account={};self.account_time=0.;self.positions=[];self.orders=[]
         self.risk={'allowed':False,'blocks':['HISTORY_UNAVAILABLE']}
         self.last_bars_at=0.;self.bars=[];self.context=[];self.quote=None;self.info={}
+        # R3 M5 hierarchy. Closed bars stay separate from the forming M5 candle.
+        self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
         self.market_time=0.;self.market_errors=[];self.quote_ready=False
         self.last_market_attempt=-1.;self.bar_errors=[]
         self.analysis_time=0.;self.decision=Decision();self.execution='AUTO выключен: только анализ'
