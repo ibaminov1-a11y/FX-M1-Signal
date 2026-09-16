@@ -114,8 +114,6 @@ class Strategy:
             return None
         if self.setup and self.setup.id==event:
             return None
-        if self.setup and self.setup.side!=side:
-            return None
         previous=self.setup
         if previous and previous.id!=event:
             self.consumed.add(previous.id)
@@ -160,7 +158,7 @@ class Strategy:
         s=self.setup
 
         impulse=self._impulse_decision(bars,m1,m15,h1,live_bar,q,now,campaign_side,a,pad,structure)
-        if impulse is not None and (s is None or s.side==impulse.side):
+        if impulse is not None:
             if s is not None and s.id!=impulse.event_id:
                 self.consumed.add(s.id)
                 self.setup=None
