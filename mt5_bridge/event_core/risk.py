@@ -158,6 +158,7 @@ def plan_order(broker, cfg: Config, account, info, q: Quote, d: Decision, positi
         running_risk+=max(0,risk)+cfg.fee_per_lot*p['volume']
         net+=number(p['profit'],'floating P/L')+number(p.get('swap',0),'swap')-cfg.fee_per_lot*number(p['volume'],'volume',positive=True)
     if positions:
+        if d.entry_class=='PROBE': raise Blocked('Probe разрешён только как первый вход кампании')
         if not cfg.dynamic_adds: raise Blocked('Режим одного входа: добавления выключены')
         if net<=0: raise Blocked('Кампания не в чистом плюсе: усреднение запрещено')
         if not campaign: raise Blocked('Нельзя добавлять без сохранённой кампании')
@@ -166,7 +167,8 @@ def plan_order(broker, cfg: Config, account, info, q: Quote, d: Decision, positi
     unit_loss=-number(broker.calc_profit(side,symbol,vmin,adverse_entry,adverse_stop),'planned P/L')/vmin+cfg.fee_per_lot
     if unit_loss<=0: raise Blocked('Не удалось оценить денежный риск стопа')
     available=budget-running_risk
-    volume=quantize(min(vmax,cfg.lot_cap,available/unit_loss),step)
+    effective_lot_cap=min(cfg.lot_cap,cfg.probe_lot_cap) if d.entry_class=='PROBE' else cfg.lot_cap
+    volume=quantize(min(vmax,effective_lot_cap,available/unit_loss),step)
     if volume<vmin-1e-10 or volume<=0:
         raise Blocked(f'Минимальный лот {vmin:g} не помещается в остаток риска {max(0,available):.2f} USD')
     risk=unit_loss*volume

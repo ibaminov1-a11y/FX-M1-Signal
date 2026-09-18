@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import asdict, fields
+from dataclasses import asdict, fields, replace
 import copy, hashlib, math, threading, time
 from .model import Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure
 from .strategy import Strategy
@@ -41,6 +41,7 @@ class Engine:
         self.market_time=0.;self.market_errors=[];self.quote_ready=False
         self.last_market_attempt=-1.;self.bar_errors=[]
         self.analysis_time=0.;self.decision=Decision();self.execution='AUTO выключен: только анализ'
+        self.forecast={};self.forecast_side=0;self.forecast_since=0.
         self.rate_times=[];self.next_close=0.;self.last_persist=0.;self.last_audit_key=None
         self.save()
 
@@ -252,6 +253,12 @@ class Engine:
         if not self.campaign:return False
         c=self.campaign;q=self.quote
         side=c['side'];net=sum(p['profit']+p.get('swap',0)-float(self.config.fee_per_lot or 0)*p['volume'] for p in owned)+c.get('realized',0)
+        if c.get('entry_class')=='PROBE' and not c.get('confirmed',False):
+            f=self.forecast or {}
+            if int(f.get('side',0) or 0)==-side and float(f.get('confidence',0) or 0)>=self.config.forecast_exit_probability and float(f.get('stable_for_sec',0) or 0)>=self.config.forecast_exit_stability_sec:
+                self._close_campaign('LIVE forecast устойчиво развернулся против раннего probe');return True
+            if now-c.get('started',now)>=self.config.probe_timeout_sec:
+                self._close_campaign('probe не получил подтверждения за отведённое время');return True
         c['peak']=max(float(c.get('peak',0)),net)
         if net<=-c['budget'] or any(p['sl']<=0 for p in owned):
             self._close_campaign('превышен риск или отсутствует брокерский SL');return True
@@ -285,6 +292,28 @@ class Engine:
                 if (candidate-c['invalidation'])*side>0:c['invalidation']=candidate
         return False
 
+    def _update_forecast(self,now):
+        raw=self.strategy.forecast(self.bars,self.m1,self.m15,self.h1,self.live_bar,self.quote,now)
+        side=int(raw.get('side',0) or 0);confidence=float(raw.get('confidence',0) or 0)
+        if side in (-1,1) and confidence>=self.config.forecast_min_confidence:
+            if side!=self.forecast_side:
+                self.forecast_side=side;self.forecast_since=now
+            stable=max(0.,now-self.forecast_since)
+        else:
+            self.forecast_side=0;self.forecast_since=now;stable=0.
+        raw=dict(raw);raw['stable_for_sec']=round(stable,2)
+        self.forecast=raw
+        return raw
+
+    def _late_entry_reason(self,d):
+        f=self.forecast or {}
+        fside=int(f.get('side',0) or 0);confidence=float(f.get('confidence',0) or 0)
+        if fside==d.side and (f.get('late_entry') or f.get('exhaustion')):
+            return 'Поздний вход заблокирован: цена уже у края/истощения текущего движения; ждём откат и новый micro-break'
+        if fside==-d.side and confidence>=self.config.probe_probability:
+            return 'Вход заблокирован: LIVE forecast устойчиво против подтверждённого направления'
+        return ''
+
     def _session_allowed(self,now):
         if not self.config.session_filter:return True
         h=time.gmtime(now).tm_hour
@@ -304,6 +333,18 @@ class Engine:
                     except Exception as exc:
                         self.execution='Закрытие EC1 пока не подтверждено: '+str(exc)
                 self._refresh_market(now)
+                if not self.market_errors and self.quote_ready:
+                    try:self._update_forecast(now)
+                    except Exception as exc:
+                        self.forecast=dict(side=0,confidence=0.,up_probability=.33,down_probability=.33,
+                            range_probability=.34,late_entry=False,exhaustion=False,regime='DATA_BLOCK',
+                            components={},reason='LIVE forecast недоступен: '+str(exc),stable_for_sec=0.)
+                        self.forecast_side=0;self.forecast_since=now
+                else:
+                    self.forecast=dict(side=0,confidence=0.,up_probability=.33,down_probability=.33,
+                        range_probability=.34,late_entry=False,exhaustion=False,regime='DATA_BLOCK',
+                        components={},reason='LIVE forecast ждёт свежие данные',stable_for_sec=0.)
+                    self.forecast_side=0;self.forecast_since=now
                 if exit_cycle:
                     self._suspend_trigger(now)
                     message=self.execution
@@ -316,13 +357,28 @@ class Engine:
                 if self.market_errors:
                     raise Blocked('; '.join(self.market_errors))
                 q=self.quote;q.validate(now)
-                # Current market analysis must not be pinned to the side of an existing campaign.
-                d=self.strategy.update(self.bars,self.context,q,now,0,
+                # Confirmed strategy and LIVE forecast are independent layers.
+                core=self.strategy.update(self.bars,self.context,q,now,0,
                     m1=self.m1,m15=self.m15,h1=self.h1,live_bar=self.live_bar)
+                d=replace(core,forecast=copy.deepcopy(self.forecast),
+                          entry_class=('CONFIRMED' if core.signal in ('BUY','SELL') and core.phase=='ENTRY_READY' else core.entry_class))
+                # A confirmed opposite event remains an exit signal for an existing campaign.
+                if self.campaign and d.phase=='ENTRY_READY' and d.side in (-1,1) and d.side!=self.campaign['side']:
+                    pass
+                elif not self.campaign and d.signal in ('BUY','SELL') and d.phase=='ENTRY_READY':
+                    late_reason=self._late_entry_reason(d)
+                    if late_reason:
+                        if d.event_id:self.strategy.consume(d.event_id)
+                        d=Decision(phase='FORECAST',reason=late_reason,side=d.side,atr=d.atr,
+                            levels=d.levels,path='LATE_BLOCK',structure=d.structure,
+                            forecast=copy.deepcopy(self.forecast),entry_class='NONE')
+                elif not self.campaign and d.signal=='WAIT' and d.phase=='SEARCH':
+                    probe=self.strategy.probe_decision(self.bars,self.m1,self.m15,self.h1,self.live_bar,q,now,self.forecast)
+                    if probe is not None:d=probe
                 self.decision=d;self.analysis_time=now
                 if now-self.last_persist>=1:
                     self.save();self.last_persist=now
-                key=(self.bars[-1].time,d.phase,d.signal)
+                key=(self.bars[-1].time,d.phase,d.signal,d.path,int(float(self.forecast.get('confidence',0))*20))
                 if key!=self.last_audit_key:
                     self.store.event('ANALYSIS',dict(decision=d.json(),quote=asdict(q),bar=asdict(self.bars[-1]),mode=self.config.mode),now)
                     self.last_audit_key=key
@@ -338,7 +394,10 @@ class Engine:
                 elif self.recovery:self.execution='Нужна сверка неизвестного исполнения; новые входы запрещены'
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
                 elif not self._session_allowed(now):self.execution='Текущая сессия не разрешена выбранным фильтром'
-                elif d.signal=='WAIT':self.execution='Нет нового подтверждённого входа; ордер не отправлен'
+                elif d.signal=='WAIT':
+                    fs=int(self.forecast.get('side',0) or 0);fc=float(self.forecast.get('confidence',0) or 0)
+                    if fs:self.execution=('LIVE forecast '+('BUY' if fs==1 else 'SELL')+f' {fc*100:.0f}%; исполнение ждёт probe/подтверждение')
+                    else:self.execution='Нет нового подтверждённого входа; ордер не отправлен'
                 else:
                     try:self._entry(d,now)
                     finally:
@@ -376,11 +435,14 @@ class Engine:
         if (q.bid-d.trigger)*d.side<=0 or abs(q.bid-d.trigger)>PROFILES[self.config.mode].no_chase_atr*d.atr:
             raise Blocked('Котировка уже вышла из допустимой зоны входа')
         p=plan_order(self.broker,self.config,account,self.info,q,d,self._owned(),self.campaign,now)
-        if not self.campaign:
+        new_campaign=not self.campaign
+        if new_campaign:
             self.campaign=dict(id=d.event_id,side=d.side,mode=self.config.mode,timeframe=self.config.timeframe,
                 symbol=self.info['name'],started=now,budget=self.config.budget(account),initial_risk=p.risk,
                 last_entry=p.entry,best_price=p.entry,last_progress=now,invalidation=d.invalidation,
-                add_step_atr=PROFILES[self.config.mode].add_step_atr,peak=0.,position_ids=[],realized=0.,events=[])
+                add_step_atr=PROFILES[self.config.mode].add_step_atr,peak=0.,position_ids=[],realized=0.,events=[],
+                entry_class=d.entry_class if d.entry_class!='NONE' else 'CONFIRMED',
+                confirmed=d.entry_class!='PROBE',confirmed_at=(now if d.entry_class!='PROBE' else 0.))
         comment='EC1:'+hashlib.sha256(d.event_id.encode()).hexdigest()[:16]
         body=dict(plan=asdict(p),comment=comment,time=now)
         self.strategy.consume(d.event_id);self.save();self.store.intent(d.event_id,'SENDING',body)
@@ -401,7 +463,10 @@ class Engine:
             self.campaign['last_entry']=sum(x['price_open']*x['volume'] for x in matches)/sum(x['volume'] for x in matches)
             self.campaign['position_ids']=sorted(set(self.campaign['position_ids'])|{x['identifier'] for x in matches})
             self.campaign['events'].append(d.event_id)
-            self.execution='MT5 подтвердил '+d.signal+': '+', '.join('#'+str(x['ticket']) for x in matches)
+            if d.entry_class!='PROBE':
+                self.campaign['confirmed']=True;self.campaign['entry_class']='CONFIRMED';self.campaign['confirmed_at']=now
+            prefix='PROBE ' if d.entry_class=='PROBE' else ''
+            self.execution='MT5 подтвердил '+prefix+d.signal+': '+', '.join('#'+str(x['ticket']) for x in matches)
             self.save()
             try:
                 reserve=max(self.config.slippage_ticks*self.info['tick_size'],q.spread)
@@ -448,7 +513,7 @@ class Engine:
                 self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
                 self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
                 self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.
-                self.decision=Decision()
+                self.decision=Decision();self.forecast={};self.forecast_side=0;self.forecast_since=0.
                 self.save();message='Профиль сохранён. Подтвердите комиссию и риск; AUTO выключен'
             elif command=='approve_profile':
                 if data.get('confirmation')!='APPROVE_DEMO_RISK':raise Blocked('Нужно явное подтверждение риска DEMO')
@@ -496,6 +561,7 @@ class Engine:
                 risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),
                 emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
+                forecast=copy.deepcopy(self.forecast),
                 quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-100:]],
                 live_bar=asdict(self.live_bar) if self.live_bar else None,
                 live_structure=list(live_structure(self.bars,self.live_bar)) if self.config.timeframe=='M5' else [],

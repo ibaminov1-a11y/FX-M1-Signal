@@ -85,6 +85,18 @@ class Config:
     loss_streak: int = 3
     fee_per_lot: float | None = None
     lot_cap: float = .01
+    # R3 live-forecast research controls. A probe is deliberately smaller than a
+    # confirmed campaign entry and remains subject to the same broker SL/risk budget.
+    probe_enabled: bool = True
+    forecast_min_confidence: float = .60
+    probe_probability: float = .72
+    probe_stability_sec: float = 3.0
+    probe_lot_cap: float = .01
+    late_entry_atr: float = .85
+    exhaustion_atr: float = 1.15
+    forecast_exit_probability: float = .78
+    forecast_exit_stability_sec: float = 3.0
+    probe_timeout_sec: int = 600
     # Legacy compatibility fields. EC1-R2 always sizes campaigns from the actual MT5
     # balance/equity; these values no longer cap or replace the live account base.
     test_capital: float = 0.0
@@ -106,8 +118,17 @@ class Config:
             raise Blocked('Неизвестный режим или таймфрейм')
         if not self.symbol or len(self.symbol) > 32:
             raise Blocked('Некорректный инструмент')
-        for name in ('risk_pct','lot_cap','margin_fraction','spread_pips'):
+        for name in ('risk_pct','lot_cap','probe_lot_cap','probe_stability_sec','late_entry_atr',
+                     'exhaustion_atr','forecast_exit_stability_sec','margin_fraction','spread_pips'):
             number(getattr(self,name),name,positive=True)
+        for name in ('forecast_min_confidence','probe_probability','forecast_exit_probability'):
+            value=number(getattr(self,name),name,positive=True)
+            if not .50 <= value <= .99:
+                raise Blocked('Вероятностный порог вне допустимого диапазона')
+        if self.probe_lot_cap > self.lot_cap:
+            raise Blocked('Probe lot cap не может превышать общий lot cap')
+        if not 30 <= int(self.probe_timeout_sec) <= 3600:
+            raise Blocked('Некорректное время жизни probe')
         number(self.test_capital, 'test_capital')
         number(self.absolute_risk_cap, 'absolute_risk_cap')
         if self.test_capital < 0 or self.absolute_risk_cap < 0 or self.risk_pct > 1 or self.margin_fraction > .5:
@@ -174,6 +195,8 @@ class Decision:
     levels: tuple = ()
     path: str = 'SEARCH'
     structure: tuple = ()
+    forecast: dict = field(default_factory=dict)
+    entry_class: str = 'NONE'
 
     def json(self):
         return asdict(self)

@@ -678,7 +678,7 @@ public class MainActivity extends Activity {
             JSONObject bridgeState = EventClient.state();
             boolean emergency = p.getBoolean("v108_emergency_latched", false) || bridgeState.optBoolean("emergency", false);
             boolean paused = bridgeState.optBoolean("paused", true);
-            boolean bridgeAuto = bridgeState.optBoolean("auto", false) && !emergency;
+            boolean bridgeAuto = bridgeState.optBoolean("auto", false) && !paused && !emergency;
             boolean autoSaved = bridgeAuto && mt5 && targetAllowed;
             autoTradingSwitch.setChecked(autoSaved);
             p.edit().putBoolean("auto_trading", autoSaved).putBoolean("auto_user_enabled", autoSaved).putInt("ec_limit", 0).apply();
@@ -1379,20 +1379,37 @@ public class MainActivity extends Activity {
         signalText.setText(signal);
         signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
-        confidenceText.setText("Сценарий: "+EventClient.phaseName(EventClient.state().optJSONObject("decision")==null?"SEARCH":EventClient.state().optJSONObject("decision").optString("phase","SEARCH")));
-        confidenceText.setTextColor(C_PURPLE);
+        JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
+        if(forecast!=null&&forecast.optInt("side",0)!=0){
+            int fs=forecast.optInt("side",0);int pct=(int)Math.round(forecast.optDouble("confidence",0)*100);
+            confidenceText.setText("LIVE FORECAST: "+(fs>0?"BUY ":"SELL ")+pct+"% · "+forecast.optString("regime",""));
+            confidenceText.setTextColor(fs>0?C_GREEN:C_RED);
+        }else{
+            confidenceText.setText("Сценарий: "+EventClient.phaseName(currentDecision==null?"SEARCH":currentDecision.optString("phase","SEARCH")));
+            confidenceText.setTextColor(C_PURPLE);
+        }
         if (qualityBarView != null) qualityBarView.setVisibility(View.GONE);
         updateSignalAgeText(signal, since, updated);
         restoreSparklineFromPrefs(signal);
 
-        if ("WAIT".equals(signal)) {
-            JSONObject currentDecision=EventClient.state().optJSONObject("decision");
+        String campaignSummary=EventClient.campaignSummary(currentState);
+        if(!campaignSummary.isEmpty()){
+            String next;
+            if("WAIT".equals(signal)){
+                double trigger=currentDecision==null?Double.NaN:currentDecision.optDouble("trigger",Double.NaN);
+                next="\n\nНОВЫЙ СИГНАЛ: WAIT"+(Double.isFinite(trigger)&&trigger>0?" · Trigger "+fmt(trigger):"");
+            }else{
+                next="\n\nНОВОЕ ПОДТВЕРЖДЕНИЕ: "+signal+" · Entry "+fmt(entry)+" · SL "+fmt(sl);
+            }
+            levelsText.setText(campaignSummary+next);
+        }else if ("WAIT".equals(signal)) {
             double trigger=currentDecision==null?Double.NaN:currentDecision.optDouble("trigger",Double.NaN);
             levelsText.setText("Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+fmt(trigger):"") + "\nSL: —\nTP1: —\nTP2: —");
         } else {
             levelsText.setText(
                     "Entry: " + fmt(entry) +
                     "\nSL: " + fmt(sl) +
+                    "\nКласс: "+(currentDecision==null?"—":currentDecision.optString("entry_class","CONFIRMED"))+
                     "\nВыход: структура и защита кампании"
             );
         }

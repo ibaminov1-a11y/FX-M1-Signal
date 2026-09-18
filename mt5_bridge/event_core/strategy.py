@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import asdict
+import math
 from .model import Bar, Quote, Config, Setup, Decision, PROFILES, TF_SECONDS, atr, ordered, pivots, direction, context_direction, swing_labels, Blocked
 
 
@@ -130,6 +131,155 @@ class Strategy:
             reason='Неглубокая пауза подтверждена; ждём новую закрытую M1 за локальным уровнем',
             side=side,stop=invalidation,trigger=trigger,invalidation=invalidation,atr=a,
             levels=lines,path='CONTINUATION',structure=structure)
+
+    @staticmethod
+    def _clip(value, lo=-1.0, hi=1.0):
+        return max(lo,min(hi,float(value)))
+
+    def forecast(self,bars,m1,m15,h1,live_bar,q,now):
+        """Forward-only live directional estimate.
+
+        This is a deterministic research ensemble, not a promise of future returns.
+        It uses only closed M1/M5/M15/H1 data, the isolated forming M5 and the live
+        quote. Confirmed pivot logic remains unchanged.
+        """
+        neutral=dict(side=0,confidence=0.0,up_probability=.33,down_probability=.33,
+                     range_probability=.34,late_entry=False,exhaustion=False,
+                     regime='RANGE',components={},reason='Недостаточно данных для LIVE forecast')
+        if self.config.timeframe!='M5' or len(bars)<16 or len(m1)<8 or live_bar is None:
+            return neutral
+        try:
+            q.validate(now)
+            a=atr(bars)
+        except Exception:
+            return neutral
+        pts=pivots(bars)
+        struct=direction(pts)
+        c15=context_direction(m15) if m15 else 0
+        c1=context_direction(h1) if h1 else 0
+        m5_delta=(live_bar.close-bars[-4].close)/a
+        m1_delta=(m1[-1].close-m1[-6].close)/a
+        fast=(m1[-1].close-m1[-3].close)/a
+        slow=(m1[-3].close-m1[-6].close)/a
+        acceleration=fast-slow
+        live_body=(live_bar.close-live_bar.open)/a
+        recent=bars[-7:]
+        lo=min(x.low for x in recent);hi=max(x.high for x in recent)
+        breakout=0.0 if hi<=lo else ((q.bid-lo)/(hi-lo)*2-1)
+        vols=[max(0.0,float(x.volume)) for x in m1[-12:-1]]
+        avg_vol=sum(vols)/len(vols) if vols else 0
+        vol_ratio=(float(m1[-1].volume)/avg_vol-1) if avg_vol>0 else 0
+        vol_sign=1 if m1[-1].close>m1[-1].open else -1 if m1[-1].close<m1[-1].open else 0
+        components={
+            'structure':float(struct),
+            'momentum':self._clip(m5_delta/1.15),
+            'micro_momentum':self._clip(m1_delta/.70),
+            'acceleration':self._clip(acceleration/.45),
+            'live_body':self._clip(live_body/.55),
+            'context':self._clip((c15*.60+c1*.40)),
+            'breakout_pressure':self._clip(breakout),
+            'volume_pressure':self._clip(vol_ratio)*vol_sign,
+        }
+        score=(1.15*components['structure']+
+               1.25*components['momentum']+
+               1.45*components['micro_momentum']+
+               .70*components['acceleration']+
+               .95*components['live_body']+
+               .75*components['context']+
+               .65*components['breakout_pressure']+
+               .35*components['volume_pressure'])
+        directional=math.tanh(score/3.2)
+        range_p=max(.05,min(.40,.34*(1-abs(directional))))
+        mass=1-range_p
+        up=mass*(1+directional)/2
+        down=mass-up
+        confidence=max(up,down)
+        side=1 if up>=self.config.forecast_min_confidence else -1 if down>=self.config.forecast_min_confidence else 0
+
+        bias=side if side else (1 if directional>.12 else -1 if directional<-.12 else 0)
+        tail=list(bars[-8:])+[live_bar]
+        extension=0.0;near_extreme=False;same_closes=0
+        if bias==1:
+            floor=min(x.low for x in tail)
+            top=max(x.high for x in tail)
+            extension=max(0,(q.bid-floor)/a)
+            near_extreme=(top-q.bid)<=.18*a
+            same_closes=sum((x.close-x.open)>0 for x in bars[-6:])
+        elif bias==-1:
+            top=max(x.high for x in tail)
+            floor=min(x.low for x in tail)
+            extension=max(0,(top-q.bid)/a)
+            near_extreme=(q.bid-floor)<=.18*a
+            same_closes=sum((x.close-x.open)<0 for x in bars[-6:])
+        late=bool(bias and near_extreme and extension>=self.config.late_entry_atr)
+        exhausted=bool(bias and near_extreme and extension>=self.config.exhaustion_atr and same_closes>=4)
+        if exhausted:
+            regime='EXHAUSTION'
+        elif abs(components['live_body'])>=.75 and abs(components['breakout_pressure'])>=.65:
+            regime='BREAKOUT'
+        elif struct==1 and directional>.12:
+            regime='TREND_UP'
+        elif struct==-1 and directional<-.12:
+            regime='TREND_DOWN'
+        elif abs(directional)<.18:
+            regime='RANGE'
+        else:
+            regime='TRANSITION'
+        if side==1: reason='Преимущество вверх по LIVE-ансамблю'
+        elif side==-1: reason='Преимущество вниз по LIVE-ансамблю'
+        else: reason='Преимущество пока недостаточно выражено'
+        if late: reason+='; цена уже у края растянутого движения'
+        if exhausted: reason+='; признаки истощения импульса'
+        return dict(side=side,confidence=round(confidence,4),
+                    up_probability=round(up,4),down_probability=round(down,4),
+                    range_probability=round(range_p,4),late_entry=late,
+                    exhaustion=exhausted,regime=regime,extension_atr=round(extension,3),
+                    same_direction_closes=same_closes,
+                    components={k:round(v,3) for k,v in components.items()},
+                    reason=reason)
+
+    def probe_decision(self,bars,m1,m15,h1,live_bar,q,now,forecast):
+        if not self.config.probe_enabled or self.config.timeframe!='M5' or live_bar is None:
+            return None
+        side=int(forecast.get('side',0) or 0)
+        if side not in (-1,1):
+            return None
+        if float(forecast.get('confidence',0))<self.config.probe_probability:
+            return None
+        if float(forecast.get('stable_for_sec',0))<self.config.probe_stability_sec:
+            return None
+        if forecast.get('late_entry') or forecast.get('exhaustion'):
+            return None
+        if len(m1)<6 or not self._context_allows(side,m15,h1):
+            return None
+        if m1[-1].time+60>now+1:
+            return None
+        a=atr(bars);pad=max(a*.025,q.spread*1.2)
+        prior=m1[-5:-1]
+        if side==1:
+            micro=max(x.high for x in prior);trigger=micro+pad
+            if m1[-1].close<=trigger or q.bid<=trigger or m1[-1].close<=m1[-1].open:
+                return None
+            stop=min(x.low for x in m1[-6:])-pad
+            stop=min(stop,q.bid-.25*a)
+        else:
+            micro=min(x.low for x in prior);trigger=micro-pad
+            if m1[-1].close>=trigger or q.bid>=trigger or m1[-1].close>=m1[-1].open:
+                return None
+            stop=max(x.high for x in m1[-6:])+pad
+            stop=max(stop,q.ask+.25*a)
+        if abs(q.bid-trigger)>PROFILES[self.config.mode].no_chase_atr*a*.70:
+            return None
+        event=(f'{self.config.symbol}|M5|{self.config.mode}|FORECAST|'
+               f'{m1[-1].time:014d}|{side}|{trigger:.10f}')
+        if event in self.consumed:
+            return None
+        lines=({'kind':'invalidation','price':stop,'time':m1[-1].time},
+               {'kind':'trigger','price':trigger,'time':m1[-1].time})
+        return Decision('BUY' if side==1 else 'SELL','PROBE_READY',
+            'LIVE forecast устойчив; свежий M1 micro-break разрешил маленький probe',
+            event,side,stop,trigger,stop,a,q.time_msc,lines,
+            path='FORECAST',structure=swing_labels(bars),forecast=forecast,entry_class='PROBE')
 
     def update(self, bars: list[Bar], context: list[Bar], q: Quote, now: float, campaign_side=0,
                *, m1=None, m15=None, h1=None, live_bar=None):

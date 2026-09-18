@@ -11,8 +11,8 @@ import java.util.*;
 
 /** Transport and presentation only. It cannot calculate or send a BUY/SELL order. */
 public final class EventClient {
-    public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
-    public static String pathName(String path){switch(path){case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
+    public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "FORECAST":return "Прогноз / поздний вход заблокирован";case "PROBE_READY":return "Ранний probe";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
+    public static String pathName(String path){switch(path){case "FORECAST":return "LIVE Forecast";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
     private EventClient() {}
@@ -35,6 +35,24 @@ public final class EventClient {
     public static String tf(){String[] t={"M1","M5","M10","M15","H1","H4","D1","W1","MN1"};return t[Math.max(0,Math.min(8,prefs().getInt("entry_tf_pos",1)))];}
     public static String mode(){return prefs().getInt("signal_mode_pos",0)==1?"SCALP":"NORMAL";}
     public static JSONObject state(){try{return new JSONObject(prefs().getString("ec_state","{}"));}catch(Exception e){return new JSONObject();}}
+    public static String campaignSummary(JSONObject state){
+        if(state==null)return "";
+        JSONObject campaign=state.optJSONObject("campaign");JSONArray positions=state.optJSONArray("positions");
+        if(campaign==null||positions==null||positions.length()==0)return "";
+        int side=campaign.optInt("side",0);double volume=0,weighted=0,pl=0,minSl=Double.POSITIVE_INFINITY,maxSl=Double.NEGATIVE_INFINITY;
+        for(int i=0;i<positions.length();i++){JSONObject p=positions.optJSONObject(i);if(p==null)continue;
+            double v=p.optDouble("volume",0),entry=p.optDouble("price_open",Double.NaN),sl=p.optDouble("sl",Double.NaN);
+            volume+=v;if(Double.isFinite(entry))weighted+=entry*v;pl+=p.optDouble("profit",0)+p.optDouble("swap",0);
+            if(Double.isFinite(sl)&&sl>0){minSl=Math.min(minSl,sl);maxSl=Math.max(maxSl,sl);}
+        }
+        if(volume<=0)return "";
+        String cls=campaign.optBoolean("confirmed",false)?"CONFIRMED":campaign.optString("entry_class","PROBE");
+        String slText=!Double.isFinite(minSl)?"—":Math.abs(maxSl-minSl)<.0000005?String.format(Locale.US,"%.5f",minSl):String.format(Locale.US,"%.5f … %.5f",minSl,maxSl);
+        return "ОТКРЫТАЯ КАМПАНИЯ: "+(side>0?"BUY":side<0?"SELL":"—")+" · "+cls+
+            "\nEntry MT5: "+String.format(Locale.US,"%.5f",weighted/volume)+" · "+String.format(Locale.US,"%.2f",volume)+" lot"+
+            "\nSL MT5: "+slText+"\nP/L: "+String.format(Locale.US,"%+.2f USD",pl)+
+            "\nВыход: структура / защитный SL; фиксированный TP не используется";
+    }
     public static JSONObject http(String method,String url,JSONObject data) throws Exception {
         if(base().isEmpty())throw new IOException("Не задан адрес Bridge EventCore");
         URL target=new URL(url);URL origin=new URL(base());
@@ -112,8 +130,8 @@ public final class EventClient {
     }
     static String moneySummary(JSONObject o){if(o==null)return "—";return String.format(Locale.US,"+%.2f / −%.2f · ИТОГ %+.2f USD · %d сдел.",o.optDouble("profit"),Math.abs(o.optDouble("loss")),o.optDouble("net"),o.optInt("count"));}
     public static void cache(JSONObject s) throws Exception {
-        SharedPreferences p=prefs();JSONObject a=s.optJSONObject("account"),d=s.optJSONObject("decision"),q=s.optJSONObject("quote"),cfg=s.optJSONObject("config"),rs=s.optJSONObject("risk");
-        if(a==null)a=new JSONObject();if(d==null)d=new JSONObject();if(cfg==null)cfg=new JSONObject();if(rs==null)rs=new JSONObject();
+        SharedPreferences p=prefs();JSONObject a=s.optJSONObject("account"),d=s.optJSONObject("decision"),q=s.optJSONObject("quote"),cfg=s.optJSONObject("config"),rs=s.optJSONObject("risk"),fc=s.optJSONObject("forecast");
+        if(a==null)a=new JSONObject();if(d==null)d=new JSONObject();if(cfg==null)cfg=new JSONObject();if(rs==null)rs=new JSONObject();if(fc==null)fc=new JSONObject();
         long now=System.currentTimeMillis();boolean connected=!a.isNull("balance")&&a.has("balance")&&s.optDouble("account_age",999)<10;
         boolean latch=s.optBoolean("emergency",false)||p.getBoolean("v108_emergency_latched",false);
         boolean auto=s.optBoolean("auto",false)&&!latch;
@@ -124,8 +142,13 @@ public final class EventClient {
         if(campaign!=null){int side=campaign.optInt("side",0);campaignSide=side>0?"BUY":side<0?"SELL":"—";}
         long since=sig.equals(p.getString("state_signal","WAIT"))?p.getLong("state_signal_since_ms",now):now;
         if("WAIT".equals(sig))since=0;
+        int fside=fc.optInt("side",0);double fconfidence=fc.optDouble("confidence",0);String fbias=fside>0?"BUY":fside<0?"SELL":"NEUTRAL";
+        String forecastText="LIVE FORECAST: "+fbias+" "+Math.round(fconfidence*100)+"% · "+fc.optString("regime","RANGE");
+        if(fc.optBoolean("late_entry",false))forecastText+=" · LATE ENTRY BLOCK";
+        if(fc.optBoolean("exhaustion",false))forecastText+=" · EXHAUSTION";
         StringBuilder context=new StringBuilder("Вход: ").append(tf).append(" · Режим: ").append(cfg.optString("mode","NORMAL"))
             .append("\nЭтап: ").append(phaseName(phase)).append("\nПуть: ").append(pathName(path)).append("\n").append(why)
+            .append("\n").append(forecastText)
             .append("\nРешение и исполнение: данные MT5");
         if(campaign!=null)context.append("\nОткрытая кампания: ").append(campaignSide);
         if(q!=null)context.append("\nВремя котировки: ").append(new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date(q.optLong("time_msc"))));
@@ -141,8 +164,9 @@ public final class EventClient {
             .putLong("mt5_equity_bits",Double.doubleToLongBits(a.optDouble("equity",Double.NaN)))
             .putInt("mt5_positions_snapshot",n).putLong("mt5_floating_bits",Double.doubleToLongBits(floating))
             .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig).putString("state_campaign_side",campaignSide)
-            .putString("state_context",context.toString()).putString("state_why",why)
-            .putString("state_components","Bridge: "+pathName(path)+" · вход разрешается только подтверждённым событием; балльная оценка не даёт права на вход.")
+            .putString("state_context",context.toString()).putString("state_why",why).putString("state_forecast_text",forecastText)
+            .putString("state_components",forecastText+"\nКомпоненты: "+fc.optJSONObject("components")+
+                "\nProbe разрешается только после устойчивого forecast + свежего M1 micro-break; подтверждённые добавления — только в плюс и по общему риску.")
             .putInt("state_quality",-1).putInt("state_api_count",0).putInt("state_cache_count",0)
             .putLong("state_signal_since_ms",since).putLong("state_last_update_ms",now).putLong("state_last_success_ms",(long)(s.optDouble("analysis_time",0)*1000))
             .putLong("state_entry_bits",Double.doubleToLongBits(q==null?Double.NaN:q.optDouble("bid",Double.NaN)))
