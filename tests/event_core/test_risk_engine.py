@@ -31,9 +31,17 @@ class RiskTests(unittest.TestCase):
     def test_nan_profit_blocks(self):
         self.b.calc_profit=lambda *a:float('nan')
         with self.assertRaises(Blocked):self.plan()
-    def test_real_forbidden(self):
+    def test_real_account_is_forbidden_when_profile_is_demo(self):
         self.b.demo=False
-        with self.assertRaises(Blocked):self.plan()
+        with self.assertRaisesRegex(Blocked,'режим счёта'):self.plan()
+
+    def test_real_pilot_plan_allowed_only_with_real_profile_and_strict_caps(self):
+        self.b.demo=False
+        cfg=replace(self.cfg,account_mode='REAL',risk_pct=.25,lot_cap=.01,probe_lot_cap=.01)
+        p=self.plan(cfg=cfg)
+        self.assertEqual(p.volume,.01)
+        with self.assertRaisesRegex(Blocked,'REAL pilot'):
+            self.plan(cfg=replace(cfg,risk_pct=.5))
     def test_negative_campaign_no_add(self):
         p=dict(symbol='EURUSD',side=1,sl=1.102,volume=.01,price_open=1.104,profit=-1,swap=0)
         with self.assertRaisesRegex(Blocked,'усреднение'):self.plan(positions=[p],campaign={'budget':10,'last_entry':1.102,'add_step_atr':.3})
@@ -83,6 +91,23 @@ class RiskTests(unittest.TestCase):
         self.assertGreater(plan.volume,0)
 
 
+    def test_commission_estimator_uses_completed_roundtrip_per_lot(self):
+        deals=[
+            dict(ticket=1,position_id=77,magic=MAGIC,symbol='EURUSD',comment='x',type=0,entry=0,time_msc=1,volume=1.0,profit=0,commission=-3.5,swap=0,fee=0),
+            dict(ticket=2,position_id=77,magic=MAGIC,symbol='EURUSD',comment='x',type=1,entry=1,time_msc=2,volume=1.0,profit=4,commission=-3.5,swap=0,fee=0),
+        ]
+        self.assertAlmostEqual(estimate_roundtrip_fee_per_lot(deals),7.0)
+
+    def test_custom_symbol_is_not_restricted_to_eurusd(self):
+        cfg=replace(self.cfg,symbol='BTCUSD.pro',spread_pips=999)
+        self.b.info.update(name='BTCUSD.pro',digits=2,point=.01,tick_size=.01)
+        self.b.bid=50000.;self.b.ask=50000.5
+        self.d=Decision('BUY','ENTRY_READY','test','btc',1,49990.,50000.4,49990.,20.,int(self.now*1000))
+        p=plan_order(self.b,cfg,self.b.account(),self.b.info,self.b.quote('BTCUSD.pro'),self.d,[],None,self.now)
+        self.assertEqual(p.symbol,'BTCUSD.pro')
+
+
+
 class EngineTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.now=1800000000.
@@ -102,6 +127,46 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(Blocked):self.e.command('enable',{'command_id':'enable0001'})
         self.e.command('enable',{'command_id':'enable0002','confirmation':'ENABLE_DEMO'})
         self.assertTrue(self.e.auto)
+    def test_demo_profile_defaults_fee_to_zero_without_manual_settings(self):
+        self.e.config=replace(self.e.config,fee_per_lot=None,approved=False,account_mode='DEMO')
+        self.e.strategy=__import__('event_core.strategy',fromlist=['Strategy']).Strategy(self.e.config)
+        self.e._refresh(self.now)
+        self.assertEqual(self.e.effective_fee_per_lot,0.0)
+        out=self.e.command('approve_profile',{'command_id':'approve-demo-auto-fee','confirmation':'APPROVE_DEMO_RISK'})
+        self.assertTrue(self.e.config.approved,out)
+
+    def test_real_account_is_shadow_until_explicit_arm_then_can_enable_pilot(self):
+        self.b.demo=False
+        self.e.account_key=''
+        self.e.config=Config(symbol='GBP/JPY',account_mode='REAL',risk_pct=.25,fee_per_lot=7.0,
+                             lot_cap=.01,probe_lot_cap=.01,approved=True,cooldown_sec=0)
+        self.e.strategy=__import__('event_core.strategy',fromlist=['Strategy']).Strategy(self.e.config)
+        self.e._refresh(self.now)
+        self.assertEqual(self.e.account['type'],'REAL')
+        self.assertFalse(self.e.real_armed)
+        with self.assertRaisesRegex(Blocked,'ARM REAL'):
+            self.e.command('enable',{'command_id':'real-enable-before-arm','confirmation':'ENABLE_REAL'})
+        arm=self.e.command('arm_real',{'command_id':'real-arm-explicit','confirmation':'ARM_REAL_LIVE'})
+        self.assertTrue(arm['real_armed'])
+        out=self.e.command('enable',{'command_id':'real-enable-after-arm','confirmation':'ENABLE_REAL'})
+        self.assertTrue(out['auto'])
+
+    def test_real_commission_is_auto_estimated_and_persisted_by_account(self):
+        self.b.demo=False
+        self.b.deals=[
+            dict(ticket=1,position_id=50,magic=MAGIC,symbol='EURUSD',comment='old',type=0,entry=0,time_msc=int((self.now-20)*1000),volume=1.,profit=0.,commission=-3.5,swap=0.,fee=0.),
+            dict(ticket=2,position_id=50,magic=MAGIC,symbol='EURUSD',comment='old',type=1,entry=1,time_msc=int((self.now-10)*1000),volume=1.,profit=10.,commission=-3.5,swap=0.,fee=0.),
+        ]
+        self.e.account_key=''
+        self.e.config=Config(account_mode='REAL',risk_pct=.25,fee_per_lot=None,lot_cap=.01,probe_lot_cap=.01,approved=False,cooldown_sec=0)
+        self.e.strategy=__import__('event_core.strategy',fromlist=['Strategy']).Strategy(self.e.config)
+        self.e.history_time=0
+        self.e._refresh(self.now)
+        self.assertAlmostEqual(self.e.effective_fee_per_lot,7.0)
+        self.assertEqual(self.e.fee_source,'MT5_HISTORY')
+        saved=self.store.load('fee_profiles',{})
+        self.assertAlmostEqual(saved[self.e.account_key]['fee_per_lot'],7.0)
+
     def test_reapproving_same_profile_does_not_turn_auto_off(self):
         self.e.command('enable',{'command_id':'enable-again-1','confirmation':'ENABLE_DEMO'})
         self.assertTrue(self.e.auto);self.assertFalse(self.e.paused)
