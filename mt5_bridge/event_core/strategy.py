@@ -148,7 +148,8 @@ class Strategy:
         """
         neutral=dict(side=0,confidence=0.0,up_probability=.33,down_probability=.33,
                      range_probability=.34,late_entry=False,exhaustion=False,
-                     regime='RANGE',components={},reason='Недостаточно данных для LIVE forecast')
+                     regime='RANGE',components={},projection=[],available=False,
+                     reason='Недостаточно данных для LIVE forecast')
         if self.config.timeframe!='M5' or len(bars)<16 or len(m1)<8 or live_bar is None:
             return neutral
         try:
@@ -238,11 +239,26 @@ class Strategy:
         else: reason='Преимущество пока недостаточно выражено'
         if late: reason+='; цена уже у края растянутого движения'
         if exhausted: reason+='; признаки истощения импульса'
+        projection=[]
+        current=q.bid
+        for horizon in (1,2,3):
+            decay=1/(1+.24*(horizon-1))
+            pu=1/3+(up-1/3)*decay
+            pd=1/3+(down-1/3)*decay
+            pr=max(.04,1-pu-pd)
+            total=pu+pd+pr;pu/=total;pd/=total;pr/=total
+            dir_h=pu-pd
+            center=current+dir_h*a*.40*(horizon**.72)
+            uncertainty=a*(.34*math.sqrt(horizon)+.16*pr*horizon)
+            pu=round(pu,4);pd=round(pd,4);pr=round(max(0,1-pu-pd),4)
+            projection.append(dict(minutes=horizon*5,center=round(center,10),
+                low=round(center-uncertainty,10),high=round(center+uncertainty,10),
+                up_probability=pu,down_probability=pd,range_probability=pr))
         return dict(side=side,confidence=round(confidence,4),
                     up_probability=round(up,4),down_probability=round(down,4),
                     range_probability=round(range_p,4),late_entry=late,
                     exhaustion=exhausted,regime=regime,extension_atr=round(extension,3),
-                    same_direction_closes=same_closes,
+                    same_direction_closes=same_closes,available=True,projection=projection,
                     components={k:round(v,3) for k,v in components.items()},
                     reason=reason)
 

@@ -94,9 +94,10 @@ class Config:
     probe_lot_cap: float = .01
     late_entry_atr: float = .85
     exhaustion_atr: float = 1.15
-    forecast_exit_probability: float = .78
+    forecast_exit_probability: float = .72
     forecast_exit_stability_sec: float = 3.0
-    probe_timeout_sec: int = 600
+    probe_neutral_exit_sec: float = 8.0
+    probe_timeout_sec: int = 180
     # Legacy compatibility fields. EC1-R2 always sizes campaigns from the actual MT5
     # balance/equity; these values no longer cap or replace the live account base.
     test_capital: float = 0.0
@@ -119,7 +120,7 @@ class Config:
         if not self.symbol or len(self.symbol) > 32:
             raise Blocked('Некорректный инструмент')
         for name in ('risk_pct','lot_cap','probe_lot_cap','probe_stability_sec','late_entry_atr',
-                     'exhaustion_atr','forecast_exit_stability_sec','margin_fraction','spread_pips'):
+                     'exhaustion_atr','forecast_exit_stability_sec','probe_neutral_exit_sec','margin_fraction','spread_pips'):
             number(getattr(self,name),name,positive=True)
         for name in ('forecast_min_confidence','probe_probability','forecast_exit_probability'):
             value=number(getattr(self,name),name,positive=True)

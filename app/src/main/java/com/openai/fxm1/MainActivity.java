@@ -699,7 +699,7 @@ public class MainActivity extends Activity {
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
         sparklineView.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
                 d==null?null:d.optJSONArray("structure"),d==null?"SEARCH":d.optString("path","SEARCH"),
-                s.optJSONObject("live_bar"),s.optJSONArray("live_structure"));
+                s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
         sparklineView.setSignal(signal);
     }
 

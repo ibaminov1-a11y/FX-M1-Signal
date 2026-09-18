@@ -142,8 +142,13 @@ public final class EventClient {
         if(campaign!=null){int side=campaign.optInt("side",0);campaignSide=side>0?"BUY":side<0?"SELL":"—";}
         long since=sig.equals(p.getString("state_signal","WAIT"))?p.getLong("state_signal_since_ms",now):now;
         if("WAIT".equals(sig))since=0;
-        int fside=fc.optInt("side",0);double fconfidence=fc.optDouble("confidence",0);String fbias=fside>0?"BUY":fside<0?"SELL":"NEUTRAL";
-        String forecastText="LIVE FORECAST: "+fbias+" "+Math.round(fconfidence*100)+"% · "+fc.optString("regime","RANGE");
+        int fside=fc.optInt("side",0);double fconfidence=fc.optDouble("confidence",0);
+        boolean forecastAvailable=fc.optBoolean("available",fc.has("up_probability"));
+        long up=Math.round(fc.optDouble("up_probability",0)*100),down=Math.round(fc.optDouble("down_probability",0)*100),range=Math.round(fc.optDouble("range_probability",0)*100);
+        String forecastText=forecastAvailable?
+            ("LIVE FORECAST: UP "+up+"% · DOWN "+down+"% · RANGE "+range+"% · "+fc.optString("regime","RANGE")+
+             (fside>0?" · BIAS BUY":fside<0?" · BIAS SELL":" · NO EDGE")):
+            "LIVE FORECAST: ожидаем достаточные данные";
         if(fc.optBoolean("late_entry",false))forecastText+=" · LATE ENTRY BLOCK";
         if(fc.optBoolean("exhaustion",false))forecastText+=" · EXHAUSTION";
         StringBuilder context=new StringBuilder("Вход: ").append(tf).append(" · Режим: ").append(cfg.optString("mode","NORMAL"))
@@ -165,8 +170,9 @@ public final class EventClient {
             .putInt("mt5_positions_snapshot",n).putLong("mt5_floating_bits",Double.doubleToLongBits(floating))
             .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig).putString("state_campaign_side",campaignSide)
             .putString("state_context",context.toString()).putString("state_why",why).putString("state_forecast_text",forecastText)
-            .putString("state_components",forecastText+"\nКомпоненты: "+fc.optJSONObject("components")+
-                "\nProbe разрешается только после устойчивого forecast + свежего M1 micro-break; подтверждённые добавления — только в плюс и по общему риску.")
+            .putString("state_components",forecastText+"\nКомпоненты: "+(fc.optJSONObject("components")==null?"{}":fc.optJSONObject("components").toString())+
+                "\nСправа на графике — модельный коридор +5/+10/+15м; это вычислительная оценка, не гарантированный маршрут."+
+                "\nProbe разрешается только после устойчивого forecast + свежего M1 micro-break; при потере edge в минусе probe закрывается раньше защитного SL.")
             .putInt("state_quality",-1).putInt("state_api_count",0).putInt("state_cache_count",0)
             .putLong("state_signal_since_ms",since).putLong("state_last_update_ms",now).putLong("state_last_success_ms",(long)(s.optDouble("analysis_time",0)*1000))
             .putLong("state_entry_bits",Double.doubleToLongBits(q==null?Double.NaN:q.optDouble("bid",Double.NaN)))

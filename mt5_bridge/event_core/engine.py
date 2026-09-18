@@ -243,7 +243,7 @@ class Engine:
                 if result['status']=='UNKNOWN':self.recovery=True;self.auto=False;self.paused=True
                 self.save();return
         self.positions=self.broker.positions()
-        if not self._owned() and not self._owned_orders():self.execution='Позиции бота закрыты; ожидается сверка истории'
+        if not self._owned() and not self._owned_orders():self.execution='Позиции бота закрыты: '+reason+'; ожидается сверка истории'
 
     def _manage(self,now,price_ready=True):
         owned=self._owned()
@@ -255,8 +255,19 @@ class Engine:
         side=c['side'];net=sum(p['profit']+p.get('swap',0)-float(self.config.fee_per_lot or 0)*p['volume'] for p in owned)+c.get('realized',0)
         if c.get('entry_class')=='PROBE' and not c.get('confirmed',False):
             f=self.forecast or {}
+            available=bool(f.get('available',('up_probability' in f and 'down_probability' in f)))
             if int(f.get('side',0) or 0)==-side and float(f.get('confidence',0) or 0)>=self.config.forecast_exit_probability and float(f.get('stable_for_sec',0) or 0)>=self.config.forecast_exit_stability_sec:
                 self._close_campaign('LIVE forecast устойчиво развернулся против раннего probe');return True
+            if available:
+                side_prob=float(f.get('up_probability' if side==1 else 'down_probability',0) or 0)
+                range_prob=float(f.get('range_probability',0) or 0)
+                lost=side_prob<max(.50,self.config.forecast_min_confidence-.05) or range_prob>=.40
+                if lost:
+                    if not c.get('edge_lost_since'):c['edge_lost_since']=now
+                    if net<0 and now-float(c.get('edge_lost_since',now))>=self.config.probe_neutral_exit_sec:
+                        self._close_campaign('probe потерял вычислительное преимущество; ранний выход до защитного SL');return True
+                else:
+                    c['edge_lost_since']=0.
             if now-c.get('started',now)>=self.config.probe_timeout_sec:
                 self._close_campaign('probe не получил подтверждения за отведённое время');return True
         c['peak']=max(float(c.get('peak',0)),net)
