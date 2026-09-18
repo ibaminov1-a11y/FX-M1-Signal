@@ -128,14 +128,25 @@ public class EventCoreUiTest {
   main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
    chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecast);
    bitmap[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(bitmap[0]));});
-  int forecastPixels=0,candlePixelsInFuture=0;int[]pixels=new int[1000*500];bitmap[0].getPixels(pixels,0,1000,0,0,1000,500);
-  for(int y=0;y<500;y++)for(int x=760;x<930;x++){int v=pixels[y*1000+x];
-   if(v==0xff5bd6ff)forecastPixels++;
-   if(v==0xff42d67a||v==0xffff4857)candlePixelsInFuture++;
+  int greenForecast=0,blueForecast=0,candlePixelsInFuture=0;int[]pixels=new int[1000*500];bitmap[0].getPixels(pixels,0,1000,0,0,1000,500);
+  for(int y=0;y<500;y++)for(int x=720;x<930;x++){int v=pixels[y*1000+x];
+   if(v==0xff42d67a)greenForecast++;
+   if(v==0xff5bd6ff)blueForecast++;
+   if(v==0xffff4857)candlePixelsInFuture++;
   }
-  assertTrue("forecast path must occupy reserved future zone",forecastPixels>20);
-  assertEquals("real candles must stay out of future forecast zone",0,candlePixelsInFuture);
-  bitmap[0].recycle();
+  assertTrue("BUY forecast path must be clearly green in reserved future zone",greenForecast>20);
+  assertEquals("old cyan forecast path must be gone",0,blueForecast);
+  assertEquals("real red candles must stay out of future forecast zone",0,candlePixelsInFuture);
+
+  forecast.put("side",-1).put("confidence",.81).put("up_probability",.10).put("down_probability",.81).put("range_probability",.09);
+  final Bitmap[] sell={null};
+  main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
+   chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecast);
+   sell[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(sell[0]));});
+  int redForecast=0;int[]sellPixels=new int[1000*500];sell[0].getPixels(sellPixels,0,1000,0,0,1000,500);
+  for(int y=0;y<500;y++)for(int x=720;x<930;x++)if(sellPixels[y*1000+x]==0xffff4857)redForecast++;
+  assertTrue("SELL forecast path must be clearly red in reserved future zone",redForecast>20);
+  sell[0].recycle();bitmap[0].recycle();
  }
  @Test public void configureRepairsBridgeModeAfterRestartInsteadOfTrustingPhoneCache()throws Exception{
   p.edit().putInt("signal_mode_pos",1).commit();
