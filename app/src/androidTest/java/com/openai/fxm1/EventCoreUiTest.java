@@ -114,6 +114,29 @@ public class EventCoreUiTest {
   assertTrue("provisional live structure must be visible immediately",live>20);
   bitmap[0].recycle();
  }
+ @Test public void forecastZoneReservesRightSideAndDrawsFutureProbabilityPath()throws Exception{
+  JSONArray bars=new JSONArray();
+  for(int i=0;i<18;i++){double o=1.1000+i*.0001,c=o+.00006;
+   bars.put(new JSONObject().put("time",1800000000+i*300).put("open",o).put("high",c+.00005).put("low",o-.00004).put("close",c));}
+  JSONObject liveBar=new JSONObject().put("time",1800000000+18*300).put("open",1.1018).put("high",1.10195).put("low",1.10176).put("close",1.10190);
+  JSONObject forecast=new JSONObject().put("side",1).put("confidence",.72).put("up_probability",.72).put("down_probability",.16).put("range_probability",.12)
+    .put("regime","TREND_UP").put("projection",new JSONArray()
+      .put(new JSONObject().put("minutes",5).put("center",1.10205).put("low",1.10180).put("high",1.10230).put("up_probability",.72).put("down_probability",.16).put("range_probability",.12))
+      .put(new JSONObject().put("minutes",10).put("center",1.10218).put("low",1.10172).put("high",1.10264).put("up_probability",.65).put("down_probability",.20).put("range_probability",.15))
+      .put(new JSONObject().put("minutes",15).put("center",1.10228).put("low",1.10162).put("high",1.10294).put("up_probability",.60).put("down_probability",.22).put("range_probability",.18)));
+  final Bitmap[] bitmap={null};
+  main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
+   chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecast);
+   bitmap[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(bitmap[0]));});
+  int forecastPixels=0,candlePixelsInFuture=0;int[]pixels=new int[1000*500];bitmap[0].getPixels(pixels,0,1000,0,0,1000,500);
+  for(int y=0;y<500;y++)for(int x=760;x<930;x++){int v=pixels[y*1000+x];
+   if(v==0xff5bd6ff)forecastPixels++;
+   if(v==0xff42d67a||v==0xffff4857)candlePixelsInFuture++;
+  }
+  assertTrue("forecast path must occupy reserved future zone",forecastPixels>20);
+  assertEquals("real candles must stay out of future forecast zone",0,candlePixelsInFuture);
+  bitmap[0].recycle();
+ }
  @Test public void configureRepairsBridgeModeAfterRestartInsteadOfTrustingPhoneCache()throws Exception{
   p.edit().putInt("signal_mode_pos",1).commit();
   EventClient.configure();
