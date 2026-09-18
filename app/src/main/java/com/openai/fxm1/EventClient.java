@@ -84,7 +84,8 @@ public final class EventClient {
     }
     public static String feePrefKey(){
         String key=prefs().getString("mt5_account_key_snapshot","UNBOUND");
-        return "ec_fee_REAL_"+key;
+        String symbol=prefs().getString("selected_symbol","EUR/USD");
+        return "ec_fee_REAL_"+key+"|"+symbol;
     }
     public static JSONObject config() throws Exception {
         SharedPreferences p=prefs();double[] risks={.25,.5,1};String accountMode=accountMode();
