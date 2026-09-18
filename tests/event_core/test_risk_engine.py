@@ -152,6 +152,27 @@ class EngineTests(unittest.TestCase):
         out=self.e.command('enable',{'command_id':'real-enable-after-arm','confirmation':'ENABLE_REAL'})
         self.assertTrue(out['auto'])
 
+    def test_real_armed_pilot_can_send_only_minimum_lot(self):
+        self.b.demo=False;self.e.account_key=''
+        self.e.config=Config(account_mode='REAL',risk_pct=.25,fee_per_lot=7.0,lot_cap=.01,probe_lot_cap=.01,approved=True,cooldown_sec=0)
+        self.e.strategy=__import__('event_core.strategy',fromlist=['Strategy']).Strategy(self.e.config)
+        self.e._refresh(self.now);self.e.info=self.b.symbol('EUR/USD');self.e.quote=self.b.quote('EURUSD')
+        self.e.command('arm_real',{'command_id':'real-arm-entry','confirmation':'ARM_REAL_LIVE'})
+        self.e.command('enable',{'command_id':'real-enable-entry','confirmation':'ENABLE_REAL'})
+        self.e._entry(self.decision('real-pilot-entry'),self.now)
+        self.assertEqual(len(self.b.sent),1)
+        self.assertEqual(self.b.sent[0].volume,.01)
+
+    def test_real_arm_does_not_survive_bridge_restart(self):
+        self.b.demo=False;self.e.account_key=''
+        self.e.config=Config(account_mode='REAL',risk_pct=.25,fee_per_lot=7.0,lot_cap=.01,probe_lot_cap=.01,approved=True,cooldown_sec=0)
+        self.e.strategy=__import__('event_core.strategy',fromlist=['Strategy']).Strategy(self.e.config)
+        self.e._refresh(self.now)
+        self.e.command('arm_real',{'command_id':'real-arm-restart','confirmation':'ARM_REAL_LIVE'})
+        self.assertTrue(self.e.real_armed)
+        other=Engine(self.b,self.store,lambda:self.now)
+        self.assertFalse(other.real_armed)
+
     def test_real_commission_is_auto_estimated_and_persisted_by_account(self):
         self.b.demo=False
         self.b.deals=[
