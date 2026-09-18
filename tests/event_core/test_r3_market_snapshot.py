@@ -13,12 +13,15 @@ from fakes import FakeBroker, wave
 class FakeMT5Rates:
     TIMEFRAME_M5 = 5
 
+    def __init__(self):
+        self.current=int(time.time()//300*300)
+
     def last_error(self):
         return (1, 'ok')
 
     def copy_rates_from_pos(self, symbol, timeframe, start_pos, count):
         span = 300
-        current = int(time.time() // span * span)
+        current = self.current
         rows = []
         for t in (current - 600, current - 300, current):
             rows.append(dict(
