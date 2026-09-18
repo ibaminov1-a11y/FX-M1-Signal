@@ -78,15 +78,27 @@ public final class EventClient {
         return b.put("client_id",p.getString("ec_client_id","")).put("sequence",seq).put("command_id",UUID.randomUUID().toString());
     }
     public static JSONObject command(String cmd,JSONObject body) throws Exception{return http("POST",base()+"/ec/command/"+cmd,envelope(body));}
+    public static String accountMode(){
+        String type=prefs().getString("mt5_account_type_snapshot","DEMO").toUpperCase(Locale.US);
+        return "REAL".equals(type)?"REAL":"DEMO";
+    }
+    public static String feePrefKey(){
+        String key=prefs().getString("mt5_account_key_snapshot","UNBOUND");
+        return "ec_fee_REAL_"+key;
+    }
     public static JSONObject config() throws Exception {
-        SharedPreferences p=prefs();double[] risks={.25,.5,1};
-        String fee=p.getString("ec_fee","").trim();
+        SharedPreferences p=prefs();double[] risks={.25,.5,1};String accountMode=accountMode();
+        double risk="REAL".equals(accountMode)?.25:risks[Math.max(0,Math.min(2,p.getInt("risk_pos",0)))];
+        String fee="REAL".equals(accountMode)?p.getString(feePrefKey(),"").trim():"0";
+        double lot=Double.parseDouble(p.getString("ec_lot_cap","0.01").replace(',','.'));
+        if("REAL".equals(accountMode))lot=Math.min(.01,lot);
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
-            .put("timeframe",tf()).put("mode",mode()).put("risk_pct",risks[Math.max(0,Math.min(2,p.getInt("risk_pos",0)))])
+            .put("timeframe",tf()).put("mode",mode()).put("account_mode",accountMode).put("risk_pct",risk)
             .put("optional_position_limit",0)
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
-            .put("lot_cap",Double.parseDouble(p.getString("ec_lot_cap","0.01").replace(',','.')))
-            .put("spread_pips",p.getFloat("max_spread_pips",3f)).put("cooldown_sec",p.getInt("cooldown_minutes",10)*60)
+            .put("lot_cap",lot).put("probe_lot_cap",Math.min(.01,lot))
+            .put("spread_pips",p.getFloat("max_spread_pips",3f)).put("max_spread_atr",.25)
+            .put("cooldown_sec",p.getInt("cooldown_minutes",10)*60)
             .put("dynamic_adds",p.getBoolean("ec_dynamic_adds",true)).put("session_filter",p.getBoolean("session_filter_enabled",false))
             .put("allowed_sessions",p.getString("allowed_sessions","LONDON,NEW_YORK"));
     }
@@ -98,9 +110,9 @@ public final class EventClient {
     }
     private static boolean configMatches(JSONObject remote,JSONObject desired){
         if(remote==null||desired==null)return false;
-        for(String key:new String[]{"symbol","timeframe","mode","allowed_sessions"})
+        for(String key:new String[]{"symbol","timeframe","mode","account_mode","allowed_sessions"})
             if(!remote.optString(key,"").equals(desired.optString(key,"")))return false;
-        for(String key:new String[]{"risk_pct","optional_position_limit","fee_per_lot","lot_cap","spread_pips","cooldown_sec"})
+        for(String key:new String[]{"risk_pct","optional_position_limit","fee_per_lot","lot_cap","probe_lot_cap","spread_pips","max_spread_atr","cooldown_sec"})
             if(!sameNumber(remote,desired,key))return false;
         for(String key:new String[]{"dynamic_adds","session_filter"})
             if(remote.optBoolean(key)!=desired.optBoolean(key))return false;
@@ -163,8 +175,9 @@ public final class EventClient {
         SharedPreferences.Editor e=p.edit().putString("ec_state",s.toString()).putLong("ec_received_elapsed",SystemClock.elapsedRealtime())
             .putBoolean("server_verified",connected).putBoolean("mt5_connected_snapshot",connected)
             .putBoolean("auto_trading",auto).putBoolean("auto_user_enabled",auto).putBoolean("trading_paused",s.optBoolean("paused",true))
-            .putString("bridge_version_snapshot",VERSION).putBoolean("bridge_version_match_snapshot",true).putBoolean("bridge_real_enabled_snapshot",false)
-            .putString("mt5_account_type_snapshot",a.optString("type","UNKNOWN")).putString("mt5_currency_snapshot",a.optString("currency","USD"))
+            .putString("bridge_version_snapshot",VERSION).putBoolean("bridge_version_match_snapshot",true).putBoolean("bridge_real_enabled_snapshot",s.optBoolean("real_armed",false))
+            .putString("mt5_account_type_snapshot",a.optString("type","UNKNOWN")).putString("mt5_account_key_snapshot",a.optString("key",""))
+            .putString("mt5_currency_snapshot",a.optString("currency","USD")).putString("fee_profile_snapshot",s.optJSONObject("fee_profile")==null?"{}":s.optJSONObject("fee_profile").toString())
             .putLong("mt5_balance_bits",Double.doubleToLongBits(a.optDouble("balance",Double.NaN)))
             .putLong("mt5_equity_bits",Double.doubleToLongBits(a.optDouble("equity",Double.NaN)))
             .putInt("mt5_positions_snapshot",n).putLong("mt5_floating_bits",Double.doubleToLongBits(floating))

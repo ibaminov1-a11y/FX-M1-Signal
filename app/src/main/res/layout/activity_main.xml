@@ -98,9 +98,9 @@
         
         <LinearLayout android:id="@+id/riskCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
 
-            <Switch android:id="@+id/autoTradingSwitch" android:layout_width="match_parent" android:layout_height="46dp" android:text="AUTO TRADING  •  DEMO ONLY" android:textColor="#F7F4FF" android:textSize="15sp" android:textStyle="bold" />
+            <Switch android:id="@+id/autoTradingSwitch" android:layout_width="match_parent" android:layout_height="46dp" android:text="AUTO TRADING  •  ACCOUNT MODE" android:textColor="#F7F4FF" android:textSize="15sp" android:textStyle="bold" />
 
-            <TextView android:id="@+id/autoStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="AUTO выключен · DEMO ONLY" android:textColor="#B0AAC7" android:textSize="11sp" />
+            <TextView android:id="@+id/autoStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="AUTO выключен" android:textColor="#B0AAC7" android:textSize="11sp" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:baselineAligned="false" android:orientation="horizontal">
 

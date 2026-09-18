@@ -367,15 +367,20 @@ public class MainActivity extends Activity {
                     .setMessage("PLAY и AUTO не снимают Emergency. Выполните явную сверку в настройках.")
                     .setPositiveButton("OK",null).show();return;
             }
-            new AlertDialog.Builder(this).setTitle("Разрешить AUTO только на DEMO?")
-                .setMessage("Источник — MT5. Первый вход после отката и нового триггера. Добавления только в плюс и в пределах общего риска текущей кампании.\n\nРиск кампании рассчитывается от фактического Balance/Equity MT5 по выбранному проценту. Старые V10 и ручные сделки не блокируют EC1. Комиссию укажите в настройках.")
-                .setNegativeButton("Отмена",null).setPositiveButton("Подтвердить DEMO",(d,w)->executor.execute(()->{
+            boolean realMode="REAL".equals(targetTradeMode());
+            new AlertDialog.Builder(this).setTitle(realMode?"Включить REAL PILOT AUTO?":"Разрешить AUTO на DEMO?")
+                .setMessage(realMode?
+                    "REAL-счёт. Пилотный лимит жёстко ограничен: ≤0.25% риска и ≤0.01 lot на ступень. Комиссия берётся из сохранённого профиля счёта/инструмента или истории MT5. REAL ARM действует только до перезапуска Bridge.":
+                    "Источник — MT5. DEMO-комиссия считается 0 автоматически. Первый вход — только по модели/триггеру, добавления только в плюс и в пределах общего риска.")
+                .setNegativeButton("Отмена",null).setPositiveButton(realMode?"ПОДТВЕРДИТЬ REAL":"Подтвердить DEMO",(d,w)->executor.execute(()->{
                     try{
                         EventClient.configure();
                         JSONObject current=EventClient.poll(),cfg=current.optJSONObject("config");
                         if(cfg==null||!cfg.optBoolean("approved",false))
-                            EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
-                        JSONObject out=EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));
+                            EventClient.command("approve_profile",new JSONObject().put("confirmation",realMode?"APPROVE_REAL_RISK":"APPROVE_DEMO_RISK"));
+                        if(realMode&&!EventClient.poll().optBoolean("real_armed",false))
+                            EventClient.command("arm_real",new JSONObject().put("confirmation","ARM_REAL_LIVE"));
+                        JSONObject out=EventClient.command("enable",new JSONObject().put("confirmation",realMode?"ENABLE_REAL":"ENABLE_DEMO"));
                         EventClient.poll();
                         runOnUiThread(()->{addJournal(out.optString("message"));startUnifiedMonitoringService();});
                     }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("AUTO не включён").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
@@ -602,7 +607,10 @@ public class MainActivity extends Activity {
         }
     }
 
-    private String targetTradeMode() { return "DEMO"; }
+    private String targetTradeMode() {
+        String type=getSharedPreferences("fxm1",MODE_PRIVATE).getString("mt5_account_type_snapshot","UNKNOWN").toUpperCase(Locale.US);
+        return "REAL".equals(type)?"REAL":"DEMO";
+    }
 
     private boolean currentAccountAllowedForAuto() {
         if (!serverConnected || !mt5Connected) return false;
@@ -630,7 +638,7 @@ public class MainActivity extends Activity {
         suppressAutoSwitch=true;autoTradingSwitch.setChecked(false);suppressAutoSwitch=false;
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);boolean was=p.getBoolean("auto_user_enabled",false);
         p.edit().putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).apply();
-        if(autoStatusText!=null){autoStatusText.setText("AUTO выключен · DEMO ONLY");autoStatusText.setTextColor(C_MUTED);}
+        if(autoStatusText!=null){autoStatusText.setText("AUTO выключен · "+targetTradeMode());autoStatusText.setTextColor(C_MUTED);}
         if(was)eventCommand("disable",new JSONObject());
         if(journalMessage!=null)addJournal(journalMessage);
     }
@@ -687,10 +695,12 @@ public class MainActivity extends Activity {
             boolean autoSaved = bridgeAuto && mt5 && targetAllowed;
             autoTradingSwitch.setChecked(autoSaved);
             p.edit().putBoolean("auto_trading", autoSaved).putBoolean("auto_user_enabled", autoSaved).putInt("ec_limit", 0).apply();
+            autoTradingSwitch.setText("AUTO TRADING  •  "+("REAL".equalsIgnoreCase(accountType)?"REAL PILOT":"DEMO"));
+            if("REAL".equalsIgnoreCase(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
             if (autoStatusText != null) {
                 autoStatusText.setText(emergency ? "EMERGENCY · AUTO заблокирован" :
-                        autoSaved ? "AUTO включён · DEMO ONLY" :
-                        paused ? "AUTO выключен · PAUSE" : "AUTO выключен · DEMO ONLY");
+                        autoSaved ? "AUTO включён · "+accountType :
+                        paused ? "AUTO выключен · PAUSE" : "AUTO выключен · "+accountType);
                 autoStatusText.setTextColor(emergency ? C_RED : autoSaved ? C_GREEN : C_MUTED);
             }
             suppressAutoSwitch = false;
@@ -758,6 +768,7 @@ public class MainActivity extends Activity {
                 String currency = root.optString("currency", "USD");
                 String bridgeVersion = root.optString("bridge_version", "?");
                 boolean bridgeRealEnabled = root.optBoolean("real_trading_enabled", false);
+                String accountKey = root.optString("account_key", "");
                 boolean versionMatch = ExecutionFeedback.bridgeCompatible(bridgeVersion);
 
                 runOnUiThread(() -> {
@@ -794,6 +805,7 @@ public class MainActivity extends Activity {
                     getSharedPreferences("fxm1", MODE_PRIVATE).edit()
                             .putBoolean("mt5_connected_snapshot", serverOk && mt5Ok)
                             .putString("mt5_account_type_snapshot", accountType)
+                            .putString("mt5_account_key_snapshot", accountKey)
                             .putLong("mt5_balance_bits", Double.doubleToLongBits(balance))
                             .putLong("mt5_equity_bits", Double.doubleToLongBits(equity))
                             .putString("mt5_currency_snapshot", currency)
@@ -804,6 +816,8 @@ public class MainActivity extends Activity {
                             .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                             .apply();
                     closeAllButton.setEnabled(serverOk && mt5Ok && positions > 0);
+                    autoTradingSwitch.setText("AUTO TRADING  •  "+("REAL".equals(accountType)?"REAL PILOT":"DEMO"));
+                    if("REAL".equals(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
 
                     if (!serverOk || !mt5Ok || !versionMatch || !("REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount)) {
                         forceAutoOff(versionMatch ? null : "AUTO заблокирован: APP/BRIDGE версии не совпадают");
@@ -1015,27 +1029,44 @@ public class MainActivity extends Activity {
 
     private void showSmartFeaturesDialog() {
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);
+        String accountType=p.getString("mt5_account_type_snapshot","DEMO").toUpperCase(Locale.US);
+        boolean real="REAL".equals(accountType);String feeKey=EventClient.feePrefKey();
         ScrollView scroll=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(18),dp(12),dp(18),dp(12));scroll.addView(box);
-        box.addView(smartLabel("EventCore · только DEMO. Режим и ТФ независимы. Изменение профиля выключает AUTO; во время кампании профиль фиксирован."));
-        EditText fee=eventNumber(box,"Комиссия полного круга USD за 1 lot. 0 — только при известном отсутствии комиссии",p.getString("ec_fee",""));
-        EditText lot=eventNumber(box,"Верхний предел объёма одной ступени, lot",p.getString("ec_lot_cap","0.01"));
-        EditText spread=eventNumber(box,"Максимальный спред, pips",String.valueOf(p.getFloat("max_spread_pips",3f)));
+        box.addView(smartLabel("EventCore · "+(real?"REAL PILOT":"DEMO")+" · модель универсальна по инструментам MT5. Изменение профиля выключает AUTO; во время кампании профиль фиксирован."));
+        EditText fee=eventNumber(box,real?
+            "REAL: комиссия полного круга за 1 lot. Оставьте пусто — Bridge попробует определить её по истории MT5 и запомнит для счёта + инструмента.":
+            "DEMO: комиссия автоматически 0; ручной ввод не требуется.",
+            real?p.getString(feeKey,""):"0");
+        if(!real)fee.setEnabled(false);
+        EditText lot=eventNumber(box,real?"REAL PILOT: объём одной ступени фиксирован максимум 0.01 lot":"Верхний предел объёма одной ступени, lot",real?"0.01":p.getString("ec_lot_cap","0.01"));
+        if(real)lot.setEnabled(false);
+        EditText spread=eventNumber(box,"Максимальный FX-спред, pips; для остальных инструментов дополнительно используется доля ATR",String.valueOf(p.getFloat("max_spread_pips",3f)));
         EditText cooldown=eventNumber(box,"Пауза после кампании, минут",String.valueOf(p.getInt("cooldown_minutes",10)));
         Switch dynamic=smartSwitch("Добавления по новым событиям (не усреднение)",p.getBoolean("ec_dynamic_adds",true));box.addView(dynamic);
         Switch sessions=smartSwitch("Фильтр сессий: "+p.getString("allowed_sessions","LONDON,NEW_YORK"),p.getBoolean("session_filter_enabled",false));box.addView(sessions);
+        Button adopt=new Button(this);adopt.setText("ПРИВЯЗАТЬ ТЕКУЩИЙ MT5 СЧЁТ");styleOutlineButton(adopt,C_PURPLE);box.addView(adopt);
+        adopt.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Привязать текущий MT5 счёт?")
+            .setMessage("Только при отсутствии сохранённой кампании EC1. После смены счёта AUTO и REAL ARM будут выключены.")
+            .setNegativeButton("Назад",null).setPositiveButton("Привязать",(d,w)->executor.execute(()->{
+                try{EventClient.command("adopt_account",new JSONObject().put("confirmation","ADOPT_MT5_ACCOUNT"));EventClient.poll();runOnUiThread(this::checkServer);}
+                catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
+            })).show());
         Button reset=new Button(this);reset.setText("Сверить и снять Emergency");styleOutlineButton(reset,C_PURPLE);box.addView(reset);
-        reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Сверить DEMO-состояние?")
+        reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Сверить "+accountType+"-состояние?")
             .setMessage("Только без позиций/ордеров бота и неизвестных исполнений. AUTO остаётся выключенным.")
-            .setNegativeButton("Назад",null).setPositiveButton("Сверить",(d,w)->{try{eventCommand("reset",new JSONObject().put("confirmation","RESET_DEMO_FLAT"));}catch(Exception ignored){}}).show());
+            .setNegativeButton("Назад",null).setPositiveButton("Сверить",(d,w)->{
+                try{eventCommand("reset",new JSONObject().put("confirmation",real?"RESET_REAL_FLAT":"RESET_DEMO_FLAT"));}catch(Exception ignored){}
+            }).show());
         new AlertDialog.Builder(this).setTitle("Умные функции · EventCore").setView(scroll).setNegativeButton("ОТМЕНА",null)
             .setPositiveButton("СОХРАНИТЬ",(d,w)->{
                 try{
-                    double f=Double.parseDouble(fee.getText().toString().replace(',','.'));
-                    double l=Double.parseDouble(lot.getText().toString().replace(',','.'));
-                    if(!Double.isFinite(f)||!Double.isFinite(l)||f<0||l<=0)throw new Exception("Проверьте числа профиля");
-                    p.edit().putString("ec_fee",String.valueOf(f)).putString("ec_lot_cap",String.valueOf(l))
+                    String feeText=fee.getText().toString().trim().replace(',','.');
+                    double l=real?.01:Double.parseDouble(lot.getText().toString().replace(',','.'));
+                    if((!feeText.isEmpty()&&!Double.isFinite(Double.parseDouble(feeText)))||l<=0)throw new Exception("Проверьте числа профиля");
+                    SharedPreferences.Editor ed=p.edit().putString("ec_lot_cap",String.valueOf(l))
                         .putFloat("max_spread_pips",Float.parseFloat(spread.getText().toString().replace(',','.')))
-                        .putInt("cooldown_minutes",Integer.parseInt(cooldown.getText().toString())).putBoolean("ec_dynamic_adds",dynamic.isChecked()).putBoolean("session_filter_enabled",sessions.isChecked()).apply();
+                        .putInt("cooldown_minutes",Integer.parseInt(cooldown.getText().toString())).putBoolean("ec_dynamic_adds",dynamic.isChecked()).putBoolean("session_filter_enabled",sessions.isChecked());
+                    if(real){if(feeText.isEmpty())ed.remove(feeKey);else ed.putString(feeKey,feeText);}ed.apply();
                     executor.execute(()->{try{EventClient.configure();EventClient.poll();}catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
                 }catch(Exception e){new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show();}
             }).show();
@@ -1047,10 +1078,11 @@ public class MainActivity extends Activity {
         boolean auto=s.optBoolean("auto",false)&&!emergency;
         boolean paused=s.optBoolean("paused",true);
         if(emergency)return "EMERGENCY: новые входы заблокированы; требуется явная сверка";
+        String acct=s.optJSONObject("account")==null?targetTradeMode():s.optJSONObject("account").optString("type",targetTradeMode());
         if(s.optBoolean("exit_pending",false))
-            return (auto?"AUTO DEMO остаётся включён; ":"AUTO временно недоступен; ")+"Bridge подтверждает закрытие предыдущей кампании в MT5";
+            return (auto?"AUTO "+acct+" остаётся включён; ":"AUTO временно недоступен; ")+"Bridge подтверждает закрытие предыдущей кампании в MT5";
         if(s.optBoolean("recovery",false))return "AUTO заблокирован: требуется сверка неизвестного исполнения MT5";
-        if(auto&&!paused)return "AUTO DEMO включён; новые входы и добавления разрешены только по новому подтверждённому событию";
+        if(auto&&!paused)return "AUTO "+acct+" включён; новые входы и добавления разрешены только по новому подтверждённому событию";
         if(paused)return "PAUSE: новые входы и добавления остановлены; сопровождение открытой кампании продолжается";
         return "AUTO выключен; новые входы и добавления не отправляются";
     }
@@ -1058,7 +1090,8 @@ public class MainActivity extends Activity {
     private void refreshSmartUi() {
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);JSONObject s=EventClient.state(),cfg=s.optJSONObject("config");
         p.edit().putInt("ec_limit",0).putString("maxpos_label","По риску").apply();
-        if(smartStatusText!=null)smartStatusText.setText("Режим: "+(cfg==null?EventClient.mode():cfg.optString("mode"))+" · только DEMO\nИсточник: MT5\n"+
+        String accountLabel=s.optJSONObject("account")==null?targetTradeMode():s.optJSONObject("account").optString("type",targetTradeMode());
+        if(smartStatusText!=null)smartStatusText.setText("Режим: "+(cfg==null?EventClient.mode():cfg.optString("mode"))+" · счёт: "+accountLabel+"\nИсточник: MT5\n"+
             "Наращивание: "+(cfg!=null&&cfg.optBoolean("dynamic_adds")?"по новым подтверждениям и общему риску":"один вход")+
             "\nСопровождение: независимый Bridge\n"+ExecutionFeedback.riskText(p.getString("risk_snapshot","не проверен"))+"\n"+bridgeOperationalText(s));
         if(statsText!=null)statsText.setText("СТАТИСТИКА\n"+p.getString("stats_snapshot","—"));
