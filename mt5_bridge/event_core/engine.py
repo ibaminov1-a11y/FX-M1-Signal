@@ -621,7 +621,8 @@ class Engine:
                 self.auto=True;self.paused=False;self.heartbeat=now;self.save();message='AUTO '+actual+' включён; вход только по новому событию'
             elif command=='reset':
                 self._refresh(now);self._reconcile()
-                if data.get('confirmation')!='RESET_DEMO_FLAT':raise Blocked('Нужна явная сверка DEMO')
+                actual=self.account.get('type','DEMO');expected='RESET_REAL_FLAT' if actual=='REAL' else 'RESET_DEMO_FLAT'
+                if data.get('confirmation')!=expected:raise Blocked('Нужна явная сверка '+actual)
                 if self._owned() or self._owned_orders() or self.store.pending():raise Blocked('Есть позиции/ордера или неизвестный запрос: автоматический сброс запрещён')
                 if self.risk.get('blocks'):raise Blocked('Сначала разберите блокировки риска')
                 self.emergency=False;self.recovery=False;self.exit_pending=False;self.auto=False;self.paused=True;self.real_armed=False
