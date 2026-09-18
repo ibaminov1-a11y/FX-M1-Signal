@@ -770,6 +770,9 @@ public class MainActivity extends Activity {
                 boolean bridgeRealEnabled = root.optBoolean("real_trading_enabled", false);
                 String accountKey = root.optString("account_key", "");
                 boolean versionMatch = ExecutionFeedback.bridgeCompatible(bridgeVersion);
+                JSONArray brokerSymbols=null;
+                if(serverOk&&mt5Ok){try{brokerSymbols=httpJson("GET",base+"/symbols",null).optJSONArray("symbols");}catch(Exception ignored){}}
+                final JSONArray finalBrokerSymbols=brokerSymbols;
 
                 runOnUiThread(() -> {
                     serverCheckButton.setEnabled(true);
@@ -816,6 +819,7 @@ public class MainActivity extends Activity {
                             .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                             .apply();
                     closeAllButton.setEnabled(serverOk && mt5Ok && positions > 0);
+                    if(finalBrokerSymbols!=null)syncBrokerSymbols(finalBrokerSymbols);
                     autoTradingSwitch.setText("AUTO TRADING  •  "+("REAL".equals(accountType)?"REAL PILOT":"DEMO"));
                     if("REAL".equals(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
 
@@ -1689,6 +1693,26 @@ public class MainActivity extends Activity {
         return v + " (TASH)";
     }
 
+    private void syncBrokerSymbols(JSONArray values) {
+        if(values==null||values.length()==0)return;
+        String selected=getSharedPreferences("fxm1",MODE_PRIVATE).getString("selected_symbol","EUR/USD");
+        ArrayList<String> fresh=new ArrayList<>();
+        for(int i=0;i<values.length()&&fresh.size()<1000;i++){
+            String v=values.optString(i,"").trim();
+            if(!v.isEmpty()&&!fresh.contains(v))fresh.add(v);
+        }
+        if(fresh.isEmpty())return;
+        String custom=getSharedPreferences("fxm1",MODE_PRIVATE).getString("custom_symbols","");
+        for(String x:custom.split("\\|")){String v=x.trim();if(!v.isEmpty()&&!fresh.contains(v))fresh.add(v);}
+        if(!fresh.contains(selected)&&!selected.startsWith("＋"))fresh.add(0,selected);
+        StringBuilder cache=new StringBuilder();
+        for(String x:fresh){if(cache.length()>0)cache.append('|');cache.append(x);}
+        getSharedPreferences("fxm1",MODE_PRIVATE).edit().putString("mt5_symbols_cache",cache.toString()).apply();
+        symbolItems.clear();symbolItems.addAll(fresh);symbolItems.add("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
+        symbolAdapter=darkSpinnerAdapter(symbolItems.toArray(new String[0]));symbolSpinner.setAdapter(symbolAdapter);
+        int pos=symbolItems.indexOf(selected);symbolSpinner.setSelection(pos>=0?pos:0);
+    }
+
     private void loadSyncedMt5Symbols() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         String raw = p.getString("mt5_symbols_cache", "");
@@ -1722,7 +1746,7 @@ public class MainActivity extends Activity {
         input.setSingleLine(true);
         new AlertDialog.Builder(this)
                 .setTitle("Добавить инструмент")
-                .setMessage("Введите символ. Он должен поддерживаться Twelve Data для анализа и MT5 для исполнения.")
+                .setMessage("Введите точное имя инструмента MT5, включая суффикс брокера при наличии.")
                 .setView(input)
                 .setPositiveButton("ДОБАВИТЬ", (d, w) -> {
                     String v = input.getText().toString().trim().toUpperCase(Locale.US);
