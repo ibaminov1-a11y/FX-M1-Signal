@@ -372,7 +372,7 @@ class Engine:
                         d=Decision(phase='FORECAST',reason=late_reason,side=d.side,atr=d.atr,
                             levels=d.levels,path='LATE_BLOCK',structure=d.structure,
                             forecast=copy.deepcopy(self.forecast),entry_class='NONE')
-                elif not self.campaign and d.signal=='WAIT' and d.phase not in ('DATA_BLOCK','CANCELLED'):
+                elif not self.campaign and d.signal=='WAIT' and d.phase!='DATA_BLOCK':
                     probe=self.strategy.probe_decision(self.bars,self.m1,self.m15,self.h1,self.live_bar,q,now,self.forecast)
                     if probe is not None:d=probe
                 self.decision=d;self.analysis_time=now
