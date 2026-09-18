@@ -90,6 +90,27 @@ class R3EngineFlowTests(unittest.TestCase):
     def test_engine_executes_live_sell_impulse_once(self):
         self.run_impulse(-1)
 
+    def test_confirmed_first_entry_is_blocked_when_forecast_marks_it_late(self):
+        now=[NOW]
+        broker=R3ImpulseBroker(lambda:now[0],-1)
+        with tempfile.TemporaryDirectory() as folder:
+            store=Store(Path(folder)/'state.sqlite3')
+            try:
+                engine=Engine(broker,store,lambda:now[0])
+                self.arm(engine)
+                engine.strategy.forecast=lambda *a,**k: {
+                    'side':-1,'confidence':.91,'down_probability':.91,'up_probability':.06,
+                    'range_probability':.03,'late_entry':True,'exhaustion':True,
+                    'components':{},'regime':'EXHAUSTION'
+                }
+                engine.step()
+                self.assertEqual(len(broker.sent),0,engine.execution)
+                self.assertEqual(engine.decision.signal,'WAIT')
+                self.assertIn(engine.decision.path,('LATE_BLOCK','FORECAST'))
+                self.assertIn('позд',engine.decision.reason.lower())
+            finally:
+                store.close()
+
     def test_engine_executes_continuation_only_after_new_closed_m1(self):
         now=[NOW]
         broker=R3ContinuationBroker(lambda:now[0],1)
