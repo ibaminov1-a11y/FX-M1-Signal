@@ -243,5 +243,38 @@ def swing_labels(bars: list[Bar]):
     return tuple(result)
 
 
+def live_structure(bars: list[Bar], live_bar: Bar | None):
+    """Presentation-only provisional zigzag.
+
+    Confirmed pivots remain untouched and are the only pivots used by Strategy.
+    This overlay extends the last confirmed pivot to the current leg so the UI
+    does not wait two more M5 closes before showing what price is doing now.
+    """
+    confirmed=list(swing_labels(bars))
+    if not confirmed or live_bar is None:
+        return ()
+    anchor=confirmed[-1]
+    tail=[b for b in bars if b.time>anchor['time']]
+    tail.append(live_bar)
+    out=[{**anchor,'provisional':False}]
+    if anchor['kind']=='L':
+        candidate=max(tail,key=lambda b:b.high)
+        previous=[x for x in confirmed if x['kind']=='H']
+        price=candidate.high
+        label='H?' if not previous else ('HH?' if price>previous[-1]['price'] else 'LH?')
+        kind='H'
+    else:
+        candidate=min(tail,key=lambda b:b.low)
+        previous=[x for x in confirmed if x['kind']=='L']
+        price=candidate.low
+        label='L?' if not previous else ('HL?' if price>previous[-1]['price'] else 'LL?')
+        kind='L'
+    out.append({'kind':kind,'time':candidate.time,'price':price,'label':label,'provisional':True})
+    if live_bar.time!=candidate.time or abs(live_bar.close-price)>1e-12:
+        out.append({'kind':'LIVE','time':live_bar.time,'price':live_bar.close,
+                    'label':'LIVE','provisional':True})
+    return tuple(out)
+
+
 def context_direction(bars: list[Bar]):
     return direction(pivots(bars))

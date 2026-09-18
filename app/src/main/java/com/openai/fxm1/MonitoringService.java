@@ -30,7 +30,7 @@ public class MonitoringService extends Service {
     private long confirmUntil=0;
     private SharedPreferences prefs(){return getSharedPreferences("fxm1",MODE_PRIVATE);}
     private final Runnable tick=new Runnable(){public void run(){if(!running)return;if(!busy){busy=true;io.execute(()->{
-        try{if(prefs().getBoolean("ec_emergency_pending",false)){EventClient.command("emergency",new JSONObject());prefs().edit().putBoolean("ec_emergency_pending",false).apply();}EventClient.poll();}
+        try{if(prefs().getBoolean("ec_emergency_pending",false)){EventClient.command("emergency",new JSONObject());prefs().edit().putBoolean("ec_emergency_pending",false).apply();}JSONObject state=EventClient.poll();if(EventClient.needsConfigure(state))EventClient.configure();}
         catch(Exception e){EventClient.offline(e);}finally{handler.post(()->{busy=false;notifyState();if(running)handler.postDelayed(tick,1000);});}
     });}else handler.postDelayed(this,1000);}};
     @Override public void onCreate(){super.onCreate();EventClient.init(this);NotificationChannel c=new NotificationChannel(CHANNEL,"FX M1 Bot · мониторинг",NotificationManager.IMPORTANCE_HIGH);c.setSound(null,null);c.enableVibration(false);getSystemService(NotificationManager.class).createNotificationChannel(c);}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import asdict, fields
 import copy, hashlib, math, threading, time
-from .model import Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered
+from .model import Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure
 from .strategy import Strategy
 from .risk import risk_state, plan_order, ledger, summary, quantize, day_start
 from .mt5_adapter import MAGIC
@@ -187,7 +187,7 @@ class Engine:
                     if not values:
                         raise Blocked('MT5 вернул пустую историю '+tf)
                     ordered(values)
-                    if tf!='MN1' and values[-1].time+TF_SECONDS[tf]>now:
+                    if tf!='MN1' and values[-1].time+TF_SECONDS[tf]>now+1.0:
                         raise Blocked('MT5 вернул незакрытую свечу '+tf)
                     setattr(self,attr,values)
                 except Exception as exc:
@@ -497,6 +497,8 @@ class Engine:
                 emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
                 quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-100:]],
+                live_bar=asdict(self.live_bar) if self.live_bar else None,
+                live_structure=list(live_structure(self.bars,self.live_bar)) if self.config.timeframe=='M5' else [],
                 context_time=self.context[-1].time if self.context else 0,
                 positions=owned,all_positions=self.positions,campaign=self.campaign,
                 history_ok=self.history_ok and now-self.history_time<15,history_time=self.history_time,

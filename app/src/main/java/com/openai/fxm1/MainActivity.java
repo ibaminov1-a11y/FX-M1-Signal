@@ -341,6 +341,7 @@ public class MainActivity extends Activity {
         });
         signalModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
             public void onItemSelected(AdapterView<?> parent,View view,int position,long id){
+                if(syncingScalpTimeframe)return;
                 prefs.edit().putInt("signal_mode_pos",position).apply();
                 if(monitoring)sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
             }
@@ -643,8 +644,14 @@ public class MainActivity extends Activity {
         int positions = p.getInt("mt5_positions_snapshot", 0);
         double floating = Double.longBitsToDouble(p.getLong("mt5_floating_bits", Double.doubleToLongBits(0.0)));
 
-        boolean profileEditable=EventClient.state().optJSONObject("campaign")==null;
+        JSONObject authoritativeState=EventClient.state(),authoritativeCfg=authoritativeState.optJSONObject("config");
+        boolean profileEditable=authoritativeState.optJSONObject("campaign")==null;
         for(Spinner control:new Spinner[]{symbolSpinner,entryTimeframeSpinner,signalModeSpinner,riskSpinner,maxPositionsSpinner})if(control!=null)control.setEnabled(profileEditable);
+        if(!profileEditable&&authoritativeCfg!=null&&signalModeSpinner!=null){
+            syncingScalpTimeframe=true;
+            signalModeSpinner.setSelection("SCALP".equalsIgnoreCase(authoritativeCfg.optString("mode","NORMAL"))?1:0);
+            syncingScalpTimeframe=false;
+        }
         if (verified) {
             serverConnected = true;
             mt5Connected = mt5;
@@ -679,7 +686,9 @@ public class MainActivity extends Activity {
     private void restoreSparklineFromPrefs(String signal) {
         if(sparklineView==null)return;
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
-        sparklineView.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"));
+        sparklineView.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
+                d==null?null:d.optJSONArray("structure"),d==null?"SEARCH":d.optString("path","SEARCH"),
+                s.optJSONObject("live_bar"),s.optJSONArray("live_structure"));
         sparklineView.setSignal(signal);
     }
 
@@ -1366,7 +1375,9 @@ public class MainActivity extends Activity {
         restoreSparklineFromPrefs(signal);
 
         if ("WAIT".equals(signal)) {
-            levelsText.setText("Entry: " + (Double.isNaN(entry) ? "—" : fmt(entry)) + "\nSL: —\nTP1: —\nTP2: —");
+            JSONObject currentDecision=EventClient.state().optJSONObject("decision");
+            double trigger=currentDecision==null?Double.NaN:currentDecision.optDouble("trigger",Double.NaN);
+            levelsText.setText("Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+fmt(trigger):"") + "\nSL: —\nTP1: —\nTP2: —");
         } else {
             levelsText.setText(
                     "Entry: " + fmt(entry) +

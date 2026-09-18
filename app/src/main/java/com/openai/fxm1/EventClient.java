@@ -72,12 +72,38 @@ public final class EventClient {
             .put("dynamic_adds",p.getBoolean("ec_dynamic_adds",true)).put("session_filter",p.getBoolean("session_filter_enabled",false))
             .put("allowed_sessions",p.getString("allowed_sessions","LONDON,NEW_YORK"));
     }
+    private static boolean sameNumber(JSONObject a,JSONObject b,String key){
+        if(a==null||b==null)return false;
+        boolean an=a.isNull(key),bn=b.isNull(key);if(an||bn)return an&&bn;
+        double x=a.optDouble(key,Double.NaN),y=b.optDouble(key,Double.NaN);
+        return Double.isFinite(x)&&Double.isFinite(y)&&Math.abs(x-y)<1e-9;
+    }
+    private static boolean configMatches(JSONObject remote,JSONObject desired){
+        if(remote==null||desired==null)return false;
+        for(String key:new String[]{"symbol","timeframe","mode","allowed_sessions"})
+            if(!remote.optString(key,"").equals(desired.optString(key,"")))return false;
+        for(String key:new String[]{"risk_pct","optional_position_limit","fee_per_lot","lot_cap","spread_pips","cooldown_sec"})
+            if(!sameNumber(remote,desired,key))return false;
+        for(String key:new String[]{"dynamic_adds","session_filter"})
+            if(remote.optBoolean(key)!=desired.optBoolean(key))return false;
+        return true;
+    }
+    public static boolean needsConfigure(JSONObject state) throws Exception {
+        if(state==null||state.optJSONObject("campaign")!=null||state.optBoolean("auto",false)
+                ||state.optBoolean("emergency",false)||state.optBoolean("exit_pending",false))return false;
+        return !configMatches(state.optJSONObject("config"),config());
+    }
     public static void configure() throws Exception {
-        JSONObject c=config();String fingerprint=c.toString();
-        if(!fingerprint.equals(prefs().getString("ec_config_sent",""))){
-            JSONObject result=command("configure",new JSONObject().put("config",c));
-            prefs().edit().putString("ec_config_sent",fingerprint).putString("ec_message",result.optString("message")).apply();
+        JSONObject desired=config();String fingerprint=desired.toString();
+        JSONObject current=http("GET",base()+"/ec/state",null);
+        if(!PROTOCOL.equals(current.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
+        if(configMatches(current.optJSONObject("config"),desired)){
+            cache(current);prefs().edit().putString("ec_config_sent",fingerprint).apply();return;
         }
+        JSONObject result=command("configure",new JSONObject().put("config",desired));
+        prefs().edit().putString("ec_config_sent",fingerprint).putString("ec_message",result.optString("message")).apply();
+        JSONObject refreshed=http("GET",base()+"/ec/state",null);
+        if(PROTOCOL.equals(refreshed.optString("protocol")))cache(refreshed);
     }
     public static JSONObject poll() throws Exception {
         JSONObject s=http("GET",base()+"/ec/state",null);
