@@ -102,6 +102,32 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(Blocked):self.e.command('enable',{'command_id':'enable0001'})
         self.e.command('enable',{'command_id':'enable0002','confirmation':'ENABLE_DEMO'})
         self.assertTrue(self.e.auto)
+    def test_reapproving_same_profile_does_not_turn_auto_off(self):
+        self.e.command('enable',{'command_id':'enable-again-1','confirmation':'ENABLE_DEMO'})
+        self.assertTrue(self.e.auto);self.assertFalse(self.e.paused)
+        out=self.e.command('approve_profile',{'command_id':'approve-again-1','confirmation':'APPROVE_DEMO_RISK'})
+        self.assertTrue(self.e.auto,out)
+        self.assertFalse(self.e.paused,out)
+
+    def test_enable_reports_exit_pending_not_emergency(self):
+        self.e._entry(self.decision(),self.now)
+        self.e.exit_pending=True;self.e.auto=False;self.e.paused=True
+        with self.assertRaisesRegex(Blocked,'подтверждение закрытия'):
+            self.e.command('enable',{'command_id':'enable-exit-1','confirmation':'ENABLE_DEMO'})
+
+    def test_exit_pending_refreshes_history_quickly_and_clears_after_mt5_close(self):
+        self.e._entry(self.decision(),self.now)
+        self.e.auto=True;self.e.paused=False
+        self.e._close_campaign('test exit')
+        self.assertEqual(self.b._positions,[])
+        self.assertTrue(self.e.exit_pending)
+        # Closing deal already exists in fake MT5 history, but prior behaviour waited 10 seconds.
+        self.now+=1.2
+        self.e.step()
+        self.assertFalse(self.e.exit_pending,self.e.execution)
+        self.assertIsNone(self.e.campaign)
+        self.assertTrue(self.e.auto)
+
     def test_repeat_intent_never_duplicate(self):
         self.e._entry(self.decision(),self.now)
         with self.assertRaises(Blocked):self.e._entry(self.decision(),self.now)
