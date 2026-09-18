@@ -645,11 +645,22 @@ public class MainActivity extends Activity {
         double floating = Double.longBitsToDouble(p.getLong("mt5_floating_bits", Double.doubleToLongBits(0.0)));
 
         JSONObject authoritativeState=EventClient.state(),authoritativeCfg=authoritativeState.optJSONObject("config");
-        boolean profileEditable=authoritativeState.optJSONObject("campaign")==null;
+        boolean profileLocked=authoritativeState.optJSONObject("campaign")!=null||authoritativeState.optBoolean("auto",false);
+        boolean profileEditable=!profileLocked;
         for(Spinner control:new Spinner[]{symbolSpinner,entryTimeframeSpinner,signalModeSpinner,riskSpinner,maxPositionsSpinner})if(control!=null)control.setEnabled(profileEditable);
-        if(!profileEditable&&authoritativeCfg!=null&&signalModeSpinner!=null){
+        if(profileLocked&&authoritativeCfg!=null){
             syncingScalpTimeframe=true;
-            signalModeSpinner.setSelection("SCALP".equalsIgnoreCase(authoritativeCfg.optString("mode","NORMAL"))?1:0);
+            if(signalModeSpinner!=null)signalModeSpinner.setSelection("SCALP".equalsIgnoreCase(authoritativeCfg.optString("mode","NORMAL"))?1:0);
+            if(entryTimeframeSpinner!=null){
+                String[] t={"M1","M5","M10","M15","H1","H4","D1","W1","MN1"};
+                String remoteTf=authoritativeCfg.optString("timeframe","M5");
+                for(int i=0;i<t.length;i++)if(t[i].equals(remoteTf)){entryTimeframeSpinner.setSelection(i);break;}
+            }
+            if(symbolSpinner!=null){
+                String remoteSymbol=authoritativeCfg.optString("symbol","");
+                int remoteIndex=symbolItems.indexOf(remoteSymbol);
+                if(remoteIndex>=0)symbolSpinner.setSelection(remoteIndex);
+            }
             syncingScalpTimeframe=false;
         }
         if (verified) {
