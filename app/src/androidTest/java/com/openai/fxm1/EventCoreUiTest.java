@@ -46,7 +46,8 @@ public class EventCoreUiTest {
   assertEquals(0.0,demo.getDouble("fee_per_lot"),0.000001);
 
   p.edit().putString("mt5_account_type_snapshot","REAL").putString("mt5_account_key_snapshot","555@Broker")
-    .putInt("risk_pos",2).putString("ec_lot_cap","0.50").remove("ec_fee_REAL_555@Broker").commit();
+    .putString("selected_symbol","EUR/USD").putInt("risk_pos",2).putString("ec_lot_cap","0.50").commit();
+  p.edit().remove(EventClient.feePrefKey()).commit();
   JSONObject real=EventClient.config();
   assertEquals("REAL",real.getString("account_mode"));
   assertTrue(real.isNull("fee_per_lot"));
