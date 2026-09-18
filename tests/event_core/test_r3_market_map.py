@@ -17,6 +17,29 @@ class R3MarketMapTests(unittest.TestCase):
         self.assertEqual(highs[-1]['label'], 'HH')
         self.assertEqual(lows[-1]['label'], 'HL')
 
+    def test_live_structure_extends_to_forming_m5_without_rewriting_confirmed_map(self):
+        bars = wave(1800000000, count=96, tf=300, trend=.00003)
+        confirmed = model.swing_labels(bars)
+        self.assertTrue(confirmed)
+        anchor = confirmed[-1]
+        t = bars[-1].time + 300
+        if anchor['kind'] == 'L':
+            reference = max(x['price'] for x in confirmed if x['kind'] == 'H')
+            live = Bar(t, reference + .0002, reference + .0008, reference + .0001, reference + .0006, 3)
+            expected_kind = 'H'
+        else:
+            reference = min(x['price'] for x in confirmed if x['kind'] == 'L')
+            live = Bar(t, reference - .0002, reference - .0001, reference - .0008, reference - .0006, 3)
+            expected_kind = 'L'
+        overlay = model.live_structure(bars, live)
+        self.assertGreaterEqual(len(overlay), 2)
+        self.assertEqual(overlay[0]['time'], anchor['time'])
+        self.assertEqual(overlay[0]['price'], anchor['price'])
+        self.assertEqual(overlay[1]['kind'], expected_kind)
+        self.assertTrue(overlay[1]['label'].endswith('?'))
+        self.assertTrue(overlay[1]['provisional'])
+        self.assertEqual(model.swing_labels(bars), confirmed)
+
     def test_context_direction_is_based_on_confirmed_structure(self):
         up = wave(1800000000, count=96, tf=900, trend=.00004)
         down = wave(1800000000, count=96, tf=900, trend=-.00004)
