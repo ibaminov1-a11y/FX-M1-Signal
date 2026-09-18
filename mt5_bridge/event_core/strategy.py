@@ -21,7 +21,10 @@ class Strategy:
         self.consumed.add(event_id)
         if len(self.consumed)>4096:
             self.consumed=set(sorted(self.consumed)[-2048:])
-        self.setup=None
+        # A forecast probe is an independent execution event. Do not erase a
+        # different confirmed pullback/trigger setup that may later validate scale-in.
+        if self.setup and self.setup.id==event_id:
+            self.setup=None
 
     def clear(self):
         self.setup=None
