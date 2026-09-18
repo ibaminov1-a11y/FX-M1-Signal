@@ -43,6 +43,18 @@ class LiveForecastProbeTests(unittest.TestCase):
         self.assertIn('momentum',f['components'])
         self.assertIn('structure',f['components'])
 
+    def test_forecast_projects_three_future_m5_horizons_with_probabilities(self):
+        bars,m1,m15,h1,live,q,a=bearish_market()
+        f=self.strategy().forecast(bars,m1,m15,h1,live,q,NOW)
+        projection=f.get('projection')
+        self.assertEqual(len(projection),3,f)
+        self.assertEqual([x['minutes'] for x in projection],[5,10,15])
+        for point in projection:
+            self.assertLess(point['low'],point['center'])
+            self.assertLess(point['center'],point['high'])
+            self.assertAlmostEqual(point['up_probability']+point['down_probability']+point['range_probability'],1.0,places=3)
+        self.assertLess(projection[-1]['center'],q.bid)
+
     def test_probe_requires_forecast_plus_fresh_microbreak_and_is_marked_probe(self):
         bars,m1,m15,h1,live,q,a=bearish_market()
         s=self.strategy()
@@ -109,6 +121,45 @@ class LiveForecastProbeTests(unittest.TestCase):
                 self.assertEqual(len(broker._positions),1)
                 now[0]+=4;engine.step()
                 self.assertEqual(len(broker._positions),0,engine.execution)
+            finally:
+                store.close()
+
+    def test_unconfirmed_probe_closes_early_after_edge_is_lost_while_negative(self):
+        bars,m1,m15,h1,live,q,a=bearish_market()
+        now=[NOW]
+        broker=FakeBroker(lambda:now[0])
+        broker.bar_data=list(bars);broker.m1_data=list(m1);broker.ctx_data=list(m15);broker.h1_data=list(h1)
+        broker.live_bar_data=live;broker.bid=q.bid;broker.ask=q.ask
+        with tempfile.TemporaryDirectory() as folder:
+            store=Store(Path(folder)/'probe-neutral.sqlite3')
+            try:
+                engine=Engine(broker,store,lambda:now[0])
+                engine.config=Config(timeframe='M5',mode='NORMAL',risk_pct=.25,fee_per_lot=0,
+                                     lot_cap=.10,probe_lot_cap=.01,approved=True,cooldown_sec=0,
+                                     probe_neutral_exit_sec=8,probe_timeout_sec=180)
+                engine.strategy=Strategy(engine.config)
+                bearish={'side':-1,'confidence':.84,'down_probability':.84,'up_probability':.10,
+                         'range_probability':.06,'late_entry':False,'exhaustion':False,
+                         'components':{},'regime':'TREND_DOWN','reason':'test forecast',
+                         'projection':[]}
+                engine.strategy.forecast=lambda *a,**k: dict(bearish)
+                engine.command('enable',{'command_id':str(uuid.uuid4()),'confirmation':'ENABLE_DEMO'})
+                engine.step();now[0]+=4;engine.step()
+                self.assertEqual(len(broker._positions),1,engine.execution)
+                entry=broker._positions[0]['price_open']
+
+                # SELL probe is now losing and forecast has lost directional edge.
+                broker.bid=entry+.00012;broker.ask=broker.bid+.00001
+                neutral={'side':0,'confidence':.36,'down_probability':.31,'up_probability':.33,
+                         'range_probability':.36,'late_entry':False,'exhaustion':False,
+                         'components':{},'regime':'RANGE','reason':'edge lost',
+                         'projection':[]}
+                engine.strategy.forecast=lambda *a,**k: dict(neutral)
+                now[0]+=1;engine.step()
+                self.assertEqual(len(broker._positions),1)
+                now[0]+=9;engine.step()
+                self.assertEqual(len(broker._positions),0,engine.execution)
+                self.assertIn('преимущество',engine.execution.lower())
             finally:
                 store.close()
 
