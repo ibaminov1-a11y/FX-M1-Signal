@@ -82,7 +82,8 @@ class Engine:
         if a['type']!='DEMO' or a['margin_mode']!='HEDGING' or a['currency']!='USD':
             self.auto=False;self.paused=True
             raise Blocked('EC1 исполняет только на USD DEMO hedging')
-        if now-self.history_time>=10 or not self.history_time:
+        history_interval=1.0 if self.exit_pending else 10.0
+        if not self.history_time or now-self.history_time>=history_interval:
             try:
                 self.deals=self.broker.history(now);self.history_time=now;self.history_ok=True;self.history_error=''
             except Exception as e:
@@ -530,10 +531,17 @@ class Engine:
                 if data.get('confirmation')!='APPROVE_DEMO_RISK':raise Blocked('Нужно явное подтверждение риска DEMO')
                 self.config.validate()
                 if self.config.fee_per_lot is None:raise Blocked('Неизвестная комиссия не считается нулём')
-                self.config.approved=True;self.auto=False;self.paused=True;self.save();message='Профиль DEMO подтверждён; AUTO выключен'
+                if self.config.approved:
+                    message='Профиль DEMO уже подтверждён; состояние AUTO не изменено'
+                else:
+                    self.config.approved=True;self.auto=False;self.paused=True;self.save()
+                    message='Профиль DEMO подтверждён; AUTO выключен'
             elif command in ('enable','play'):
                 self._refresh(now)
-                if self.emergency or self.recovery or self.exit_pending or self.store.pending():raise Blocked('Аварийная блокировка/сверка: PLAY не разрешает AUTO')
+                if self.emergency:raise Blocked('AUTO заблокирован: EMERGENCY. Выполните явную сверку DEMO')
+                if self.exit_pending:raise Blocked('AUTO временно заблокирован: ожидается подтверждение закрытия кампании в MT5')
+                if self.store.pending():raise Blocked('AUTO временно заблокирован: ожидается подтверждение торгового запроса MT5')
+                if self.recovery:raise Blocked('AUTO заблокирован: требуется сверка неизвестного исполнения MT5')
                 if not self.config.approved:raise Blocked('Сначала подтвердите профиль DEMO')
                 if not self.risk.get('allowed'):raise Blocked('Риск не разрешён: '+','.join(self.risk.get('blocks',[])))
                 if command=='play' and not self.auto:raise Blocked('PLAY снимает паузу, но не включает AUTO после отключения')

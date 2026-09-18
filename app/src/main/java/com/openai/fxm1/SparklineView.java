@@ -48,20 +48,38 @@ public class SparklineView extends View {
             String label=s.optString("label","");if(!label.isEmpty()&&(!provisional||s.optBoolean("provisional",false)))c.drawText(label,x+dp(3),Math.max(top+dp(9),yy-dp(3)),paint);px=x;py=yy;}
         paint.setPathEffect(null);paint.setStyle(Paint.Style.FILL);
     }
+    private int forecastColor(){
+        int side=forecast.optInt("side",0);
+        double up=forecast.optDouble("up_probability",0),down=forecast.optDouble("down_probability",0),range=forecast.optDouble("range_probability",0);
+        if(side==0){if(up>down&&up>range)side=1;else if(down>up&&down>range)side=-1;}
+        return side>0?0xff42d67a:side<0?0xffff4857:0xff914dff;
+    }
+    private String pointProbability(JSONObject p){
+        double up=p.optDouble("up_probability",0),down=p.optDouble("down_probability",0),range=p.optDouble("range_probability",0);
+        if(up>=down&&up>=range)return "UP "+Math.round(up*100)+"%";
+        if(down>=up&&down>=range)return "DN "+Math.round(down*100)+"%";
+        return "RG "+Math.round(range*100)+"%";
+    }
     private void drawForecast(Canvas c,JSONArray projection,float startX,float startY,float futureLeft,float plotRight,double min,double max,float top,float height){
         if(projection==null||projection.length()==0)return;
-        float usable=Math.max(dp(12),plotRight-futureLeft-dp(4));int n=projection.length();
-        Path band=new Path();
-        for(int i=0;i<n;i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n;float yy=y(p.optDouble("high"),min,max,top,height);if(i==0)band.moveTo(x,yy);else band.lineTo(x,yy);}
-        for(int i=n-1;i>=0;i--){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n;band.lineTo(x,y(p.optDouble("low"),min,max,top,height));}
-        band.close();paint.setStyle(Paint.Style.FILL);paint.setColor(0x225bd6ff);paint.setPathEffect(null);c.drawPath(band,paint);
-        paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1.6f));paint.setColor(C_FORECAST);paint.setPathEffect(new DashPathEffect(new float[]{dp(6),dp(3)},0));
+        float usable=Math.max(dp(18),plotRight-futureLeft-dp(5));int n=projection.length(),color=forecastColor();
+        Path band=new Path(),upper=new Path(),lower=new Path();
+        for(int i=0;i<n;i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("high"),min,max,top,height);if(i==0){band.moveTo(x,yy);upper.moveTo(x,yy);}else{band.lineTo(x,yy);upper.lineTo(x,yy);}}
+        for(int i=n-1;i>=0;i--){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("low"),min,max,top,height);band.lineTo(x,yy);}
+        for(int i=0;i<n;i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("low"),min,max,top,height);if(i==0)lower.moveTo(x,yy);else lower.lineTo(x,yy);}
+        band.close();paint.setStyle(Paint.Style.FILL);paint.setColor(Color.argb(34,Color.red(color),Color.green(color),Color.blue(color)));paint.setPathEffect(null);c.drawPath(band,paint);
+        paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(.8f));paint.setColor(Color.argb(110,Color.red(color),Color.green(color),Color.blue(color)));paint.setPathEffect(new DashPathEffect(new float[]{dp(3),dp(3)},0));c.drawPath(upper,paint);c.drawPath(lower,paint);
+        paint.setPathEffect(null);paint.setStrokeWidth(dp(2.8f));paint.setColor(color);
         float px=startX,py=startY;
         for(int i=0;i<n;i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("center"),min,max,top,height);c.drawLine(px,py,x,yy,paint);px=x;py=yy;}
-        paint.setPathEffect(null);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(8));paint.setColor(C_FORECAST);
-        for(int i=0;i<n;i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("center"),min,max,top,height);c.drawCircle(x,yy,dp(2.2f),paint);c.drawText("+"+p.optInt("minutes")+"m",x-dp(9),Math.min(top+height-dp(3),yy+dp(12)),paint);}
+        paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(8.2f));paint.setColor(color);
+        for(int i=0;i<n;i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("center"),min,max,top,height);c.drawCircle(x,yy,dp(3.2f),paint);
+            c.drawText("+"+p.optInt("minutes")+"m",x-dp(10),Math.min(top+height-dp(14),yy+dp(13)),paint);
+            c.drawText(pointProbability(p),x-dp(13),Math.min(top+height-dp(3),yy+dp(23)),paint);}
         long up=Math.round(forecast.optDouble("up_probability",0)*100),down=Math.round(forecast.optDouble("down_probability",0)*100),range=Math.round(forecast.optDouble("range_probability",0)*100);
-        paint.setTextSize(dp(8.5f));c.drawText("MODEL",futureLeft+dp(2),top+dp(10),paint);c.drawText("UP "+up+"  DN "+down+"  RG "+range,futureLeft+dp(2),top+dp(21),paint);
+        String bias=forecast.optInt("side",0)>0?"BUY":forecast.optInt("side",0)<0?"SELL":"NO EDGE";
+        paint.setTextSize(dp(9));paint.setFakeBoldText(true);c.drawText("MODEL "+bias,futureLeft+dp(2),top+dp(11),paint);paint.setFakeBoldText(false);
+        paint.setTextSize(dp(8));c.drawText("UP "+up+"  DN "+down+"  RG "+range,futureLeft+dp(2),top+dp(22),paint);
     }
     @Override protected void onDraw(Canvas c){
         super.onDraw(c);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(11));paint.setColor(0xffb0aac7);
@@ -70,9 +88,9 @@ public class SparklineView extends View {
         for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b==null)continue;min=Math.min(min,b.optDouble("low"));max=Math.max(max,b.optDouble("high"));}
         if(live){min=Math.min(min,liveBar.optDouble("low",min));max=Math.max(max,liveBar.optDouble("high",max));}
         if(projection!=null)for(int i=0;i<projection.length();i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;min=Math.min(min,p.optDouble("low",min));max=Math.max(max,p.optDouble("high",max));}
-        if(!Double.isFinite(min)||!Double.isFinite(max)||max<=min)return;double range=max-min;min-=range*.10;max+=range*.10;
+        if(!Double.isFinite(min)||!Double.isFinite(max)||max<=min)return;double range=max-min;min-=range*.16;max+=range*.12;
         float left=dp(5),top=dp(16),plotRight=getWidth()-dp(69),fullWidth=plotRight-left,height=getHeight()-dp(40);
-        float futureWidth=fullWidth*.24f,historyWidth=fullWidth-futureWidth-dp(6),historyRight=left+historyWidth,futureLeft=historyRight+dp(6),step=historyWidth/Math.max(1,count);
+        float futureWidth=fullWidth*.30f,historyWidth=fullWidth-futureWidth-dp(7),historyRight=left+historyWidth,futureLeft=historyRight+dp(7),step=historyWidth/Math.max(1,count);
         if(fullWidth<=0||height<=0||historyWidth<=0)return;
         paint.setStrokeWidth(dp(.6f));for(int i=0;i<4;i++){float yy=top+height*i/3;paint.setColor(0xff302647);c.drawLine(left,yy,plotRight,yy,paint);paint.setColor(0xffb0aac7);c.drawText(String.format(Locale.US,"%.5f",max-(max-min)*i/3),plotRight+dp(4),yy+dp(4),paint);}
         paint.setColor(0xff403453);paint.setStrokeWidth(dp(.7f));c.drawLine(futureLeft-dp(3),top,futureLeft-dp(3),top+height,paint);

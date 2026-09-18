@@ -370,8 +370,13 @@ public class MainActivity extends Activity {
             new AlertDialog.Builder(this).setTitle("Разрешить AUTO только на DEMO?")
                 .setMessage("Источник — MT5. Первый вход после отката и нового триггера. Добавления только в плюс и в пределах общего риска текущей кампании.\n\nРиск кампании рассчитывается от фактического Balance/Equity MT5 по выбранному проценту. Старые V10 и ручные сделки не блокируют EC1. Комиссию укажите в настройках.")
                 .setNegativeButton("Отмена",null).setPositiveButton("Подтвердить DEMO",(d,w)->executor.execute(()->{
-                    try{EventClient.configure();EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
-                        JSONObject out=EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));EventClient.poll();
+                    try{
+                        EventClient.configure();
+                        JSONObject current=EventClient.poll(),cfg=current.optJSONObject("config");
+                        if(cfg==null||!cfg.optBoolean("approved",false))
+                            EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
+                        JSONObject out=EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));
+                        EventClient.poll();
                         runOnUiThread(()->{addJournal(out.optString("message"));startUnifiedMonitoringService();});
                     }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("AUTO не включён").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
                 })).show();
@@ -1042,6 +1047,9 @@ public class MainActivity extends Activity {
         boolean auto=s.optBoolean("auto",false)&&!emergency;
         boolean paused=s.optBoolean("paused",true);
         if(emergency)return "EMERGENCY: новые входы заблокированы; требуется явная сверка";
+        if(s.optBoolean("exit_pending",false))
+            return (auto?"AUTO DEMO остаётся включён; ":"AUTO временно недоступен; ")+"Bridge подтверждает закрытие предыдущей кампании в MT5";
+        if(s.optBoolean("recovery",false))return "AUTO заблокирован: требуется сверка неизвестного исполнения MT5";
         if(auto&&!paused)return "AUTO DEMO включён; новые входы и добавления разрешены только по новому подтверждённому событию";
         if(paused)return "PAUSE: новые входы и добавления остановлены; сопровождение открытой кампании продолжается";
         return "AUTO выключен; новые входы и добавления не отправляются";
