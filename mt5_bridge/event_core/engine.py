@@ -3,7 +3,7 @@ from dataclasses import asdict, fields, replace
 import copy, hashlib, math, threading, time
 from .model import Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure
 from .strategy import Strategy
-from .risk import risk_state, plan_order, ledger, summary, quantize, day_start
+from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key
 from .mt5_adapter import MAGIC
 
 CONTEXT={'M1':'M5','M5':'M15','M10':'H1','M15':'H1','H1':'H4','H4':'D1','D1':'W1','W1':'MN1','MN1':'MN1'}
@@ -19,6 +19,8 @@ class Engine:
         saved=store.load('engine',{})
         self.config=Config(**saved.get('config',{})).validate()
         self.account_key=saved.get('account_key','')
+        self.real_armed=False
+        self.effective_fee_per_lot=None;self.fee_source='UNRESOLVED';self.fee_profile_key=''
         self.campaign=saved.get('campaign')
         self.emergency=bool(saved.get('emergency',False))
         self.recovery=bool(saved.get('recovery',False))
@@ -54,11 +56,45 @@ class Engine:
     def _owned(self): return [p for p in self.positions if p['magic']==MAGIC]
     def _owned_orders(self): return [p for p in self.orders if p['magic']==MAGIC]
 
+    def _fee_key(self):
+        if not self.account_key:return ''
+        return self.account_key+'|'+symbol_key(self.config.symbol)
+
+    def _resolve_fee_profile(self):
+        self.fee_profile_key=self._fee_key()
+        if not self.account or not self.fee_profile_key:
+            self.effective_fee_per_lot=None;self.fee_source='UNRESOLVED';return
+        profiles=self.store.load('fee_profiles',{})
+        manual=self.config.fee_per_lot
+        if self.account.get('type')=='DEMO':
+            self.effective_fee_per_lot=float(manual) if manual is not None else 0.0
+            self.fee_source='MANUAL' if manual is not None else 'DEMO_DEFAULT_ZERO'
+            return
+        if manual is not None:
+            self.effective_fee_per_lot=float(manual);self.fee_source='MANUAL'
+            profiles[self.fee_profile_key]=dict(fee_per_lot=self.effective_fee_per_lot,source='MANUAL',updated=self.clock())
+            self.store.save('fee_profiles',profiles);return
+        saved=profiles.get(self.fee_profile_key)
+        if saved is not None:
+            self.effective_fee_per_lot=float(saved['fee_per_lot']);self.fee_source=str(saved.get('source','SAVED'))
+            return
+        estimate=estimate_roundtrip_fee_per_lot(self.deals,self.config.symbol) if self.history_ok else None
+        if estimate is None:
+            self.effective_fee_per_lot=None;self.fee_source='UNKNOWN';return
+        self.effective_fee_per_lot=float(estimate);self.fee_source='MT5_HISTORY'
+        profiles[self.fee_profile_key]=dict(fee_per_lot=self.effective_fee_per_lot,source='MT5_HISTORY',updated=self.clock())
+        self.store.save('fee_profiles',profiles)
+
+    def _execution_config(self):
+        return replace(self.config,fee_per_lot=self.effective_fee_per_lot)
+
     def _refresh_risk(self,now):
         try:
             if not self.history_ok or now-self.history_time>15:
                 raise Blocked(self.history_error or 'История устарела')
-            self.risk=risk_state(self.account,self.positions,self.deals,self.config,now,self.ack,self.daily_latch)
+            if self.account.get('type')=='REAL' and self.effective_fee_per_lot is None:
+                raise Blocked('Комиссия REAL для этого счёта/инструмента ещё не определена')
+            self.risk=risk_state(self.account,self.positions,self.deals,self._execution_config(),now,self.ack,self.daily_latch)
             self.rows=ledger(self.deals,self.positions)
             if 'DAILY_LOSS' in self.risk['blocks']:
                 previous=(self.daily_latch,self.auto,self.paused,self.exit_pending)
@@ -72,22 +108,22 @@ class Engine:
 
     def _refresh(self,now):
         self.broker.connect()
-        a=self.broker.account()
+        a=self.broker.account();current_positions=self.broker.positions();current_orders=self.broker.orders()
+        self.account=a;self.account_time=now;self.positions=current_positions;self.orders=current_orders
         if self.account_key and a['key']!=self.account_key:
-            self.auto=False;self.paused=True;self.recovery=True;self.save()
-            raise Blocked('Счёт MT5 изменён; автоматические действия остановлены')
+            self.auto=False;self.paused=True;self.recovery=True;self.real_armed=False;self.save()
+            raise Blocked('Счёт MT5 изменён; привяжите текущий счёт в настройках EventCore')
         if not self.account_key:self.account_key=a['key'];self.save()
-        self.account=a;self.account_time=now
-        self.positions=self.broker.positions();self.orders=self.broker.orders()
-        if a['type']!='DEMO' or a['margin_mode']!='HEDGING' or a['currency']!='USD':
-            self.auto=False;self.paused=True
-            raise Blocked('EC1 исполняет только на USD DEMO hedging')
+        if a['type'] not in ('DEMO','REAL') or a['margin_mode']!='HEDGING' or a['currency']!='USD':
+            self.auto=False;self.paused=True;self.real_armed=False
+            raise Blocked('Поддерживаются USD DEMO/REAL hedging; contest/netting/другая валюта пока запрещены')
         history_interval=1.0 if self.exit_pending else 10.0
         if not self.history_time or now-self.history_time>=history_interval:
             try:
                 self.deals=self.broker.history(now);self.history_time=now;self.history_ok=True;self.history_error=''
             except Exception as e:
                 self.history_ok=False;self.history_time=now;self.history_error=str(e)
+        self._resolve_fee_profile()
         self._refresh_risk(now)
 
     def _reconcile(self):
@@ -253,7 +289,7 @@ class Engine:
         if not owned:return False
         if not self.campaign:return False
         c=self.campaign;q=self.quote
-        side=c['side'];net=sum(p['profit']+p.get('swap',0)-float(self.config.fee_per_lot or 0)*p['volume'] for p in owned)+c.get('realized',0)
+        side=c['side'];net=sum(p['profit']+p.get('swap',0)-float(self.effective_fee_per_lot or 0)*p['volume'] for p in owned)+c.get('realized',0)
         if c.get('entry_class')=='PROBE' and not c.get('confirmed',False):
             f=self.forecast or {}
             available=bool(f.get('available',('up_probability' in f and 'down_probability' in f)))
@@ -439,6 +475,7 @@ class Engine:
         self.positions=self.broker.positions();self.orders=self.broker.orders();account=self.broker.account()
         if account['key']!=self.account_key:raise Blocked('Счёт изменился перед отправкой')
         self.account=account
+        if account.get('type')=='REAL' and not self.real_armed:raise Blocked('REAL не вооружён: сначала ARM REAL')
         if self._owned_orders() or any(p['magic']!=MAGIC for p in self.positions) or any(o['magic']!=MAGIC for o in self.orders):
             raise Blocked('Экспозиция изменилась перед отправкой')
         self._refresh_risk(now)
@@ -446,11 +483,12 @@ class Engine:
         q=self.broker.quote(self.info['name']);q.validate(now)
         if (q.bid-d.trigger)*d.side<=0 or abs(q.bid-d.trigger)>PROFILES[self.config.mode].no_chase_atr*d.atr:
             raise Blocked('Котировка уже вышла из допустимой зоны входа')
-        p=plan_order(self.broker,self.config,account,self.info,q,d,self._owned(),self.campaign,now)
+        exec_cfg=self._execution_config()
+        p=plan_order(self.broker,exec_cfg,account,self.info,q,d,self._owned(),self.campaign,now)
         new_campaign=not self.campaign
         if new_campaign:
             self.campaign=dict(id=d.event_id,side=d.side,mode=self.config.mode,timeframe=self.config.timeframe,
-                symbol=self.info['name'],started=now,budget=self.config.budget(account),initial_risk=p.risk,
+                symbol=self.info['name'],started=now,budget=exec_cfg.budget(account),initial_risk=p.risk,
                 last_entry=p.entry,best_price=p.entry,last_progress=now,invalidation=d.invalidation,
                 add_step_atr=PROFILES[self.config.mode].add_step_atr,peak=0.,position_ids=[],realized=0.,events=[],
                 entry_class=d.entry_class if d.entry_class!='NONE' else 'CONFIRMED',
@@ -487,10 +525,10 @@ class Engine:
                     if live['sl']<=0:raise Blocked('брокер не подтвердил SL')
                     loss=-number(self.broker.calc_profit(live['side'],live['symbol'],live['volume'],
                         live['price_open'],live['sl']-live['side']*reserve),'actual stop risk')
-                    actual+=max(0,loss)+self.config.fee_per_lot*live['volume']
+                    actual+=max(0,loss)+float(self.effective_fee_per_lot or 0)*live['volume']
                 if sum(x['volume'] for x in matches)>p.volume+1e-8:
                     raise Blocked('подтверждённый объём больше запрошенного')
-                if actual>min(self.campaign['budget'],self.config.budget(account))+1e-7:
+                if actual>min(self.campaign['budget'],exec_cfg.budget(account))+1e-7:
                     raise Blocked('риск после исполнения превысил бюджет')
                 self.campaign['actual_stop_risk']=actual;self.save()
             except Exception as e:
@@ -507,52 +545,86 @@ class Engine:
             prior=self.store.command_result(key)
             if prior is not None:return prior
             if command in ('emergency','pause','disable','close'):
-                if command=='emergency':self.emergency=True;self.exit_pending=True;self.auto=False;self.paused=True
+                if command=='emergency':self.emergency=True;self.exit_pending=True;self.auto=False;self.paused=True;self.real_armed=False
                 elif command=='close':self.exit_pending=True;self.auto=False;self.paused=True
                 elif command=='disable':self.auto=False;self.paused=True
                 else:self.paused=True
                 self.save()
                 message='Блокировка сохранена; закрытие проверяется по MT5' if command in ('emergency','close') else 'Новые входы и добавления остановлены; сопровождение продолжается'
+            elif command=='adopt_account':
+                if data.get('confirmation')!='ADOPT_MT5_ACCOUNT':raise Blocked('Нужно явное подтверждение привязки текущего MT5 счёта')
+                self.broker.connect();a=self.broker.account();pos=self.broker.positions();orders=self.broker.orders()
+                if self.campaign or self.store.pending():raise Blocked('Нельзя менять счёт при сохранённой кампании/неизвестном исполнении')
+                if any(int(p.get('magic',0) or 0)==MAGIC for p in pos) or any(int(o.get('magic',0) or 0)==MAGIC for o in orders):
+                    raise Blocked('На текущем счёте уже есть позиции/ордера EC1; нужна ручная сверка')
+                if a.get('type') not in ('DEMO','REAL') or a.get('margin_mode')!='HEDGING' or a.get('currency')!='USD':
+                    raise Blocked('Можно привязать только USD DEMO/REAL hedging')
+                self.account_key=a['key'];self.account=a;self.account_time=now;self.positions=pos;self.orders=orders
+                self.recovery=False;self.real_armed=False;self.auto=False;self.paused=True
+                self.ack=[0,0];self.daily_latch='';self.deals=[];self.history_time=0.;self.history_ok=False;self.history_error='История ещё не получена'
+                self.config=replace(self.config,account_mode=a['type'],approved=False,fee_per_lot=None)
+                self.strategy=Strategy(self.config);self.strategy.clear();self.save()
+                message='Текущий MT5 счёт привязан: '+a['type']+'. AUTO выключен'
             elif command=='configure':
                 permitted={f.name for f in fields(Config)}-{'approved','technical_position_fuse','max_orders_per_minute'}
                 supplied=data.get('config',{})
                 if not isinstance(supplied,dict) or set(supplied)-permitted:raise Blocked('Неизвестное поле профиля')
                 new=Config(**{**asdict(self.config),**supplied}).validate()
+                if self.account and self.account.get('type') in ('DEMO','REAL') and new.account_mode!=self.account.get('type'):
+                    raise Blocked('Режим профиля не совпадает с текущим MT5 счётом')
                 if self.campaign or self._owned() or self._owned_orders() or self.store.pending():
                     raise Blocked('Профиль фиксирован до завершения кампании')
-                new.approved=False;self.auto=False;self.paused=True
+                new.approved=False;self.auto=False;self.paused=True;self.real_armed=False
                 self.config=new;self.strategy=Strategy(new);self.bars=[];self.context=[];self.last_bars_at=0
                 self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
                 self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
                 self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.
                 self.decision=Decision();self.forecast={};self.forecast_side=0;self.forecast_since=0.
-                self.save();message='Профиль сохранён. Подтвердите комиссию и риск; AUTO выключен'
+                self.save();message='Профиль сохранён. Подтвердите риск; комиссия определяется по режиму счёта'
             elif command=='approve_profile':
-                if data.get('confirmation')!='APPROVE_DEMO_RISK':raise Blocked('Нужно явное подтверждение риска DEMO')
-                self.config.validate()
-                if self.config.fee_per_lot is None:raise Blocked('Неизвестная комиссия не считается нулём')
+                self._refresh(now);actual=self.account.get('type','UNKNOWN')
+                expected='APPROVE_REAL_RISK' if actual=='REAL' else 'APPROVE_DEMO_RISK'
+                if data.get('confirmation')!=expected:raise Blocked('Нужно явное подтверждение риска '+actual)
+                if self.config.account_mode!=actual:raise Blocked('Режим профиля не совпадает с MT5')
+                self.config.validate();self._resolve_fee_profile()
+                if self.effective_fee_per_lot is None:raise Blocked('Не удалось определить комиссию REAL: укажите один раз или дайте историю сделок по инструменту')
                 if self.config.approved:
-                    message='Профиль DEMO уже подтверждён; состояние AUTO не изменено'
+                    message='Профиль '+actual+' уже подтверждён; состояние AUTO не изменено'
                 else:
                     self.config.approved=True;self.auto=False;self.paused=True;self.save()
-                    message='Профиль DEMO подтверждён; AUTO выключен'
+                    message='Профиль '+actual+' подтверждён; AUTO выключен'
+            elif command=='arm_real':
+                self._refresh(now)
+                if data.get('confirmation')!='ARM_REAL_LIVE':raise Blocked('Нужно явное подтверждение ARM REAL')
+                if self.account.get('type')!='REAL' or self.config.account_mode!='REAL':raise Blocked('ARM REAL доступен только на REAL-профиле')
+                if self.campaign or self._owned() or self._owned_orders() or self.store.pending():raise Blocked('ARM REAL только при нулевой экспозиции EC1')
+                if self.emergency or self.recovery or self.exit_pending:raise Blocked('Сначала снимите блокировки/сверку')
+                if not self.config.approved:raise Blocked('Сначала подтвердите REAL-профиль риска')
+                if self.effective_fee_per_lot is None:raise Blocked('Комиссия REAL не определена')
+                if not self.risk.get('allowed'):raise Blocked('Риск REAL не разрешён: '+','.join(self.risk.get('blocks',[])))
+                self.real_armed=True;self.auto=False;self.paused=True
+                message='REAL PILOT вооружён до перезапуска Bridge; AUTO пока выключен'
             elif command in ('enable','play'):
                 self._refresh(now)
                 if self.emergency:raise Blocked('AUTO заблокирован: EMERGENCY. Выполните явную сверку DEMO')
                 if self.exit_pending:raise Blocked('AUTO временно заблокирован: ожидается подтверждение закрытия кампании в MT5')
                 if self.store.pending():raise Blocked('AUTO временно заблокирован: ожидается подтверждение торгового запроса MT5')
                 if self.recovery:raise Blocked('AUTO заблокирован: требуется сверка неизвестного исполнения MT5')
-                if not self.config.approved:raise Blocked('Сначала подтвердите профиль DEMO')
+                actual=self.account.get('type','UNKNOWN')
+                if self.config.account_mode!=actual:raise Blocked('Режим профиля не совпадает с текущим MT5 счётом')
+                if not self.config.approved:raise Blocked('Сначала подтвердите профиль '+actual)
+                if actual=='REAL' and not self.real_armed:raise Blocked('REAL не вооружён: сначала ARM REAL')
                 if not self.risk.get('allowed'):raise Blocked('Риск не разрешён: '+','.join(self.risk.get('blocks',[])))
                 if command=='play' and not self.auto:raise Blocked('PLAY снимает паузу, но не включает AUTO после отключения')
-                if command=='enable' and data.get('confirmation')!='ENABLE_DEMO':raise Blocked('Нужно явное разрешение AUTO DEMO')
-                self.auto=True;self.paused=False;self.heartbeat=now;self.save();message='AUTO DEMO включён; вход только по новому событию'
+                expected='ENABLE_REAL' if actual=='REAL' else 'ENABLE_DEMO'
+                if command=='enable' and data.get('confirmation')!=expected:raise Blocked('Нужно явное разрешение AUTO '+actual)
+                self.auto=True;self.paused=False;self.heartbeat=now;self.save();message='AUTO '+actual+' включён; вход только по новому событию'
             elif command=='reset':
                 self._refresh(now);self._reconcile()
                 if data.get('confirmation')!='RESET_DEMO_FLAT':raise Blocked('Нужна явная сверка DEMO')
                 if self._owned() or self._owned_orders() or self.store.pending():raise Blocked('Есть позиции/ордера или неизвестный запрос: автоматический сброс запрещён')
                 if self.risk.get('blocks'):raise Blocked('Сначала разберите блокировки риска')
-                self.emergency=False;self.recovery=False;self.exit_pending=False;self.auto=False;self.paused=True
+                self.emergency=False;self.recovery=False;self.exit_pending=False;self.auto=False;self.paused=True;self.real_armed=False
                 self.strategy.clear();self.save();message='Блокировка снята после сверки. AUTO остаётся выключенным'
             elif command=='ack_losses':
                 self._refresh(now)
@@ -565,7 +637,7 @@ class Engine:
                 self.auto=False;self.paused=True;self.save();self._refresh_risk(now)
                 message='Серия подтверждена. История сохранена, AUTO выключен'
             else:raise Blocked('Неизвестная команда')
-            out=dict(ok=True,message=message,auto=self.auto,paused=self.paused,emergency=self.emergency)
+            out=dict(ok=True,message=message,auto=self.auto,paused=self.paused,emergency=self.emergency,real_armed=self.real_armed)
             self.store.event('COMMAND',dict(command=command,result=out),now)
             self.store.command_done(key,out)
             return out
@@ -578,9 +650,10 @@ class Engine:
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
                 market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
                 risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),
-                emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,
+                emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,real_armed=self.real_armed,
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
                 forecast=copy.deepcopy(self.forecast),
+                fee_profile=dict(fee_per_lot=self.effective_fee_per_lot,source=self.fee_source,key=self.fee_profile_key),
                 quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-100:]],
                 live_bar=asdict(self.live_bar) if self.live_bar else None,
                 live_structure=list(live_structure(self.bars,self.live_bar)) if self.config.timeframe=='M5' else [],

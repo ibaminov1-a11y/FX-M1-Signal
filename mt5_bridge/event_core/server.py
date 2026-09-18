@@ -39,8 +39,8 @@ def create_app(engine,token):
     @app.get('/health')
     def health():
         s=snap();a=s['account'];pos=s['all_positions']
-        return jsonify(ok=healthy(s),protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,real_trading_enabled=False,
-            mt5_connected=healthy(s),account_type=a.get('type','UNKNOWN'),currency=a.get('currency','USD'),
+        return jsonify(ok=healthy(s),protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,real_trading_enabled=s.get('real_armed',False),
+            mt5_connected=healthy(s),account_type=a.get('type','UNKNOWN'),account_key=a.get('key',''),currency=a.get('currency','USD'),
             balance=a.get('balance'),equity=a.get('equity'),positions=len(pos),
             floating_pl=sum(p['profit']+p.get('swap',0) for p in pos),message=s['execution'])
 
@@ -122,7 +122,9 @@ def create_app(engine,token):
 
     @app.get('/symbols')
     def symbols():
-        return jsonify(ok=True,symbols=['EURUSD','GBPUSD','USDJPY','USDCHF','AUDUSD','USDCAD','NZDUSD','XAUUSD'])
+        with engine.lock:
+            names=engine.broker.symbols() if hasattr(engine.broker,'symbols') else [engine.config.symbol]
+            return jsonify(ok=True,symbols=names,count=len(names),source='MT5')
 
     @app.post('/signal')
     @app.post('/scalp-intent')
@@ -134,7 +136,7 @@ def create_app(engine,token):
 
 
 def main():
-    p=argparse.ArgumentParser(description='FXM1 EventCore EC1 — DEMO ONLY')
+    p=argparse.ArgumentParser(description='FXM1 EventCore EC1 — DEMO + gated REAL pilot')
     p.add_argument('--host',default='127.0.0.1');p.add_argument('--port',type=int,default=8000)
     p.add_argument('--terminal',default=None)
     p.add_argument('--state-dir',default=str(Path(__file__).resolve().parents[1]/'event_state'))
@@ -161,7 +163,7 @@ def main():
     threading.Thread(target=worker,name='event-core',daemon=True).start()
     try:ip=socket.gethostbyname(socket.gethostname())
     except OSError:ip='PC_IP'
-    print(f'FX M1 Bridge {BUILD} | DEMO ONLY | AUTO OFF | MT5 source',flush=True)
+    print(f'FX M1 Bridge {BUILD} | DEMO + GATED REAL PILOT | AUTO OFF | MT5 source',flush=True)
     print(f'Адрес для телефона: http://{ip}:{args.port}',flush=True)
     print('Ключ Bridge (не публикуйте): '+token,flush=True)
     print('Только доверенная локальная сеть. Не открывать порт в Интернет.',flush=True)

@@ -32,7 +32,9 @@ class MT5Broker:
 
     def account(self):
         a=required(self.mt5.account_info(),'счёт');t=required(self.mt5.terminal_info(),'терминал')
-        mode='DEMO' if a.trade_mode==self.mt5.ACCOUNT_TRADE_MODE_DEMO else 'REAL_OR_CONTEST'
+        if a.trade_mode==self.mt5.ACCOUNT_TRADE_MODE_DEMO:mode='DEMO'
+        elif a.trade_mode==getattr(self.mt5,'ACCOUNT_TRADE_MODE_REAL',2):mode='REAL'
+        else:mode='CONTEST'
         hedge='HEDGING' if a.margin_mode==self.mt5.ACCOUNT_MARGIN_MODE_RETAIL_HEDGING else 'NETTING'
         return dict(key=f'{a.login}@{a.server}',login=int(a.login),type=mode,margin_mode=hedge,
             currency=str(a.currency),balance=float(a.balance),equity=float(a.equity),margin_free=float(a.margin_free),
@@ -54,6 +56,18 @@ class MT5Broker:
                     freeze_level=int(info.trade_freeze_level),volume_min=float(info.volume_min),
                     volume_max=float(info.volume_max),volume_step=float(info.volume_step),
                     filling_mode=int(info.filling_mode),trade_exemode=int(info.trade_exemode))
+
+    def symbols(self,limit=1000):
+        rows=required(self.mt5.symbols_get(),'список инструментов')
+        disabled=getattr(self.mt5,'SYMBOL_TRADE_MODE_DISABLED',0)
+        names=[]
+        for row in rows:
+            try:
+                if int(getattr(row,'trade_mode',disabled))==disabled:continue
+                name=str(getattr(row,'name','')).strip()
+                if name:names.append(name)
+            except Exception:continue
+        return sorted(dict.fromkeys(names))[:max(1,min(int(limit),2000))]
 
     def quote(self,symbol):
         t=required(self.mt5.symbol_info_tick(symbol),'котировку')

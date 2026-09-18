@@ -118,7 +118,7 @@ jobs:
           from pathlib import Path
           p=json.loads(Path('evidence/package/PROVENANCE.json').read_text(encoding='utf-8'))
           assert p['commit'] == os.environ['GITHUB_SHA'], (p['commit'], os.environ['GITHUB_SHA'])
-          assert p['real_trading'] == 'blocked', p
+          assert p['real_trading'] == 'gated_pilot', p
           print('PROVENANCE_OK', p['commit'])
           PY
 

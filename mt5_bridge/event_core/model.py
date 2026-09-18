@@ -79,6 +79,7 @@ class Config:
     symbol: str = 'EUR/USD'
     timeframe: str = 'M5'
     mode: str = 'NORMAL'
+    account_mode: str = 'DEMO'
     risk_pct: float = .25
     daily_loss_pct: float = 3.0
     drawdown_pct: float = 5.0
@@ -104,6 +105,7 @@ class Config:
     absolute_risk_cap: float = 0.0
     margin_fraction: float = .30
     spread_pips: float = 3.0
+    max_spread_atr: float = .25
     slippage_ticks: int = 3
     cooldown_sec: int = 600
     dynamic_adds: bool = True
@@ -117,10 +119,12 @@ class Config:
     def validate(self):
         if self.mode not in PROFILES or self.timeframe not in TF_SECONDS:
             raise Blocked('Неизвестный режим или таймфрейм')
+        if self.account_mode not in ('DEMO','REAL'):
+            raise Blocked('Неизвестный режим счёта')
         if not self.symbol or len(self.symbol) > 32:
             raise Blocked('Некорректный инструмент')
         for name in ('risk_pct','lot_cap','probe_lot_cap','probe_stability_sec','late_entry_atr',
-                     'exhaustion_atr','forecast_exit_stability_sec','probe_neutral_exit_sec','margin_fraction','spread_pips'):
+                     'exhaustion_atr','forecast_exit_stability_sec','probe_neutral_exit_sec','margin_fraction','spread_pips','max_spread_atr'):
             number(getattr(self,name),name,positive=True)
         for name in ('forecast_min_confidence','probe_probability','forecast_exit_probability'):
             value=number(getattr(self,name),name,positive=True)
@@ -135,7 +139,9 @@ class Config:
         if self.test_capital < 0 or self.absolute_risk_cap < 0 or self.risk_pct > 1 or self.margin_fraction > .5:
             raise Blocked('Профиль превышает пределы DEMO-испытаний')
         if self.daily_loss_pct>5 or self.drawdown_pct>10:
-            raise Blocked('Дневной лимит/просадка превышают пределы DEMO-профиля')
+            raise Blocked('Дневной лимит/просадка превышают пределы профиля')
+        if self.account_mode=='REAL' and (self.risk_pct>.25 or self.lot_cap>.01 or self.probe_lot_cap>.01):
+            raise Blocked('REAL pilot: максимум 0.25% риска и 0.01 lot на ступень')
         if self.loss_streak < 1 or self.loss_streak > 10:
             raise Blocked('Некорректный предел серии убытков')
         if not 0 <= self.optional_position_limit <= 128:

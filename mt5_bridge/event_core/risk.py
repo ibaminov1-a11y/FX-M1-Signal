@@ -12,6 +12,36 @@ def money(deal):
     return sum(number(deal.get(k,0), k) for k in ('profit','commission','swap','fee'))
 
 
+def symbol_key(value):
+    return str(value or '').replace('/','').replace(' ','').upper()
+
+
+def estimate_roundtrip_fee_per_lot(deals, symbol=None):
+    """Estimate completed round-trip broker commission/fees per lot.
+
+    Uses any completed MT5 position for the same symbol, not only EC1 trades, because
+    broker commission is an account/instrument property. Profit and swap are excluded.
+    """
+    wanted=symbol_key(symbol) if symbol else ''
+    groups={}
+    for d in sorted(deals,key=lambda x:(x.get('time_msc',0),x.get('ticket',0))):
+        if d.get('type') not in (0,1):continue
+        if wanted and symbol_key(d.get('symbol'))!=wanted:continue
+        pid=int(d.get('position_id',0) or 0)
+        if not pid:continue
+        g=groups.setdefault(pid,dict(opened=0.,closed=0.,cost=0.))
+        volume=max(0.,float(d.get('volume',0) or 0))
+        if d.get('entry')==0:g['opened']+=volume
+        elif d.get('entry') in (1,3):g['closed']+=volume
+        g['cost']+=abs(float(d.get('commission',0) or 0))+abs(float(d.get('fee',0) or 0))
+    cost=0.;volume=0.
+    for g in groups.values():
+        if g['opened']>0 and g['closed']>=g['opened']-1e-8:
+            cost+=g['cost'];volume+=g['opened']
+    if volume<=0:return None
+    return cost/volume
+
+
 def day_start(now):
     t=datetime.fromtimestamp(now, LOCAL_DAY)
     return t.replace(hour=0,minute=0,second=0,microsecond=0).timestamp()
@@ -62,10 +92,13 @@ def risk_state(account, positions, deals, cfg: Config, now: float, ack=(0,0), da
     margin are enforced in plan_order().
     """
     cfg.validate()
-    if account.get('type')!='DEMO':
-        raise Blocked('REAL запрещён: нужен DEMO-счёт')
+    actual=str(account.get('type','UNKNOWN')).upper()
+    if actual!=cfg.account_mode:
+        raise Blocked(f'Профиль {cfg.account_mode}, а MT5 {actual}: проверьте режим счёта')
+    if actual not in ('DEMO','REAL'):
+        raise Blocked('Поддерживаются только DEMO или REAL; contest запрещён')
     if account.get('margin_mode')!='HEDGING':
-        raise Blocked('Для отдельных ступеней нужен DEMO hedging')
+        raise Blocked('Для отдельных ступеней нужен hedging-счёт')
     if not account.get('trade_allowed'):
         raise Blocked('Торговля отключена в MT5')
 
@@ -115,18 +148,26 @@ def plan_order(broker, cfg: Config, account, info, q: Quote, d: Decision, positi
                campaign, now):
     cfg.validate();q.validate(now)
     if not cfg.approved or cfg.fee_per_lot is None:
-        raise Blocked('Подтвердите риск и фактическую комиссию в профиле DEMO')
+        raise Blocked('Подтвердите риск и комиссию профиля счёта')
     if d.signal not in ('BUY','SELL') or not d.event_id:
         raise Blocked('Нет нового подтверждённого входа')
-    if account.get('type')!='DEMO' or account.get('margin_mode')!='HEDGING':
-        raise Blocked('Исполнение только DEMO hedging')
+    actual=str(account.get('type','UNKNOWN')).upper()
+    if actual!=cfg.account_mode:
+        raise Blocked(f'Профиль {cfg.account_mode}, а MT5 {actual}: режим счёта не совпадает')
+    if actual not in ('DEMO','REAL') or account.get('margin_mode')!='HEDGING':
+        raise Blocked('Исполнение только на DEMO/REAL hedging')
     if not account.get('trade_allowed'):
         raise Blocked('Торговля MT5 выключена')
     symbol=info['name'];point=number(info['point'],'point',positive=True)
     tick=number(info['tick_size'],'tick_size',positive=True)
     pip=point*10 if info['digits'] in (3,5) else point
-    if q.spread/pip>cfg.spread_pips:
-        raise Blocked('Спред превышает выбранный предел')
+    if q.spread/number(d.atr,'ATR',positive=True)>cfg.max_spread_atr:
+        raise Blocked('Спред слишком велик относительно текущей волатильности')
+    letters=''.join(ch for ch in symbol.upper() if ch.isalpha())
+    currencies={'USD','EUR','GBP','JPY','CHF','AUD','CAD','NZD','NOK','SEK','DKK','SGD','HKD','MXN','ZAR','TRY','PLN','CZK','HUF'}
+    is_fx=len(letters)>=6 and letters[:3] in currencies and letters[3:6] in currencies
+    if is_fx and q.spread/pip>cfg.spread_pips:
+        raise Blocked('FX-спред превышает выбранный предел')
     if len(positions)>=cfg.technical_position_fuse:
         raise Blocked('Технический предохранитель: слишком много позиций')
     if cfg.optional_position_limit and len(positions)>=cfg.optional_position_limit:

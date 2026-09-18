@@ -21,7 +21,7 @@ shutil.copy2(root/'docs/EVENT_CORE_RU.md',package/'READ_ME_RU.md')
 shutil.copy2(root/'docs/INSTALL_EC1_RU.md',package/'INSTALL_RU.md')
 commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 metadata={'commit':commit,'apk_sha256':hashlib.sha256((package/'FXM1_10_9_EVENT_CORE_DEMO.apk').read_bytes()).hexdigest(),
-          'status':'DEMO_RESEARCH_CANDIDATE','market_backtest':'not_run','physical_phone':'not_tested','real_trading':'blocked'}
+          'status':'DEMO_REAL_PILOT_RESEARCH_CANDIDATE','market_backtest':'not_run','physical_phone':'not_tested','real_trading':'gated_pilot'}
 (package/'PROVENANCE.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
 with zipfile.ZipFile(dest/'FXM1_10_9_EVENT_CORE_PACKAGE.zip','w',zipfile.ZIP_DEFLATED) as z:
     for p in package.rglob('*'):
