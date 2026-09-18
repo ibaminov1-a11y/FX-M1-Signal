@@ -211,11 +211,16 @@ class Strategy:
             extension=max(0,(top-q.bid)/a)
             near_extreme=(q.bid-floor)<=.18*a
             same_closes=sum((x.close-x.open)<0 for x in bars[-6:])
-        late=bool(bias and near_extreme and extension>=self.config.late_entry_atr)
-        exhausted=bool(bias and near_extreme and extension>=self.config.exhaustion_atr and same_closes>=4)
+        fresh_breakout=bool(bias and live_body*bias>0 and abs(live_body)>=.55 and
+                            components['breakout_pressure']*bias>=.55)
+        meaningful_pullback=any((x.close-x.open)*bias<0 and abs(x.close-x.open)>=.12*a for x in bars[-3:])
+        late=bool(bias and near_extreme and extension>=self.config.late_entry_atr and
+                  not fresh_breakout and not meaningful_pullback)
+        exhausted=bool(bias and near_extreme and extension>=self.config.exhaustion_atr and same_closes>=4 and
+                       not fresh_breakout and not meaningful_pullback)
         if exhausted:
             regime='EXHAUSTION'
-        elif abs(components['live_body'])>=.75 and abs(components['breakout_pressure'])>=.65:
+        elif fresh_breakout:
             regime='BREAKOUT'
         elif struct==1 and directional>.12:
             regime='TREND_UP'
