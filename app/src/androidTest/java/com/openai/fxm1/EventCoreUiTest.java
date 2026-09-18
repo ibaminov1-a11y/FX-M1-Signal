@@ -123,6 +123,18 @@ public class EventCoreUiTest {
   EventClient.configure();
   assertEquals("SCALP",EventClient.poll().getJSONObject("config").optString("mode"));
  }
+ @Test public void openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits()throws Exception{
+  JSONObject state=new JSONObject()
+    .put("campaign",new JSONObject().put("side",-1).put("entry_class","PROBE").put("confirmed",false))
+    .put("positions",new JSONArray().put(new JSONObject().put("side",-1).put("volume",0.01)
+      .put("price_open",1.14782).put("sl",1.14828).put("profit",-0.12).put("swap",0.0)));
+  String summary=EventClient.campaignSummary(state);
+  assertTrue(summary.contains("SELL"));
+  assertTrue(summary.contains("1.14782"));
+  assertTrue(summary.contains("1.14828"));
+  assertTrue(summary.contains("-0.12"));
+  assertTrue(summary.contains("PROBE"));
+ }
  @Test public void autoUiUsesBridgeStateAndAddsAreRiskOnly()throws Exception{
   p.edit().putInt("ec_limit",10).putString("ec_message","Новые входы и добавления остановлены; сопровождение продолжается").commit();
   EventClient.configure();
