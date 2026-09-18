@@ -102,6 +102,7 @@ class RiskTests(unittest.TestCase):
         cfg=replace(self.cfg,symbol='BTCUSD.pro',spread_pips=999)
         self.b.info.update(name='BTCUSD.pro',digits=2,point=.01,tick_size=.01)
         self.b.bid=50000.;self.b.ask=50000.5
+        self.b.calc_profit=lambda side,symbol,volume,entry,exit: side*(exit-entry)*volume*10
         self.d=Decision('BUY','ENTRY_READY','test','btc',1,49990.,50000.4,49990.,20.,int(self.now*1000))
         p=plan_order(self.b,cfg,self.b.account(),self.b.info,self.b.quote('BTCUSD.pro'),self.d,[],None,self.now)
         self.assertEqual(p.symbol,'BTCUSD.pro')
@@ -165,7 +166,7 @@ class EngineTests(unittest.TestCase):
         self.assertAlmostEqual(self.e.effective_fee_per_lot,7.0)
         self.assertEqual(self.e.fee_source,'MT5_HISTORY')
         saved=self.store.load('fee_profiles',{})
-        self.assertAlmostEqual(saved[self.e.account_key]['fee_per_lot'],7.0)
+        self.assertAlmostEqual(saved[self.e.fee_profile_key]['fee_per_lot'],7.0)
 
     def test_reapproving_same_profile_does_not_turn_auto_off(self):
         self.e.command('enable',{'command_id':'enable-again-1','confirmation':'ENABLE_DEMO'})
