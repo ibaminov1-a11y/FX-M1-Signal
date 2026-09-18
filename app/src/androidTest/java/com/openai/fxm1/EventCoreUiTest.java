@@ -94,6 +94,35 @@ public class EventCoreUiTest {
   assertEquals("IMPULSE",cached.optString("path"));
   assertTrue("Android cache must present Bridge path",p.getString("state_context","").contains("Путь: Импульс"));
  }
+ @Test public void r3LiveStructureIsVisibleBeforeSwingConfirmation()throws Exception{
+  JSONArray bars=new JSONArray()
+    .put(new JSONObject().put("time",1800000000).put("open",1.1000).put("high",1.1020).put("low",1.0990).put("close",1.1010))
+    .put(new JSONObject().put("time",1800000300).put("open",1.1010).put("high",1.1030).put("low",1.1000).put("close",1.1020))
+    .put(new JSONObject().put("time",1800000600).put("open",1.1020).put("high",1.1040).put("low",1.1010).put("close",1.1030));
+  JSONArray structure=new JSONArray()
+    .put(new JSONObject().put("time",1800000000).put("price",1.0995).put("label","HL").put("kind","L"));
+  JSONObject liveBar=new JSONObject().put("time",1800000900).put("open",1.1030).put("high",1.1060).put("low",1.1028).put("close",1.1055);
+  JSONArray liveStructure=new JSONArray()
+    .put(new JSONObject().put("time",1800000000).put("price",1.0995).put("label","HL").put("kind","L"))
+    .put(new JSONObject().put("time",1800000900).put("price",1.1060).put("label","HH?").put("kind","H").put("provisional",true));
+  final Bitmap[] bitmap={null};
+  main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,800,500);
+   chart.setMarket(bars,new JSONArray(),new JSONArray(),structure,"SEARCH",liveBar,liveStructure);
+   bitmap[0]=Bitmap.createBitmap(800,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(bitmap[0]));});
+  int live=0;int[]pixels=new int[800*500];bitmap[0].getPixels(pixels,0,800,0,0,800,500);
+  for(int v:pixels)if(v==0xffffb04d)live++;
+  assertTrue("provisional live structure must be visible immediately",live>20);
+  bitmap[0].recycle();
+ }
+ @Test public void configureRepairsBridgeModeAfterRestartInsteadOfTrustingPhoneCache()throws Exception{
+  p.edit().putInt("signal_mode_pos",1).commit();
+  EventClient.configure();
+  assertEquals("SCALP",EventClient.poll().getJSONObject("config").optString("mode"));
+  EventClient.http("POST",EventClient.base()+"/test/reset",new JSONObject());
+  assertEquals("NORMAL",EventClient.poll().getJSONObject("config").optString("mode"));
+  EventClient.configure();
+  assertEquals("SCALP",EventClient.poll().getJSONObject("config").optString("mode"));
+ }
  @Test public void autoUiUsesBridgeStateAndAddsAreRiskOnly()throws Exception{
   p.edit().putInt("ec_limit",10).putString("ec_message","Новые входы и добавления остановлены; сопровождение продолжается").commit();
   EventClient.configure();
