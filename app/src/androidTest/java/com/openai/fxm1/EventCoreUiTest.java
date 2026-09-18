@@ -39,6 +39,22 @@ public class EventCoreUiTest {
  void await(BooleanSupplier f,String label)throws Exception{long end=SystemClock.elapsedRealtime()+20000;while(SystemClock.elapsedRealtime()<end){if(f.getAsBoolean())return;Thread.sleep(150);}fail(label);}
  void shot(String name)throws Exception{shell("mkdir -p /sdcard/Download/ec1-qa");shell("screencap -p /sdcard/Download/ec1-qa/"+name+".png");}
  void click(String label)throws Exception{for(int i=0;i<5;i++){try{UiObject2 v=device.wait(Until.findObject(By.text(label)),6000);assertNotNull(label,v);v.click();return;}catch(StaleObjectException e){if(i==4)throw e;Thread.sleep(80);}}}
+ @Test public void accountModeAndCommissionProfileAreAutomatic()throws Exception{
+  p.edit().putString("mt5_account_type_snapshot","DEMO").remove("ec_fee").commit();
+  JSONObject demo=EventClient.config();
+  assertEquals("DEMO",demo.getString("account_mode"));
+  assertEquals(0.0,demo.getDouble("fee_per_lot"),0.000001);
+
+  p.edit().putString("mt5_account_type_snapshot","REAL").putString("mt5_account_key_snapshot","555@Broker")
+    .putInt("risk_pos",2).putString("ec_lot_cap","0.50").remove("ec_fee_REAL_555@Broker").commit();
+  JSONObject real=EventClient.config();
+  assertEquals("REAL",real.getString("account_mode"));
+  assertTrue(real.isNull("fee_per_lot"));
+  assertEquals(.25,real.getDouble("risk_pct"),0.000001);
+  assertEquals(.01,real.getDouble("lot_cap"),0.000001);
+  p.edit().putString(EventClient.feePrefKey(),"7.25").commit();
+  assertEquals(7.25,EventClient.config().getDouble("fee_per_lot"),0.000001);
+ }
  @Test public void legacyUiActualBalanceAndModesArePreserved()throws Exception{
   main(()->{MainActivity a=rule.getActivity();assertNotNull(a.findViewById(R.id.symbolSpinner));assertNotNull(a.findViewById(R.id.moneyHistoryButton));
    assertTrue(((TextView)a.findViewById(R.id.accountText)).getText().toString().contains("99868.35"));
