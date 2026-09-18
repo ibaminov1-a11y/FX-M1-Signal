@@ -136,6 +136,11 @@ public class EventCoreUiTest {
   });
   await(()->{final boolean[] ok={false};main(()->{MainActivity a=rule.getActivity();Switch sw=a.findViewById(R.id.autoTradingSwitch);TextView status=a.findViewById(R.id.autoStatusText);TextView smart=a.findViewById(R.id.smartStatusText);ok[0]=sw.isChecked()&&status.getText().toString().contains("AUTO включён")&&!smart.getText().toString().contains("остановлены");});return ok[0];},"AUTO UI must reflect Bridge state and clear stale pause text");
   assertEquals(0,p.getInt("ec_limit",-1));
+  p.edit().putInt("signal_mode_pos",1).commit();
+  main(()->rule.getActivity().recreate());Thread.sleep(600);
+  main(()->{Spinner mode=rule.getActivity().findViewById(R.id.signalModeSpinner);
+   assertEquals("Bridge AUTO mode must be authoritative in UI","NORMAL",String.valueOf(mode.getSelectedItem()));
+   assertFalse("profile controls must be locked while Bridge AUTO is active",mode.isEnabled());});
   shot("05-auto-synced");
  }
  @Test public void transientOfflineAndActivityReturnDoNotDisableBridgeAuto()throws Exception{
