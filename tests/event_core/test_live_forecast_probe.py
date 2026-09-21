@@ -78,6 +78,27 @@ class LiveForecastProbeTests(unittest.TestCase):
         self.assertIsNotNone(d,f)
         self.assertEqual((d.signal,d.phase,d.entry_class),('BUY','PROBE_READY','PROBE'))
 
+    def test_early_candidate_can_probe_on_live_quote_break_without_waiting_for_m1_close_above_level(self):
+        bars,m1,m15,h1,live,q,a=bearish_market()
+        bars=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in bars]
+        m1=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in m1]
+        m15=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in m15]
+        h1=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in h1]
+        live=Bar(live.time,2-live.open,2-live.low,2-live.high,2-live.close,live.volume)
+        a=atr(bars);pad=max(a*.025,.00001)
+        prior=m1[-5:-1];trigger=max(x.high for x in prior)+pad
+        last=m1[-1]
+        # Closed M1 confirms recovery but has NOT closed above trigger yet.
+        m1[-1]=Bar(last.time,last.open,max(last.high,trigger-.01*a),last.low,trigger-.02*a,last.volume)
+        q=Quote(int(NOW*1000),trigger+.03*a,trigger+.03*a+.00001)
+        f={'side':0,'candidate_side':1,'confidence':.57,'up_probability':.57,'down_probability':.23,
+           'range_probability':.20,'edge_strength':.34,'stable_for_sec':3.2,'late_entry':False,
+           'exhaustion':False,'regime':'TRANSITION',
+           'components':{'micro_momentum':.55,'acceleration':.28,'momentum':.22,'live_body':.18}}
+        d=self.strategy().probe_decision(bars,m1,m15,h1,live,q,NOW,f)
+        self.assertIsNotNone(d,f)
+        self.assertEqual((d.signal,d.phase),('BUY','PROBE_READY'))
+
     def test_probe_requires_forecast_plus_fresh_microbreak_and_is_marked_probe(self):
         bars,m1,m15,h1,live,q,a=bearish_market()
         s=self.strategy()
