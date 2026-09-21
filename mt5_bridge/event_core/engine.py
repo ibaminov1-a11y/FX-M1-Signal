@@ -117,7 +117,8 @@ class Engine:
         if a['type'] not in ('DEMO','REAL') or a['margin_mode']!='HEDGING' or a['currency']!='USD':
             self.auto=False;self.paused=True;self.real_armed=False
             raise Blocked('Поддерживаются USD DEMO/REAL hedging; contest/netting/другая валюта пока запрещены')
-        history_interval=1.0 if self.exit_pending else 10.0
+        flat_campaign=bool(self.campaign and not self._owned() and not self._owned_orders() and not self.store.pending())
+        history_interval=1.0 if self.exit_pending or flat_campaign else 10.0
         if not self.history_time or now-self.history_time>=history_interval:
             try:
                 self.deals=self.broker.history(now);self.history_time=now;self.history_ok=True;self.history_error=''
@@ -342,10 +343,14 @@ class Engine:
 
     def _update_forecast(self,now):
         raw=self.strategy.forecast(self.bars,self.m1,self.m15,self.h1,self.live_bar,self.quote,now)
-        side=int(raw.get('side',0) or 0);confidence=float(raw.get('confidence',0) or 0)
-        if side in (-1,1) and confidence>=self.config.forecast_min_confidence:
-            if side!=self.forecast_side:
-                self.forecast_side=side;self.forecast_since=now
+        side=int(raw.get('side',0) or 0);candidate=int(raw.get('candidate_side',0) or 0)
+        tracking=side if side in (-1,1) else candidate
+        confidence=float(raw.get('confidence',0) or 0);edge=float(raw.get('edge_strength',0) or 0)
+        qualified=(side in (-1,1) and confidence>=self.config.forecast_min_confidence) or (
+            side==0 and tracking in (-1,1) and confidence>=self.config.early_probe_probability and edge>=self.config.early_probe_edge)
+        if qualified:
+            if tracking!=self.forecast_side:
+                self.forecast_side=tracking;self.forecast_since=now
             stable=max(0.,now-self.forecast_since)
         else:
             self.forecast_side=0;self.forecast_since=now;stable=0.

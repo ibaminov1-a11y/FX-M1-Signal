@@ -37,6 +37,13 @@ class Strategy:
                 return False
         return True
 
+    def _probe_context_allows(self,side:int,m15:list[Bar],h1:list[Bar]):
+        dirs=[context_direction(x) for x in (m15 or [],h1 or [])]
+        dirs=[x for x in dirs if x]
+        # A tiny probe may trade an early M5 transition against one slower timeframe,
+        # but never against both confirmed M15 and H1 structures simultaneously.
+        return sum(x==-side for x in dirs)<2
+
     def _impulse_decision(self,bars,m1,m15,h1,live_bar,q,now,campaign_side,a,pad,structure):
         if self.config.timeframe!='M5' or live_bar is None or not m1:
             return None
@@ -199,8 +206,14 @@ class Strategy:
         down=mass-up
         confidence=max(up,down)
         side=1 if up>=self.config.forecast_min_confidence else -1 if down>=self.config.forecast_min_confidence else 0
+        directional_best=max(up,down)
+        directional_other=down if up>=down else up
+        edge_strength=directional_best-max(directional_other,range_p)
+        candidate_side=side
+        if not candidate_side and directional_best>=self.config.early_probe_probability and edge_strength>=self.config.early_probe_edge:
+            candidate_side=1 if up>down else -1
 
-        bias=side if side else (1 if directional>.12 else -1 if directional<-.12 else 0)
+        bias=side if side else candidate_side if candidate_side else (1 if directional>.12 else -1 if directional<-.12 else 0)
         tail=list(bars[-8:])+[live_bar]
         extension=0.0;near_extreme=False;same_closes=0
         if bias==1:
@@ -254,7 +267,8 @@ class Strategy:
             projection.append(dict(minutes=horizon*5,center=round(center,10),
                 low=round(center-uncertainty,10),high=round(center+uncertainty,10),
                 up_probability=pu,down_probability=pd,range_probability=pr))
-        return dict(side=side,confidence=round(confidence,4),
+        return dict(side=side,candidate_side=candidate_side,confidence=round(confidence,4),
+                    edge_strength=round(edge_strength,4),
                     up_probability=round(up,4),down_probability=round(down,4),
                     range_probability=round(range_p,4),late_entry=late,
                     exhaustion=exhausted,regime=regime,extension_atr=round(extension,3),
@@ -265,16 +279,23 @@ class Strategy:
     def probe_decision(self,bars,m1,m15,h1,live_bar,q,now,forecast):
         if not self.config.probe_enabled or self.config.timeframe!='M5' or live_bar is None:
             return None
-        side=int(forecast.get('side',0) or 0)
+        official=int(forecast.get('side',0) or 0)
+        candidate=int(forecast.get('candidate_side',0) or 0)
+        side=official if official in (-1,1) else candidate
         if side not in (-1,1):
             return None
-        if float(forecast.get('confidence',0))<self.config.probe_probability:
+        probability=float(forecast.get('up_probability' if side==1 else 'down_probability',forecast.get('confidence',0)) or 0)
+        edge=float(forecast.get('edge_strength',0) or 0)
+        if official in (-1,1):
+            if probability<max(self.config.forecast_min_confidence,self.config.probe_probability):
+                return None
+        elif probability<self.config.early_probe_probability or edge<self.config.early_probe_edge:
             return None
         if float(forecast.get('stable_for_sec',0))<self.config.probe_stability_sec:
             return None
-        if forecast.get('late_entry') or forecast.get('exhaustion'):
+        if forecast.get('late_entry') or forecast.get('exhaustion') or forecast.get('regime') in ('RANGE','DATA_BLOCK'):
             return None
-        if len(m1)<6 or not self._context_allows(side,m15,h1):
+        if len(m1)<6 or not self._probe_context_allows(side,m15,h1):
             return None
         if m1[-1].time+60>now+1:
             return None
@@ -301,7 +322,7 @@ class Strategy:
         lines=({'kind':'invalidation','price':stop,'time':m1[-1].time},
                {'kind':'trigger','price':trigger,'time':m1[-1].time})
         return Decision('BUY' if side==1 else 'SELL','PROBE_READY',
-            'LIVE forecast устойчив; свежий M1 micro-break разрешил маленький probe',
+            'Относительный LIVE edge устойчив; свежий M1 micro-break разрешил ранний маленький probe',
             event,side,stop,trigger,stop,a,q.time_msc,lines,
             path='FORECAST',structure=swing_labels(bars),forecast=forecast,entry_class='PROBE')
 

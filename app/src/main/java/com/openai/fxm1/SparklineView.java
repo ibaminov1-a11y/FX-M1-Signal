@@ -50,8 +50,6 @@ public class SparklineView extends View {
     }
     private int forecastColor(){
         int side=forecast.optInt("side",0);
-        double up=forecast.optDouble("up_probability",0),down=forecast.optDouble("down_probability",0),range=forecast.optDouble("range_probability",0);
-        if(side==0){if(up>down&&up>range)side=1;else if(down>up&&down>range)side=-1;}
         return side>0?0xff42d67a:side<0?0xffff4857:0xff914dff;
     }
     private String pointProbability(JSONObject p){
@@ -63,6 +61,16 @@ public class SparklineView extends View {
     private void drawForecast(Canvas c,JSONArray projection,float startX,float startY,float futureLeft,float plotRight,double min,double max,float top,float height){
         if(projection==null||projection.length()==0)return;
         float usable=Math.max(dp(18),plotRight-futureLeft-dp(5));int n=projection.length(),color=forecastColor();
+        if(forecast.optInt("side",0)==0){
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(2.1f));paint.setColor(color);
+            paint.setPathEffect(new DashPathEffect(new float[]{dp(6),dp(4)},0));
+            c.drawLine(startX,startY,plotRight-dp(4),startY,paint);paint.setPathEffect(null);
+            paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(8.5f));paint.setFakeBoldText(true);
+            c.drawText("MODEL NO EDGE",futureLeft+dp(2),top+dp(11),paint);paint.setFakeBoldText(false);
+            long up=Math.round(forecast.optDouble("up_probability",0)*100),down=Math.round(forecast.optDouble("down_probability",0)*100),range=Math.round(forecast.optDouble("range_probability",0)*100);
+            paint.setTextSize(dp(8));c.drawText("UP "+up+"  DN "+down+"  RG "+range,futureLeft+dp(2),top+dp(22),paint);
+            return;
+        }
         Path band=new Path(),upper=new Path(),lower=new Path();
         for(int i=0;i<n;i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("high"),min,max,top,height);if(i==0){band.moveTo(x,yy);upper.moveTo(x,yy);}else{band.lineTo(x,yy);upper.lineTo(x,yy);}}
         for(int i=n-1;i>=0;i--){JSONObject p=projection.optJSONObject(i);if(p==null)continue;float x=futureLeft+usable*(i+1f)/n,yy=y(p.optDouble("low"),min,max,top,height);band.lineTo(x,yy);}

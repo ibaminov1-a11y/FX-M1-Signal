@@ -90,7 +90,9 @@ class Config:
     # confirmed campaign entry and remains subject to the same broker SL/risk budget.
     probe_enabled: bool = True
     forecast_min_confidence: float = .60
-    probe_probability: float = .72
+    probe_probability: float = .60
+    early_probe_probability: float = .55
+    early_probe_edge: float = .22
     probe_stability_sec: float = 3.0
     probe_lot_cap: float = .01
     late_entry_atr: float = .85
@@ -126,10 +128,12 @@ class Config:
         for name in ('risk_pct','lot_cap','probe_lot_cap','probe_stability_sec','late_entry_atr',
                      'exhaustion_atr','forecast_exit_stability_sec','probe_neutral_exit_sec','margin_fraction','spread_pips','max_spread_atr'):
             number(getattr(self,name),name,positive=True)
-        for name in ('forecast_min_confidence','probe_probability','forecast_exit_probability'):
+        for name in ('forecast_min_confidence','probe_probability','early_probe_probability','forecast_exit_probability'):
             value=number(getattr(self,name),name,positive=True)
             if not .50 <= value <= .99:
                 raise Blocked('Вероятностный порог вне допустимого диапазона')
+        if not .05 <= number(self.early_probe_edge,'early_probe_edge',positive=True) <= .60:
+            raise Blocked('Некорректный относительный edge раннего probe')
         if self.probe_lot_cap > self.lot_cap:
             raise Blocked('Probe lot cap не может превышать общий lot cap')
         if not 30 <= int(self.probe_timeout_sec) <= 3600:
