@@ -180,21 +180,19 @@ public class EventCoreUiTest {
   for(int i=0;i<18;i++){double o=1.1000+i*.00005,c=o+.00002;
    bars.put(new JSONObject().put("time",1800000000+i*300).put("open",o).put("high",c+.00004).put("low",o-.00004).put("close",c));}
   JSONObject liveBar=new JSONObject().put("time",1800000000+18*300).put("open",1.1009).put("high",1.1010).put("low",1.1008).put("close",1.10092);
-  JSONObject forecast=new JSONObject().put("side",0).put("candidate_side",1).put("confidence",.57)
-    .put("up_probability",.57).put("down_probability",.23).put("range_probability",.20).put("regime","TRANSITION")
+  JSONObject forecast=new JSONObject().put("side",0).put("candidate_side",0).put("confidence",.41)
+    .put("up_probability",.41).put("down_probability",.34).put("range_probability",.25).put("regime","TRANSITION")
     .put("projection",new JSONArray()
-      .put(new JSONObject().put("minutes",5).put("center",1.10096).put("low",1.10075).put("high",1.10117).put("up_probability",.57).put("down_probability",.23).put("range_probability",.20))
-      .put(new JSONObject().put("minutes",10).put("center",1.10100).put("low",1.10065).put("high",1.10135).put("up_probability",.53).put("down_probability",.26).put("range_probability",.21))
-      .put(new JSONObject().put("minutes",15).put("center",1.10103).put("low",1.10055).put("high",1.10151).put("up_probability",.49).put("down_probability",.28).put("range_probability",.23)));
+      .put(new JSONObject().put("minutes",5).put("center",1.10093).put("low",1.10075).put("high",1.10111).put("up_probability",.41).put("down_probability",.34).put("range_probability",.25)));
+  assertEquals("NO EDGE",SparklineView.forecastLabel(forecast));
+  assertFalse(SparklineView.shouldDrawProjection(forecast));
   final Bitmap[] b={null};
   main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
    chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecast);
    b[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(b[0]));});
-  int green=0,red=0,purple=0;int[]px=new int[1000*500];b[0].getPixels(px,0,1000,0,0,1000,500);
-  for(int y=0;y<500;y++)for(int x=720;x<930;x++){int v=px[y*1000+x];if(v==0xff42d67a)green++;if(v==0xffff4857)red++;if(v==0xff914dff)purple++;}
-  assertEquals("NO EDGE must not draw a fake BUY path",0,green);
-  assertEquals("NO EDGE must not draw a fake SELL path",0,red);
-  assertTrue("NO EDGE should use a neutral range indication",purple>10);
+  int directional=0;int[]px=new int[1000*500];b[0].getPixels(px,0,1000,0,0,1000,500);
+  for(int y=0;y<500;y++)for(int x=760;x<930;x++){int v=px[y*1000+x];if(v==0xff42d67a||v==0xffff4857)directional++;}
+  assertEquals("NO EDGE must not draw a directional future path",0,directional);
   b[0].recycle();
  }
  @Test public void configureRepairsBridgeModeAfterRestartInsteadOfTrustingPhoneCache()throws Exception{
