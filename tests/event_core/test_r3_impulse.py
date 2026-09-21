@@ -113,6 +113,45 @@ class R3ImpulseTests(unittest.TestCase):
         _,d,_=decide(1,chase_atr=.90)
         self.assertNotEqual(d.path,'IMPULSE')
 
+    def test_live_breakout_probe_uses_first_tick_cross_before_m1_close(self):
+        bars,m1,m15,h1,live,q,a,level=impulse_fixture(1,body_atr=.42,range_atr=.70,m1_confirm=False)
+        s=Strategy(Config(timeframe='M5',mode='NORMAL',fee_per_lot=0,approved=True))
+        pad=max(a*.05,q.spread*1.2);trigger=level+pad
+        safe=Quote(int((NOW-1)*1000),trigger-.03*a,trigger-.03*a+.00001)
+        f={'side':0,'candidate_side':0,'confidence':.44,'up_probability':.44,'down_probability':.30,
+           'range_probability':.26,'late_entry':False,'exhaustion':False,'regime':'TRANSITION',
+           'components':{}}
+        self.assertIsNone(s.live_breakout_probe(bars,m1,m15,h1,live,safe,NOW-1,f))
+        live2=Bar(live.time,live.open,max(live.high,trigger+.08*a),live.low,trigger+.06*a,live.volume+8)
+        cross=Quote(int(NOW*1000),trigger+.04*a,trigger+.04*a+.00001)
+        d=s.live_breakout_probe(bars,m1,m15,h1,live2,cross,NOW,f)
+        self.assertIsNotNone(d,f)
+        self.assertEqual((d.signal,d.phase,d.path,d.entry_class),('BUY','PROBE_READY','LIVE_BREAKOUT','PROBE'))
+        self.assertGreater(d.stop,0)
+
+    def test_live_breakout_never_fires_hindsight_when_first_observation_is_already_beyond_level(self):
+        bars,m1,m15,h1,live,q,a,level=impulse_fixture(1,body_atr=.42,range_atr=.70,m1_confirm=False)
+        s=Strategy(Config(timeframe='M5',mode='NORMAL',fee_per_lot=0,approved=True))
+        pad=max(a*.05,q.spread*1.2);trigger=level+pad
+        live2=Bar(live.time,live.open,max(live.high,trigger+.08*a),live.low,trigger+.06*a,live.volume+8)
+        q2=Quote(int(NOW*1000),trigger+.04*a,trigger+.04*a+.00001)
+        f={'side':0,'candidate_side':0,'confidence':.44,'up_probability':.44,'down_probability':.30,
+           'range_probability':.26,'late_entry':False,'exhaustion':False,'regime':'TRANSITION',
+           'components':{}}
+        self.assertIsNone(s.live_breakout_probe(bars,m1,m15,h1,live2,q2,NOW,f))
+
+    def test_live_breakout_does_not_chase_gap_far_beyond_level(self):
+        bars,m1,m15,h1,live,q,a,level=impulse_fixture(1,body_atr=.42,range_atr=.70,m1_confirm=False)
+        s=Strategy(Config(timeframe='M5',mode='NORMAL',fee_per_lot=0,approved=True))
+        pad=max(a*.05,q.spread*1.2);trigger=level+pad
+        f={'side':0,'candidate_side':0,'confidence':.44,'up_probability':.44,'down_probability':.30,
+           'range_probability':.26,'late_entry':False,'exhaustion':False,'regime':'TRANSITION',
+           'components':{}}
+        s.live_breakout_probe(bars,m1,m15,h1,live,Quote(int((NOW-1)*1000),trigger-.03*a,trigger-.03*a+.00001),NOW-1,f)
+        far=Quote(int(NOW*1000),trigger+.50*a,trigger+.50*a+.00001)
+        live2=Bar(live.time,live.open,far.bid+.02*a,live.low,far.bid,live.volume+8)
+        self.assertIsNone(s.live_breakout_probe(bars,m1,m15,h1,live2,far,NOW,f))
+
     def test_consumed_impulse_event_cannot_be_reused(self):
         s,d,args=decide(1)
         self.assertEqual(d.path,'IMPULSE')
