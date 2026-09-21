@@ -131,6 +131,16 @@ public class EventCoreUiTest {
   assertTrue("provisional live structure must be visible immediately",live>20);
   bitmap[0].recycle();
  }
+ @Test public void candidateForecastUsesDirectionalLabelAndNoEdgeDrawsNoProjection()throws Exception{
+  JSONObject candidate=new JSONObject().put("side",0).put("candidate_side",1).put("confidence",.57)
+    .put("up_probability",.57).put("down_probability",.23).put("range_probability",.20);
+  assertEquals("EARLY BUY 57%",SparklineView.forecastLabel(candidate));
+  JSONObject none=new JSONObject().put("side",0).put("candidate_side",0).put("confidence",.41)
+    .put("up_probability",.41).put("down_probability",.34).put("range_probability",.25);
+  assertEquals("NO EDGE",SparklineView.forecastLabel(none));
+  assertFalse(SparklineView.shouldDrawProjection(none));
+  assertTrue(SparklineView.shouldDrawProjection(candidate));
+ }
  @Test public void forecastZoneReservesRightSideAndDrawsFutureProbabilityPath()throws Exception{
   JSONArray bars=new JSONArray();
   for(int i=0;i<18;i++){double o=1.1000+i*.0001,c=o+.00006;
