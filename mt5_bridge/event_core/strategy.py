@@ -300,16 +300,28 @@ class Strategy:
         if m1[-1].time+60>now+1:
             return None
         a=atr(bars);pad=max(a*.025,q.spread*1.2)
-        prior=m1[-5:-1]
+        prior=m1[-5:-1];components=forecast.get('components',{}) or {}
+        micro_momentum=float(components.get('micro_momentum',0) or 0)
+        acceleration=float(components.get('acceleration',0) or 0)
+        live_body=float(components.get('live_body',0) or 0)
+        early=(official not in (-1,1))
         if side==1:
             micro=max(x.high for x in prior);trigger=micro+pad
-            if m1[-1].close<=trigger or q.bid<=trigger or m1[-1].close<=m1[-1].open:
+            if q.bid<=trigger:return None
+            if early:
+                recovery=(m1[-1].close>m1[-2].close or micro_momentum>.20) and (acceleration>-.10 or live_body>.10)
+                if not recovery:return None
+            elif m1[-1].close<=trigger or m1[-1].close<=m1[-1].open:
                 return None
             stop=min(x.low for x in m1[-6:])-pad
             stop=min(stop,q.bid-.25*a)
         else:
             micro=min(x.low for x in prior);trigger=micro-pad
-            if m1[-1].close>=trigger or q.bid>=trigger or m1[-1].close>=m1[-1].open:
+            if q.bid>=trigger:return None
+            if early:
+                recovery=(m1[-1].close<m1[-2].close or micro_momentum<-.20) and (acceleration<.10 or live_body<-.10)
+                if not recovery:return None
+            elif m1[-1].close>=trigger or m1[-1].close>=m1[-1].open:
                 return None
             stop=max(x.high for x in m1[-6:])+pad
             stop=max(stop,q.ask+.25*a)

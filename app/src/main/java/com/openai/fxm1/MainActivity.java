@@ -1425,10 +1425,18 @@ public class MainActivity extends Activity {
         signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
         JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
-        if(forecast!=null&&forecast.optInt("side",0)!=0){
-            int fs=forecast.optInt("side",0);int pct=(int)Math.round(forecast.optDouble("confidence",0)*100);
-            confidenceText.setText("LIVE FORECAST: "+(fs>0?"BUY ":"SELL ")+pct+"% · "+forecast.optString("regime",""));
-            confidenceText.setTextColor(fs>0?C_GREEN:C_RED);
+        if(forecast!=null){
+            int fs=forecast.optInt("side",0),candidate=forecast.optInt("candidate_side",0);
+            int dir=fs!=0?fs:candidate;
+            if(dir!=0){
+                double prob=forecast.optDouble(dir>0?"up_probability":"down_probability",0);
+                int pct=(int)Math.round(prob*100);
+                confidenceText.setText("LIVE FORECAST: "+(fs==0?"EARLY ":"")+(dir>0?"BUY ":"SELL ")+pct+"% · "+forecast.optString("regime",""));
+                confidenceText.setTextColor(dir>0?C_GREEN:C_RED);
+            }else{
+                confidenceText.setText("Сценарий: "+EventClient.phaseName(currentDecision==null?"SEARCH":currentDecision.optString("phase","SEARCH")));
+                confidenceText.setTextColor(C_PURPLE);
+            }
         }else{
             confidenceText.setText("Сценарий: "+EventClient.phaseName(currentDecision==null?"SEARCH":currentDecision.optString("phase","SEARCH")));
             confidenceText.setTextColor(C_PURPLE);

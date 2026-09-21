@@ -155,12 +155,12 @@ public final class EventClient {
         if(campaign!=null){int side=campaign.optInt("side",0);campaignSide=side>0?"BUY":side<0?"SELL":"—";}
         long since=sig.equals(p.getString("state_signal","WAIT"))?p.getLong("state_signal_since_ms",now):now;
         if("WAIT".equals(sig))since=0;
-        int fside=fc.optInt("side",0);double fconfidence=fc.optDouble("confidence",0);
+        int fside=fc.optInt("side",0),fcandidate=fc.optInt("candidate_side",0);double fconfidence=fc.optDouble("confidence",0);
         boolean forecastAvailable=fc.optBoolean("available",fc.has("up_probability"));
         long up=Math.round(fc.optDouble("up_probability",0)*100),down=Math.round(fc.optDouble("down_probability",0)*100),range=Math.round(fc.optDouble("range_probability",0)*100);
+        String direction=fside>0?" · BIAS BUY":fside<0?" · BIAS SELL":fcandidate>0?" · EARLY BUY CANDIDATE":fcandidate<0?" · EARLY SELL CANDIDATE":" · NO EDGE";
         String forecastText=forecastAvailable?
-            ("LIVE FORECAST: UP "+up+"% · DOWN "+down+"% · RANGE "+range+"% · "+fc.optString("regime","RANGE")+
-             (fside>0?" · BIAS BUY":fside<0?" · BIAS SELL":" · NO EDGE")):
+            ("LIVE FORECAST: UP "+up+"% · DOWN "+down+"% · RANGE "+range+"% · "+fc.optString("regime","RANGE")+direction):
             "LIVE FORECAST: ожидаем достаточные данные";
         if(fc.optBoolean("late_entry",false))forecastText+=" · LATE ENTRY BLOCK";
         if(fc.optBoolean("exhaustion",false))forecastText+=" · EXHAUSTION";
