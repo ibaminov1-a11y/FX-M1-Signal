@@ -205,7 +205,7 @@ class EngineTests(unittest.TestCase):
     def test_flat_campaign_reconciles_quickly_even_without_exit_pending(self):
         self.e._entry(self.decision('flat-reconcile'),self.now)
         self.assertIsNotNone(self.e.campaign)
-        self.b.close(self.e._owned()[0])
+        self.b.close_position(self.e._owned()[0])
         self.e.positions=self.b.positions();self.e.orders=self.b.orders()
         self.e.exit_pending=False
         self.now+=1.2
