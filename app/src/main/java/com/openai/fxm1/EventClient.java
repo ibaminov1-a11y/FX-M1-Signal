@@ -12,7 +12,7 @@ import java.util.*;
 /** Transport and presentation only. It cannot calculate or send a BUY/SELL order. */
 public final class EventClient {
     public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "FORECAST":return "Прогноз / поздний вход заблокирован";case "PROBE_READY":return "Ранний probe";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
-    public static String pathName(String path){switch(path){case "FORECAST":return "LIVE Forecast";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
+    public static String pathName(String path){switch(path){case "FORECAST":return "LIVE Forecast";case "LIVE_BREAKOUT":return "Первичный LIVE-пробой";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
     private EventClient() {}

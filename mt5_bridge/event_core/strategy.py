@@ -44,6 +44,78 @@ class Strategy:
         # but never against both confirmed M15 and H1 structures simultaneously.
         return sum(x==-side for x in dirs)<2
 
+    def live_breakout_probe(self,bars,m1,m15,h1,live_bar,q,now,forecast):
+        """Capture the first live crossing of a level known before the move.
+
+        The first observation after process start/recovery only arms the observer;
+        it can never create a hindsight trade. A probe is allowed only when price
+        actually crosses from the safe side on a later MT5 quote.
+        """
+        previous=self.previous_quote
+        self.previous_quote=q
+        if self.config.timeframe!='M5' or live_bar is None or len(bars)<16 or len(m1)<6:
+            return None
+        if previous is None or q.time_msc<=previous.time_msc:
+            return None
+        try:
+            q.validate(now);previous.validate(now+5)
+            a=atr(bars)
+        except Exception:
+            return None
+        points=[p for p in pivots(bars) if p.get('known_at',0)<=bars[-1].time]
+        highs=[p for p in points if p['kind']=='H'];lows=[p for p in points if p['kind']=='L']
+        if not highs or not lows:
+            return None
+        pad=max(a*.05,q.spread*1.2)
+        buy_trigger=highs[-1]['price']+pad
+        sell_trigger=lows[-1]['price']-pad
+        buy_cross=previous.bid<=buy_trigger and q.bid>buy_trigger
+        sell_cross=previous.bid>=sell_trigger and q.bid<sell_trigger
+        if buy_cross==sell_cross:
+            return None
+        side=1 if buy_cross else -1
+        trigger=buy_trigger if side==1 else sell_trigger
+        if not self._probe_context_allows(side,m15,h1):
+            return None
+        fside=int((forecast or {}).get('side',0) or 0)
+        fcandidate=int((forecast or {}).get('candidate_side',0) or 0)
+        fconfidence=float((forecast or {}).get('confidence',0) or 0)
+        if fside==-side and fconfidence>=self.config.forecast_min_confidence:
+            return None
+        if (forecast or {}).get('late_entry') or (forecast or {}).get('exhaustion'):
+            bias=fside if fside in (-1,1) else fcandidate
+            if bias==side:
+                return None
+
+        body=(live_bar.close-live_bar.open)*side
+        micro=(m1[-1].close-m1[-4].close)*side
+        quote_progress=(q.bid-previous.bid)*side
+        if body<.15*a:
+            return None
+        if micro<.03*a and quote_progress<.04*a:
+            return None
+        if abs(q.bid-trigger)>.25*a:
+            return None
+
+        if side==1:
+            stop=min(min(x.low for x in m1[-6:])-pad,q.bid-.25*a)
+            invalidation=lows[-1]['price']-pad
+        else:
+            stop=max(max(x.high for x in m1[-6:])+pad,q.ask+.25*a)
+            invalidation=highs[-1]['price']+pad
+        if (q.bid-invalidation)*side<=0:
+            return None
+        event=(f'{self.config.symbol}|M5|{self.config.mode}|LIVE_BREAKOUT|'
+               f'{live_bar.time:014d}|{side}|{trigger:.10f}')
+        if event in self.consumed:
+            return None
+        lines=({'kind':'invalidation','price':invalidation,'time':live_bar.time},
+               {'kind':'trigger','price':trigger,'time':live_bar.time})
+        return Decision('BUY' if side==1 else 'SELL','PROBE_READY',
+            'Первый живой пробой заранее известного структурного уровня; momentum подтвердил ранний probe',
+            event,side,stop,trigger,invalidation,a,q.time_msc,lines,
+            path='LIVE_BREAKOUT',structure=swing_labels(bars),forecast=forecast or {},entry_class='PROBE')
+
     def _impulse_decision(self,bars,m1,m15,h1,live_bar,q,now,campaign_side,a,pad,structure):
         if self.config.timeframe!='M5' or live_bar is None or not m1:
             return None

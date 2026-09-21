@@ -410,6 +410,10 @@ class Engine:
                 if self.market_errors:
                     raise Blocked('; '.join(self.market_errors))
                 q=self.quote;q.validate(now)
+                # Observe prospective structural crossings every cycle. The observer
+                # is forward-only: after restart its first quote only arms the detector.
+                live_breakout=self.strategy.live_breakout_probe(
+                    self.bars,self.m1,self.m15,self.h1,self.live_bar,q,now,self.forecast)
                 # Confirmed strategy and LIVE forecast are independent layers.
                 core=self.strategy.update(self.bars,self.context,q,now,0,
                     m1=self.m1,m15=self.m15,h1=self.h1,live_bar=self.live_bar)
@@ -425,6 +429,8 @@ class Engine:
                         d=Decision(phase='FORECAST',reason=late_reason,side=d.side,atr=d.atr,
                             levels=d.levels,path='LATE_BLOCK',structure=d.structure,
                             forecast=copy.deepcopy(self.forecast),entry_class='NONE')
+                elif not self.campaign and live_breakout is not None:
+                    d=live_breakout
                 elif not self.campaign and d.signal=='WAIT' and d.phase!='DATA_BLOCK':
                     probe=self.strategy.probe_decision(self.bars,self.m1,self.m15,self.h1,self.live_bar,q,now,self.forecast)
                     if probe is not None:d=probe
