@@ -55,6 +55,24 @@ class LiveForecastProbeTests(unittest.TestCase):
             self.assertAlmostEqual(point['up_probability']+point['down_probability']+point['range_probability'],1.0,places=3)
         self.assertLess(projection[-1]['center'],q.bid)
 
+    def test_relative_edge_can_arm_early_probe_before_absolute_sixty_percent(self):
+        bars,m1,m15,h1,live,q,a=bearish_market()
+        # Mirror the micro-break upward so this reproduces a 57/23/20 transition:
+        # useful relative edge, but not yet an official >=60% directional forecast.
+        bars=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in bars]
+        m1=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in m1]
+        m15=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in m15]
+        h1=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in h1]
+        live=Bar(live.time,2-live.open,2-live.low,2-live.high,2-live.close,live.volume)
+        q=Quote(q.time_msc,2-q.ask,2-q.bid)
+        f={'side':0,'candidate_side':1,'confidence':.57,'up_probability':.57,'down_probability':.23,
+           'range_probability':.20,'edge_strength':.34,'stable_for_sec':3.0,
+           'late_entry':False,'exhaustion':False,'regime':'TRANSITION',
+           'components':{'micro_momentum':.65,'acceleration':.35,'momentum':.30}}
+        d=self.strategy().probe_decision(bars,m1,m15,h1,live,q,NOW,f)
+        self.assertIsNotNone(d,f)
+        self.assertEqual((d.signal,d.phase,d.entry_class),('BUY','PROBE_READY','PROBE'))
+
     def test_probe_requires_forecast_plus_fresh_microbreak_and_is_marked_probe(self):
         bars,m1,m15,h1,live,q,a=bearish_market()
         s=self.strategy()
