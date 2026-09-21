@@ -64,7 +64,12 @@ class LiveForecastProbeTests(unittest.TestCase):
         m15=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in m15]
         h1=[Bar(x.time,2-x.open,2-x.low,2-x.high,2-x.close,x.volume) for x in h1]
         live=Bar(live.time,2-live.open,2-live.low,2-live.high,2-live.close,live.volume)
-        q=Quote(q.time_msc,2-q.ask,2-q.bid)
+        a=atr(bars);pad=max(a*.025,.000012)
+        trigger=max(x.high for x in m1[-5:-1])+pad
+        last=m1[-1]
+        close=trigger+.04*a
+        m1[-1]=Bar(last.time,trigger-.03*a,close+.02*a,trigger-.05*a,close,last.volume)
+        q=Quote(int(NOW*1000),trigger+.05*a,trigger+.05*a+.00001)
         f={'side':0,'candidate_side':1,'confidence':.57,'up_probability':.57,'down_probability':.23,
            'range_probability':.20,'edge_strength':.34,'stable_for_sec':3.0,
            'late_entry':False,'exhaustion':False,'regime':'TRANSITION',
