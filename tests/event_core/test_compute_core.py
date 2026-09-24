@@ -7,12 +7,24 @@ from fakes import wave
 NOW=1800000000.0
 
 
+def series(count,tf,step,flat=False):
+    end=int(NOW)//tf*tf
+    out=[]
+    for i in range(count):
+        wobble=((i%4)-1.5)*.000004 if not flat else ((i%4)-1.5)*.000006
+        center=1.1000+(0 if flat else i*step)+wobble
+        o=center-(step*.35 if not flat else .000003)
+        c=center+(step*.35 if not flat else -.000003)
+        hi=max(o,c)+.00004;lo=min(o,c)-.00004
+        out.append(Bar(end-(count-i)*tf,o,hi,lo,c,10+(i%3)))
+    return out
+
+
 def market(side=1, flat=False):
-    trend=0.0 if flat else .000025*side
-    bars=wave(int(NOW),count=96,tf=300,trend=trend)
-    m1=wave(int(NOW),count=120,tf=60,trend=(0.0 if flat else .000006*side))
-    m15=wave(int(NOW),count=72,tf=900,trend=(0.0 if flat else .000035*side))
-    h1=wave(int(NOW),count=72,tf=3600,trend=(0.0 if flat else .00006*side))
+    bars=series(96,300,.000025*side,flat)
+    m1=series(120,60,.000006*side,flat)
+    m15=series(72,900,.000035*side,flat)
+    h1=series(72,3600,.00006*side,flat)
     a=atr(bars)
     last=bars[-1]
     if flat:
