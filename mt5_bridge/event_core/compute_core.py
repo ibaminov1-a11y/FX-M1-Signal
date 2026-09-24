@@ -163,7 +163,7 @@ class ComputeCore:
 
         # Exhaustion is directional: a stretched leg plus deceleration/reversal near
         # the edge blocks chasing, without erasing the directional estimate itself.
-        bias=side if side else (1 if directional>.08 else -1 if directional<-.08 else 0)
+        bias=side if side else structure_side if structure_side else (1 if m5_trend>.35 else -1 if m5_trend<-.35 else (1 if directional>.08 else -1 if directional<-.08 else 0))
         tail=list(bars[-10:])+[live_bar]
         extension=0.;near_edge=False;decelerating=False
         if bias==1:
