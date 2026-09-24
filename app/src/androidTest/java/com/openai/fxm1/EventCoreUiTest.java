@@ -197,14 +197,19 @@ public class EventCoreUiTest {
   assertEquals("NO EDGE must not draw a directional future path",0,directional);
   b[0].recycle();
  }
- @Test public void configureRepairsBridgeModeAfterRestartInsteadOfTrustingPhoneCache()throws Exception{
+ @Test public void configureRepairsBridgeToComputeCoreDefaultsInsteadOfPhoneLegacyMode()throws Exception{
   p.edit().putInt("signal_mode_pos",1).commit();
   EventClient.configure();
-  assertEquals("SCALP",EventClient.poll().getJSONObject("config").optString("mode"));
+  JSONObject configured=EventClient.poll().getJSONObject("config");
+  assertEquals("NORMAL",configured.optString("mode"));
+  assertEquals("COMPUTE_V1",configured.optString("engine_mode"));
   EventClient.http("POST",EventClient.base()+"/test/reset",new JSONObject());
-  assertEquals("NORMAL",EventClient.poll().getJSONObject("config").optString("mode"));
+  JSONObject reset=EventClient.poll().getJSONObject("config");
+  assertEquals("NORMAL",reset.optString("mode"));
   EventClient.configure();
-  assertEquals("SCALP",EventClient.poll().getJSONObject("config").optString("mode"));
+  JSONObject repaired=EventClient.poll().getJSONObject("config");
+  assertEquals("NORMAL",repaired.optString("mode"));
+  assertEquals("COMPUTE_V1",repaired.optString("engine_mode"));
  }
  @Test public void openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits()throws Exception{
   JSONObject state=new JSONObject()
