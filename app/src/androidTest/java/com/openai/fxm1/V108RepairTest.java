@@ -81,20 +81,16 @@ public class V108RepairTest {
   String text=ExecutionFeedback.render(p,"EUR/USD","M5");assertTrue(text.contains("Сессия ASIA"));assertTrue(text.contains("серия убытков"));assertFalse(text.contains("SELL открыт"));
   assertTrue(ExecutionFeedback.bridgeCompatible("10.0"));assertFalse(ExecutionFeedback.bridgeCompatible("11.0"));
  }
- @Test public void d_nativeNotificationButtonsAndEmergencyRestart()throws Exception{
+ @Test public void d_notificationIsInformationOnly()throws Exception{
   main(()->rule.getActivity().findViewById(R.id.analyzeButton).performClick());await(()->p.getBoolean("bg_running",false),"monitoring start");
-  device.openNotification();assertTrue(device.wait(Until.hasObject(By.text("PAUSE")),10000));screenshot("03-notification");
-  click("PAUSE");await(()->p.getBoolean("trading_paused",false),"pause action");
-  click("PLAY");await(()->!p.getBoolean("trading_paused",true),"play action");
-  click("EMERGENCY STOP");Thread.sleep(150);click("EMERGENCY STOP");
-  await(()->p.getBoolean("v108_emergency_latched",false),"emergency latch");await(()->!p.getBoolean("bg_running",true),"stop monitoring");
-  assertFalse(p.getBoolean("auto_user_enabled",true));assertFalse(p.getBoolean("auto_trading",true));
+  device.openNotification();assertTrue(device.wait(Until.hasObject(By.textContains("FX M1")),10000));screenshot("03-notification");
+  assertFalse(device.hasObject(By.text("PAUSE")));
+  assertFalse(device.hasObject(By.text("PLAY")));
+  assertFalse(device.hasObject(By.text("EMERGENCY STOP")));
+  assertTrue("notification must not change background monitoring",p.getBoolean("bg_running",false));
   device.pressBack();
-  main(()->context.startService(new Intent(context,MonitoringService.class).setAction(MonitoringService.ACTION_RESUME)));
-  Thread.sleep(400);assertTrue(p.getBoolean("v108_emergency_latched",false));assertFalse(p.getBoolean("auto_trading",true));
-  context.stopService(new Intent(context,MonitoringService.class));Thread.sleep(200);
-  main(()->context.startService(new Intent(context,MonitoringService.class).setAction(MonitoringService.ACTION_RESUME)));
-  Thread.sleep(400);assertTrue(p.getBoolean("v108_emergency_latched",false));assertFalse(p.getBoolean("auto_trading",true));screenshot("04-emergency");
+  context.stopService(new Intent(context,MonitoringService.class));Thread.sleep(250);
+  assertFalse(p.getBoolean("bg_running",true));
  }
  @After public void cleanup()throws Exception{p.edit().putBoolean("bg_running",false).commit();context.stopService(new Intent(context,MonitoringService.class));Thread.sleep(200);}
  static class Fixture {
