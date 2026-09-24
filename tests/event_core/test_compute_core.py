@@ -1,8 +1,14 @@
+import tempfile
 import unittest
+import uuid
+from pathlib import Path
 
 from event_core.compute_core import ComputeCore
+from event_core.engine import Engine
 from event_core.model import Bar, Config, Quote, atr
-from fakes import wave
+from event_core.store import Store
+from event_core.strategy import Strategy
+from fakes import FakeBroker
 
 NOW=1800000000.0
 
@@ -34,6 +40,19 @@ def market(side=1, flat=False):
     else:
         live=Bar(int(NOW)//300*300,last.close+.05*a,last.close+.08*a,last.close-.28*a,last.close-.22*a,24)
     return bars,m1,m15,h1,live,a
+
+
+class ComputeBroker(FakeBroker):
+    def __init__(self,clock):
+        super().__init__(clock)
+        bars,m1,m15,h1,live,a=market(1)
+        self.bar_data=list(bars);self.m1_data=list(m1);self.ctx_data=list(m15);self.h1_data=list(h1)
+        self.live_bar_data=live;self.fixture_atr=a
+        self.trigger=max(x.high for x in self.m1_data[-5:-1])+max(a*.02,.000012)
+        self.bid=self.trigger-.03*a;self.ask=self.bid+.00001
+
+    def current_bar(self,symbol,tf):
+        return self.live_bar_data
 
 
 class ComputeCoreTests(unittest.TestCase):
@@ -93,6 +112,35 @@ class ComputeCoreTests(unittest.TestCase):
         d=core.evaluate(bars,m1,m15,h1,live,far,NOW)
         self.assertEqual(d.signal,'WAIT')
         self.assertTrue(d.forecast.get('late_entry') or 'далеко' in d.reason.lower() or 'позд' in d.reason.lower(),(d.reason,d.forecast))
+
+    def test_engine_routes_auto_through_compute_core_and_opens_first_cross(self):
+        now=[NOW]
+        broker=ComputeBroker(lambda:now[0])
+        with tempfile.TemporaryDirectory() as td:
+            store=Store(Path(td)/'compute.sqlite3')
+            try:
+                engine=Engine(broker,store,lambda:now[0])
+                engine.config=Config(timeframe='M5',mode='NORMAL',engine_mode='COMPUTE_V1',
+                                     risk_pct=.25,fee_per_lot=0,lot_cap=.01,probe_lot_cap=.01,
+                                     approved=True,cooldown_sec=0)
+                engine.strategy=Strategy(engine.config);engine.compute=ComputeCore(engine.config)
+                engine.command('enable',{'command_id':str(uuid.uuid4()),'confirmation':'ENABLE_DEMO'})
+                engine.step()
+                self.assertEqual(len(broker.sent),0,engine.execution)
+                self.assertEqual(engine.decision.path,'COMPUTE')
+
+                now[0]+=1
+                broker.bid=broker.trigger+.03*broker.fixture_atr;broker.ask=broker.bid+.00001
+                lb=broker.live_bar_data
+                broker.live_bar_data=Bar(lb.time,lb.open,max(lb.high,broker.bid+.02*broker.fixture_atr),
+                                         lb.low,broker.bid,lb.volume+10)
+                engine.step()
+                self.assertEqual(len(broker.sent),1,engine.execution)
+                self.assertEqual(engine.decision.signal,'BUY')
+                self.assertEqual(engine.decision.path,'COMPUTE')
+                self.assertIsNotNone(engine.campaign)
+            finally:
+                store.close()
 
     def test_exhausted_vertical_move_is_not_bought_at_top(self):
         bars,m1,m15,h1,live,a=market(1)
