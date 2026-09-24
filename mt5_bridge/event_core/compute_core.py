@@ -23,9 +23,16 @@ class ComputeCore:
         self.previous_quote=None
         self.bias_side=int((saved or {}).get('bias_side',0) or 0)
         self.bias_since=float((saved or {}).get('bias_since',0) or 0)
+        self.consumed=set((saved or {}).get('consumed',[]))
 
     def state(self):
-        return {'bias_side':self.bias_side,'bias_since':self.bias_since}
+        return {'bias_side':self.bias_side,'bias_since':self.bias_since,
+                'consumed':sorted(self.consumed)[-2048:]}
+
+    def consume(self,event_id):
+        if event_id:
+            self.consumed.add(event_id)
+            if len(self.consumed)>4096:self.consumed=set(sorted(self.consumed)[-2048:])
 
     def clear(self):
         self.previous_quote=None
@@ -225,6 +232,10 @@ class ComputeCore:
                f'{side}|{trigger:.10f}')
         levels=({'kind':'invalidation','price':stop,'time':m1[-1].time},
                 {'kind':'trigger','price':trigger,'time':m1[-1].time})
+        if event in self.consumed:
+            return Decision(reason='ComputeCore: это торговое событие уже использовано',
+                            side=side,trigger=trigger,atr=a,levels=levels,path='COMPUTE',
+                            structure=swing_labels(bars),forecast=forecast)
         return Decision('BUY' if side==1 else 'SELL','ENTRY_READY',
                         ('ComputeCore: единый расчёт подтвердил направление и момент входа'),
                         event,side,stop,trigger,stop,a,q.time_msc,levels,
