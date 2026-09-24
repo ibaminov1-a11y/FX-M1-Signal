@@ -131,9 +131,10 @@ class ComputeCoreTests(unittest.TestCase):
 
                 now[0]+=1
                 broker.bid=broker.trigger+.03*broker.fixture_atr;broker.ask=broker.bid+.00001
-                lb=broker.live_bar_data
-                broker.live_bar_data=Bar(lb.time,lb.open,max(lb.high,broker.bid+.02*broker.fixture_atr),
-                                         lb.low,broker.bid,lb.volume+10)
+                lb=broker.live_bar_data;new_close=broker.bid
+                new_high=max(lb.high,lb.open,new_close)+.02*broker.fixture_atr
+                new_low=min(lb.low,lb.open,new_close)-.02*broker.fixture_atr
+                broker.live_bar_data=Bar(lb.time,lb.open,new_high,new_low,new_close,lb.volume+10)
                 engine.step()
                 self.assertEqual(len(broker.sent),1,engine.execution)
                 self.assertEqual(engine.decision.signal,'BUY')
