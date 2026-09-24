@@ -44,6 +44,16 @@ class ComputeCore:
         return max(lo,min(hi,float(x)))
 
     @staticmethod
+    def _slope(values,n,a):
+        rows=list(values[-n:])
+        if len(rows)<3:return 0.
+        ys=[x.close for x in rows];m=(len(ys)-1)/2
+        den=sum((i-m)**2 for i in range(len(ys)))
+        if den<=0:return 0.
+        slope=sum((i-m)*(y-sum(ys)/len(ys)) for i,y in enumerate(ys))/den
+        return slope*(len(ys)-1)/a
+
+    @staticmethod
     def _probabilities(directional):
         # Leave explicit probability mass for range/uncertainty.
         range_p=max(.08,min(.46,.12+.34*(1-abs(directional))))
@@ -79,15 +89,17 @@ class ComputeCore:
         ctx15=context_direction(m15) if m15 else 0
         ctx1=context_direction(h1) if h1 else 0
 
-        m1_fast=(m1[-1].close-m1[-4].close)/a
-        m1_slow=(m1[-1].close-m1[-8].close)/a
-        prev_fast=(m1[-4].close-m1[-7].close)/a
-        acceleration=m1_fast-prev_fast
-        m5_momentum=(live_bar.close-bars[-3].close)/a
-        closed_m5=(bars[-1].close-bars[-4].close)/a
+        m1_fast=self._slope(m1,8,a)
+        m1_slow=self._slope(m1,16,a)
+        m1_prev=self._slope(m1[:-4],8,a) if len(m1)>=12 else 0.
+        acceleration=m1_fast-m1_prev
+        m5_trend=self._slope(bars,16,a)
+        m5_momentum=(live_bar.close-bars[-1].close)/a
         live_body=(live_bar.close-live_bar.open)/a
+        m15_trend=self._slope(m15,12,a) if m15 else 0.
+        h1_trend=self._slope(h1,12,a) if h1 else 0.
 
-        recent=bars[-10:]
+        recent=bars[-12:]
         low=min(x.low for x in recent)
         high=max(x.high for x in recent)
         range_pos=0.0 if high<=low else ((q.bid-low)/(high-low)*2-1)
@@ -103,31 +115,33 @@ class ComputeCore:
         if previous is not None and q.time_msc>previous.time_msc:
             tick_speed=(q.bid-previous.bid)/a
 
+        context_numeric=self._clip(.35*self._clip(m15_trend/.9)+.25*self._clip(h1_trend/1.1)+
+                                   .25*ctx15+.15*ctx1)
         components={
             'structure':float(structure_side),
-            'm1_fast':self._clip(m1_fast/.55),
-            'm1_slow':self._clip(m1_slow/.85),
-            'acceleration':self._clip(acceleration/.40),
-            'm5_momentum':self._clip(m5_momentum/1.15),
-            'closed_m5':self._clip(closed_m5/1.20),
-            'live_body':self._clip(live_body/.55),
-            'context':self._clip(ctx15*.60+ctx1*.40),
+            'm1_fast':self._clip(m1_fast/.35),
+            'm1_slow':self._clip(m1_slow/.55),
+            'acceleration':self._clip(acceleration/.35),
+            'm5_trend':self._clip(m5_trend/.90),
+            'm5_momentum':self._clip(m5_momentum/.55),
+            'live_body':self._clip(live_body/.50),
+            'context':context_numeric,
             'range_position':self._clip(range_pos),
             'volume_pressure':volume_pressure,
-            'tick_speed':self._clip(tick_speed/.20),
+            'tick_speed':self._clip(tick_speed/.18),
         }
         score=(1.20*components['structure']+
-               1.45*components['m1_fast']+
-               .90*components['m1_slow']+
-               .85*components['acceleration']+
-               1.25*components['m5_momentum']+
-               .65*components['closed_m5']+
-               .95*components['live_body']+
-               .75*components['context']+
-               .45*components['range_position']+
-               .30*components['volume_pressure']+
-               .55*components['tick_speed'])
-        directional=math.tanh(score/4.25)
+               1.25*components['m1_fast']+
+               1.05*components['m1_slow']+
+               .55*components['acceleration']+
+               1.10*components['m5_trend']+
+               .90*components['m5_momentum']+
+               .85*components['live_body']+
+               .85*components['context']+
+               .20*components['range_position']+
+               .25*components['volume_pressure']+
+               .45*components['tick_speed'])
+        directional=math.tanh(score/3.85)
         up,down,range_p=self._probabilities(directional)
         confidence=max(up,down)
         other=down if up>=down else up
@@ -162,8 +176,8 @@ class ComputeCore:
             extension=max(0.,(top-q.bid)/a)
             near_edge=(q.bid-floor)<=.22*a
             decelerating=acceleration>.08 or live_body>.04
-        exhaustion=bool(bias and extension>=1.35 and near_edge and decelerating)
-        late_entry=bool(bias and extension>=1.65 and near_edge)
+        exhaustion=bool(bias and extension>=1.00 and near_edge and decelerating)
+        late_entry=bool(bias and extension>=1.40 and near_edge)
 
         projection=self._projection(q.bid,a,directional,up,down,range_p)
         forecast=dict(side=side,candidate_side=0,confidence=round(confidence,4),
@@ -198,7 +212,7 @@ class ComputeCore:
         distance=(q.bid-trigger)*side
         crossed=bool(previous is not None and q.time_msc>previous.time_msc and
                      (previous.bid-trigger)*side<=0 and distance>0)
-        aligned=(m1_fast*side>.10 and live_body*side>.06)
+        aligned=(m1_fast*side>.06 and live_body*side>.06)
         continuation=(0<distance<=self.MOMENTUM_WINDOW_ATR*a and aligned)
         too_far=distance>self.MAX_CHASE_ATR*a
 
