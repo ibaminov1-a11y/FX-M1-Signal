@@ -12,7 +12,7 @@ import java.util.*;
 /** Transport and presentation only. It cannot calculate or send a BUY/SELL order. */
 public final class EventClient {
     public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "FORECAST":return "Прогноз / поздний вход заблокирован";case "PROBE_READY":return "Ранний probe";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
-    public static String pathName(String path){switch(path){case "FORECAST":return "LIVE Forecast";case "LIVE_BREAKOUT":return "Первичный LIVE-пробой";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
+    public static String pathName(String path){switch(path){case "COMPUTE":return "ComputeCore";case "FORECAST":return "LIVE Forecast";case "LIVE_BREAKOUT":return "Первичный LIVE-пробой";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
     private EventClient() {}
@@ -94,7 +94,7 @@ public final class EventClient {
         double lot=Double.parseDouble(p.getString("ec_lot_cap","0.01").replace(',','.'));
         if("REAL".equals(accountMode))lot=Math.min(.01,lot);
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
-            .put("timeframe",tf()).put("mode",mode()).put("account_mode",accountMode).put("risk_pct",risk)
+            .put("timeframe",tf()).put("mode",mode()).put("engine_mode","COMPUTE_V1").put("account_mode",accountMode).put("risk_pct",risk)
             .put("optional_position_limit",0)
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
             .put("lot_cap",lot).put("probe_lot_cap",Math.min(.01,lot))
@@ -111,7 +111,7 @@ public final class EventClient {
     }
     private static boolean configMatches(JSONObject remote,JSONObject desired){
         if(remote==null||desired==null)return false;
-        for(String key:new String[]{"symbol","timeframe","mode","account_mode","allowed_sessions"})
+        for(String key:new String[]{"symbol","timeframe","mode","engine_mode","account_mode","allowed_sessions"})
             if(!remote.optString(key,"").equals(desired.optString(key,"")))return false;
         for(String key:new String[]{"risk_pct","optional_position_limit","fee_per_lot","lot_cap","probe_lot_cap","spread_pips","max_spread_atr","cooldown_sec"})
             if(!sameNumber(remote,desired,key))return false;

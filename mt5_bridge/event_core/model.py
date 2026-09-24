@@ -79,6 +79,7 @@ class Config:
     symbol: str = 'EUR/USD'
     timeframe: str = 'M5'
     mode: str = 'NORMAL'
+    engine_mode: str = 'LEGACY'
     account_mode: str = 'DEMO'
     risk_pct: float = .25
     daily_loss_pct: float = 3.0
@@ -121,6 +122,8 @@ class Config:
     def validate(self):
         if self.mode not in PROFILES or self.timeframe not in TF_SECONDS:
             raise Blocked('Неизвестный режим или таймфрейм')
+        if self.engine_mode not in ('LEGACY','COMPUTE_V1'):
+            raise Blocked('Неизвестный вычислительный движок')
         if self.account_mode not in ('DEMO','REAL'):
             raise Blocked('Неизвестный режим счёта')
         if not self.symbol or len(self.symbol) > 32:
