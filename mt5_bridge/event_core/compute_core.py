@@ -13,8 +13,8 @@ class ComputeCore:
     reduced to one normalized directional estimate and one timing gate.
     """
 
-    ENTRY_CONFIDENCE=.55
-    MIN_EDGE=.12
+    ENTRY_CONFIDENCE=.52
+    MIN_EDGE=.08
     MAX_CHASE_ATR=.25
     MOMENTUM_WINDOW_ATR=.18
 
