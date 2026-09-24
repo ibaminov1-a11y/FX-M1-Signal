@@ -480,9 +480,10 @@ class Engine:
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
                 elif not self._session_allowed(now):self.execution='Текущая сессия не разрешена выбранным фильтром'
                 elif d.signal=='WAIT':
-                    fs=int(self.forecast.get('side',0) or 0);fc=float(self.forecast.get('confidence',0) or 0)
-                    if fs:self.execution=('LIVE forecast '+('BUY' if fs==1 else 'SELL')+f' {fc*100:.0f}%; исполнение ждёт probe/подтверждение')
-                    else:self.execution='Нет нового подтверждённого входа; ордер не отправлен'
+                    self.execution=d.reason if self.config.engine_mode=='COMPUTE_V1' else (
+                        ('LIVE forecast '+('BUY' if int(self.forecast.get('side',0) or 0)==1 else 'SELL')+
+                         f" {float(self.forecast.get('confidence',0) or 0)*100:.0f}%; вход ещё не готов")
+                        if int(self.forecast.get('side',0) or 0) else 'Нет нового подтверждённого входа; ордер не отправлен')
                 else:
                     try:self._entry(d,now)
                     finally:
@@ -613,7 +614,7 @@ class Engine:
                 if self.campaign or self._owned() or self._owned_orders() or self.store.pending():
                     raise Blocked('Профиль фиксирован до завершения кампании')
                 new.approved=False;self.auto=False;self.paused=True;self.real_armed=False
-                self.config=new;self.strategy=Strategy(new);self.bars=[];self.context=[];self.last_bars_at=0
+                self.config=new;self.strategy=Strategy(new);self.compute=ComputeCore(new);self.bars=[];self.context=[];self.last_bars_at=0
                 self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
                 self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
                 self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.

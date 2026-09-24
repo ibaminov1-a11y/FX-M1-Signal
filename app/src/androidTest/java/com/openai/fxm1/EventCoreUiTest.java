@@ -41,11 +41,13 @@ public class EventCoreUiTest {
  void click(String label)throws Exception{for(int i=0;i<5;i++){try{UiObject2 v=device.wait(Until.findObject(By.text(label)),6000);assertNotNull(label,v);v.click();return;}catch(StaleObjectException e){if(i==4)throw e;Thread.sleep(80);}}}
  @Test public void accountModeAndCommissionProfileAreAutomatic()throws Exception{
   p.edit().putString("mt5_account_type_snapshot","DEMO").remove("ec_fee").commit();
+  p.edit().putString("target_trade_mode","DEMO").commit();
   JSONObject demo=EventClient.config();
   assertEquals("DEMO",demo.getString("account_mode"));
+  assertEquals("COMPUTE_V1",demo.getString("engine_mode"));
   assertEquals(0.0,demo.getDouble("fee_per_lot"),0.000001);
 
-  p.edit().putString("mt5_account_type_snapshot","REAL").putString("mt5_account_key_snapshot","555@Broker")
+  p.edit().putString("mt5_account_type_snapshot","REAL").putString("target_trade_mode","REAL").putString("mt5_account_key_snapshot","555@Broker")
     .putString("selected_symbol","EUR/USD").putInt("risk_pos",2).putString("ec_lot_cap","0.50").commit();
   p.edit().remove(EventClient.feePrefKey()).commit();
   JSONObject real=EventClient.config();
@@ -249,19 +251,19 @@ public class EventCoreUiTest {
   assertTrue("temporary phone-side offline state must never send disable to Bridge",after.optBoolean("auto",false));
   assertFalse("temporary phone-side offline state must not pause Bridge",after.optBoolean("paused",true));
  }
- @Test public void notificationsControlActualEngineAndEmergencyPersists()throws Exception{
+ @Test public void notificationIsInformationOnlyAndCannotControlTrading()throws Exception{
   main(()->rule.getActivity().findViewById(R.id.analyzeButton).performClick());await(()->p.getBoolean("bg_running",false),"monitoring start");Thread.sleep(800);
+  p.edit().putString("target_trade_mode","DEMO").commit();
   EventClient.configure();EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
   EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));EventClient.poll();
-  device.openNotification();assertTrue(device.wait(Until.hasObject(By.text("PAUSE")),10000));shot("03-notification");
-  click("PAUSE");await(()->p.getBoolean("trading_paused",false),"server PAUSE reflected");
-  click("PLAY");await(()->!p.getBoolean("trading_paused",true),"server PLAY reflected");
-  click("EMERGENCY STOP");Thread.sleep(200);click("EMERGENCY STOP");await(()->p.getBoolean("v108_emergency_latched",false),"local latch");
-  await(()->EventClient.state().optBoolean("emergency",false),"server emergency latch");
-  click("PLAY");Thread.sleep(600);assertFalse(p.getBoolean("auto_trading",true));
-  context.stopService(new Intent(context,MonitoringService.class));Thread.sleep(500);
-  device.pressBack();main(()->context.startForegroundService(new Intent(context,MonitoringService.class).setAction(MonitoringService.ACTION_RESUME)));
-  Thread.sleep(1000);assertTrue(p.getBoolean("v108_emergency_latched",false));assertFalse(p.getBoolean("auto_trading",true));shot("04-emergency");
+  device.openNotification();
+  assertTrue(device.wait(Until.hasObject(By.textContains("FX M1")),10000));shot("03-notification-info-only");
+  assertFalse("notification must not expose old PAUSE control",device.hasObject(By.text("PAUSE")));
+  assertFalse("notification must not expose old PLAY control",device.hasObject(By.text("PLAY")));
+  assertFalse("notification must not expose emergency trading button",device.hasObject(By.text("EMERGENCY STOP")));
+  JSONObject after=EventClient.poll();
+  assertTrue("viewing notification must not change AUTO",after.optBoolean("auto",false));
+  assertFalse(after.optBoolean("paused",true));
  }
  @After public void cleanup()throws Exception{context.stopService(new Intent(context,MonitoringService.class));Thread.sleep(500);}
 }

@@ -1033,46 +1033,51 @@ public class MainActivity extends Activity {
 
     private void showSmartFeaturesDialog() {
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);
-        String accountType=p.getString("mt5_account_type_snapshot","DEMO").toUpperCase(Locale.US);
-        boolean real="REAL".equals(accountType);String feeKey=EventClient.feePrefKey();
-        ScrollView scroll=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(18),dp(12),dp(18),dp(12));scroll.addView(box);
-        box.addView(smartLabel("EventCore · "+(real?"REAL PILOT":"DEMO")+" · модель универсальна по инструментам MT5. Изменение профиля выключает AUTO; во время кампании профиль фиксирован."));
-        EditText fee=eventNumber(box,real?
-            "REAL: комиссия полного круга за 1 lot. Оставьте пусто — Bridge попробует определить её по истории MT5 и запомнит для счёта + инструмента.":
-            "DEMO: комиссия автоматически 0; ручной ввод не требуется.",
-            real?p.getString(feeKey,""):"0");
-        if(!real)fee.setEnabled(false);
-        EditText lot=eventNumber(box,real?"REAL PILOT: объём одной ступени фиксирован максимум 0.01 lot":"Верхний предел объёма одной ступени, lot",real?"0.01":p.getString("ec_lot_cap","0.01"));
-        if(real)lot.setEnabled(false);
-        EditText spread=eventNumber(box,"Максимальный FX-спред, pips; для остальных инструментов дополнительно используется доля ATR",String.valueOf(p.getFloat("max_spread_pips",3f)));
-        EditText cooldown=eventNumber(box,"Пауза после кампании, минут",String.valueOf(p.getInt("cooldown_minutes",10)));
-        Switch dynamic=smartSwitch("Добавления по новым событиям (не усреднение)",p.getBoolean("ec_dynamic_adds",true));box.addView(dynamic);
-        Switch sessions=smartSwitch("Фильтр сессий: "+p.getString("allowed_sessions","LONDON,NEW_YORK"),p.getBoolean("session_filter_enabled",false));box.addView(sessions);
-        Button adopt=new Button(this);adopt.setText("ПРИВЯЗАТЬ ТЕКУЩИЙ MT5 СЧЁТ");styleOutlineButton(adopt,C_PURPLE);box.addView(adopt);
+        String actual=p.getString("mt5_account_type_snapshot","UNKNOWN").toUpperCase(Locale.US);
+        String target=p.getString("target_trade_mode","DEMO").toUpperCase(Locale.US);
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(18),dp(12),dp(18),dp(12));
+
+        TextView engineInfo=smartLabel("ДВИЖОК: COMPUTE V1\nОдин расчёт: M1 + M5 LIVE + M5 + M15 + H1 + tick/volume/spread → BUY / SELL / WAIT.\nВнутренние технические пороги больше не настраиваются вручную.");
+        box.addView(engineInfo);
+
+        Switch realSwitch=smartSwitch("РЕАЛЬНЫЙ СЧЁТ", "REAL".equals(target));box.addView(realSwitch);
+        TextView accountInfo=smartLabel("Сейчас в MT5: "+actual+"\nDEMO-комиссия: автоматически 0\nREAL-комиссия: автоматически из истории MT5 и сохраняется по счёту + инструменту");
+        box.addView(accountInfo);
+
+        double[] risks={.25,.5,1};double risk="REAL".equals(target)?.25:risks[Math.max(0,Math.min(2,p.getInt("risk_pos",0)))];
+        box.addView(smartLabel("Риск кампании: "+String.format(Locale.US,"%.2f%%",risk)+"\nМеняется на главном экране. Для REAL максимум 0.25%."));
+
+        Button adopt=new Button(this);adopt.setText("ПРИВЯЗАТЬ ТЕКУЩИЙ СЧЁТ MT5");styleOutlineButton(adopt,C_PURPLE);box.addView(adopt);
         adopt.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Привязать текущий MT5 счёт?")
-            .setMessage("Только при отсутствии сохранённой кампании EC1. После смены счёта AUTO и REAL ARM будут выключены.")
-            .setNegativeButton("Назад",null).setPositiveButton("Привязать",(d,w)->executor.execute(()->{
+            .setMessage("Только без открытой кампании EventCore. AUTO будет выключен.")
+            .setNegativeButton("Отмена",null).setPositiveButton("Привязать",(d,w)->executor.execute(()->{
                 try{EventClient.command("adopt_account",new JSONObject().put("confirmation","ADOPT_MT5_ACCOUNT"));EventClient.poll();runOnUiThread(this::checkServer);}
                 catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
             })).show());
-        Button reset=new Button(this);reset.setText("Сверить и снять Emergency");styleOutlineButton(reset,C_PURPLE);box.addView(reset);
-        reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Сверить "+accountType+"-состояние?")
-            .setMessage("Только без позиций/ордеров бота и неизвестных исполнений. AUTO остаётся выключенным.")
-            .setNegativeButton("Назад",null).setPositiveButton("Сверить",(d,w)->{
-                try{eventCommand("reset",new JSONObject().put("confirmation",real?"RESET_REAL_FLAT":"RESET_DEMO_FLAT"));}catch(Exception ignored){}
-            }).show());
-        new AlertDialog.Builder(this).setTitle("Умные функции · EventCore").setView(scroll).setNegativeButton("ОТМЕНА",null)
+
+        Button reset=new Button(this);reset.setText("СНЯТЬ БЛОКИРОВКУ ПОСЛЕ СВЕРКИ");styleOutlineButton(reset,C_PURPLE);box.addView(reset);
+        reset.setOnClickListener(v->executor.execute(()->{
+            try{
+                String mode=EventClient.state().optJSONObject("account")==null?actual:EventClient.state().optJSONObject("account").optString("type",actual);
+                EventClient.command("reset",new JSONObject().put("confirmation","REAL".equals(mode)?"RESET_REAL_FLAT":"RESET_DEMO_FLAT"));
+                EventClient.poll();runOnUiThread(this::checkServer);
+            }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
+        }));
+
+        new AlertDialog.Builder(this).setTitle("Умные функции").setView(box).setNegativeButton("ОТМЕНА",null)
             .setPositiveButton("СОХРАНИТЬ",(d,w)->{
-                try{
-                    String feeText=fee.getText().toString().trim().replace(',','.');
-                    double l=real?.01:Double.parseDouble(lot.getText().toString().replace(',','.'));
-                    if((!feeText.isEmpty()&&!Double.isFinite(Double.parseDouble(feeText)))||l<=0)throw new Exception("Проверьте числа профиля");
-                    SharedPreferences.Editor ed=p.edit().putString("ec_lot_cap",String.valueOf(l))
-                        .putFloat("max_spread_pips",Float.parseFloat(spread.getText().toString().replace(',','.')))
-                        .putInt("cooldown_minutes",Integer.parseInt(cooldown.getText().toString())).putBoolean("ec_dynamic_adds",dynamic.isChecked()).putBoolean("session_filter_enabled",sessions.isChecked());
-                    if(real){if(feeText.isEmpty())ed.remove(feeKey);else ed.putString(feeKey,feeText);}ed.apply();
-                    executor.execute(()->{try{EventClient.configure();EventClient.poll();}catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
-                }catch(Exception e){new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show();}
+                String wanted=realSwitch.isChecked()?"REAL":"DEMO";
+                p.edit().putString("target_trade_mode",wanted).putBoolean("real_account_enabled",realSwitch.isChecked())
+                    .putString("ec_lot_cap","0.01").putFloat("max_spread_pips",3f).putInt("cooldown_minutes",0)
+                    .putBoolean("ec_dynamic_adds",true).putBoolean("session_filter_enabled",false).apply();
+                if(!wanted.equals(actual)){
+                    new AlertDialog.Builder(this).setTitle("Режим сохранён")
+                        .setMessage("В приложении выбран "+wanted+", а в MT5 сейчас "+actual+". Переключите счёт в MT5, затем нажмите «Привязать текущий счёт MT5».")
+                        .setPositiveButton("OK",null).show();
+                    return;
+                }
+                executor.execute(()->{try{EventClient.configure();EventClient.poll();runOnUiThread(this::checkServer);}
+                    catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
             }).show();
     }
 

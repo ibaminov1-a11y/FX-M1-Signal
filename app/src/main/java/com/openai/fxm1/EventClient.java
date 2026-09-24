@@ -79,8 +79,8 @@ public final class EventClient {
     }
     public static JSONObject command(String cmd,JSONObject body) throws Exception{return http("POST",base()+"/ec/command/"+cmd,envelope(body));}
     public static String accountMode(){
-        String type=prefs().getString("mt5_account_type_snapshot","DEMO").toUpperCase(Locale.US);
-        return "REAL".equals(type)?"REAL":"DEMO";
+        String target=prefs().getString("target_trade_mode","DEMO").toUpperCase(Locale.US);
+        return "REAL".equals(target)?"REAL":"DEMO";
     }
     public static String feePrefKey(){
         String key=prefs().getString("mt5_account_key_snapshot","UNBOUND");
@@ -91,17 +91,16 @@ public final class EventClient {
         SharedPreferences p=prefs();double[] risks={.25,.5,1};String accountMode=accountMode();
         double risk="REAL".equals(accountMode)?.25:risks[Math.max(0,Math.min(2,p.getInt("risk_pos",0)))];
         String fee="REAL".equals(accountMode)?p.getString(feePrefKey(),"").trim():"0";
-        double lot=Double.parseDouble(p.getString("ec_lot_cap","0.01").replace(',','.'));
-        if("REAL".equals(accountMode))lot=Math.min(.01,lot);
+        double lot=.01; // R4 keeps execution simple while ComputeCore is being validated.
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
-            .put("timeframe",tf()).put("mode",mode()).put("engine_mode","COMPUTE_V1").put("account_mode",accountMode).put("risk_pct",risk)
+            .put("timeframe","M5").put("mode","NORMAL").put("engine_mode","COMPUTE_V1")
+            .put("account_mode",accountMode).put("risk_pct",risk)
             .put("optional_position_limit",0)
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
-            .put("lot_cap",lot).put("probe_lot_cap",Math.min(.01,lot))
-            .put("spread_pips",p.getFloat("max_spread_pips",3f)).put("max_spread_atr",.25)
-            .put("cooldown_sec",p.getInt("cooldown_minutes",10)*60)
-            .put("dynamic_adds",p.getBoolean("ec_dynamic_adds",true)).put("session_filter",p.getBoolean("session_filter_enabled",false))
-            .put("allowed_sessions",p.getString("allowed_sessions","LONDON,NEW_YORK"));
+            .put("lot_cap",lot).put("probe_lot_cap",lot)
+            .put("spread_pips",3.0).put("max_spread_atr",.25)
+            .put("cooldown_sec",0).put("dynamic_adds",true)
+            .put("session_filter",false).put("allowed_sessions","ASIA,LONDON,NEW_YORK");
     }
     private static boolean sameNumber(JSONObject a,JSONObject b,String key){
         if(a==null||b==null)return false;
