@@ -1,7 +1,7 @@
 name: EC1 R3 Rebuild Android TDD
 on:
   push:
-    branches: [feature/ec1-r3-rebuild]
+    branches: [feature/ec1-r3-rebuild, feature/r4-compute-rebuild]
   workflow_dispatch:
 permissions:
   contents: read
