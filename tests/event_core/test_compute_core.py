@@ -69,6 +69,11 @@ class ComputeCoreTests(unittest.TestCase):
         self.assertEqual(f['side'],1,f)
         self.assertEqual(len(f['projection']),3)
         self.assertEqual([x['minutes'] for x in f['projection']],[5,10,15])
+        self.assertEqual(len(f['scenarios']),2,f)
+        self.assertEqual(f['scenarios'][0]['name'],'PRIMARY')
+        self.assertEqual(f['scenarios'][0]['side'],1)
+        self.assertEqual(len(f['scenarios'][0]['path']),4)
+        self.assertIn('support',f);self.assertIn('resistance',f)
 
     def test_strong_downtrend_has_sell_bias(self):
         bars,m1,m15,h1,live,a=market(-1)
