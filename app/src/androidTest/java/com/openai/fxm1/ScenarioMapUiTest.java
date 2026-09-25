@@ -111,4 +111,23 @@ public class ScenarioMapUiTest {
             save(image,"scenario-active-reversal");
         }finally{image.bitmap.recycle();}
     }
+    @Test public void summaryUsesWeightsAndActualReversalStage()throws Exception{
+        EventClient.init(context);
+        JSONObject reversal=new JSONObject().put("status","WAITING_SIGNAL").put("side",-1);
+        JSONObject state=new JSONObject().put("account",new JSONObject().put("balance",100).put("equity",100).put("type","DEMO"))
+            .put("forecast",forecast(1).put("up_probability",.67).put("down_probability",.22))
+            .put("reversal_status",reversal).put("pending_reversal",reversal);
+        EventClient.cache(state);
+        String text=EventClient.prefs().getString("state_forecast_text","");
+        assertTrue(text,text.contains("не вероятность"));
+        assertFalse(text,text.contains("67%"));
+        String explanation=EventClient.prefs().getString("state_context","");
+        assertTrue(explanation,explanation.contains("WAITING_SIGNAL"));
+        assertFalse(explanation,explanation.contains("закрываем текущую сторону"));
+        state.remove("pending_reversal");
+        state.put("reversal_status",new JSONObject().put("status","CANCELLED").put("reason","USER_PAUSE"));
+        EventClient.cache(state);
+        assertTrue(EventClient.prefs().getString("state_context","").contains("USER_PAUSE"));
+    }
+
 }
