@@ -1,0 +1,61 @@
+name: R4.2 real upgrade regression and package
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['tools/r42patch.part00']
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: r42-upgrade-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  reproduce-repair-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Preserve EC1 install signing identity
+        run: |
+          set -euo pipefail
+          key="$HOME/.fxm1-signing/ec1-demo.jks"
+          test -s "$key"
+          chmod 600 "$key"
+          echo "EC1_KEYSTORE=$key" >> "$GITHUB_ENV"
+      - run: sudo chmod 666 /dev/kvm
+      - name: Reproduce old-state AUTO and chart errors, then verify fix on API 35
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/verify_r42.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FXM1-R42-UPGRADE-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error
