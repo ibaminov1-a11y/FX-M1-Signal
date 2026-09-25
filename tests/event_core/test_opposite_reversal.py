@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from event_core.compute_core import ComputeCore
 from event_core.engine import Engine
 from event_core.model import Config, Decision, Setup
 from event_core.mt5_adapter import MAGIC
@@ -81,6 +82,90 @@ class OppositeReversalTests(unittest.TestCase):
                                 'old campaign remains in exit/reconciliation state until MT5 history confirms close')
                 self.assertIn('new-buy', engine.strategy.consumed,
                               'the event that forced exit must not be reused as a late reversal')
+            finally:
+                store.close()
+
+
+class ComputeCloseAndReverseTests(unittest.TestCase):
+    def test_confirmed_compute_reversal_closes_first_then_reopens_only_if_still_valid(self):
+        now=[NOW]
+        broker=FakeBroker(lambda:now[0])
+        with tempfile.TemporaryDirectory() as folder:
+            store=Store(Path(folder)/'reverse.sqlite3')
+            try:
+                engine=Engine(broker,store,lambda:now[0])
+                engine.config=Config(timeframe='M5',mode='NORMAL',engine_mode='COMPUTE_V1',
+                                     risk_pct=.25,fee_per_lot=0,lot_cap=.01,probe_lot_cap=.01,
+                                     approved=True,cooldown_sec=600)
+                engine.strategy=Strategy(engine.config);engine.compute=ComputeCore(engine.config)
+                engine._refresh(now[0]);engine.info=broker.symbol('EUR/USD');engine.quote=broker.quote('EURUSD')
+                buy=Decision('BUY','ENTRY_READY','initial buy','compute-buy',1,
+                             broker.bid-.00040,broker.bid-.00001,broker.bid-.00040,
+                             .00050,int(now[0]*1000),path='COMPUTE',entry_class='PROBE')
+                engine._entry(buy,now[0]);engine.auto=True;engine.paused=False
+                self.assertEqual(len(broker.sent),1)
+                first_ticket=broker._positions[0]['ticket']
+
+                sell=Decision('SELL','ENTRY_READY','confirmed sell reversal','compute-sell',-1,
+                              broker.ask+.00040,broker.bid+.00001,broker.ask+.00040,
+                              .00050,int(now[0]*1000),path='COMPUTE',entry_class='PROBE',
+                              forecast={'side':-1,'confidence':.72,'up_probability':.15,
+                                        'down_probability':.72,'range_probability':.13,
+                                        'edge_strength':.57,'engine':'COMPUTE_V1'})
+                engine.compute.evaluate=lambda *a,**k:sell
+
+                state=engine.step()
+                self.assertEqual(broker.closed,[first_ticket])
+                self.assertEqual(len(broker.sent),1,'reverse order must not overlap old BUY')
+                self.assertTrue(state['exit_pending'])
+                self.assertEqual(state['pending_reversal']['side'],-1)
+
+                # MT5 history confirms flat. That cycle only reconciles the close.
+                now[0]+=1.2;engine.step()
+                self.assertEqual(len(broker.sent),1)
+                self.assertIsNone(engine.campaign)
+
+                # Same SELL is still valid -> enter immediately despite 600s normal cooldown.
+                now[0]+=.2
+                broker.bid=sell.trigger-.00001;broker.ask=broker.bid+.00001
+                engine.step()
+                self.assertEqual(len(broker.sent),2,engine.execution)
+                self.assertEqual(broker._positions[0]['side'],-1)
+                self.assertIsNone(engine.pending_reversal)
+            finally:
+                store.close()
+
+    def test_reversal_is_cancelled_if_opposite_compute_signal_disappears_while_closing(self):
+        now=[NOW]
+        broker=FakeBroker(lambda:now[0])
+        with tempfile.TemporaryDirectory() as folder:
+            store=Store(Path(folder)/'reverse-cancel.sqlite3')
+            try:
+                engine=Engine(broker,store,lambda:now[0])
+                engine.config=Config(timeframe='M5',mode='NORMAL',engine_mode='COMPUTE_V1',
+                                     risk_pct=.25,fee_per_lot=0,lot_cap=.01,probe_lot_cap=.01,
+                                     approved=True,cooldown_sec=600)
+                engine.strategy=Strategy(engine.config);engine.compute=ComputeCore(engine.config)
+                engine._refresh(now[0]);engine.info=broker.symbol('EUR/USD');engine.quote=broker.quote('EURUSD')
+                buy=Decision('BUY','ENTRY_READY','initial buy','compute-buy-cancel',1,
+                             broker.bid-.00040,broker.bid-.00001,broker.bid-.00040,
+                             .00050,int(now[0]*1000),path='COMPUTE',entry_class='PROBE')
+                engine._entry(buy,now[0]);engine.auto=True;engine.paused=False
+                sell=Decision('SELL','ENTRY_READY','confirmed sell reversal','compute-sell-cancel',-1,
+                              broker.ask+.00040,broker.bid+.00001,broker.ask+.00040,
+                              .00050,int(now[0]*1000),path='COMPUTE',entry_class='PROBE',
+                              forecast={'side':-1,'confidence':.72,'edge_strength':.57,'engine':'COMPUTE_V1'})
+                engine.compute.evaluate=lambda *a,**k:sell
+                engine.step()
+                self.assertIsNotNone(engine.pending_reversal)
+
+                now[0]+=1.2;engine.step()
+                wait=Decision(reason='ComputeCore: разворот исчез',path='COMPUTE',
+                              forecast={'side':0,'confidence':.40,'edge_strength':.02,'engine':'COMPUTE_V1'})
+                engine.compute.evaluate=lambda *a,**k:wait
+                now[0]+=.2;engine.step()
+                self.assertEqual(len(broker.sent),1)
+                self.assertIsNone(engine.pending_reversal)
             finally:
                 store.close()
 
