@@ -421,6 +421,11 @@ class Engine:
                         components={},projection=[],engine=self.config.engine_mode,
                         reason='Вычислительный анализ ждёт свежие данные',stable_for_sec=0.)
                     self.forecast_side=0;self.forecast_since=now
+                if (self.config.engine_mode=='COMPUTE_V1' and self.campaign and compute_decision is not None and
+                    compute_decision.phase=='ENTRY_READY' and compute_decision.side in (-1,1) and
+                    compute_decision.side!=self.campaign['side']):
+                    self.pending_reversal=dict(side=compute_decision.side,created=now,expires=now+20.0,
+                        source_event=compute_decision.event_id,signal=compute_decision.signal)
                 if exit_cycle:
                     self._suspend_trigger(now)
                     message=self.execution
