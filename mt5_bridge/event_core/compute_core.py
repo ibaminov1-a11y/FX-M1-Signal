@@ -79,6 +79,43 @@ class ComputeCore:
                             range_probability=round(pr,4)))
         return out
 
+    def _scenarios(self,current,a,side,up,down,range_p,projection,support,resistance):
+        if side not in (-1,1):
+            return []
+        primary_prob=up if side==1 else down
+        opposite_prob=down if side==1 else up
+        strength=max(.20,min(1.0,abs(up-down)*2.2))
+        # The main path deliberately contains a retest leg before continuation,
+        # so the chart reads as a scenario map rather than a fake future price line.
+        retest=current-side*a*(.08+.08*(1-strength))
+        if side==1 and support:
+            retest=max(retest,support+a*.03)
+        if side==-1 and resistance:
+            retest=min(retest,resistance-a*.03)
+        projected=(projection[-1]['center'] if projection else current+side*a*.35*strength)
+        target=projected
+        if (target-current)*side<a*.18:
+            target=current+side*a*(.18+.30*strength)
+        main=dict(name='PRIMARY',side=side,probability=round(primary_prob,4),
+                  path=[dict(minutes=0,price=round(current,10)),
+                        dict(minutes=4,price=round(retest,10)),
+                        dict(minutes=9,price=round(current+side*a*(.16+.16*strength),10)),
+                        dict(minutes=15,price=round(target,10))])
+        if range_p>=opposite_prob:
+            alt=dict(name='ALTERNATIVE',side=0,probability=round(range_p,4),
+                     path=[dict(minutes=0,price=round(current,10)),
+                           dict(minutes=5,price=round(current+side*a*.06,10)),
+                           dict(minutes=10,price=round(current-side*a*.05,10)),
+                           dict(minutes=15,price=round(current+side*a*.02,10))])
+        else:
+            alt_side=-side
+            alt=dict(name='ALTERNATIVE',side=alt_side,probability=round(opposite_prob,4),
+                     path=[dict(minutes=0,price=round(current,10)),
+                           dict(minutes=4,price=round(current+side*a*.06,10)),
+                           dict(minutes=9,price=round(current+alt_side*a*.20,10)),
+                           dict(minutes=15,price=round(current+alt_side*a*(.30+.20*strength),10))])
+        return [main,alt]
+
     def evaluate(self,bars,m1,m15,h1,live_bar,q:Quote,now,campaign_side=0):
         q.validate(now)
         if self.config.timeframe!='M5' or live_bar is None or len(bars)<20 or len(m1)<8:
@@ -180,13 +217,19 @@ class ComputeCore:
         late_entry=bool(bias and extension>=1.40 and near_edge)
 
         projection=self._projection(q.bid,a,directional,up,down,range_p)
+        highs=[p['price'] for p in points if p['kind']=='H']
+        lows=[p['price'] for p in points if p['kind']=='L']
+        support=lows[-1] if lows else low
+        resistance=highs[-1] if highs else high
+        scenarios=self._scenarios(q.bid,a,side,up,down,range_p,projection,support,resistance)
         forecast=dict(side=side,candidate_side=0,confidence=round(confidence,4),
                       edge_strength=round(edge,4),up_probability=round(up,4),
                       down_probability=round(down,4),range_probability=round(range_p,4),
                       stable_for_sec=round(stable,2),late_entry=late_entry,
                       exhaustion=exhaustion,regime=('EXHAUSTION' if exhaustion else
                           'TREND_UP' if side==1 else 'TREND_DOWN' if side==-1 else 'RANGE'),
-                      available=True,projection=projection,
+                      available=True,projection=projection,scenarios=scenarios,
+                      support=round(support,10),resistance=round(resistance,10),
                       components={k:round(v,3) for k,v in components.items()},
                       score=round(score,3),directional=round(directional,4),
                       engine='COMPUTE_V1')
