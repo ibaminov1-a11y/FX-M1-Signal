@@ -158,8 +158,10 @@ public final class EventClient {
         boolean forecastAvailable=fc.optBoolean("available",fc.has("up_probability"));
         long up=Math.round(fc.optDouble("up_probability",0)*100),down=Math.round(fc.optDouble("down_probability",0)*100),range=Math.round(fc.optDouble("range_probability",0)*100);
         String direction=fside>0?" · BIAS BUY":fside<0?" · BIAS SELL":fcandidate>0?" · EARLY BUY CANDIDATE":fcandidate<0?" · EARLY SELL CANDIDATE":" · NO EDGE";
+        boolean scenarioMap=fc.optInt("map_version",0)>=2||"UNCALIBRATED_SCORE".equals(fc.optString("model_weight_kind"));
         String forecastText=forecastAvailable?
-            ("LIVE FORECAST: UP "+up+"% · DOWN "+down+"% · RANGE "+range+"% · "+fc.optString("regime","RANGE")+direction):
+            (scenarioMap?("SCENARIO MAP · веса: BUY "+up+" · SELL "+down+" · RANGE "+range+direction+" · не вероятность успеха"):
+            ("LIVE FORECAST: UP "+up+"% · DOWN "+down+"% · RANGE "+range+"% · "+fc.optString("regime","RANGE")+direction)):
             "LIVE FORECAST: ожидаем достаточные данные";
         if(fc.optBoolean("late_entry",false))forecastText+=" · LATE ENTRY BLOCK";
         if(fc.optBoolean("exhaustion",false))forecastText+=" · EXHAUSTION";
@@ -168,8 +170,19 @@ public final class EventClient {
             .append("\n").append(forecastText)
             .append("\nРешение и исполнение: данные MT5");
         if(campaign!=null)context.append("\nОткрытая кампания: ").append(campaignSide);
-        JSONObject reversal=s.optJSONObject("pending_reversal");
-        if(reversal!=null){int rsd=reversal.optInt("side",0);context.append("\nREVERSAL PENDING: закрываем текущую сторону → ").append(rsd>0?"BUY":rsd<0?"SELL":"—");}
+        JSONObject reversal=s.optJSONObject("reversal_status");
+        if(reversal==null||reversal.length()==0)reversal=s.optJSONObject("pending_reversal");
+        if(reversal!=null&&reversal.length()>0){
+            int rsd=reversal.optInt("side",0);String status=reversal.optString("status","WAITING_CLOSE");
+            String detail="WAITING_CLOSE".equals(status)?"проверяем закрытие прежней позиции и историю MT5":
+                "WAITING_SIGNAL".equals(status)?"позиция закрыта; ждём подтверждение нового входа":
+                "READY".equals(status)?"позиция закрыта; проверяем новый вход перед отправкой":
+                "OPENED".equals(status)?"MT5 подтвердил новую позицию":
+                "CANCELLED".equals(status)?"разворот отменён; новая заявка по нему не отправляется":"ожидаем проверку Bridge";
+            context.append("\nРазворот ").append(status).append(": ").append(detail);
+            if(rsd!=0)context.append(" → ").append(rsd>0?"BUY":"SELL");
+            String reason=reversal.optString("reason","");if(!reason.isEmpty())context.append(". ").append(reason);
+        }
         if(q!=null)context.append("\nВремя котировки: ").append(new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date(q.optLong("time_msc"))));
         JSONArray positions=s.optJSONArray("all_positions");int n=positions==null?0:positions.length();double floating=0;
         if(positions!=null)for(int i=0;i<positions.length();i++){JSONObject x=positions.getJSONObject(i);floating+=x.optDouble("profit")+x.optDouble("swap");}

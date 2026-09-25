@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import math
-from dataclasses import asdict
 
 from .model import Bar, Quote, Config, Decision, atr, pivots, direction, context_direction, swing_labels
+from .scenario_map import entry_levels, build_map
 
 
 class ComputeCore:
@@ -21,6 +21,9 @@ class ComputeCore:
     def __init__(self,config:Config,saved=None):
         self.config=config
         self.previous_quote=None
+        self.observed_frame=None
+        self.observed_levels={}
+        self.observed_crossings=set()
         self.bias_side=int((saved or {}).get('bias_side',0) or 0)
         self.bias_since=float((saved or {}).get('bias_since',0) or 0)
         self.consumed=set((saved or {}).get('consumed',[]))
@@ -36,6 +39,9 @@ class ComputeCore:
 
     def clear(self):
         self.previous_quote=None
+        self.observed_frame=None
+        self.observed_levels={}
+        self.observed_crossings.clear()
         self.bias_side=0
         self.bias_since=0.
 
@@ -79,42 +85,29 @@ class ComputeCore:
                             range_probability=round(pr,4)))
         return out
 
-    def _scenarios(self,current,a,side,up,down,range_p,projection,support,resistance):
-        if side not in (-1,1):
-            return []
-        primary_prob=up if side==1 else down
-        opposite_prob=down if side==1 else up
-        strength=max(.20,min(1.0,abs(up-down)*2.2))
-        # The main path deliberately contains a retest leg before continuation,
-        # so the chart reads as a scenario map rather than a fake future price line.
-        retest=current-side*a*(.08+.08*(1-strength))
-        if side==1 and support:
-            retest=max(retest,support+a*.03)
-        if side==-1 and resistance:
-            retest=min(retest,resistance-a*.03)
-        projected=(projection[-1]['center'] if projection else current+side*a*.35*strength)
-        target=projected
-        if (target-current)*side<a*.18:
-            target=current+side*a*(.18+.30*strength)
-        main=dict(name='PRIMARY',side=side,probability=round(primary_prob,4),
-                  path=[dict(minutes=0,price=round(current,10)),
-                        dict(minutes=4,price=round(retest,10)),
-                        dict(minutes=9,price=round(current+side*a*(.16+.16*strength),10)),
-                        dict(minutes=15,price=round(target,10))])
-        if range_p>=opposite_prob:
-            alt=dict(name='ALTERNATIVE',side=0,probability=round(range_p,4),
-                     path=[dict(minutes=0,price=round(current,10)),
-                           dict(minutes=5,price=round(current+side*a*.06,10)),
-                           dict(minutes=10,price=round(current-side*a*.05,10)),
-                           dict(minutes=15,price=round(current+side*a*.02,10))])
-        else:
-            alt_side=-side
-            alt=dict(name='ALTERNATIVE',side=alt_side,probability=round(opposite_prob,4),
-                     path=[dict(minutes=0,price=round(current,10)),
-                           dict(minutes=4,price=round(current+side*a*.06,10)),
-                           dict(minutes=9,price=round(current+alt_side*a*.20,10)),
-                           dict(minutes=15,price=round(current+alt_side*a*(.30+.20*strength),10))])
-        return [main,alt]
+    def _observe(self,m1,a,q):
+        # Level changes are not price crossings. Freeze spread padding/levels within
+        # the observed closed-bar frame and re-arm on history changes or reset.
+        frame=tuple((x.time,x.high,x.low) for x in m1[-7:])
+        previous=self.previous_quote
+        armed=(previous is None or frame!=self.observed_frame or
+               q.time_msc<previous.time_msc or
+               (q.time_msc==previous.time_msc and (q.bid,q.ask)!=(previous.bid,previous.ask)))
+        if armed:
+            self.observed_frame=frame
+            self.observed_levels=entry_levels(m1,a,q.spread)
+            self.observed_crossings.clear()
+        crossings=set()
+        for side,key in ((1,'BUY'),(-1,'SELL')):
+            level=self.observed_levels[key]['trigger']
+            distance=(q.bid-level)*side
+            if distance<=0:
+                self.observed_crossings.discard(side)
+            elif not armed and q.time_msc>previous.time_msc and (previous.bid-level)*side<=0:
+                crossings.add(side)
+                self.observed_crossings.add(side)
+        self.previous_quote=q
+        return self.observed_levels,crossings,armed
 
     def evaluate(self,bars,m1,m15,h1,live_bar,q:Quote,now,campaign_side=0):
         q.validate(now)
@@ -217,82 +210,58 @@ class ComputeCore:
         late_entry=bool(bias and extension>=1.40 and near_edge)
 
         projection=self._projection(q.bid,a,directional,up,down,range_p)
-        highs=[p['price'] for p in points if p['kind']=='H']
-        lows=[p['price'] for p in points if p['kind']=='L']
-        support=lows[-1] if lows else low
-        resistance=highs[-1] if highs else high
-        scenarios=self._scenarios(q.bid,a,side,up,down,range_p,projection,support,resistance)
+        shared,crossings,armed=self._observe(m1,a,q)
+        scenario_map=build_map(q.bid,a,side,up,down,range_p,shared,points,bars)
         forecast=dict(side=side,candidate_side=0,confidence=round(confidence,4),
                       edge_strength=round(edge,4),up_probability=round(up,4),
                       down_probability=round(down,4),range_probability=round(range_p,4),
                       stable_for_sec=round(stable,2),late_entry=late_entry,
                       exhaustion=exhaustion,regime=('EXHAUSTION' if exhaustion else
                           'TREND_UP' if side==1 else 'TREND_DOWN' if side==-1 else 'RANGE'),
-                      available=True,projection=projection,scenarios=scenarios,
-                      support=round(support,10),resistance=round(resistance,10),
+                      available=True,projection=projection,
                       components={k:round(v,3) for k,v in components.items()},
                       score=round(score,3),directional=round(directional,4),
                       engine='COMPUTE_V1')
+        forecast.update(scenario_map)
 
         if side==0:
-            self.previous_quote=q
             return Decision(reason='ComputeCore: нет вычислительного преимущества — WAIT',
                             atr=a,path='COMPUTE',structure=swing_labels(bars),forecast=forecast)
-        if exhaustion or late_entry:
-            self.previous_quote=q
-            return Decision(reason='ComputeCore: направление есть, но вход поздний/импульс истощён',
-                            side=side,atr=a,path='COMPUTE',structure=swing_labels(bars),forecast=forecast)
 
-        # Two higher timeframes simultaneously against the score are a hard veto.
-        if ctx15==-side and ctx1==-side:
-            self.previous_quote=q
-            return Decision(reason='ComputeCore: M15 и H1 одновременно против входа',
-                            side=side,atr=a,path='COMPUTE',structure=swing_labels(bars),forecast=forecast)
-
-        pad=max(a*.02,q.spread*1.2)
-        prior=m1[-5:-1]
-        trigger=(max(x.high for x in prior)+pad) if side==1 else (min(x.low for x in prior)-pad)
+        chosen=shared['BUY' if side==1 else 'SELL']
+        trigger=chosen['trigger'];stop=chosen['invalidation']
         distance=(q.bid-trigger)*side
-        crossed=bool(previous is not None and q.time_msc>previous.time_msc and
-                     (previous.bid-trigger)*side<=0 and distance>0)
+        crossed=side in crossings
         aligned=(m1_fast*side>.06 and live_body*side>.06)
-        continuation=(0<distance<=self.MOMENTUM_WINDOW_ATR*a and aligned)
+        continuation=(side in self.observed_crossings and
+                      0<distance<=self.MOMENTUM_WINDOW_ATR*a and aligned)
         too_far=distance>self.MAX_CHASE_ATR*a
-
-        self.previous_quote=q
-        levels=({'kind':'trigger','price':trigger,'time':m1[-1].time},)
-        if too_far:
-            forecast['late_entry']=True
-            return Decision(reason='ComputeCore: цена уже слишком далеко от расчётного входа — не догоняем',
-                            side=side,trigger=trigger,atr=a,levels=levels,path='COMPUTE',
-                            structure=swing_labels(bars),forecast=forecast)
-        if distance<=0:
-            return Decision(reason=('ComputeCore: '+('BUY' if side==1 else 'SELL')+
-                                    f' {confidence*100:.0f}% — ждём уровень {trigger:.5f}'),
-                            side=side,trigger=trigger,atr=a,levels=levels,path='COMPUTE',
-                            structure=swing_labels(bars),forecast=forecast)
-        if confidence<self.ENTRY_CONFIDENCE or edge<self.MIN_EDGE:
-            return Decision(reason=('ComputeCore: направление есть, но преимущество пока недостаточно для сделки '
-                                    f'({confidence*100:.0f}%)'),
-                            side=side,trigger=trigger,atr=a,levels=levels,path='COMPUTE',
-                            structure=swing_labels(bars),forecast=forecast)
-        if not (crossed or continuation):
-            return Decision(reason='ComputeCore: направление подтверждено, но момент входа ещё не готов',
-                            side=side,trigger=trigger,atr=a,levels=levels,path='COMPUTE',
-                            structure=swing_labels(bars),forecast=forecast)
-
-        if side==1:
-            stop=min(min(x.low for x in m1[-7:])-pad,q.bid-.30*a)
-        else:
-            stop=max(max(x.high for x in m1[-7:])+pad,q.ask+.30*a)
-        event=(f'{self.config.symbol}|M5|COMPUTE_V1|{m1[-1].time:014d}|'
-               f'{side}|{trigger:.10f}')
         levels=({'kind':'invalidation','price':stop,'time':m1[-1].time},
                 {'kind':'trigger','price':trigger,'time':m1[-1].time})
+        common=dict(side=side,stop=stop,trigger=trigger,invalidation=stop,atr=a,
+                    levels=levels,path='COMPUTE',structure=swing_labels(bars),forecast=forecast)
+        if exhaustion or late_entry:
+            return Decision(reason='ComputeCore: направление есть, но вход поздний/импульс истощён',**common)
+        if ctx15==-side and ctx1==-side:
+            return Decision(reason='ComputeCore: M15 и H1 одновременно против входа',**common)
+        if too_far:
+            forecast['late_entry']=True
+            self.observed_crossings.discard(side)
+            return Decision(reason='ComputeCore: цена уже слишком далеко от расчётного входа — не догоняем',**common)
+        if armed:
+            return Decision(reason='ComputeCore: наблюдатель вооружён; нужен новый пробой известного уровня',**common)
+        if distance<=0:
+            return Decision(reason=('ComputeCore: '+('BUY' if side==1 else 'SELL')+
+                                    f' — ждём уровень {trigger:.5f}'),**common)
+        if confidence<self.ENTRY_CONFIDENCE or edge<self.MIN_EDGE:
+            return Decision(reason='ComputeCore: преимущество пока недостаточно для сделки',**common)
+        if not (crossed or continuation):
+            return Decision(reason='ComputeCore: нет наблюдаемого нового пробоя — WAIT',**common)
+
+        event=(f'{self.config.symbol}|M5|COMPUTE_V1|{m1[-1].time:014d}|'
+               f'{side}|{trigger:.10f}')
         if event in self.consumed:
-            return Decision(reason='ComputeCore: это торговое событие уже использовано',
-                            side=side,trigger=trigger,atr=a,levels=levels,path='COMPUTE',
-                            structure=swing_labels(bars),forecast=forecast)
+            return Decision(reason='ComputeCore: это торговое событие уже использовано',**common)
         return Decision('BUY' if side==1 else 'SELL','ENTRY_READY',
                         ('ComputeCore: единый расчёт подтвердил направление и момент входа'),
                         event,side,stop,trigger,stop,a,q.time_msc,levels,

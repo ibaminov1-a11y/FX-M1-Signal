@@ -23,6 +23,7 @@ class Engine:
         self.real_armed=False
         # Ephemeral by design: never resurrect a reversal after Bridge restart.
         self.pending_reversal=None
+        self.reversal_status={}
         self.effective_fee_per_lot=None;self.fee_source='UNRESOLVED';self.fee_profile_key=''
         self.campaign=saved.get('campaign')
         self.emergency=bool(saved.get('emergency',False))
@@ -269,12 +270,67 @@ class Engine:
             if now-(self.bars[-1].time+tf)>tf*1.5:
                 self.market_errors.append('Закрытые свечи MT5 исторические; для входа нужны новые данные')
 
-    def _close_campaign(self,reason):
+    def _reversal_enabled(self):
+        # This feature is a DEMO continuation, never an implicit permission for REAL.
+        return bool(self.config.engine_mode=='COMPUTE_V1' and self.auto and not self.paused
+                    and not self.emergency and not self.recovery and not self.store.pending()
+                    and self.account.get('type')=='DEMO' and self.config.account_mode=='DEMO'
+                    and self.history_ok and self.risk.get('allowed',False))
+
+    def _cancel_reversal(self,reason,now):
+        if self.pending_reversal is None:return
+        self.reversal_status=dict(self.pending_reversal,status='CANCELLED',reason=reason,updated=now)
+        self.store.event('REVERSAL_CANCELLED',self.reversal_status,now)
+        self.pending_reversal=None
+
+    def _queue_reversal(self,now,decision=None):
+        if (self.pending_reversal or not self.campaign or self.exit_pending
+                or not self._reversal_enabled()):return
+        side=-self.campaign['side']
+        confirmed=bool(decision is not None and decision.phase=='ENTRY_READY'
+                       and decision.side==side and decision.signal in ('BUY','SELL'))
+        self.pending_reversal=dict(side=side,from_side=self.campaign['side'],created=now,
+            expires=now+20.0,source_campaign=self.campaign['id'],account_key=self.account_key,
+            symbol=self.campaign['symbol'],source_event=decision.event_id if confirmed else '',
+            signal='BUY' if side==1 else 'SELL',confirmed=confirmed,status='WAITING_CLOSE')
+        self.reversal_status=copy.deepcopy(self.pending_reversal)
+        self.store.event('REVERSAL_QUEUED',self.pending_reversal,now)
+
+    def _update_reversal(self,decision,now):
+        pr=self.pending_reversal
+        if pr is None:return
+        if not self._reversal_enabled():
+            self._cancel_reversal('AUTO/профиль/проверка риска больше не разрешают разворот',now);return
+        if now>float(pr['expires']):
+            self._cancel_reversal('Срок подтверждения разворота истёк',now);return
+        if pr['account_key']!=self.account_key or symbol_key(pr['symbol'])!=symbol_key(self.config.symbol):
+            self._cancel_reversal('Счёт или инструмент изменился',now);return
+        if decision is None or not self.quote_ready or self.market_errors:
+            self._cancel_reversal('Нет свежего подтверждения рынка',now);return
+        ready=bool(decision.phase=='ENTRY_READY' and decision.signal in ('BUY','SELL')
+                   and decision.side==int(pr['side']))
+        if pr['confirmed'] and (not ready or decision.event_id!=pr['source_event']):
+            self._cancel_reversal('Подтверждённый противоположный вход больше не актуален',now);return
+        if not pr['confirmed'] and decision.phase=='ENTRY_READY' and decision.side==pr['from_side']:
+            self._cancel_reversal('Первоначальное направление восстановилось',now);return
+        if ready and not pr['confirmed']:
+            pr['confirmed']=True;pr['source_event']=decision.event_id
+            self.store.event('REVERSAL_CONFIRMED',pr,now)
+        pr['status']=('WAITING_CLOSE' if self.campaign or self.exit_pending or self._owned()
+                      or self._owned_orders() else 'READY' if ready else 'WAITING_SIGNAL')
+        self.reversal_status=copy.deepcopy(pr)
+
+    def _close_campaign(self,reason,code='EXIT'):
         if not self._has_exit_targets():
             self.exit_pending=False
             self.execution=self._idle_status()
             self.save()
             return
+        if code=='SCENARIO_INVALIDATED':self._queue_reversal(self.clock())
+        if self.campaign and not self.campaign.get('exit_reason'):
+            self.campaign.update(exit_reason=reason,exit_code=code,exit_requested_at=self.clock())
+            self.store.event('EXIT_REQUESTED',dict(campaign=self.campaign['id'],reason=reason,code=code),self.clock())
+        if self.campaign:reason=self.campaign.get('exit_reason',reason)
         self.exit_pending=True;self.auto=False if self.emergency else self.auto
         self.execution='Выход кампании: '+reason;self.save()
         now=self.clock()
@@ -287,11 +343,15 @@ class Engine:
         if self._owned_orders():return
         self.positions=self.broker.positions()
         for p in self._owned():
-            result=self.broker.close_position(p)
+            try:result=self.broker.close_position(p)
+            except Blocked as exc:result=dict(status='REJECTED',reason=str(exc))
+            except Exception as exc:result=dict(status='UNKNOWN',reason=str(exc))
             self.store.event('CLOSE_RESPONSE',dict(ticket=p['ticket'],result=result),now)
             if result['status']!='FILLED':
                 self.execution='Закрытие пока не подтверждено: '+result.get('reason','')
-                if result['status']=='UNKNOWN':self.recovery=True;self.auto=False;self.paused=True
+                if result['status']=='UNKNOWN':
+                    self.recovery=True;self.auto=False;self.paused=True
+                    self._cancel_reversal('Закрытие MT5 имеет неизвестный результат',now)
                 self.save();return
         self.positions=self.broker.positions()
         if not self._owned() and not self._owned_orders():self.execution='Позиции бота закрыты: '+reason+'; ожидается сверка истории'
@@ -329,7 +389,7 @@ class Engine:
         q.validate(now)
         mark=q.bid if side==1 else q.ask
         if (mark-c['invalidation'])*side<=0:
-            self._close_campaign('слом уровня отмены сценария');return True
+            self._close_campaign('слом уровня отмены сценария','SCENARIO_INVALIDATED');return True
         profile=PROFILES[c['mode']]
         r=max(c.get('initial_risk',c['budget']),1e-8)
         if c['peak']>=profile.protect_at_r*r and net<c['peak']*(1-profile.giveback_fraction):
@@ -421,13 +481,14 @@ class Engine:
                         components={},projection=[],engine=self.config.engine_mode,
                         reason='Вычислительный анализ ждёт свежие данные',stable_for_sec=0.)
                     self.forecast_side=0;self.forecast_since=now
-                if (self.config.engine_mode=='COMPUTE_V1' and self.campaign and compute_decision is not None and
+                self._update_reversal(compute_decision,now)
+                if (not exit_cycle and self.campaign and compute_decision is not None and
                     compute_decision.phase=='ENTRY_READY' and compute_decision.side in (-1,1) and
                     compute_decision.side!=self.campaign['side']):
-                    self.pending_reversal=dict(side=compute_decision.side,created=now,expires=now+20.0,
-                        source_event=compute_decision.event_id,signal=compute_decision.signal)
+                    self._queue_reversal(now,compute_decision)
                 if exit_cycle:
-                    self._suspend_trigger(now)
+                    # Track live prices during a valid close, but never submit an order here.
+                    if not self.pending_reversal:self._suspend_trigger(now)
                     message=self.execution
                     if self.market_errors:
                         message+='\nВход запрещён: '+'; '.join(self.market_errors)
@@ -483,19 +544,12 @@ class Engine:
                 if self.campaign and d.phase=='ENTRY_READY' and d.side in (-1,1) and d.side!=self.campaign['side']:
                     old='BUY' if self.campaign['side']==1 else 'SELL'
                     if self.config.engine_mode=='COMPUTE_V1':
-                        self.pending_reversal=dict(side=d.side,created=now,expires=now+20.0,
-                            source_event=d.event_id,signal=d.signal)
-                        self.save()
+                        self._queue_reversal(now,d)
                     elif d.event_id:
                         self._consume_event(d.event_id);self.save()
-                    self._close_campaign('подтверждён разворот '+d.signal+' против текущей '+old+' кампании')
+                    self._close_campaign('подтверждён разворот '+d.signal+' против текущей '+old+' кампании',
+                                         'OPPOSITE_CONFIRMED')
                     return self.snapshot()
-                if not self.campaign and self.pending_reversal:
-                    pr=self.pending_reversal
-                    valid=(now<=float(pr.get('expires',0)) and d.phase=='ENTRY_READY' and
-                           d.signal in ('BUY','SELL') and d.side==int(pr.get('side',0)))
-                    if not valid:
-                        self.pending_reversal=None
                 if not self.auto or self.paused:self.execution=self._idle_status()
                 elif self.recovery:self.execution='Нужна сверка неизвестного исполнения; новые входы запрещены'
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
@@ -511,6 +565,7 @@ class Engine:
                         self._consume_event(d.event_id);self.save()
                 if d.event_id:self._consume_event(d.event_id);self.save()
             except Exception as e:
+                self._cancel_reversal('Ошибка проверки данных/исполнения: '+str(e),now)
                 self._suspend_trigger(now)
                 self.execution=str(e)+'\n'+self._idle_status()
                 if self.exit_pending:
@@ -528,8 +583,11 @@ class Engine:
         if self._owned_orders():raise Blocked('Предыдущий запрос ещё не завершён')
         if any(p['magic']!=MAGIC for p in self.positions) or any(o['magic']!=MAGIC for o in self.orders):
             raise Blocked('Есть ручные/старые позиции или ордера: сначала завершите их отдельно')
-        reversal_ok=bool(self.config.engine_mode=='COMPUTE_V1' and self.pending_reversal and
-                         now<=float(self.pending_reversal.get('expires',0)) and
+        reversal_ok=bool(self._reversal_enabled() and not self.campaign and self.pending_reversal and
+                         not self._owned() and now<=float(self.pending_reversal.get('expires',0)) and
+                         self.pending_reversal.get('confirmed',False) and
+                         self.pending_reversal.get('source_event')==d.event_id and
+                         self.pending_reversal.get('account_key')==self.account_key and
                          int(self.pending_reversal.get('side',0))==d.side)
         if now-self.last_exit<self.config.cooldown_sec and not reversal_ok:
             raise Blocked('Пауза после завершения кампании')
@@ -539,15 +597,24 @@ class Engine:
         if account['key']!=self.account_key:raise Blocked('Счёт изменился перед отправкой')
         self.account=account
         if account.get('type')=='REAL' and not self.real_armed:raise Blocked('REAL не вооружён: сначала ARM REAL')
-        if self._owned_orders() or any(p['magic']!=MAGIC for p in self.positions) or any(o['magic']!=MAGIC for o in self.orders):
+        if (self._owned_orders() or (not self.campaign and self._owned()) or
+            any(p['magic']!=MAGIC for p in self.positions) or any(o['magic']!=MAGIC for o in self.orders)):
             raise Blocked('Экспозиция изменилась перед отправкой')
         self._refresh_risk(now)
         if not self.risk.get('allowed'):raise Blocked('Проверка риска не разрешила отправку')
         q=self.broker.quote(self.info['name']);q.validate(now)
-        if (q.bid-d.trigger)*d.side<=0 or abs(q.bid-d.trigger)>PROFILES[self.config.mode].no_chase_atr*d.atr:
+        no_chase=PROFILES[self.config.mode].no_chase_atr
+        if self.config.engine_mode=='COMPUTE_V1':no_chase=min(no_chase,self.compute.MAX_CHASE_ATR)
+        if (q.bid-d.trigger)*d.side<=0 or abs(q.bid-d.trigger)>no_chase*d.atr:
             raise Blocked('Котировка уже вышла из допустимой зоны входа')
         exec_cfg=self._execution_config()
         p=plan_order(self.broker,exec_cfg,account,self.info,q,d,self._owned(),self.campaign,now)
+        # Broker preflight calls may block. Recheck wall-clock freshness/expiry,
+        # not merely the timestamp captured at the beginning of this engine step.
+        send_now=self.clock()
+        q.validate(send_now)
+        if reversal_ok and send_now>float(self.pending_reversal['expires']):
+            raise Blocked('Срок разворота истёк во время проверки исполнения')
         new_campaign=not self.campaign
         if new_campaign:
             self.campaign=dict(id=d.event_id,side=d.side,mode=self.config.mode,timeframe=self.config.timeframe,
@@ -555,7 +622,9 @@ class Engine:
                 last_entry=p.entry,best_price=p.entry,last_progress=now,invalidation=d.invalidation,
                 add_step_atr=PROFILES[self.config.mode].add_step_atr,peak=0.,position_ids=[],realized=0.,events=[],
                 entry_class=d.entry_class if d.entry_class!='NONE' else 'CONFIRMED',
-                confirmed=d.entry_class!='PROBE',confirmed_at=(now if d.entry_class!='PROBE' else 0.))
+                confirmed=d.entry_class!='PROBE',confirmed_at=(now if d.entry_class!='PROBE' else 0.),
+                entry_trigger=d.trigger,initial_invalidation=d.invalidation,
+                forecast_at_entry=copy.deepcopy(d.forecast))
         comment='EC1:'+hashlib.sha256(d.event_id.encode()).hexdigest()[:16]
         body=dict(plan=asdict(p),comment=comment,time=now)
         self._consume_event(d.event_id);self.save();self.store.intent(d.event_id,'SENDING',body)
@@ -579,7 +648,10 @@ class Engine:
             if d.entry_class!='PROBE':
                 self.campaign['confirmed']=True;self.campaign['entry_class']='CONFIRMED';self.campaign['confirmed_at']=now
             prefix='PROBE ' if d.entry_class=='PROBE' else ''
-            if reversal_ok:self.pending_reversal=None
+            if reversal_ok:
+                self.reversal_status=dict(self.pending_reversal,status='OPENED',updated=now)
+                self.store.event('REVERSAL_OPENED',self.reversal_status,now)
+                self.pending_reversal=None
             self.execution='MT5 подтвердил '+prefix+d.signal+': '+', '.join('#'+str(x['ticket']) for x in matches)
             self.save()
             try:
@@ -609,7 +681,8 @@ class Engine:
             prior=self.store.command_result(key)
             if prior is not None:return prior
             if command in ('emergency','pause','disable','close'):
-                self.pending_reversal=None
+                self._cancel_reversal('Команда пользователя: '+command,now)
+                self._suspend_trigger(now)
                 if command=='emergency':self.emergency=True;self.exit_pending=True;self.auto=False;self.paused=True;self.real_armed=False
                 elif command=='close':self.exit_pending=True;self.auto=False;self.paused=True
                 elif command=='disable':self.auto=False;self.paused=True
@@ -684,6 +757,7 @@ class Engine:
                 if command=='play' and not self.auto:raise Blocked('PLAY снимает паузу, но не включает AUTO после отключения')
                 expected='ENABLE_REAL' if actual=='REAL' else 'ENABLE_DEMO'
                 if command=='enable' and data.get('confirmation')!=expected:raise Blocked('Нужно явное разрешение AUTO '+actual)
+                self._suspend_trigger(now)
                 self.auto=True;self.paused=False;self.heartbeat=now;self.save();message='AUTO '+actual+' включён; вход только по новому событию'
             elif command=='reset':
                 self._refresh(now);self._reconcile()
@@ -713,6 +787,13 @@ class Engine:
         from . import VERSION, PROTOCOL, BUILD
         with self.lock:
             q=self.quote;now=self.clock();owned=self._owned()
+            display_forecast=copy.deepcopy(self.forecast)
+            if self.campaign:
+                c=self.campaign
+                display_forecast['active_scenario']=dict(side=c['side'],entry=c['last_entry'],
+                    trigger=c.get('entry_trigger',0),invalidation=c['invalidation'],
+                    initial_invalidation=c.get('initial_invalidation',c['invalidation']))
+            display_forecast['reversal_status']=copy.deepcopy(self.reversal_status)
             return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,server_time=now,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
                 market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
@@ -720,7 +801,8 @@ class Engine:
                 emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,real_armed=self.real_armed,
                 pending_reversal=copy.deepcopy(self.pending_reversal),
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
-                forecast=copy.deepcopy(self.forecast),
+                forecast=display_forecast,
+                reversal_status=copy.deepcopy(self.reversal_status),
                 fee_profile=dict(fee_per_lot=self.effective_fee_per_lot,source=self.fee_source,key=self.fee_profile_key),
                 quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-100:]],
                 live_bar=asdict(self.live_bar) if self.live_bar else None,

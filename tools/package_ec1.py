@@ -6,7 +6,7 @@ package=dest/'package';package.mkdir(exist_ok=True);bridge=package/'Bridge';brid
 shutil.copy2(root/'app/build/outputs/apk/debug/app-debug.apk',package/'FXM1_10_9_EVENT_CORE_DEMO.apk')
 for name in ('bridge_v10_0.py','START_BRIDGE_V10_0.bat','requirements_event.txt','export_ticks.py','research_config.json'):
     shutil.copy2(root/'mt5_bridge'/name,bridge/name)
-shutil.copytree(root/'mt5_bridge/event_core',bridge/'event_core',ignore=shutil.ignore_patterns('__pycache__','*.pyc'),dirs_exist_ok=True)
+shutil.copytree(root/'mt5_bridge/event_core',bridge/'event_core',ignore=shutil.ignore_patterns('__pycache__','*.pyc','*.orig'),dirs_exist_ok=True)
 # Pure-Python fallbacks, with licences. Exclude platform extensions, never ship environment credentials.
 vendor=bridge/'_vendor';vendor.mkdir(exist_ok=True)
 for distribution in ('Flask','Werkzeug','Jinja2','MarkupSafe','itsdangerous','click','blinker','colorama'):
