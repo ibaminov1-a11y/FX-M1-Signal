@@ -168,6 +168,8 @@ public final class EventClient {
             .append("\n").append(forecastText)
             .append("\nРешение и исполнение: данные MT5");
         if(campaign!=null)context.append("\nОткрытая кампания: ").append(campaignSide);
+        JSONObject reversal=s.optJSONObject("pending_reversal");
+        if(reversal!=null){int rsd=reversal.optInt("side",0);context.append("\nREVERSAL PENDING: закрываем текущую сторону → ").append(rsd>0?"BUY":rsd<0?"SELL":"—");}
         if(q!=null)context.append("\nВремя котировки: ").append(new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date(q.optLong("time_msc"))));
         JSONArray positions=s.optJSONArray("all_positions");int n=positions==null?0:positions.length();double floating=0;
         if(positions!=null)for(int i=0;i<positions.length();i++){JSONObject x=positions.getJSONObject(i);floating+=x.optDouble("profit")+x.optDouble("swap");}
@@ -184,8 +186,8 @@ public final class EventClient {
             .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig).putString("state_campaign_side",campaignSide)
             .putString("state_context",context.toString()).putString("state_why",why).putString("state_forecast_text",forecastText)
             .putString("state_components",forecastText+"\nКомпоненты: "+(fc.optJSONObject("components")==null?"{}":fc.optJSONObject("components").toString())+
-                "\nСправа на графике — модельный коридор +5/+10/+15м; это вычислительная оценка, не гарантированный маршрут."+
-                "\nProbe разрешается только после устойчивого forecast + свежего M1 micro-break; при потере edge в минусе probe закрывается раньше защитного SL.")
+                "\nСправа на графике — MAIN и ALT сценарии с ключевыми уровнями; это вычислительная карта вариантов, не гарантированный маршрут."+
+                "\nComputeCore сам выбирает момент входа. При подтверждённом противоположном сценарии: закрытие текущей стороны → MT5 FLAT → повторная проверка → разворот.")
             .putInt("state_quality",-1).putInt("state_api_count",0).putInt("state_cache_count",0)
             .putLong("state_signal_since_ms",since).putLong("state_last_update_ms",now).putLong("state_last_success_ms",(long)(s.optDouble("analysis_time",0)*1000))
             .putLong("state_entry_bits",Double.doubleToLongBits(q==null?Double.NaN:q.optDouble("bid",Double.NaN)))
