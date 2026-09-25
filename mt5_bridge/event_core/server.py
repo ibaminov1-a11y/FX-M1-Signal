@@ -3,7 +3,7 @@ from dataclasses import asdict
 import argparse, hmac, json, logging, secrets, socket, threading, time, uuid
 from pathlib import Path
 from flask import Flask, jsonify, request
-from . import VERSION, PROTOCOL, BUILD
+from . import VERSION, PROTOCOL, BUILD, REVISION
 from .engine import Engine
 from .model import Blocked
 from .mt5_adapter import MT5Broker, MAGIC
@@ -163,7 +163,7 @@ def main():
     threading.Thread(target=worker,name='event-core',daemon=True).start()
     try:ip=socket.gethostbyname(socket.gethostname())
     except OSError:ip='PC_IP'
-    print(f'FX M1 Bridge {BUILD} | DEMO + GATED REAL PILOT | AUTO OFF | MT5 source',flush=True)
+    print(f'FX M1 Bridge {BUILD} {REVISION} | DEMO ONLY | AUTO OFF | MT5 source',flush=True)
     print(f'Адрес для телефона: http://{ip}:{args.port}',flush=True)
     print('Ключ Bridge (не публикуйте): '+token,flush=True)
     print('Только доверенная локальная сеть. Не открывать порт в Интернет.',flush=True)

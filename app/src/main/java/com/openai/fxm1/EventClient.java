@@ -77,7 +77,12 @@ public final class EventClient {
         JSONObject b=body==null?new JSONObject():new JSONObject(body.toString());
         return b.put("client_id",p.getString("ec_client_id","")).put("sequence",seq).put("command_id",UUID.randomUUID().toString());
     }
-    public static JSONObject command(String cmd,JSONObject body) throws Exception{return http("POST",base()+"/ec/command/"+cmd,envelope(body));}
+    public static JSONObject command(String cmd,JSONObject body) throws Exception{
+        JSONObject data=body==null?new JSONObject():new JSONObject(body.toString());
+        if("enable".equals(cmd)&&"ENABLE_DEMO".equals(data.optString("confirmation")))
+            data.put("allow_wait",true).put("accept_pending_profile",true).put("config",config());
+        return http("POST",base()+"/ec/command/"+cmd,envelope(data));
+    }
     public static String accountMode(){
         String target=prefs().getString("target_trade_mode","DEMO").toUpperCase(Locale.US);
         return "REAL".equals(target)?"REAL":"DEMO";
@@ -119,9 +124,11 @@ public final class EventClient {
         return true;
     }
     public static boolean needsConfigure(JSONObject state) throws Exception {
-        if(state==null||state.optJSONObject("campaign")!=null||state.optBoolean("auto",false)
-                ||state.optBoolean("emergency",false)||state.optBoolean("exit_pending",false))return false;
-        return !configMatches(state.optJSONObject("config"),config());
+        if(state==null||state.optBoolean("emergency",false))return false;
+        JSONObject desired=config(),pending=state.optJSONObject("pending_config");
+        if(pending!=null&&configMatches(pending,desired))return false;
+        if(state.optJSONObject("campaign")==null&&(state.optBoolean("auto",false)||state.optBoolean("exit_pending",false)))return false;
+        return !configMatches(state.optJSONObject("config"),desired);
     }
     public static void configure() throws Exception {
         JSONObject desired=config();String fingerprint=desired.toString();
@@ -130,7 +137,7 @@ public final class EventClient {
         if(configMatches(current.optJSONObject("config"),desired)){
             cache(current);prefs().edit().putString("ec_config_sent",fingerprint).apply();return;
         }
-        JSONObject result=command("configure",new JSONObject().put("config",desired));
+        JSONObject result=command("configure",new JSONObject().put("config",desired).put("allow_deferred",true));
         prefs().edit().putString("ec_config_sent",fingerprint).putString("ec_message",result.optString("message")).apply();
         JSONObject refreshed=http("GET",base()+"/ec/state",null);
         if(PROTOCOL.equals(refreshed.optString("protocol")))cache(refreshed);
@@ -169,7 +176,10 @@ public final class EventClient {
             .append("\nЭтап: ").append(phaseName(phase)).append("\nПуть: ").append(pathName(path)).append("\n").append(why)
             .append("\n").append(forecastText)
             .append("\nРешение и исполнение: данные MT5");
-        if(campaign!=null)context.append("\nОткрытая кампания: ").append(campaignSide);
+        if(campaign!=null)context.append("RECONCILING".equals(s.optString("campaign_state"))?
+            "\nПозиций MT5 нет; сверяем завершение кампании: ":"\nОткрытая кампания: ").append(campaignSide);
+        JSONObject gate=s.optJSONObject("entry_gate");
+        if(gate!=null)context.append("\nНовые входы: ").append(gate.optString("reason"));
         JSONObject reversal=s.optJSONObject("reversal_status");
         if(reversal==null||reversal.length()==0)reversal=s.optJSONObject("pending_reversal");
         if(reversal!=null&&reversal.length()>0){
@@ -198,9 +208,8 @@ public final class EventClient {
             .putInt("mt5_positions_snapshot",n).putLong("mt5_floating_bits",Double.doubleToLongBits(floating))
             .putString("state_symbol",symbol).putString("state_tf",tf).putString("state_signal",sig).putString("state_campaign_side",campaignSide)
             .putString("state_context",context.toString()).putString("state_why",why).putString("state_forecast_text",forecastText)
-            .putString("state_components",forecastText+"\nКомпоненты: "+(fc.optJSONObject("components")==null?"{}":fc.optJSONObject("components").toString())+
-                "\nСправа на графике — MAIN и ALT сценарии с ключевыми уровнями; это вычислительная карта вариантов, не гарантированный маршрут."+
-                "\nComputeCore сам выбирает момент входа. При подтверждённом противоположном сценарии: закрытие текущей стороны → MT5 FLAT → повторная проверка → разворот.")
+            .putString("state_components",ScenarioUi.explanation(s))
+            .putString("ec_runtime_build",s.optString("bridge_build","неизвестная сборка")+" · "+s.optString("runtime_revision",""))
             .putInt("state_quality",-1).putInt("state_api_count",0).putInt("state_cache_count",0)
             .putLong("state_signal_since_ms",since).putLong("state_last_update_ms",now).putLong("state_last_success_ms",(long)(s.optDouble("analysis_time",0)*1000))
             .putLong("state_entry_bits",Double.doubleToLongBits(q==null?Double.NaN:q.optDouble("bid",Double.NaN)))

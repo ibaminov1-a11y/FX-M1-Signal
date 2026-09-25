@@ -55,16 +55,29 @@ def build_map(current, a, side, up, down, range_weight, levels, points, bars):
             steps = max(1, math.floor((current - activation) * scenario_side / measured_range) + 1)
             target = activation + scenario_side * measured_range * steps
             target_source = 'MEASURED_RANGE_EXTENSION'
-        first_leg = activation + (target - activation) * .35
+        target1, source1 = target, target_source
+        remaining = [p for p in (highs if scenario_side == 1 else lows)
+                     if (p-target1)*scenario_side > a*.05]
+        if remaining:
+            target2 = min(remaining) if scenario_side == 1 else max(remaining)
+            source2 = 'CONFIRMED_STRUCTURE'
+        else:
+            target2 = target1 + scenario_side * measured_range
+            source2 = 'MEASURED_RANGE_EXTENSION'
+        retest = activation + (target1-activation)*.15
+        target = target2
+        target_source = source2
         weight = round(up if scenario_side == 1 else down, 4)
         result['scenarios'].append(dict(
             name=name, side=scenario_side, probability=weight, model_weight=weight,
             activation=activation, invalidation=invalidation, target=target,
+            target1=target1, target2=target2, target1_source=source1, target2_source=source2,
             target_source=target_source, condition='FRESH_CROSS_AND_ENTRY_GATES',
-            path=[dict(minutes=0, price=current, anchor='LIVE'),
-                  dict(minutes=4, price=first_leg, anchor='MEASURED_BREAK_LEG'),
-                  dict(minutes=9, price=activation, anchor='TRIGGER_RETEST'),
-                  dict(minutes=15, price=target, anchor=target_source)],
+            path=[dict(minutes=0, price=current, anchor='LIVE', label='LIVE'),
+                  dict(minutes=3, price=activation, anchor='TRIGGER', label='Пробой'),
+                  dict(minutes=6, price=target1, anchor=source1, label='T1'),
+                  dict(minutes=10, price=retest, anchor='TRIGGER_RETEST', label='HL?' if scenario_side==1 else 'LH?'),
+                  dict(minutes=15, price=target, anchor=target_source, label='T2')],
         ))
         for point in result['scenarios'][-1]['path']:
             point['uncertainty'] = a * .30 * math.sqrt(point['minutes'] / 5)

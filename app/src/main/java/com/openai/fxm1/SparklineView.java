@@ -37,7 +37,7 @@ public class SparklineView extends View {
     private boolean detailedMap(){return forecast.optInt("map_version",0)>=2;}
     private static String priceText(double value){return String.format(Locale.US,"%.5f",value);}
     public static String mapDescription(JSONObject f){
-        if(f==null||f.optInt("map_version",0)<2)return "График MT5";
+        if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время условно.");
         if(!hasScenarioMap(f))text.append(" WAIT — нет ясного сценария.");
         JSONObject entries=f.optJSONObject("entry_levels");
@@ -50,7 +50,9 @@ public class SparklineView extends View {
         if(scenarios!=null)for(int i=0;i<scenarios.length();i++){
             JSONObject v=scenarios.optJSONObject(i);if(v==null)continue;
             text.append(" ").append(v.optInt("side")>0?"BUY":"SELL").append(" цель ")
-                .append(priceText(v.optDouble("target"))).append(" ").append(v.optString("target_source")).append(".");
+                .append(priceText(v.optDouble("target"))).append(" ").append(v.optString("target_source")).append(".")
+                .append(" T1 ").append(priceText(v.optDouble("target1",v.optDouble("target"))))
+                .append(" T2 ").append(priceText(v.optDouble("target2",v.optDouble("target"))));
         }
         text.append(" LIVE ").append(priceText(f.optDouble("live_price"))).append(".");
         JSONObject active=f.optJSONObject("active_scenario"),reversal=f.optJSONObject("reversal_status");
@@ -209,6 +211,7 @@ public class SparklineView extends View {
         }
     }
     private void drawForecast(Canvas c,JSONArray projection,float startX,float startY,float futureLeft,float plotRight,double min,double max,float top,float height){
+        if(!detailedMap())return; // Never resurrect the old +5/+10/+15 line during upgrade.
         JSONArray scenarios=forecast.optJSONArray("scenarios");
         if(detailedMap()&&!hasScenarioMap(forecast))return;
         if(scenarios!=null&&scenarios.length()>0){drawScenarioMap(c,scenarios,startX,startY,futureLeft,plotRight,min,max,top,height);return;}
@@ -235,12 +238,16 @@ public class SparklineView extends View {
     @Override protected void onDraw(Canvas c){
         super.onDraw(c);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(11));paint.setColor(0xffb0aac7);
         if(bars.length()<2){c.drawText("Ожидаем закрытые свечи MT5",dp(8),dp(28),paint);return;}
+        if(detailedMap()){
+            ScenarioMapRenderer.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density,bars,structure,liveBar,forecast,positions);
+            return;
+        }
         boolean live=hasLive();JSONArray projection=forecast.optJSONArray("projection");int start=Math.max(0,bars.length()-48),closedCount=bars.length()-start,count=closedCount+(live?1:0);double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
         for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b==null)continue;min=Math.min(min,b.optDouble("low"));max=Math.max(max,b.optDouble("high"));}
         if(live){min=Math.min(min,liveBar.optDouble("low",min));max=Math.max(max,liveBar.optDouble("high",max));}
-        if(!detailedMap()&&projection!=null)for(int i=0;i<projection.length();i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;min=Math.min(min,p.optDouble("low",min));max=Math.max(max,p.optDouble("high",max));}
+        if(detailedMap()&&projection!=null)for(int i=0;i<projection.length();i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;min=Math.min(min,p.optDouble("low",min));max=Math.max(max,p.optDouble("high",max));}
         JSONArray scenarios=forecast.optJSONArray("scenarios");
-        if(scenarios!=null)for(int i=0;i<scenarios.length();i++){JSONObject s=scenarios.optJSONObject(i);if(s==null)continue;JSONArray ps=s.optJSONArray("path");if(ps==null)continue;for(int j=0;j<ps.length();j++){JSONObject p=ps.optJSONObject(j);if(p==null)continue;double price=p.optDouble("price",Double.NaN);if(Double.isFinite(price)){double uncertainty=detailedMap()?p.optDouble("uncertainty",0):0;
+        if(detailedMap()&&scenarios!=null)for(int i=0;i<scenarios.length();i++){JSONObject s=scenarios.optJSONObject(i);if(s==null)continue;JSONArray ps=s.optJSONArray("path");if(ps==null)continue;for(int j=0;j<ps.length();j++){JSONObject p=ps.optJSONObject(j);if(p==null)continue;double price=p.optDouble("price",Double.NaN);if(Double.isFinite(price)){double uncertainty=detailedMap()?p.optDouble("uncertainty",0):0;
                     if(!Double.isFinite(uncertainty)||uncertainty<0)uncertainty=0;min=Math.min(min,price-uncertainty);max=Math.max(max,price+uncertainty);}}}
         double support=forecast.optDouble("support",Double.NaN),resistance=forecast.optDouble("resistance",Double.NaN);
         if(Double.isFinite(support)){min=Math.min(min,support);max=Math.max(max,support);}if(Double.isFinite(resistance)){min=Math.min(min,resistance);max=Math.max(max,resistance);}
@@ -269,6 +276,7 @@ public class SparklineView extends View {
             detailedHeader(c,futureLeft);
         }
         drawForecast(c,projection,lastX,lastY,futureLeft,plotRight,min,max,top,height);
+        if(!detailedMap()){paint.setColor(0xffb0aac7);paint.setTextSize(dp(9));c.drawText("Карта ждёт",futureLeft,top+dp(25),paint);c.drawText("новый профиль",futureLeft,top+dp(39),paint);}
         if(detailedMap()){
             detailedLevels(c,futureLeft,plotRight,min,max,top,height);
             paint.setColor(0xffeeeeff);paint.setStyle(Paint.Style.FILL);c.drawCircle(lastX,lastY,dp(3),paint);

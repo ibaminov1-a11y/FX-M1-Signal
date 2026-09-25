@@ -95,3 +95,14 @@ class ScenarioMapTests(unittest.TestCase):
             widths=[p.get('uncertainty',-1) for p in scenario['path']]
             self.assertEqual(widths[0],0)
             self.assertTrue(all(b>a for a,b in zip(widths,widths[1:])),widths)
+
+    def test_scenarios_have_two_named_targets_and_retest_not_three_flat_dots(self):
+        bars,m1,m15,h1,live,a,t=self.data()
+        q=Quote(int(NOW*1000),t-.03*a,t-.03*a+.00001)
+        f=self.core().evaluate(bars,m1,m15,h1,live,q,NOW).forecast
+        for v in f['scenarios']:
+            self.assertIn('target1',v)
+            self.assertIn('target2',v)
+            self.assertGreater((v['target2']-v['target1'])*v['side'],0)
+            self.assertGreaterEqual(len(v['path']),5)
+            self.assertTrue(any(p.get('label')=='HL?' or p.get('label')=='LH?' for p in v['path']))

@@ -2,4 +2,5 @@
 # VERSION is the installed APK's compatibility contract; BUILD identifies this rebuild.
 VERSION = '10.9-EC1'
 BUILD = '10.9-EC1-R4-COMPUTE'
+REVISION = 'R4.2-upgrade'
 PROTOCOL = 'fxm1.event.v1'

@@ -176,6 +176,7 @@ public class MainActivity extends Activity {
         signalHistoryText = findViewById(R.id.signalHistoryText);
         tradeHistoryText = findViewById(R.id.tradeHistoryText);
         sparklineView = findViewById(R.id.sparklineView);
+        sparklineView.setOnClickListener(v -> ScenarioUi.enlarge(this));
         qualityBarView = findViewById(R.id.qualityBarView);
         rootLayout = findViewById(R.id.rootLayout);
 
@@ -680,7 +681,7 @@ public class MainActivity extends Activity {
             serverConnected = true;
             mt5Connected = mt5;
             demoAccount = "DEMO".equalsIgnoreCase(accountType);
-            serverStatusText.setText("APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
+            serverStatusText.setText("APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n"+p.getString("ec_runtime_build","")+"\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
             accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             renderPositionsMoneyCard(positions, floating, currency);
@@ -699,7 +700,7 @@ public class MainActivity extends Activity {
             if("REAL".equalsIgnoreCase(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
             if (autoStatusText != null) {
                 autoStatusText.setText(emergency ? "EMERGENCY · AUTO заблокирован" :
-                        autoSaved ? "AUTO включён · "+accountType :
+                        autoSaved ? "AUTO включён · "+accountType+"\n"+(bridgeState.optJSONObject("entry_gate")==null?"":bridgeState.optJSONObject("entry_gate").optString("reason")) :
                         paused ? "AUTO выключен · PAUSE" : "AUTO выключен · "+accountType);
                 autoStatusText.setTextColor(emergency ? C_RED : autoSaved ? C_GREEN : C_MUTED);
             }
@@ -1430,22 +1431,9 @@ public class MainActivity extends Activity {
         signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
         JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
-        if(forecast!=null){
-            int fs=forecast.optInt("side",0),candidate=forecast.optInt("candidate_side",0);
-            int dir=fs!=0?fs:candidate;
-            if(dir!=0){
-                double prob=forecast.optDouble(dir>0?"up_probability":"down_probability",0);
-                int pct=(int)Math.round(prob*100);
-                confidenceText.setText("LIVE FORECAST: "+(fs==0?"EARLY ":"")+(dir>0?"BUY ":"SELL ")+pct+"% · "+forecast.optString("regime",""));
-                confidenceText.setTextColor(dir>0?C_GREEN:C_RED);
-            }else{
-                confidenceText.setText("Сценарий: "+EventClient.phaseName(currentDecision==null?"SEARCH":currentDecision.optString("phase","SEARCH")));
-                confidenceText.setTextColor(C_PURPLE);
-            }
-        }else{
-            confidenceText.setText("Сценарий: "+EventClient.phaseName(currentDecision==null?"SEARCH":currentDecision.optString("phase","SEARCH")));
-            confidenceText.setTextColor(C_PURPLE);
-        }
+        confidenceText.setText(ScenarioUi.headline(forecast));
+        int mapSide=forecast==null?0:forecast.optInt("side");
+        confidenceText.setTextColor(mapSide>0?C_GREEN:mapSide<0?C_RED:C_PURPLE);
         if (qualityBarView != null) qualityBarView.setVisibility(View.GONE);
         updateSignalAgeText(signal, since, updated);
         restoreSparklineFromPrefs(signal);
@@ -1471,6 +1459,8 @@ public class MainActivity extends Activity {
                     "\nВыход: структура и защита кампании"
             );
         }
+        String scenarioLevels=ScenarioUi.levels(currentState);
+        if(!scenarioLevels.isEmpty())levelsText.setText(scenarioLevels);
         contextText.setText(context);
         if (whyWaitText != null) whyWaitText.setText(("WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
         if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));

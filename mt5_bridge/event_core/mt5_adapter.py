@@ -151,6 +151,13 @@ class MT5Broker:
         fields=('ticket','entry','type','position_id','time_msc','volume','profit','commission','swap','fee','magic','symbol','comment','price')
         return [{k:(getattr(d,k,0) if k not in ('symbol','comment') else str(getattr(d,k,''))) for k in fields} for d in rows]
 
+    def history_position(self,position_id):
+        pid=int(position_id)
+        if pid<=0:raise Blocked('Некорректный ID позиции')
+        rows=required(self.mt5.history_deals_get(position=pid),'историю позиции #'+str(pid))
+        fields=('ticket','entry','type','position_id','time_msc','volume','profit','commission','swap','fee','magic','symbol','comment','price')
+        return [{k:(getattr(d,k,0) if k not in ('symbol','comment') else str(getattr(d,k,''))) for k in fields} for d in rows]
+
     def calc_profit(self,side,symbol,volume,entry,exit):
         v=self.mt5.order_calc_profit(self.mt5.ORDER_TYPE_BUY if side==1 else self.mt5.ORDER_TYPE_SELL,symbol,volume,entry,exit)
         return required(v,'расчёт прибыли/риска')

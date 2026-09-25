@@ -7,6 +7,8 @@ from event_core.engine import Engine
 from event_core.store import Store
 from event_core.model import Bar,Config,Decision,atr,pivots
 from event_core.strategy import Strategy
+from event_core.compute_core import ComputeCore
+from test_compute_core import market, NOW
 from fakes import FakeBroker,wave
 from flask import jsonify,request
 
@@ -31,6 +33,8 @@ def reset():
         broker.bid=1.103;broker.ask=broker.bid+.00001;broker.quote_age=0;broker.result='FILLED';broker.visible=True
         broker.demo=True;broker.margin_mode='HEDGING';broker.trade_allowed=True;broker.history_failure=False;broker.live_bar_data=None
         engine.config=Config(fee_per_lot=0);engine.campaign=None;engine.emergency=False;engine.recovery=False
+        engine.pending_config=None;engine.campaign_history_cache={};engine.pending_reversal=None;engine.reversal_status={}
+        engine.compute=ComputeCore(engine.config)
         engine.daily_latch='';engine.auto=False;engine.paused=True;engine.exit_pending=False;engine.ack=[0,0]
         engine.account_key='';engine.history_time=0;engine.history_ok=False;engine.history_error='История ещё не получена';engine.strategy=Strategy(engine.config)
         clear_market();engine.rate_times=[];engine.last_exit=0;engine.next_close=0;engine.last_audit_key=None
@@ -81,6 +85,40 @@ def fixture_r3_impulse():
     data=request.get_json(silent=True) or {};side=-1 if int(data.get('side',1))<0 else 1
     state=prime_impulse(side)
     return jsonify(ok=True,path=state['decision']['path'],structure=state['decision']['structure'])
+
+# Upgrade fixture: real engine with a legacy campaign whose closing deal is delayed.
+legacy_complete=[]
+@app.post('/test/legacy-upgrade')
+def legacy_upgrade():
+    global legacy_complete
+    reset()
+    with engine.lock:
+        engine.config=Config(engine_mode='LEGACY',fee_per_lot=0,approved=True,cooldown_sec=0)
+        engine.strategy=Strategy(engine.config);engine.compute=ComputeCore(engine.config)
+        engine._refresh(time.time());engine.info=broker.symbol('EURUSD');engine.quote=broker.quote('EURUSD')
+        d=Decision('SELL','ENTRY_READY','legacy campaign','old-upgrade',-1,
+            1.1034,1.10301,1.1034,.0005,int(time.time()*1000))
+        engine._entry(d,time.time())
+        broker.close_position(broker._positions[0])
+        legacy_complete=list(broker.deals)
+        broker.deals=broker.deals[:1]  # Closing history not yet available, positions are already zero.
+        engine.history_time=0;engine.save();engine.step()
+        return jsonify(ok=True)
+
+@app.post('/test/legacy-finish')
+def legacy_finish():
+    with engine.lock:
+        broker.deals=list(legacy_complete);engine.history_time=0
+        bars,m1,m15,h1,live,a=market(1)
+        delta=int(time.time())//60*60-int(NOW)
+        def shift(b):return Bar(b.time+delta,b.open,b.high,b.low,b.close,b.volume)
+        broker.bar_data=[shift(b) for b in bars];broker.m1_data=[shift(b) for b in m1]
+        broker.ctx_data=[shift(b) for b in m15];broker.h1_data=[shift(b) for b in h1]
+        broker.live_bar_data=shift(live)
+        t=max(b.high for b in m1[-5:-1])+max(a*.02,.000012)
+        broker.bid=t-.03*a;broker.ask=broker.bid+.00001
+        engine.last_market_attempt=-1;engine.step()
+        return jsonify(ok=True)
 
 # Use normal state endpoint and step actual engine periodically.
 if __name__=='__main__':

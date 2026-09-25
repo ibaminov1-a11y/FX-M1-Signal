@@ -72,7 +72,9 @@ class ComputeCoreTests(unittest.TestCase):
         self.assertEqual(len(f['scenarios']),2,f)
         self.assertEqual(f['scenarios'][0]['name'],'PRIMARY')
         self.assertEqual(f['scenarios'][0]['side'],1)
-        self.assertEqual(len(f['scenarios'][0]['path']),4)
+        self.assertEqual(len(f['scenarios'][0]['path']),5)
+        self.assertEqual(f['scenarios'][0]['path'][2]['label'],'T1')
+        self.assertEqual(f['scenarios'][0]['path'][-1]['label'],'T2')
         self.assertIn('support',f);self.assertIn('resistance',f)
 
     def test_strong_downtrend_has_sell_bias(self):

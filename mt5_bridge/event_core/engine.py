@@ -24,6 +24,12 @@ class Engine:
         # Ephemeral by design: never resurrect a reversal after Bridge restart.
         self.pending_reversal=None
         self.reversal_status={}
+        self.pending_config=copy.deepcopy(saved.get('pending_config'))
+        if self.pending_config:
+            self.pending_config['approved']=False  # A restart never restores consent to trade.
+        self.campaign_history_cache={}
+        self.reconcile_detail=''
+
         self.effective_fee_per_lot=None;self.fee_source='UNRESOLVED';self.fee_profile_key=''
         self.campaign=saved.get('campaign')
         self.emergency=bool(saved.get('emergency',False))
@@ -57,7 +63,8 @@ class Engine:
         self.store.save('engine',dict(config=asdict(self.config),account_key=self.account_key,
             campaign=self.campaign,emergency=self.emergency,recovery=self.recovery,
             daily_latch=self.daily_latch,ack=self.ack,last_exit=self.last_exit,
-            exit_pending=self.exit_pending,strategy=self.strategy.state(),compute=self.compute.state()))
+            exit_pending=self.exit_pending,pending_config=self.pending_config,
+            strategy=self.strategy.state(),compute=self.compute.state()))
 
     def _consume_event(self,event_id):
         if self.config.engine_mode=='COMPUTE_V1':self.compute.consume(event_id)
@@ -131,11 +138,74 @@ class Engine:
         history_interval=1.0 if self.exit_pending or flat_campaign else 10.0
         if not self.history_time or now-self.history_time>=history_interval:
             try:
-                self.deals=self.broker.history(now);self.history_time=now;self.history_ok=True;self.history_error=''
+                self.deals=self.broker.history(now)
+                self._campaign_history()
+                self.history_time=now;self.history_ok=True;self.history_error=''
             except Exception as e:
                 self.history_ok=False;self.history_time=now;self.history_error=str(e)
         self._resolve_fee_profile()
         self._refresh_risk(now)
+
+    def _campaign_history(self):
+        # Date-range history can miss a close when broker time is ahead of PC time.
+        # Fetch the actual position ID; never delete a campaign just because positions=0.
+        if not self.campaign_history_cache and not hasattr(self.broker,'history_position'):return
+        merged={int(d['ticket']):d for d in self.deals}
+        merged.update(self.campaign_history_cache)
+        self.reconcile_detail=''
+        if self.campaign and not self._owned() and hasattr(self.broker,'history_position'):
+            for pid in self.campaign.get('position_ids',[]):
+                relevant=[d for d in merged.values() if int(d.get('position_id',0))==int(pid)]
+                opened=sum(float(d['volume']) for d in relevant if d.get('entry')==0)
+                closed=sum(float(d['volume']) for d in relevant if d.get('entry') in (1,3))
+                if opened>0 and closed>=opened-1e-8:continue
+                try:
+                    rows=self.broker.history_position(int(pid))
+                    if rows is None:raise Blocked('MT5 не вернул историю позиции')
+                    for d in rows:
+                        if int(d.get('position_id',0))==int(pid):
+                            self.campaign_history_cache[int(d['ticket'])]=d
+                            merged[int(d['ticket'])]=d
+                except Exception as exc:
+                    self.reconcile_detail='История позиции #'+str(pid)+': '+str(exc)
+        self.deals=sorted(merged.values(),key=lambda d:(d['time_msc'],d['ticket']))
+
+    def _apply_pending_config(self,now):
+        if not self.pending_config or self._has_exit_targets() or not self.history_ok:return False
+        new=Config(**self.pending_config).validate()
+        if new.account_mode!=self.account.get('type'):return False
+        keep_auto=self.auto and new.approved and not self.emergency and not self.recovery
+        self.config=new;self.pending_config=None
+        self.strategy=Strategy(new);self.compute=ComputeCore(new)
+        self.bars=[];self.context=[];self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
+        self.quote=None;self.info={};self.quote_ready=False;self.last_market_attempt=-1.
+        self.last_bars_at=0.;self.bar_errors=[];self.market_errors=[]
+        self.forecast={};self.decision=Decision();self.analysis_time=0.
+        self.auto=bool(keep_auto)
+        if not keep_auto:self.paused=True
+        self._resolve_fee_profile();self._refresh_risk(now)
+        self.store.event('PROFILE_APPLIED',dict(engine_mode=new.engine_mode,auto=self.auto),now)
+        self.save();return True
+
+    def _entry_gate(self):
+        blocks=[]
+        if self.emergency:blocks.append('EMERGENCY')
+        if self.recovery or self.store.pending():blocks.append('RECOVERY')
+        if not self.auto:blocks.append('AUTO_OFF')
+        elif self.paused:blocks.append('PAUSE')
+        if self.pending_config:blocks.append('PROFILE_PENDING')
+        if self.exit_pending:blocks.append('CLOSING')
+        if self.campaign and not self._owned():blocks.append('RECONCILING')
+        if not self.history_ok or self.clock()-self.history_time>15:blocks.append('HISTORY_WAIT')
+        if not self.risk.get('allowed',False):blocks.append('RISK_WAIT')
+        if self.market_errors or not self.quote_ready:blocks.append('MARKET_WAIT')
+        labels={'EMERGENCY':'аварийная блокировка','RECOVERY':'сверка неизвестного исполнения',
+            'AUTO_OFF':'AUTO выключен','PAUSE':'пауза','PROFILE_PENDING':'новый профиль ждёт завершения прежней кампании',
+            'CLOSING':'ждём подтверждения закрытия MT5','RECONCILING':'позиций нет; сверяем закрытый объём в истории MT5',
+            'HISTORY_WAIT':'ожидаем историю MT5','RISK_WAIT':'проверка риска не разрешает вход',
+            'MARKET_WAIT':'ожидаем свежие рыночные данные'}
+        return dict(allowed=not blocks,blocks=blocks,
+            reason='; '.join(labels[b] for b in blocks) if blocks else 'ожидание нового подтверждённого входа')
 
     def _reconcile(self):
         owned=self._owned();pending=self.store.pending()
@@ -452,6 +522,7 @@ class Engine:
             try:
                 self._refresh(now)
                 just_closed=self._reconcile()
+                profile_changed=self._apply_pending_config(now)
                 exit_cycle=bool(just_closed or self.emergency or self.exit_pending)
                 if self.emergency or self.exit_pending:
                     try:
@@ -551,6 +622,7 @@ class Engine:
                                          'OPPOSITE_CONFIRMED')
                     return self.snapshot()
                 if not self.auto or self.paused:self.execution=self._idle_status()
+                elif self.pending_config:self.execution='AUTO включён · '+self._entry_gate()['reason']
                 elif self.recovery:self.execution='Нужна сверка неизвестного исполнения; новые входы запрещены'
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
                 elif not self._session_allowed(now):self.execution='Текущая сессия не разрешена выбранным фильтром'
@@ -577,6 +649,7 @@ class Engine:
             return self.snapshot()
 
     def _entry(self,d,now):
+        if self.pending_config:raise Blocked('Новый профиль ожидает подтверждённого завершения кампании')
         if self.emergency or self.exit_pending or self.recovery or self.store.pending():
             raise Blocked('Вход заблокирован состоянием кампании')
         if self.store.has_intent(d.event_id):raise Blocked('Повтор торгового события запрещён')
@@ -698,6 +771,7 @@ class Engine:
                 if a.get('type') not in ('DEMO','REAL') or a.get('margin_mode')!='HEDGING' or a.get('currency')!='USD':
                     raise Blocked('Можно привязать только USD DEMO/REAL hedging')
                 self.account_key=a['key'];self.account=a;self.account_time=now;self.positions=pos;self.orders=orders
+                self.campaign_history_cache={};self.pending_config=None
                 self.recovery=False;self.real_armed=False;self.auto=False;self.paused=True;self.pending_reversal=None
                 self.ack=[0,0];self.daily_latch='';self.deals=[];self.history_time=0.;self.history_ok=False;self.history_error='История ещё не получена'
                 self.config=replace(self.config,account_mode=a['type'],approved=False,fee_per_lot=None)
@@ -711,15 +785,26 @@ class Engine:
                 new=Config(**{**asdict(self.config),**supplied}).validate()
                 if self.account and self.account.get('type') in ('DEMO','REAL') and new.account_mode!=self.account.get('type'):
                     raise Blocked('Режим профиля не совпадает с текущим MT5 счётом')
-                if self.campaign or self._owned() or self._owned_orders() or self.store.pending():
-                    raise Blocked('Профиль фиксирован до завершения кампании')
-                new.approved=False;self.auto=False;self.paused=True;self.real_armed=False;self.pending_reversal=None
-                self.config=new;self.strategy=Strategy(new);self.compute=ComputeCore(new);self.bars=[];self.context=[];self.last_bars_at=0
-                self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
-                self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
-                self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.
-                self.decision=Decision();self.forecast={};self.forecast_side=0;self.forecast_since=0.
-                self.save();message='Профиль сохранён. Подтвердите риск; комиссия определяется по режиму счёта'
+                busy=self._has_exit_targets()
+                if busy and data.get('allow_deferred') is True:
+                    existing=Config(**self.pending_config) if self.pending_config else None
+                    if existing is None or replace(existing,approved=False)!=replace(new,approved=False):
+                        self.pending_config=asdict(replace(new,approved=False))
+                        self._cancel_reversal('Ожидается смена профиля',now)
+                        self.store.event('PROFILE_QUEUED',dict(engine_mode=new.engine_mode),now)
+                    self.save()
+                    message='Профиль принят. Применится после подтверждённого завершения текущей кампании; AUTO включается отдельно'
+                else:
+                    if self.campaign or self._owned() or self._owned_orders() or self.store.pending():
+                        raise Blocked('Профиль фиксирован до завершения кампании')
+                    new.approved=False;self.auto=False;self.paused=True;self.real_armed=False;self.pending_reversal=None
+                    self.pending_config=None
+                    self.config=new;self.strategy=Strategy(new);self.compute=ComputeCore(new);self.bars=[];self.context=[];self.last_bars_at=0
+                    self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
+                    self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
+                    self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.
+                    self.decision=Decision();self.forecast={};self.forecast_side=0;self.forecast_since=0.
+                    self.save();message='Профиль сохранён. Подтвердите риск; комиссия определяется по режиму счёта'
             elif command=='approve_profile':
                 self._refresh(now);actual=self.account.get('type','UNKNOWN')
                 expected='APPROVE_REAL_RISK' if actual=='REAL' else 'APPROVE_DEMO_RISK'
@@ -746,19 +831,39 @@ class Engine:
             elif command in ('enable','play'):
                 self._refresh(now)
                 if self.emergency:raise Blocked('AUTO заблокирован: EMERGENCY. Выполните явную сверку DEMO')
-                if self.exit_pending:raise Blocked('AUTO временно заблокирован: ожидается подтверждение закрытия кампании в MT5')
+                if self.exit_pending and not data.get('allow_wait',False):raise Blocked('AUTO временно заблокирован: ожидается подтверждение закрытия кампании в MT5')
                 if self.store.pending():raise Blocked('AUTO временно заблокирован: ожидается подтверждение торгового запроса MT5')
                 if self.recovery:raise Blocked('AUTO заблокирован: требуется сверка неизвестного исполнения MT5')
                 actual=self.account.get('type','UNKNOWN')
+                if data.get('allow_wait',False) and actual!='DEMO':raise Blocked('AUTO с внутренним ожиданием доступен только DEMO')
                 if self.config.account_mode!=actual:raise Blocked('Режим профиля не совпадает с текущим MT5 счётом')
+                if (command=='enable' and actual=='DEMO' and data.get('allow_wait') is True
+                        and data.get('accept_pending_profile') is True and data.get('confirmation')=='ENABLE_DEMO'
+                        and 'config' in data):
+                    supplied=data['config']
+                    permitted={f.name for f in fields(Config)}-{'approved','technical_position_fuse','max_orders_per_minute'}
+                    if not isinstance(supplied,dict) or set(supplied)-permitted:raise Blocked('Неизвестное поле профиля')
+                    requested=Config(**{**asdict(self.config),**supplied}).validate()
+                    if requested.account_mode!='DEMO':raise Blocked('Профиль AUTO должен быть DEMO')
+                    if replace(requested,approved=False)==replace(self.config,approved=False):
+                        self.config.approved=True
+                    else:
+                        self.pending_config=asdict(replace(requested,approved=True))
+                        # Existing positions keep their frozen budget/SL; pending profile prevents adds.
+                        self.config.approved=True
                 if not self.config.approved:raise Blocked('Сначала подтвердите профиль '+actual)
                 if actual=='REAL' and not self.real_armed:raise Blocked('REAL не вооружён: сначала ARM REAL')
-                if not self.risk.get('allowed'):raise Blocked('Риск не разрешён: '+','.join(self.risk.get('blocks',[])))
+                if not self.risk.get('allowed') and not data.get('allow_wait',False):raise Blocked('Риск не разрешён: '+','.join(self.risk.get('blocks',[])))
                 if command=='play' and not self.auto:raise Blocked('PLAY снимает паузу, но не включает AUTO после отключения')
                 expected='ENABLE_REAL' if actual=='REAL' else 'ENABLE_DEMO'
                 if command=='enable' and data.get('confirmation')!=expected:raise Blocked('Нужно явное разрешение AUTO '+actual)
+                if self.pending_config and data.get('accept_pending_profile') is True:
+                    pending=Config(**self.pending_config).validate()
+                    if pending.account_mode!=actual:raise Blocked('Режим ожидающего профиля не совпадает с MT5')
+                    self.pending_config=asdict(replace(pending,approved=True))
                 self._suspend_trigger(now)
-                self.auto=True;self.paused=False;self.heartbeat=now;self.save();message='AUTO '+actual+' включён; вход только по новому событию'
+                self.auto=True;self.paused=False;self.heartbeat=now;self.save()
+                message='AUTO '+actual+' включён · '+self._entry_gate()['reason']
             elif command=='reset':
                 self._refresh(now);self._reconcile()
                 actual=self.account.get('type','DEMO');expected='RESET_REAL_FLAT' if actual=='REAL' else 'RESET_DEMO_FLAT'
@@ -784,7 +889,7 @@ class Engine:
             return out
 
     def snapshot(self):
-        from . import VERSION, PROTOCOL, BUILD
+        from . import VERSION, PROTOCOL, BUILD, REVISION
         with self.lock:
             q=self.quote;now=self.clock();owned=self._owned()
             display_forecast=copy.deepcopy(self.forecast)
@@ -794,12 +899,15 @@ class Engine:
                     trigger=c.get('entry_trigger',0),invalidation=c['invalidation'],
                     initial_invalidation=c.get('initial_invalidation',c['invalidation']))
             display_forecast['reversal_status']=copy.deepcopy(self.reversal_status)
-            return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,server_time=now,
+            return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,runtime_revision=REVISION,server_time=now,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
                 market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
                 risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),
                 emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,real_armed=self.real_armed,
                 pending_reversal=copy.deepcopy(self.pending_reversal),
+                pending_config=copy.deepcopy(self.pending_config),entry_gate=self._entry_gate(),
+                campaign_state=('OPEN' if owned else 'RECONCILING' if self.campaign else 'NONE'),
+                reconcile_detail=self.reconcile_detail,
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
                 forecast=display_forecast,
                 reversal_status=copy.deepcopy(self.reversal_status),

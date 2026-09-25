@@ -61,7 +61,7 @@ public class EventCoreUiTest {
  @Test public void legacyUiActualBalanceAndModesArePreserved()throws Exception{
   main(()->{MainActivity a=rule.getActivity();assertNotNull(a.findViewById(R.id.symbolSpinner));assertNotNull(a.findViewById(R.id.moneyHistoryButton));
    assertTrue(((TextView)a.findViewById(R.id.accountText)).getText().toString().contains("99868.35"));
-   assertEquals("10.9-EC1",FeatureEngine.appVersionName(a));
+   assertEquals("10.9-EC1-R4.2",FeatureEngine.appVersionName(a));
    Spinner modes=a.findViewById(R.id.signalModeSpinner),tf=a.findViewById(R.id.entryTimeframeSpinner);
    assertNotNull(modes);assertEquals(2,modes.getCount());String before=tf.getSelectedItem().toString();modes.setSelection(1);
    assertEquals(before,tf.getSelectedItem().toString());
@@ -143,7 +143,7 @@ public class EventCoreUiTest {
   assertFalse(SparklineView.shouldDrawProjection(none));
   assertTrue(SparklineView.shouldDrawProjection(candidate));
  }
- @Test public void scenarioMapDrawsPrimaryAndAlternativeBranches()throws Exception{
+ @Test public void obsoleteMapWithoutSchemaDoesNotRenderGuessedRoutes()throws Exception{
   JSONArray bars=new JSONArray();
   for(int i=0;i<18;i++){double o=1.1000+i*.00006,c=o+.00003;
    bars.put(new JSONObject().put("time",1800000000+i*300).put("open",o).put("high",c+.00004).put("low",o-.00004).put("close",c));}
@@ -170,11 +170,11 @@ public class EventCoreUiTest {
    bitmap[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(bitmap[0]));});
   int green=0,yellow=0;int[]pixels=new int[1000*500];bitmap[0].getPixels(pixels,0,1000,0,0,1000,500);
   for(int y=0;y<500;y++)for(int x=580;x<935;x++){int v=pixels[y*1000+x];if(v==0xff42d67a)green++;if(v==0xffffc857)yellow++;}
-  assertTrue("primary scenario must be a visible green branch",green>25);
-  assertTrue("alternative scenario must be a visible separate branch",yellow>12);
+  assertEquals("Old unversioned map is not the new structural contract",0,green);
+  assertEquals("Do not fall back to obsolete route payload",0,yellow);
   bitmap[0].recycle();
  }
- @Test public void forecastZoneReservesRightSideAndDrawsFutureProbabilityPath()throws Exception{
+ @Test public void legacyFiveMinuteProjectionStaysDisabledDuringUpgrade()throws Exception{
   JSONArray bars=new JSONArray();
   for(int i=0;i<18;i++){double o=1.1000+i*.0001,c=o+.00006;
    bars.put(new JSONObject().put("time",1800000000+i*300).put("open",o).put("high",c+.00005).put("low",o-.00004).put("close",c));}
@@ -194,7 +194,7 @@ public class EventCoreUiTest {
    if(v==0xff5bd6ff)blueForecast++;
    if(v==0xffff4857)candlePixelsInFuture++;
   }
-  assertTrue("BUY forecast path must be clearly green in reserved future zone",greenForecast>20);
+  assertEquals("Old BUY +5/+10/+15 projection must be absent",0,greenForecast);
   assertEquals("old cyan forecast path must be gone",0,blueForecast);
   assertEquals("real red candles must stay out of future forecast zone",0,candlePixelsInFuture);
 
@@ -205,7 +205,7 @@ public class EventCoreUiTest {
    sell[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(sell[0]));});
   int redForecast=0;int[]sellPixels=new int[1000*500];sell[0].getPixels(sellPixels,0,1000,0,0,1000,500);
   for(int y=0;y<500;y++)for(int x=720;x<930;x++)if(sellPixels[y*1000+x]==0xffff4857)redForecast++;
-  assertTrue("SELL forecast path must be clearly red in reserved future zone",redForecast>20);
+  assertEquals("Old SELL +5/+10/+15 projection must be absent",0,redForecast);
   sell[0].recycle();bitmap[0].recycle();
  }
  @Test public void noEdgeForecastDoesNotPretendBuyOrSellDirection()throws Exception{

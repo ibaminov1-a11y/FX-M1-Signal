@@ -73,7 +73,7 @@
 
             <TextView android:id="@+id/signalText" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="WAIT" android:textColor="#A66BFF" android:textSize="36sp" android:textStyle="bold" />
 
-            <com.openai.fxm1.SparklineView android:id="@+id/sparklineView" android:layout_width="match_parent" android:layout_height="220dp" android:layout_marginTop="2dp" />
+            <com.openai.fxm1.SparklineView android:id="@+id/sparklineView" android:layout_width="match_parent" android:layout_height="380dp" android:layout_marginTop="2dp" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:gravity="center_vertical" android:orientation="horizontal">
 
