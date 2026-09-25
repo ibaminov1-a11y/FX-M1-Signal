@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -71,9 +72,16 @@ public class ScenarioMapUiTest {
     private void save(Render image,String name)throws Exception{
         File file=new File(context.getExternalFilesDir(null),name+".png");
         try(FileOutputStream out=new FileOutputStream(file)){image.bitmap.compress(Bitmap.CompressFormat.PNG,100,out);}
-        String command="mkdir -p /sdcard/Download/ec1-qa; cp "+file.getAbsolutePath()+" /sdcard/Download/ec1-qa/"+name+".png";
-        try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
-            InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] buffer=new byte[4096];while(in.read(buffer)!=-1){}}
+        // UiAutomation does not interpret shell separators: execute each command separately.
+        for(String command:new String[]{"mkdir -p /sdcard/Download/ec1-qa",
+                "cp "+file.getAbsolutePath()+" /sdcard/Download/ec1-qa/"+name+".png"}){
+            try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
+                InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd);
+                ByteArrayOutputStream output=new ByteArrayOutputStream()){
+                byte[] buffer=new byte[4096];int count;while((count=in.read(buffer))!=-1)output.write(buffer,0,count);
+                assertEquals("Screenshot export failed: "+command,"",output.toString("UTF-8").trim());
+            }
+        }
     }
     @Test public void unclearMapShowsSharedEntryLevelsWithoutFakePaths()throws Exception{
         Render image=render(forecast(0));

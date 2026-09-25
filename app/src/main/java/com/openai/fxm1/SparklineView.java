@@ -67,16 +67,20 @@ public class SparklineView extends View {
         paint.setPathEffect(null);paint.setTextSize(dp(7.5f));paint.setStyle(Paint.Style.FILL);
         c.drawText(label,left+dp(2),Math.max(top+dp(8),Math.min(top+height-dp(2),yy-dp(3))),paint);
     }
+    private static boolean sameLevel(double a,double b){return Double.isFinite(a)&&Double.isFinite(b)&&Math.abs(a-b)<1e-9;}
     private void detailedLevels(Canvas c,float left,float right,double min,double max,float top,float height){
-        scenarioLevel(c,forecast.optDouble("support"),"SUPPORT",0x9942d67a,left,right,min,max,top,height);
-        scenarioLevel(c,forecast.optDouble("resistance"),"RESIST",0x99ff4857,left,right,min,max,top,height);
+        JSONObject active=forecast.optJSONObject("active_scenario");JSONArray scenarios=forecast.optJSONArray("scenarios");
+        JSONObject primary=scenarios==null?null:scenarios.optJSONObject(0);
+        double stop=primary==null?Double.NaN:primary.optDouble("invalidation"),activeStop=active==null?Double.NaN:active.optDouble("invalidation");
+        double support=forecast.optDouble("support"),resistance=forecast.optDouble("resistance");
+        // A shared support/cancel price gets one readable label, not overprinted text.
+        scenarioLevel(c,support,sameLevel(support,stop)||sameLevel(support,activeStop)?"":"SUPPORT",0x9942d67a,left,right,min,max,top,height);
+        scenarioLevel(c,resistance,sameLevel(resistance,stop)||sameLevel(resistance,activeStop)?"":"RESIST",0x99ff4857,left,right,min,max,top,height);
         JSONObject entries=forecast.optJSONObject("entry_levels");
         if(entries!=null)for(String side:new String[]{"BUY","SELL"}){
             JSONObject v=entries.optJSONObject(side);if(v!=null)scenarioLevel(c,v.optDouble("trigger"),side+" "+priceText(v.optDouble("trigger")),0xff879bb4,left,right,min,max,top,height);
         }
-        JSONObject active=forecast.optJSONObject("active_scenario");JSONArray scenarios=forecast.optJSONArray("scenarios");
-        JSONObject primary=scenarios==null?null:scenarios.optJSONObject(0);
-        if(primary!=null)scenarioLevel(c,primary.optDouble("invalidation"),"Отмена "+scenarioSide(primary.optInt("side")),0xffa996b6,left,right,min,max,top,height);
+        if(primary!=null)scenarioLevel(c,stop,sameLevel(stop,activeStop)?"":"Отмена "+scenarioSide(primary.optInt("side")),0xffa996b6,left,right,min,max,top,height);
         if(active!=null)scenarioLevel(c,active.optDouble("invalidation"),"Активный "+scenarioSide(active.optInt("side"))+": отмена",0xffffb04d,left,right,min,max,top,height);
     }
     private void detailedHeader(Canvas c,float futureLeft){

@@ -17,4 +17,8 @@ rc=$?
 adb logcat -d > evidence/android-logcat.txt
 adb pull /sdcard/Download/ec1-qa evidence/ui || true
 cat evidence/android-runtime.log
+if [ "$rc" -eq 0 ]; then
+  test -s evidence/ui/ec1-qa/scenario-wait.png || exit 1
+  test -s evidence/ui/ec1-qa/scenario-active-reversal.png || exit 1
+fi
 exit "$rc"
