@@ -73,7 +73,51 @@ public class SparklineView extends View {
         if(down>=up&&down>=range)return "DN "+Math.round(down*100)+"%";
         return "RG "+Math.round(range*100)+"%";
     }
+    public static boolean hasScenarioMap(JSONObject f){
+        JSONArray s=f==null?null:f.optJSONArray("scenarios");
+        return s!=null&&s.length()>0;
+    }
+    private int scenarioColor(int side,boolean primary){
+        if(!primary)return 0xffffc857;
+        return side>0?0xff42d67a:side<0?0xffff4857:0xff914dff;
+    }
+    private String scenarioSide(int side){return side>0?"BUY":side<0?"SELL":"RANGE";}
+    private void drawScenarioMap(Canvas c,JSONArray scenarios,float startX,float startY,float futureLeft,float plotRight,double min,double max,float top,float height){
+        if(scenarios==null||scenarios.length()==0)return;
+        float usable=Math.max(dp(26),plotRight-futureLeft-dp(4));
+        double support=forecast.optDouble("support",Double.NaN),resistance=forecast.optDouble("resistance",Double.NaN);
+        paint.setTextSize(dp(8));paint.setStrokeWidth(dp(.7f));paint.setPathEffect(new DashPathEffect(new float[]{dp(4),dp(4)},0));
+        if(Double.isFinite(resistance)&&resistance>=min&&resistance<=max){
+            paint.setColor(0x99ff4857);float yy=y(resistance,min,max,top,height);c.drawLine(futureLeft,yy,plotRight,yy,paint);c.drawText("RESIST",futureLeft+dp(2),yy-dp(3),paint);
+        }
+        if(Double.isFinite(support)&&support>=min&&support<=max){
+            paint.setColor(0x9942d67a);float yy=y(support,min,max,top,height);c.drawLine(futureLeft,yy,plotRight,yy,paint);c.drawText("SUPPORT",futureLeft+dp(2),yy-dp(3),paint);
+        }
+        paint.setPathEffect(null);
+        for(int s=0;s<Math.min(2,scenarios.length());s++){
+            JSONObject scenario=scenarios.optJSONObject(s);if(scenario==null)continue;
+            JSONArray pts=scenario.optJSONArray("path");if(pts==null||pts.length()==0)continue;
+            boolean primary=s==0;int side=scenario.optInt("side",0),color=scenarioColor(side,primary);
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(primary?3.2f:2.0f));paint.setColor(color);
+            paint.setPathEffect(primary?null:new DashPathEffect(new float[]{dp(7),dp(4)},0));
+            Path path=new Path();path.moveTo(startX,startY);
+            for(int i=0;i<pts.length();i++){
+                JSONObject p=pts.optJSONObject(i);if(p==null)continue;
+                float x=futureLeft+usable*Math.max(0f,Math.min(1f,p.optInt("minutes",0)/15f));
+                float yy=y(p.optDouble("price"),min,max,top,height);path.lineTo(x,yy);
+            }
+            c.drawPath(path,paint);paint.setPathEffect(null);paint.setStyle(Paint.Style.FILL);
+            JSONObject last=pts.optJSONObject(pts.length()-1);
+            if(last!=null){float x=futureLeft+usable*Math.max(0f,Math.min(1f,last.optInt("minutes",15)/15f));float yy=y(last.optDouble("price"),min,max,top,height);c.drawCircle(x,yy,dp(primary?3.5f:2.8f),paint);}
+            long pct=Math.round(scenario.optDouble("probability",0)*100);
+            paint.setTextSize(dp(primary?9f:8f));paint.setFakeBoldText(primary);
+            c.drawText((primary?"MAIN ":"ALT ")+scenarioSide(side)+" "+pct+"%",futureLeft+dp(2),top+dp(primary?12:25),paint);
+            paint.setFakeBoldText(false);
+        }
+    }
     private void drawForecast(Canvas c,JSONArray projection,float startX,float startY,float futureLeft,float plotRight,double min,double max,float top,float height){
+        JSONArray scenarios=forecast.optJSONArray("scenarios");
+        if(scenarios!=null&&scenarios.length()>0){drawScenarioMap(c,scenarios,startX,startY,futureLeft,plotRight,min,max,top,height);return;}
         if(projection==null||projection.length()==0||!shouldDrawProjection(forecast))return;
         float usable=Math.max(dp(18),plotRight-futureLeft-dp(5));int n=projection.length(),color=forecastColor();
         Path band=new Path(),upper=new Path(),lower=new Path();
@@ -101,9 +145,13 @@ public class SparklineView extends View {
         for(int i=start;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b==null)continue;min=Math.min(min,b.optDouble("low"));max=Math.max(max,b.optDouble("high"));}
         if(live){min=Math.min(min,liveBar.optDouble("low",min));max=Math.max(max,liveBar.optDouble("high",max));}
         if(projection!=null)for(int i=0;i<projection.length();i++){JSONObject p=projection.optJSONObject(i);if(p==null)continue;min=Math.min(min,p.optDouble("low",min));max=Math.max(max,p.optDouble("high",max));}
-        if(!Double.isFinite(min)||!Double.isFinite(max)||max<=min)return;double range=max-min;min-=range*.16;max+=range*.12;
+        JSONArray scenarios=forecast.optJSONArray("scenarios");
+        if(scenarios!=null)for(int i=0;i<scenarios.length();i++){JSONObject s=scenarios.optJSONObject(i);if(s==null)continue;JSONArray ps=s.optJSONArray("path");if(ps==null)continue;for(int j=0;j<ps.length();j++){JSONObject p=ps.optJSONObject(j);if(p==null)continue;double price=p.optDouble("price",Double.NaN);if(Double.isFinite(price)){min=Math.min(min,price);max=Math.max(max,price);}}}
+        double support=forecast.optDouble("support",Double.NaN),resistance=forecast.optDouble("resistance",Double.NaN);
+        if(Double.isFinite(support)){min=Math.min(min,support);max=Math.max(max,support);}if(Double.isFinite(resistance)){min=Math.min(min,resistance);max=Math.max(max,resistance);}
+        if(!Double.isFinite(min)||!Double.isFinite(max)||max<=min)return;double range=max-min;min-=range*.14;max+=range*.14;
         float left=dp(5),top=dp(16),plotRight=getWidth()-dp(69),fullWidth=plotRight-left,height=getHeight()-dp(40);
-        float futureWidth=fullWidth*.30f,historyWidth=fullWidth-futureWidth-dp(7),historyRight=left+historyWidth,futureLeft=historyRight+dp(7),step=historyWidth/Math.max(1,count);
+        float futureWidth=fullWidth*.38f,historyWidth=fullWidth-futureWidth-dp(7),historyRight=left+historyWidth,futureLeft=historyRight+dp(7),step=historyWidth/Math.max(1,count);
         if(fullWidth<=0||height<=0||historyWidth<=0)return;
         paint.setStrokeWidth(dp(.6f));for(int i=0;i<4;i++){float yy=top+height*i/3;paint.setColor(0xff302647);c.drawLine(left,yy,plotRight,yy,paint);paint.setColor(0xffb0aac7);c.drawText(String.format(Locale.US,"%.5f",max-(max-min)*i/3),plotRight+dp(4),yy+dp(4),paint);}
         paint.setColor(0xff403453);paint.setStrokeWidth(dp(.7f));c.drawLine(futureLeft-dp(3),top,futureLeft-dp(3),top+height,paint);
