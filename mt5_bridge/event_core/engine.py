@@ -21,6 +21,8 @@ class Engine:
         self.config=Config(**saved.get('config',{})).validate()
         self.account_key=saved.get('account_key','')
         self.real_armed=False
+        # Ephemeral by design: never resurrect a reversal after Bridge restart.
+        self.pending_reversal=None
         self.effective_fee_per_lot=None;self.fee_source='UNRESOLVED';self.fee_profile_key=''
         self.campaign=saved.get('campaign')
         self.emergency=bool(saved.get('emergency',False))
@@ -167,7 +169,10 @@ class Engine:
                 self.store.campaign(self.campaign['id'],self.campaign)
                 self.store.event('CAMPAIGN_CLOSED',self.campaign,self.clock())
                 self.campaign=None;self.last_exit=self.clock();self.exit_pending=False
-                self.strategy.clear();self.compute.clear();self.save()
+                self.strategy.clear()
+                if not (self.pending_reversal and self.clock()<=float(self.pending_reversal.get('expires',0))):
+                    self.compute.clear()
+                self.save()
                 return True
         if self.exit_pending and not self._has_exit_targets():
             self.exit_pending=False
@@ -467,14 +472,25 @@ class Engine:
                 if key!=self.last_audit_key:
                     self.store.event('ANALYSIS',dict(decision=d.json(),quote=asdict(q),bar=asdict(self.bars[-1]),mode=self.config.mode),now)
                     self.last_audit_key=key
-                # A confirmed opposite event is an exit signal for the old campaign, not
-                # permission to hedge/reverse in the same iteration. A later fresh event may enter.
+                # Close-and-reverse: never hedge the old campaign. ComputeCore keeps a
+                # short-lived reversal candidate, closes first, waits for MT5 flat/history,
+                # then may enter the opposite side only if a fresh calculation still agrees.
                 if self.campaign and d.phase=='ENTRY_READY' and d.side in (-1,1) and d.side!=self.campaign['side']:
-                    if d.event_id:
-                        self._consume_event(d.event_id);self.save()
                     old='BUY' if self.campaign['side']==1 else 'SELL'
-                    self._close_campaign('подтверждён противоположный '+d.signal+' против текущей '+old+' кампании')
+                    if self.config.engine_mode=='COMPUTE_V1':
+                        self.pending_reversal=dict(side=d.side,created=now,expires=now+20.0,
+                            source_event=d.event_id,signal=d.signal)
+                        self.save()
+                    elif d.event_id:
+                        self._consume_event(d.event_id);self.save()
+                    self._close_campaign('подтверждён разворот '+d.signal+' против текущей '+old+' кампании')
                     return self.snapshot()
+                if not self.campaign and self.pending_reversal:
+                    pr=self.pending_reversal
+                    valid=(now<=float(pr.get('expires',0)) and d.phase=='ENTRY_READY' and
+                           d.signal in ('BUY','SELL') and d.side==int(pr.get('side',0)))
+                    if not valid:
+                        self.pending_reversal=None
                 if not self.auto or self.paused:self.execution=self._idle_status()
                 elif self.recovery:self.execution='Нужна сверка неизвестного исполнения; новые входы запрещены'
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
@@ -507,7 +523,11 @@ class Engine:
         if self._owned_orders():raise Blocked('Предыдущий запрос ещё не завершён')
         if any(p['magic']!=MAGIC for p in self.positions) or any(o['magic']!=MAGIC for o in self.orders):
             raise Blocked('Есть ручные/старые позиции или ордера: сначала завершите их отдельно')
-        if now-self.last_exit<self.config.cooldown_sec:raise Blocked('Пауза после завершения кампании')
+        reversal_ok=bool(self.config.engine_mode=='COMPUTE_V1' and self.pending_reversal and
+                         now<=float(self.pending_reversal.get('expires',0)) and
+                         int(self.pending_reversal.get('side',0))==d.side)
+        if now-self.last_exit<self.config.cooldown_sec and not reversal_ok:
+            raise Blocked('Пауза после завершения кампании')
         self.rate_times=[t for t in self.rate_times if now-t<60]
         if len(self.rate_times)>=self.config.max_orders_per_minute:raise Blocked('Предохранитель частоты заявок')
         self.positions=self.broker.positions();self.orders=self.broker.orders();account=self.broker.account()
@@ -554,6 +574,7 @@ class Engine:
             if d.entry_class!='PROBE':
                 self.campaign['confirmed']=True;self.campaign['entry_class']='CONFIRMED';self.campaign['confirmed_at']=now
             prefix='PROBE ' if d.entry_class=='PROBE' else ''
+            if reversal_ok:self.pending_reversal=None
             self.execution='MT5 подтвердил '+prefix+d.signal+': '+', '.join('#'+str(x['ticket']) for x in matches)
             self.save()
             try:
@@ -583,6 +604,7 @@ class Engine:
             prior=self.store.command_result(key)
             if prior is not None:return prior
             if command in ('emergency','pause','disable','close'):
+                self.pending_reversal=None
                 if command=='emergency':self.emergency=True;self.exit_pending=True;self.auto=False;self.paused=True;self.real_armed=False
                 elif command=='close':self.exit_pending=True;self.auto=False;self.paused=True
                 elif command=='disable':self.auto=False;self.paused=True
@@ -598,7 +620,7 @@ class Engine:
                 if a.get('type') not in ('DEMO','REAL') or a.get('margin_mode')!='HEDGING' or a.get('currency')!='USD':
                     raise Blocked('Можно привязать только USD DEMO/REAL hedging')
                 self.account_key=a['key'];self.account=a;self.account_time=now;self.positions=pos;self.orders=orders
-                self.recovery=False;self.real_armed=False;self.auto=False;self.paused=True
+                self.recovery=False;self.real_armed=False;self.auto=False;self.paused=True;self.pending_reversal=None
                 self.ack=[0,0];self.daily_latch='';self.deals=[];self.history_time=0.;self.history_ok=False;self.history_error='История ещё не получена'
                 self.config=replace(self.config,account_mode=a['type'],approved=False,fee_per_lot=None)
                 self.strategy=Strategy(self.config);self.compute=ComputeCore(self.config)
@@ -613,7 +635,7 @@ class Engine:
                     raise Blocked('Режим профиля не совпадает с текущим MT5 счётом')
                 if self.campaign or self._owned() or self._owned_orders() or self.store.pending():
                     raise Blocked('Профиль фиксирован до завершения кампании')
-                new.approved=False;self.auto=False;self.paused=True;self.real_armed=False
+                new.approved=False;self.auto=False;self.paused=True;self.real_armed=False;self.pending_reversal=None
                 self.config=new;self.strategy=Strategy(new);self.compute=ComputeCore(new);self.bars=[];self.context=[];self.last_bars_at=0
                 self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
                 self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
@@ -664,7 +686,7 @@ class Engine:
                 if data.get('confirmation')!=expected:raise Blocked('Нужна явная сверка '+actual)
                 if self._owned() or self._owned_orders() or self.store.pending():raise Blocked('Есть позиции/ордера или неизвестный запрос: автоматический сброс запрещён')
                 if self.risk.get('blocks'):raise Blocked('Сначала разберите блокировки риска')
-                self.emergency=False;self.recovery=False;self.exit_pending=False;self.auto=False;self.paused=True;self.real_armed=False
+                self.emergency=False;self.recovery=False;self.exit_pending=False;self.auto=False;self.paused=True;self.real_armed=False;self.pending_reversal=None
                 self.strategy.clear();self.compute.clear();self.save();message='Блокировка снята после сверки. AUTO остаётся выключенным'
             elif command=='ack_losses':
                 self._refresh(now)
@@ -691,6 +713,7 @@ class Engine:
                 market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
                 risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),
                 emergency=self.emergency,recovery=self.recovery,exit_pending=self.exit_pending,real_armed=self.real_armed,
+                pending_reversal=copy.deepcopy(self.pending_reversal),
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
                 forecast=copy.deepcopy(self.forecast),
                 fee_profile=dict(fee_per_lot=self.effective_fee_per_lot,source=self.fee_source,key=self.fee_profile_key),
