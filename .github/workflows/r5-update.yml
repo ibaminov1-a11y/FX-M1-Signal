@@ -1,0 +1,111 @@
+name: R5 exact-source update verification
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['tools/r5delta/**', 'tools/apply_r5_delta.py', '.github/workflows/r5-update.yml']
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: r5-update-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply hash-verified changes and pin ordinary source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          mkdir -p evidence
+          python tools/apply_r5_delta.py
+          git diff --check
+          git config user.name 'FXM1 CI'
+          git config user.email 'fxm1-ci@users.noreply.github.com'
+          git add app mt5_bridge tests tools docs .github
+          git commit -m 'feat: R5 lot controls, structural scenario lifecycle and read-only history'
+          git rev-parse HEAD | tee evidence/COMMIT.txt
+          echo "BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Full Python regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m compileall -q mt5_bridge/event_core tests/event_core
+          PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Require the existing EC1 signing identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          key="$HOME/.fxm1-signing/ec1-demo.jks"
+          test -s "$key"
+          keytool -exportcert -alias ec1-demo -keystore "$key" -storepass android -file /tmp/ec1-cert.der
+          test "$(sha256sum /tmp/ec1-cert.der | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          sha256sum /tmp/ec1-cert.der > evidence/signing-certificate-sha256.txt
+          echo "EC1_KEYSTORE=$key" >> "$GITHUB_ENV"
+      - name: Compile APK and Android tests
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.log
+          test -s app/build/outputs/apk/debug/app-debug.apk
+      - run: sudo chmod 666 /dev/kvm
+      - name: Actual API35 UI and old-state upgrade regressions
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_ec1_qa.sh
+      - name: Package same tested SHA and fast-forward only after all checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/package_ec1.py
+          git diff --exit-code
+          sha256sum evidence/FXM1_10_9_EVENT_CORE_DEMO.apk | tee evidence/APK_SHA256.txt
+          python - <<'PY'
+          import json,os,hashlib
+          from pathlib import Path
+          p=json.loads(Path('evidence/package/PROVENANCE.json').read_text())
+          assert p['commit']==os.environ['BUILD_SOURCE_SHA'],p
+          assert p['real_trading']=='disabled_in_adapter',p
+          for name,digest in json.loads(Path('evidence/source-manifest.json').read_text()).items():
+              assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest,name
+          print('EXACT_SOURCE_PACKAGE_OK',p['commit'])
+          PY
+          current=$(git ls-remote origin refs/heads/feature/r4-compute-rebuild | cut -f1)
+          test "$current" = "$GITHUB_SHA"
+          git push origin HEAD:refs/heads/feature/r4-compute-rebuild
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FXM1-R5-verified-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error
