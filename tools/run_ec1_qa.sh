@@ -11,7 +11,7 @@ done
 adb reverse tcp:8765 tcp:8765
 set +e
 gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest \
   > evidence/android-runtime.log 2>&1
 rc=$?
 adb logcat -d > evidence/android-logcat.txt
@@ -20,5 +20,7 @@ cat evidence/android-runtime.log
 if [ "$rc" -eq 0 ]; then
   test -s evidence/ui/ec1-qa/scenario-wait.png || exit 1
   test -s evidence/ui/ec1-qa/scenario-active-reversal.png || exit 1
+  test -s evidence/ui/ec1-qa/r5-fullscreen-scenarios.png || exit 1
+  test -s evidence/ui/ec1-qa/r5-history-viewport.png || exit 1
 fi
 exit "$rc"

@@ -19,12 +19,24 @@ for distribution in ('Flask','Werkzeug','Jinja2','MarkupSafe','itsdangerous','cl
         target=vendor/p;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target)
 shutil.copy2(root/'docs/EVENT_CORE_RU.md',package/'READ_ME_RU.md')
 shutil.copy2(root/'docs/INSTALL_EC1_RU.md',package/'INSTALL_RU.md')
+shutil.copy2(root/'docs/UPGRADE_R5.md',package/'START_HERE_R5_RU.md')
 commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 metadata={'commit':commit,'apk_sha256':hashlib.sha256((package/'FXM1_10_9_EVENT_CORE_DEMO.apk').read_bytes()).hexdigest(),
-          'status':'DEMO_REAL_PILOT_RESEARCH_CANDIDATE','market_backtest':'not_run','physical_phone':'not_tested','real_trading':'gated_pilot'}
+          'status':'DEMO_RESEARCH_CANDIDATE','revision':'R5-scenario-v2-fixed-lot-history','market_backtest':'not_run','physical_phone':'not_tested','real_trading':'disabled_in_adapter'}
 (package/'PROVENANCE.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
 with zipfile.ZipFile(dest/'FXM1_10_9_EVENT_CORE_PACKAGE.zip','w',zipfile.ZIP_DEFLATED) as z:
     for p in package.rglob('*'):
         if p.is_file():z.write(p,p.relative_to(package))
 shutil.copy2(package/'FXM1_10_9_EVENT_CORE_DEMO.apk',dest/'FXM1_10_9_EVENT_CORE_DEMO.apk')
 subprocess.run(['git','archive','--format=zip','--output='+str(dest/'FXM1_EVENT_CORE_SOURCE.zip'),'HEAD'],cwd=root,check=True)
+
+# A single installation bundle also carries exact source and test evidence.
+full=dest/'FXM1_R5_FULL.zip'
+with zipfile.ZipFile(full,'w',zipfile.ZIP_DEFLATED) as z:
+    for p in package.rglob('*'):
+        if p.is_file():z.write(p,p.relative_to(package))
+    z.write(dest/'FXM1_EVENT_CORE_SOURCE.zip','Sources/FXM1_R5_SOURCE.zip')
+    for name in ('COMMIT.txt','python-tests.log','android-runtime.log','RED.txt'):
+        p=dest/name
+        if p.exists():z.write(p,'Verification/'+name)
+    for p in (dest/'ui').rglob('*.png'):z.write(p,'Verification/'+str(p.relative_to(dest)))

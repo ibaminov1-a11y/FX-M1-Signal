@@ -12,7 +12,7 @@ import java.util.*;
 /** Transport and presentation only. It cannot calculate or send a BUY/SELL order. */
 public final class EventClient {
     public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "FORECAST":return "Прогноз / поздний вход заблокирован";case "PROBE_READY":return "Ранний probe";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
-    public static String pathName(String path){switch(path){case "COMPUTE":return "ComputeCore";case "FORECAST":return "LIVE Forecast";case "LIVE_BREAKOUT":return "Первичный LIVE-пробой";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
+    public static String pathName(String path){switch(path){case "SCENARIO_V2":return "Scenario Engine V2";case "COMPUTE":return "ComputeCore";case "FORECAST":return "LIVE Forecast";case "LIVE_BREAKOUT":return "Первичный LIVE-пробой";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
     private EventClient() {}
@@ -23,8 +23,8 @@ public final class EventClient {
             .putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false)
             .putBoolean("bg_running",false).putBoolean("server_verified",false)
             .remove("state_symbol").remove("state_tf").remove("state_sparkline").putString("state_signal","WAIT")
-            .putString("target_trade_mode","DEMO").putInt("ec_limit",0)
-            .putString("ec_lot_cap","0.01").apply();
+            .putString("target_trade_mode",p.getString("target_trade_mode","DEMO")).putInt("ec_limit",0)
+            .putString("ec_lot_cap",p.getString("ec_lot_cap","0.01")).apply();
         if(!p.getBoolean("ec1_r2_risk_migrated",false))p.edit().putBoolean("ec1_r2_risk_migrated",true)
             .remove("ec_test_capital").remove("ec_risk_cap").remove("daily_loss_limit_pct")
             .remove("max_drawdown_pct").remove("max_consecutive_losses").apply();
@@ -61,6 +61,7 @@ public final class EventClient {
         c.setInstanceFollowRedirects(false);c.setConnectTimeout(2500);c.setReadTimeout(3500);c.setRequestMethod(method);
         c.setRequestProperty("Authorization","Bearer "+prefs().getString("ec_token",""));
         c.setRequestProperty("Accept","application/json");
+        c.setRequestProperty("X-FXM1-Client","R5");
         try {
             if(data!=null){c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json; charset=UTF-8");try(OutputStream o=c.getOutputStream()){o.write(data.toString().getBytes(StandardCharsets.UTF_8));}}
             int code=c.getResponseCode();InputStream in=code<400?c.getInputStream():c.getErrorStream();
@@ -96,9 +97,9 @@ public final class EventClient {
         SharedPreferences p=prefs();double[] risks={.25,.5,1};String accountMode=accountMode();
         double risk="REAL".equals(accountMode)?.25:risks[Math.max(0,Math.min(2,p.getInt("risk_pos",0)))];
         String fee="REAL".equals(accountMode)?p.getString(feePrefKey(),"").trim():"0";
-        double lot=.01; // R4 keeps execution simple while ComputeCore is being validated.
+        double lot=TradeSettings.parseVolume(p.getString("ec_lot_cap","0.01"),null);
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
-            .put("timeframe","M5").put("mode","NORMAL").put("engine_mode","COMPUTE_V1")
+            .put("timeframe","M5").put("mode","NORMAL").put("engine_mode","SCENARIO_V2").put("volume_mode","FIXED")
             .put("account_mode",accountMode).put("risk_pct",risk)
             .put("optional_position_limit",0)
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
@@ -115,7 +116,7 @@ public final class EventClient {
     }
     private static boolean configMatches(JSONObject remote,JSONObject desired){
         if(remote==null||desired==null)return false;
-        for(String key:new String[]{"symbol","timeframe","mode","engine_mode","account_mode","allowed_sessions"})
+        for(String key:new String[]{"symbol","timeframe","mode","engine_mode","volume_mode","account_mode","allowed_sessions"})
             if(!remote.optString(key,"").equals(desired.optString(key,"")))return false;
         for(String key:new String[]{"risk_pct","optional_position_limit","fee_per_lot","lot_cap","probe_lot_cap","spread_pips","max_spread_atr","cooldown_sec"})
             if(!sameNumber(remote,desired,key))return false;
@@ -130,19 +131,27 @@ public final class EventClient {
         if(state.optJSONObject("campaign")==null&&(state.optBoolean("auto",false)||state.optBoolean("exit_pending",false)))return false;
         return !configMatches(state.optJSONObject("config"),desired);
     }
-    public static void configure() throws Exception {
+    public static void configure() throws Exception { configure(false); }
+    public static void configureUserSelection() throws Exception { configure(true); }
+    private static void configure(boolean explicit) throws Exception {
         JSONObject desired=config();String fingerprint=desired.toString();
         JSONObject current=http("GET",base()+"/ec/state",null);
         if(!PROTOCOL.equals(current.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
         if(configMatches(current.optJSONObject("config"),desired)){
             cache(current);prefs().edit().putString("ec_config_sent",fingerprint).apply();return;
         }
-        JSONObject result=command("configure",new JSONObject().put("config",desired).put("allow_deferred",true));
+        JSONObject a=current.optJSONObject("account");
+        if(a!=null&&!accountMode().equals(a.optString("type")))throw new IOException("Выбран "+accountMode()+", фактический MT5: "+a.optString("type")+". Новые входы остановлены; переключите счёт MT5 отдельно.");
+        JSONObject result=command("configure",new JSONObject().put("config",desired).put("allow_deferred",true)
+            .put("preserve_auto",explicit).put("accept_pending_profile",explicit));
         prefs().edit().putString("ec_config_sent",fingerprint).putString("ec_message",result.optString("message")).apply();
         JSONObject refreshed=http("GET",base()+"/ec/state",null);
         if(PROTOCOL.equals(refreshed.optString("protocol")))cache(refreshed);
     }
     public static JSONObject poll() throws Exception {
+        if(prefs().getBoolean("ec_mode_pause_pending",false)){
+            command("pause",new JSONObject());prefs().edit().putBoolean("ec_mode_pause_pending",false).apply();
+        }
         JSONObject s=http("GET",base()+"/ec/state",null);
         if(!PROTOCOL.equals(s.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
         cache(s);return s;
@@ -170,6 +179,7 @@ public final class EventClient {
             (scenarioMap?("SCENARIO MAP · веса: BUY "+up+" · SELL "+down+" · RANGE "+range+direction+" · не вероятность успеха"):
             ("LIVE FORECAST: UP "+up+"% · DOWN "+down+"% · RANGE "+range+"% · "+fc.optString("regime","RANGE")+direction)):
             "LIVE FORECAST: ожидаем достаточные данные";
+        if(fc.optInt("map_version")>=3)forecastText=ScenarioUi.headline(fc);
         if(fc.optBoolean("late_entry",false))forecastText+=" · LATE ENTRY BLOCK";
         if(fc.optBoolean("exhaustion",false))forecastText+=" · EXHAUSTION";
         StringBuilder context=new StringBuilder("Вход: ").append(tf).append(" · Режим: ").append(cfg.optString("mode","NORMAL"))

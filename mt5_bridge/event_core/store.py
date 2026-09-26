@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json, sqlite3, time
+from dataclasses import asdict
 from pathlib import Path
 from .model import Blocked
 
@@ -16,6 +17,11 @@ class Store:
           CREATE TABLE IF NOT EXISTS intents(id TEXT PRIMARY KEY,status TEXT,body TEXT);
           CREATE TABLE IF NOT EXISTS commands(id TEXT PRIMARY KEY,body TEXT);
           CREATE TABLE IF NOT EXISTS campaigns(id TEXT PRIMARY KEY,body TEXT);
+          CREATE TABLE IF NOT EXISTS market_bars(scope TEXT, tf TEXT, t INTEGER, first_seen REAL, body TEXT,
+            PRIMARY KEY(scope,tf,t));
+          CREATE TABLE IF NOT EXISTS scenario_snapshots(scope TEXT, id TEXT, t REAL, body TEXT,
+            PRIMARY KEY(scope,id));
+          CREATE INDEX IF NOT EXISTS scenario_time ON scenario_snapshots(scope,t);
         ''')
         self.db.commit()
 
@@ -60,6 +66,32 @@ class Store:
     def campaign(self,key,body):
         with self.db:
             self.db.execute('INSERT OR REPLACE INTO campaigns VALUES (?,?)',(key,json.dumps(body,ensure_ascii=False,allow_nan=False)))
+
+    def save_bars(self,scope,tf,bars,now):
+        rows=[(scope,tf,int(b.time),float(now),json.dumps(asdict(b),allow_nan=False)) for b in bars]
+        with self.db:
+            self.db.executemany("INSERT INTO market_bars VALUES (?,?,?,?,?) ON CONFLICT(scope,tf,t) DO UPDATE SET body=excluded.body",rows)
+
+    def read_bars(self,scope,tf,before=None,limit=1000):
+        limit=max(1,min(int(limit),2000))
+        query='SELECT body FROM market_bars WHERE scope=? AND tf=?';args=[scope,tf]
+        if before is not None:query+=' AND t<?';args.append(int(before))
+        query+=' ORDER BY t DESC LIMIT ?';args.append(limit)
+        return list(reversed([json.loads(row[0]) for row in self.db.execute(query,args)]))
+
+    def save_scenario_snapshot(self,scope,body,now):
+        key=str(body['snapshot_id'])
+        frozen=dict(body,recorded_at=float(now))
+        with self.db:
+            self.db.execute('INSERT OR IGNORE INTO scenario_snapshots VALUES (?,?,?,?)',
+                (scope,key,float(now),json.dumps(frozen,ensure_ascii=False,allow_nan=False)))
+
+    def scenario_snapshots(self,scope,before=None,limit=100,snapshot_id=None):
+        query='SELECT body FROM scenario_snapshots WHERE scope=?';args=[scope]
+        if snapshot_id is not None:query+=' AND id=?';args.append(str(snapshot_id))
+        if before is not None:query+=' AND t<?';args.append(float(before))
+        query+=' ORDER BY t DESC,id DESC LIMIT ?';args.append(max(1,min(int(limit),500)))
+        return [json.loads(row[0]) for row in self.db.execute(query,args)]
 
     def close(self): self.db.close()
 

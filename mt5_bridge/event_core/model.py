@@ -87,6 +87,7 @@ class Config:
     loss_streak: int = 3
     fee_per_lot: float | None = None
     lot_cap: float = .01
+    volume_mode: str = 'RISK_CAP'  # Legacy cap or exact user-requested FIXED lot.
     # R3 live-forecast research controls. A probe is deliberately smaller than a
     # confirmed campaign entry and remains subject to the same broker SL/risk budget.
     probe_enabled: bool = True
@@ -122,8 +123,10 @@ class Config:
     def validate(self):
         if self.mode not in PROFILES or self.timeframe not in TF_SECONDS:
             raise Blocked('Неизвестный режим или таймфрейм')
-        if self.engine_mode not in ('LEGACY','COMPUTE_V1'):
+        if self.engine_mode not in ('LEGACY','COMPUTE_V1','SCENARIO_V2'):
             raise Blocked('Неизвестный вычислительный движок')
+        if self.volume_mode not in ('RISK_CAP','FIXED'):
+            raise Blocked('Неизвестный режим объёма')
         if self.account_mode not in ('DEMO','REAL'):
             raise Blocked('Неизвестный режим счёта')
         if not self.symbol or len(self.symbol) > 32:

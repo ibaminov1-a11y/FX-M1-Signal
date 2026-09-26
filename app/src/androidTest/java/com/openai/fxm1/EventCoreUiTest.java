@@ -44,7 +44,7 @@ public class EventCoreUiTest {
   p.edit().putString("target_trade_mode","DEMO").commit();
   JSONObject demo=EventClient.config();
   assertEquals("DEMO",demo.getString("account_mode"));
-  assertEquals("COMPUTE_V1",demo.getString("engine_mode"));
+  assertEquals("SCENARIO_V2",demo.getString("engine_mode"));
   assertEquals(0.0,demo.getDouble("fee_per_lot"),0.000001);
 
   p.edit().putString("mt5_account_type_snapshot","REAL").putString("target_trade_mode","REAL").putString("mt5_account_key_snapshot","555@Broker")
@@ -54,14 +54,14 @@ public class EventCoreUiTest {
   assertEquals("REAL",real.getString("account_mode"));
   assertTrue(real.isNull("fee_per_lot"));
   assertEquals(.25,real.getDouble("risk_pct"),0.000001);
-  assertEquals(.01,real.getDouble("lot_cap"),0.000001);
+  assertEquals(.50,real.getDouble("lot_cap"),0.000001);
   p.edit().putString(EventClient.feePrefKey(),"7.25").commit();
   assertEquals(7.25,EventClient.config().getDouble("fee_per_lot"),0.000001);
  }
  @Test public void legacyUiActualBalanceAndModesArePreserved()throws Exception{
   main(()->{MainActivity a=rule.getActivity();assertNotNull(a.findViewById(R.id.symbolSpinner));assertNotNull(a.findViewById(R.id.moneyHistoryButton));
    assertTrue(((TextView)a.findViewById(R.id.accountText)).getText().toString().contains("99868.35"));
-   assertEquals("10.9-EC1-R4.2",FeatureEngine.appVersionName(a));
+   assertEquals("10.9-EC1-R5",FeatureEngine.appVersionName(a));
    Spinner modes=a.findViewById(R.id.signalModeSpinner),tf=a.findViewById(R.id.entryTimeframeSpinner);
    assertNotNull(modes);assertEquals(2,modes.getCount());String before=tf.getSelectedItem().toString();modes.setSelection(1);
    assertEquals(before,tf.getSelectedItem().toString());
@@ -233,14 +233,14 @@ public class EventCoreUiTest {
   EventClient.configure();
   JSONObject configured=EventClient.poll().getJSONObject("config");
   assertEquals("NORMAL",configured.optString("mode"));
-  assertEquals("COMPUTE_V1",configured.optString("engine_mode"));
+  assertEquals("SCENARIO_V2",configured.optString("engine_mode"));
   EventClient.http("POST",EventClient.base()+"/test/reset",new JSONObject());
   JSONObject reset=EventClient.poll().getJSONObject("config");
   assertEquals("NORMAL",reset.optString("mode"));
   EventClient.configure();
   JSONObject repaired=EventClient.poll().getJSONObject("config");
   assertEquals("NORMAL",repaired.optString("mode"));
-  assertEquals("COMPUTE_V1",repaired.optString("engine_mode"));
+  assertEquals("SCENARIO_V2",repaired.optString("engine_mode"));
  }
  @Test public void openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits()throws Exception{
   JSONObject state=new JSONObject()
@@ -262,8 +262,8 @@ public class EventCoreUiTest {
   EventClient.poll();
   main(()->{MainActivity a=rule.getActivity();
    Spinner adds=a.findViewById(R.id.maxPositionsSpinner);
-   assertEquals(1,adds.getCount());
-   assertEquals("По риску",String.valueOf(adds.getSelectedItem()));
+   assertTrue("Fixed lot presets and manual entry are present",adds.getCount()>=6);
+   assertEquals("0.01",String.valueOf(adds.getSelectedItem()));
   });
   await(()->{final boolean[] ok={false};main(()->{MainActivity a=rule.getActivity();Switch sw=a.findViewById(R.id.autoTradingSwitch);TextView status=a.findViewById(R.id.autoStatusText);TextView smart=a.findViewById(R.id.smartStatusText);ok[0]=sw.isChecked()&&status.getText().toString().contains("AUTO включён")&&!smart.getText().toString().contains("остановлены");});return ok[0];},"AUTO UI must reflect Bridge state and clear stale pause text");
   assertEquals(0,p.getInt("ec_limit",-1));

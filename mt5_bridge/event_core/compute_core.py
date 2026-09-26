@@ -267,3 +267,10 @@ class ComputeCore:
                         event,side,stop,trigger,stop,a,q.time_msc,levels,
                         path='COMPUTE',structure=swing_labels(bars),
                         forecast=forecast,entry_class='PROBE')
+
+
+def make_compute(config,saved=None):
+    if config.engine_mode=='SCENARIO_V2':
+        from .scenarios.core import ScenarioCore
+        return ScenarioCore(config,saved)
+    return ComputeCore(config,saved)

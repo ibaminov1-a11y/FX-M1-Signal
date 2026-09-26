@@ -5,7 +5,7 @@ from pathlib import Path
 from flask import Flask, jsonify, request
 from . import VERSION, PROTOCOL, BUILD, REVISION
 from .engine import Engine
-from .model import Blocked
+from .model import Blocked, TF_SECONDS
 from .mt5_adapter import MT5Broker, MAGIC
 from .store import Store, ProcessLock
 from .risk import summary
@@ -17,6 +17,9 @@ def create_app(engine,token):
     def auth():
         if not hmac.compare_digest(request.headers.get('Authorization',''),'Bearer '+token):
             return jsonify(ok=False,message='Введите ключ EventCore из окна Bridge. Старый Twelve Data key не подходит.'),401
+        if (engine.config.engine_mode=='SCENARIO_V2' and request.headers.get('X-FXM1-Client')!='R5'
+                and (request.path=='/ec/state' or request.path in ('/ec/command/configure','/ec/command/enable','/ec/command/play'))):
+            return jsonify(ok=False,message='Для Scenario V2 обновите APK до R5. Аварийное закрытие и пауза доступны.'),426
         if request.method!='GET' and not request.is_json:
             return jsonify(ok=False,message='Требуется JSON-команда'),415
 
@@ -35,6 +38,29 @@ def create_app(engine,token):
         with engine.lock:
             engine.heartbeat=engine.clock()
             return jsonify(snap())
+
+    @app.get('/ec/history')
+    def chart_history():
+        with engine.lock:
+            tf=request.args.get('tf',engine.config.timeframe)
+            if tf not in TF_SECONDS:raise Blocked('Неизвестный таймфрейм истории')
+            before=request.args.get('before',type=int);limit=max(1,min(request.args.get('limit',1000,type=int),2000))
+            rows=engine.store.read_bars(engine.market_scope(),tf,before,limit)
+            return jsonify(ok=True,scope=engine.market_scope(),tf=tf,bars=rows,
+                next_before=rows[0]['time'] if rows else None,has_more=len(rows)==limit,read_only=True)
+
+    @app.get('/ec/scenarios')
+    def scenario_history():
+        with engine.lock:
+            limit=max(1,min(request.args.get('limit',30,type=int),100))
+            before=request.args.get('before',type=float);key=request.args.get('id')
+            snapshots=engine.store.scenario_snapshots(engine.market_scope(),before,limit,key)
+            if key is None:
+                snapshots=[dict(snapshot_id=x['snapshot_id'],recorded_at=x['recorded_at'],
+                    symbol=x.get('symbol'),timeframe=x.get('timeframe'),
+                    title=next(iter(x.get('forecast',{}).get('scenarios',[])),{}).get('title','Нет ясной фигуры')) for x in snapshots]
+            return jsonify(ok=True,snapshots=snapshots,next_before=snapshots[-1]['recorded_at'] if snapshots else None,
+                           has_more=len(snapshots)==limit,read_only=True)
 
     @app.get('/health')
     def health():

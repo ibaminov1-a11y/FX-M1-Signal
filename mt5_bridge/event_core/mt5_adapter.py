@@ -82,9 +82,14 @@ class MT5Broker:
             self._tick_seen[symbol]={'raw':raw,'mono':mono,'confirmed':False,'offset':offset}
             normalized=wall-3600.0
         elif raw > state['raw']:
-            state={'raw':raw,'mono':mono,'confirmed':True,'offset':offset}
+            # Receiving a tick later must not move every historical candle timestamp.
+            # Keep one mapping while the clock domain is stable. A material clock
+            # jump resets observation instead of manufacturing a price crossing.
+            jump=abs(offset-state['offset'])>10.0
+            stable_offset=offset if jump else state['offset']
+            state={'raw':raw,'mono':mono,'confirmed':not jump,'offset':stable_offset}
             self._tick_seen[symbol]=state
-            normalized=wall
+            normalized=wall-3600.0 if jump else wall
         elif state.get('confirmed'):
             age=max(0.0,mono-state['mono'])
             normalized=wall-age
@@ -122,6 +127,9 @@ class MT5Broker:
         if not values:
             raise Blocked('MT5 не вернул ни одной закрытой свечи '+tf+': '+str(self.mt5.last_error()))
         return values[-count:]
+
+    def history_bars(self,symbol,tf,count=1200):
+        return self.bars(symbol,tf,max(1,min(int(count),2000)))
 
     def current_bar(self,symbol,tf):
         """Return the currently forming MT5 bar without mixing it into closed history."""

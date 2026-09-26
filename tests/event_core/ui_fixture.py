@@ -29,6 +29,9 @@ def reset():
         freeze_until=0.0
         anchor=int(time.time())
         store.db.executescript('DELETE FROM commands; DELETE FROM intents; DELETE FROM campaigns; DELETE FROM state; DELETE FROM journal;');store.db.commit()
+        if hasattr(engine,'_history_loaded'):
+            engine._history_loaded.clear();engine._history_fingerprint.clear()
+            store.db.executescript('DELETE FROM market_bars; DELETE FROM scenario_snapshots;');store.db.commit()
         broker._positions=[];broker._orders=[];broker.deals=[];broker.sent=[];broker.closed=[];broker.balance=99868.35
         broker.bid=1.103;broker.ask=broker.bid+.00001;broker.quote_age=0;broker.result='FILLED';broker.visible=True
         broker.demo=True;broker.margin_mode='HEDGING';broker.trade_allowed=True;broker.history_failure=False;broker.live_bar_data=None
@@ -109,16 +112,37 @@ def legacy_upgrade():
 def legacy_finish():
     with engine.lock:
         broker.deals=list(legacy_complete);engine.history_time=0
-        bars,m1,m15,h1,live,a=market(1)
-        delta=int(time.time())//60*60-int(NOW)
-        def shift(b):return Bar(b.time+delta,b.open,b.high,b.low,b.close,b.volume)
-        broker.bar_data=[shift(b) for b in bars];broker.m1_data=[shift(b) for b in m1]
-        broker.ctx_data=[shift(b) for b in m15];broker.h1_data=[shift(b) for b in h1]
-        broker.live_bar_data=shift(live)
-        t=max(b.high for b in m1[-5:-1])+max(a*.02,.000012)
-        broker.bid=t-.03*a;broker.ask=broker.bid+.00001
+        prime_r5_market('RANGE')
         engine.last_market_attempt=-1;engine.step()
         return jsonify(ok=True)
+
+def prime_r5_market(family='TRIANGLE'):
+    from dataclasses import replace
+    from test_r5_scenarios import lane, pole_pattern, shaped
+    now=int(time.time());anchor=now//300*300
+    raw=pole_pattern(family) if family in ('FLAG','PENNANT') else lane(family)
+    if family=='HEAD_SHOULDERS':raw=shaped([1.102,1.100,1.104,1.100,1.102])
+    delta=anchor-int(NOW)
+    broker.bar_data=[replace(b,time=b.time+delta) for b in raw]
+    broker.ctx_data=[replace(b,time=now-(len(raw)-i)*900) for i,b in enumerate(raw)]
+    broker.h1_data=[replace(b,time=now-(len(raw)-i)*3600) for i,b in enumerate(raw)]
+    price=(min(b.low for b in raw[-12:])+max(b.high for b in raw[-12:]))/2
+    broker.m1_data=[Bar(now-(20-i)*60,price,price+.00003,price-.00003,price) for i in range(20)]
+    broker.live_bar_data=Bar(anchor,price,price+.00004,price-.00004,price)
+    broker.bid=price;broker.ask=price+.00001;broker.quote_age=0
+    clear_market()
+
+@app.post('/test/r5-market')
+def r5_market():
+    from event_core.compute_core import make_compute
+    data=request.get_json(silent=True) or {}
+    with engine.lock:
+        engine.config=Config(engine_mode='SCENARIO_V2',volume_mode='FIXED',lot_cap=.1,probe_lot_cap=.1,fee_per_lot=0,approved=True)
+        engine.compute=make_compute(engine.config);engine.auto=False;engine.paused=True
+        engine.campaign=None;broker._positions=[];broker._orders=[]
+        prime_r5_market(str(data.get('family','TRIANGLE')))
+        engine.step()
+        return jsonify(ok=True,forecast=engine.forecast)
 
 # Use normal state endpoint and step actual engine periodically.
 if __name__=='__main__':

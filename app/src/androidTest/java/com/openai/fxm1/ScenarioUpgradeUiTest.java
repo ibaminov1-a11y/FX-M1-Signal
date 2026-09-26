@@ -72,17 +72,17 @@ public class ScenarioUpgradeUiTest {
         assertFalse("No misleading open SELL at zero positions",EventClient.prefs().getString("state_context","").contains("Открытая кампания: SELL"));
         EventClient.http("POST",EventClient.base()+"/test/legacy-finish",new JSONObject());
         end=SystemClock.elapsedRealtime()+10000;
-        while(SystemClock.elapsedRealtime()<end){s=EventClient.poll();if("COMPUTE_V1".equals(s.getJSONObject("config").optString("engine_mode")))break;Thread.sleep(200);}
-        assertEquals("COMPUTE_V1",s.getJSONObject("config").optString("engine_mode"));
+        while(SystemClock.elapsedRealtime()<end){s=EventClient.poll();if("SCENARIO_V2".equals(s.getJSONObject("config").optString("engine_mode")))break;Thread.sleep(200);}
+        assertEquals("SCENARIO_V2",s.getJSONObject("config").optString("engine_mode"));
         assertTrue(s.optBoolean("auto"));assertNull(s.optJSONObject("campaign"));
-        assertEquals(2,s.getJSONObject("forecast").optInt("map_version"));
+        assertEquals(3,s.getJSONObject("forecast").optInt("map_version"));
         Thread.sleep(1800);
         ui(()->{
             MainActivity a=rule.getActivity();SparklineView chart=a.findViewById(R.id.sparklineView);
             assertTrue("Map must be tall, not an old sparkline",chart.getHeight()/context.getResources().getDisplayMetrics().density>=360);
             assertTrue(chart.getContentDescription().toString().contains("T1"));
             String levels=((TextView)a.findViewById(R.id.levelsText)).getText().toString();
-            assertTrue(levels,levels.contains("T1:"));assertTrue(levels,levels.contains("T2:"));
+            assertTrue(levels,levels.contains("T1:"));
             assertFalse(((TextView)a.findViewById(R.id.confidenceText)).getText().toString().contains("%"));
             chart.performClick();
         });

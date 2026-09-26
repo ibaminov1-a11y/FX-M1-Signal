@@ -209,7 +209,19 @@ def plan_order(broker, cfg: Config, account, info, q: Quote, d: Decision, positi
     if unit_loss<=0: raise Blocked('Не удалось оценить денежный риск стопа')
     available=budget-running_risk
     effective_lot_cap=min(cfg.lot_cap,cfg.probe_lot_cap) if d.entry_class=='PROBE' else cfg.lot_cap
-    volume=quantize(min(vmax,effective_lot_cap,available/unit_loss),step)
+    if cfg.volume_mode=='FIXED':
+        volume=number(cfg.lot_cap,'объём позиции',positive=True)
+        units=Decimal(str(volume))/Decimal(str(step))
+        if abs(units-units.to_integral_value())>Decimal('0.00000001'):
+            raise Blocked(f'Выбранный объём {volume:g} не соответствует шагу MT5 {step:g}')
+        if not vmin-1e-10<=volume<=vmax+1e-10:
+            raise Blocked(f'Выбранный объём {volume:g}: допустимый объём MT5 {vmin:g} … {vmax:g}')
+        if unit_loss*volume>available+1e-7:
+            maximum=max(0,quantize(min(vmax,available/unit_loss),step))
+            raise Blocked(f'Лот {volume:g} требует {unit_loss*volume:.2f} USD риска; доступно {max(0,available):.2f} USD. '
+                          f'Максимум по риску {maximum:g}; выбранный лот не изменён')
+    else:
+        volume=quantize(min(vmax,effective_lot_cap,available/unit_loss),step)
     if volume<vmin-1e-10 or volume<=0:
         raise Blocked(f'Минимальный лот {vmin:g} не помещается в остаток риска {max(0,available):.2f} USD')
     risk=unit_loss*volume

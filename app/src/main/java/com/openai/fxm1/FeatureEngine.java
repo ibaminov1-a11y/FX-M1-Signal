@@ -58,7 +58,7 @@ public final class FeatureEngine {
                 .putLong("news_blackout_until_epoch", 0L)
                 .putBoolean("position_manager_enabled", true)
                 .putString("scalp_lot_mode", "AUTO")
-                .putString("target_trade_mode", "DEMO")
+                .putString("target_trade_mode", p.getString("target_trade_mode", "DEMO"))
                 .putBoolean("auto_user_enabled", false)
                 .putBoolean("scalp_hard_stop_enabled", true)
                 .putBoolean("scalp_peak_lock_enabled", true)

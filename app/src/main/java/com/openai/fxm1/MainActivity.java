@@ -160,6 +160,7 @@ public class MainActivity extends Activity {
         journalText = findViewById(R.id.journalText);
         priceCompareText = findViewById(R.id.priceCompareText);
         autoTradingSwitch = findViewById(R.id.autoTradingSwitch);
+        autoTradingSwitch.setText(TradeSettings.autoTitle());
         autoStatusText = findViewById(R.id.autoStatusText);
         riskSpinner = findViewById(R.id.riskSpinner);
         maxPositionsSpinner = findViewById(R.id.maxPositionsSpinner);
@@ -177,6 +178,7 @@ public class MainActivity extends Activity {
         tradeHistoryText = findViewById(R.id.tradeHistoryText);
         sparklineView = findViewById(R.id.sparklineView);
         sparklineView.setOnClickListener(v -> ScenarioUi.enlarge(this));
+        ScenarioUi.attachControls(this,sparklineView);
         qualityBarView = findViewById(R.id.qualityBarView);
         rootLayout = findViewById(R.id.rootLayout);
 
@@ -242,14 +244,8 @@ public class MainActivity extends Activity {
         riskSpinner.setAdapter(riskAdapter);
         riskSpinner.setSelection(prefs.getInt("risk_pos", 0));
 
-        // EventCore EC1 uses event-driven pyramiding with one shared campaign budget.
-        // There is no strategy-level fixed position count such as 10.
-        prefs.edit().putInt("ec_limit", 0).putString("maxpos_label", "По риску").apply();
-        ArrayAdapter<String> maxPosAdapter = darkSpinnerAdapter(
-                new String[]{"По риску"}
-        );
-        maxPositionsSpinner.setAdapter(maxPosAdapter);
-        maxPositionsSpinner.setSelection(0);
+        prefs.edit().putInt("ec_limit",0).apply();
+        TradeSettings.bindLot(this,maxPositionsSpinner,this::onLotChanged);
 
         ArrayAdapter<String> driftAdapter = darkSpinnerAdapter(
                 new String[]{"0.03%", "0.05%", "0.10%", "0.20%"}
@@ -302,16 +298,6 @@ public class MainActivity extends Activity {
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
-
-        maxPositionsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.edit().putInt("ec_limit", 0).putString("maxpos_label", "По риску").apply();
-                if(monitoring)sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
-            }
-            @Override public void onNothingSelected(AdapterView<?> parent) { }
-        });
-
 
         symbolSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -369,6 +355,9 @@ public class MainActivity extends Activity {
                     .setPositiveButton("OK",null).show();return;
             }
             boolean realMode="REAL".equals(targetTradeMode());
+            if(realMode){new AlertDialog.Builder(this).setTitle("Выбран REAL")
+                .setMessage("Режим интерфейса сохранён. Эта сборка проверена только для DEMO; отправка на REAL заблокирована в Bridge. Счёт MT5 меняется отдельно.")
+                .setPositiveButton("OK",null).show();return;}
             new AlertDialog.Builder(this).setTitle(realMode?"Включить REAL PILOT AUTO?":"Разрешить AUTO на DEMO?")
                 .setMessage(realMode?
                     "REAL-счёт. Пилотный лимит жёстко ограничен: ≤0.25% риска и ≤0.01 lot на ступень. Комиссия берётся из сохранённого профиля счёта/инструмента или истории MT5. REAL ARM действует только до перезапуска Bridge.":
@@ -645,6 +634,7 @@ public class MainActivity extends Activity {
     }
 
     private void restoreTradingSnapshotFromPrefs() {
+        if(autoTradingSwitch!=null)autoTradingSwitch.setText(TradeSettings.autoTitle());
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         String savedUrl = p.getString("server_url", "").trim();
         boolean verified = p.getBoolean("server_verified", false) && !savedUrl.isEmpty();
@@ -661,7 +651,8 @@ public class MainActivity extends Activity {
         JSONObject authoritativeState=EventClient.state(),authoritativeCfg=authoritativeState.optJSONObject("config");
         boolean profileLocked=authoritativeState.optJSONObject("campaign")!=null||authoritativeState.optBoolean("auto",false);
         boolean profileEditable=!profileLocked;
-        for(Spinner control:new Spinner[]{symbolSpinner,entryTimeframeSpinner,signalModeSpinner,riskSpinner,maxPositionsSpinner})if(control!=null)control.setEnabled(profileEditable);
+        for(Spinner control:new Spinner[]{symbolSpinner,entryTimeframeSpinner,signalModeSpinner,riskSpinner})if(control!=null)control.setEnabled(profileEditable);
+        if(maxPositionsSpinner!=null)maxPositionsSpinner.setEnabled(true);
         if(profileLocked&&authoritativeCfg!=null){
             syncingScalpTimeframe=true;
             if(signalModeSpinner!=null)signalModeSpinner.setSelection("SCALP".equalsIgnoreCase(authoritativeCfg.optString("mode","NORMAL"))?1:0);
@@ -696,7 +687,7 @@ public class MainActivity extends Activity {
             boolean autoSaved = bridgeAuto && mt5 && targetAllowed;
             autoTradingSwitch.setChecked(autoSaved);
             p.edit().putBoolean("auto_trading", autoSaved).putBoolean("auto_user_enabled", autoSaved).putInt("ec_limit", 0).apply();
-            autoTradingSwitch.setText("AUTO TRADING  •  "+("REAL".equalsIgnoreCase(accountType)?"REAL PILOT":"DEMO"));
+            autoTradingSwitch.setText(TradeSettings.autoTitle());
             if("REAL".equalsIgnoreCase(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
             if (autoStatusText != null) {
                 autoStatusText.setText(emergency ? "EMERGENCY · AUTO заблокирован" :
@@ -710,9 +701,15 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void onLotChanged(){
+        executor.execute(()->{try{EventClient.configureUserSelection();EventClient.poll();runOnUiThread(()->{restoreTradingSnapshotFromPrefs();Toast.makeText(this,"Лот сохранён: "+EventClient.prefs().getString("ec_lot_cap",""),Toast.LENGTH_SHORT).show();});}
+            catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Лот сохранён на телефоне").setMessage("Bridge пока не применил выбранный объём: "+safeMessage(e)).setPositiveButton("OK",null).show());}});
+    }
+
     private void restoreSparklineFromPrefs(String signal) {
         if(sparklineView==null)return;
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
+        sparklineView.setMarketIdentity(s.optString("market_scope",s.optJSONObject("config")==null?"":s.optJSONObject("config").optString("symbol")));
         sparklineView.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
                 d==null?null:d.optJSONArray("structure"),d==null?"SEARCH":d.optString("path","SEARCH"),
                 s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
@@ -821,7 +818,7 @@ public class MainActivity extends Activity {
                             .apply();
                     closeAllButton.setEnabled(serverOk && mt5Ok && positions > 0);
                     if(finalBrokerSymbols!=null)syncBrokerSymbols(finalBrokerSymbols);
-                    autoTradingSwitch.setText("AUTO TRADING  •  "+("REAL".equals(accountType)?"REAL PILOT":"DEMO"));
+                    autoTradingSwitch.setText(TradeSettings.autoTitle());
                     if("REAL".equals(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
 
                     if (!serverOk || !mt5Ok || !versionMatch || !("REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount)) {
@@ -1038,7 +1035,7 @@ public class MainActivity extends Activity {
         String target=p.getString("target_trade_mode","DEMO").toUpperCase(Locale.US);
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(18),dp(12),dp(18),dp(12));
 
-        TextView engineInfo=smartLabel("ДВИЖОК: COMPUTE V1\nОдин расчёт: M1 + M5 LIVE + M5 + M15 + H1 + tick/volume/spread → BUY / SELL / WAIT.\nВнутренние технические пороги больше не настраиваются вручную.");
+        TextView engineInfo=smartLabel("ДВИЖОК: SCENARIO V2\nФигуры → отдельные гипотезы → наблюдаемые события → проверка входа.\nЛот выбирается на главном экране; риск кампании проверяется отдельно.");
         box.addView(engineInfo);
 
         Switch realSwitch=smartSwitch("РЕАЛЬНЫЙ СЧЁТ", "REAL".equals(target));box.addView(realSwitch);
@@ -1068,9 +1065,13 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Умные функции").setView(box).setNegativeButton("ОТМЕНА",null)
             .setPositiveButton("СОХРАНИТЬ",(d,w)->{
                 String wanted=realSwitch.isChecked()?"REAL":"DEMO";
+                boolean modeChanged=!wanted.equals(p.getString("target_trade_mode","DEMO"));
+                if(modeChanged)p.edit().putBoolean("ec_mode_pause_pending",true).apply();
                 p.edit().putString("target_trade_mode",wanted).putBoolean("real_account_enabled",realSwitch.isChecked())
-                    .putString("ec_lot_cap","0.01").putFloat("max_spread_pips",3f).putInt("cooldown_minutes",0)
+                    .putFloat("max_spread_pips",3f).putInt("cooldown_minutes",0)
                     .putBoolean("ec_dynamic_adds",true).putBoolean("session_filter_enabled",false).apply();
+                autoTradingSwitch.setText(TradeSettings.autoTitle());
+                if(modeChanged)executor.execute(()->{try{EventClient.poll();runOnUiThread(this::restoreTradingSnapshotFromPrefs);}catch(Exception e){runOnUiThread(()->autoStatusText.setText("Смена режима: ожидается подтверждение PAUSE от Bridge"));}});
                 if(!wanted.equals(actual)){
                     new AlertDialog.Builder(this).setTitle("Режим сохранён")
                         .setMessage("В приложении выбран "+wanted+", а в MT5 сейчас "+actual+". Переключите счёт в MT5, затем нажмите «Привязать текущий счёт MT5».")

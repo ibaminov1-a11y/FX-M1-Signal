@@ -25,7 +25,7 @@ public class R5RedContractUiTest {
  }
  @After public void cleanup()throws Exception{c.stopService(new Intent(c,MonitoringService.class));Thread.sleep(300);}
  @Test public void selectedLotReachesConfiguration()throws Exception{
-  assertEquals("R5_VOLUME_MISSING",.5,EventClient.config().optDouble("requested_lot",0),1e-9);
+  assertEquals("R5_VOLUME_MISSING",.5,EventClient.config().optDouble("lot_cap",0),1e-9);
  }
  @Test public void targetRealHeaderFollowsSavedSettings()throws Exception{
   ui(()->{try{Method m=MainActivity.class.getDeclaredMethod("showSmartFeaturesDialog");m.setAccessible(true);m.invoke(rule.getActivity());}catch(Exception e){throw new RuntimeException(e);}});

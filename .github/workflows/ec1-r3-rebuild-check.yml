@@ -65,9 +65,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$HOME/.fxm1-signing"
           key="$HOME/.fxm1-signing/ec1-demo.jks"
-          if ! test -s "$key"; then
-            keytool -genkeypair -keystore "$key" -storetype PKCS12 -storepass android -keypass android -alias ec1-demo -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=FXM1 EC1 DEMO'
-          fi
+          test -s "$key"
           chmod 600 "$key"
           echo "EC1_KEYSTORE=$key" >> "$GITHUB_ENV"
 
@@ -118,7 +116,7 @@ jobs:
           from pathlib import Path
           p=json.loads(Path('evidence/package/PROVENANCE.json').read_text(encoding='utf-8'))
           assert p['commit'] == os.environ['GITHUB_SHA'], (p['commit'], os.environ['GITHUB_SHA'])
-          assert p['real_trading'] == 'gated_pilot', p
+          assert p['real_trading'] == 'disabled_in_adapter', p
           print('PROVENANCE_OK', p['commit'])
           PY
 

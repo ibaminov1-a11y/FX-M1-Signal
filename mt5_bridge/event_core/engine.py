@@ -1,9 +1,9 @@
 from __future__ import annotations
 from dataclasses import asdict, fields, replace
 import copy, hashlib, math, threading, time
-from .model import Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure
+from .model import Bar, Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure
 from .strategy import Strategy
-from .compute_core import ComputeCore
+from .compute_core import ComputeCore, make_compute
 from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key
 from .mt5_adapter import MAGIC
 
@@ -39,7 +39,7 @@ class Engine:
         self.auto=False;self.paused=True;self.heartbeat=0.
         self.exit_pending=bool(saved.get('exit_pending',False))
         self.strategy=Strategy(self.config,saved.get('strategy'))
-        self.compute=ComputeCore(self.config,saved.get('compute'))
+        self.compute=make_compute(self.config,saved.get('compute'))
         self.strategy.previous_quote=None
         self.compute.previous_quote=None
         if self.strategy.setup:
@@ -54,6 +54,7 @@ class Engine:
         self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
         self.market_time=0.;self.market_errors=[];self.quote_ready=False
         self.last_market_attempt=-1.;self.bar_errors=[]
+        self._history_loaded=set();self._history_fingerprint={}
         self.analysis_time=0.;self.decision=Decision();self.execution='AUTO выключен: только анализ'
         self.forecast={};self.forecast_side=0;self.forecast_since=0.
         self.rate_times=[];self.next_close=0.;self.last_persist=0.;self.last_audit_key=None
@@ -67,8 +68,19 @@ class Engine:
             strategy=self.strategy.state(),compute=self.compute.state()))
 
     def _consume_event(self,event_id):
-        if self.config.engine_mode=='COMPUTE_V1':self.compute.consume(event_id)
+        if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):self.compute.consume(event_id)
         else:self.strategy.consume(event_id)
+
+    def market_scope(self):
+        return (self.account_key or 'UNBOUND')+'|'+symbol_key(self.config.symbol)
+
+    def _archive_scenarios(self,now):
+        if self.config.engine_mode!='SCENARIO_V2':return
+        for snapshot in self.compute.pending_snapshots:
+            self.store.save_scenario_snapshot(self.market_scope(),snapshot,now)
+        self.compute.pending_snapshots.clear()
+        for event in self.compute.events:self.store.event('SCENARIO_EVENT',event,event['time'])
+        self.compute.events.clear()
 
     def _owned(self): return [p for p in self.positions if p['magic']==MAGIC]
     def _owned_orders(self): return [p for p in self.orders if p['magic']==MAGIC]
@@ -176,7 +188,7 @@ class Engine:
         if new.account_mode!=self.account.get('type'):return False
         keep_auto=self.auto and new.approved and not self.emergency and not self.recovery
         self.config=new;self.pending_config=None
-        self.strategy=Strategy(new);self.compute=ComputeCore(new)
+        self.strategy=Strategy(new);self.compute=make_compute(new)
         self.bars=[];self.context=[];self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
         self.quote=None;self.info={};self.quote_ready=False;self.last_market_attempt=-1.
         self.last_bars_at=0.;self.bar_errors=[];self.market_errors=[]
@@ -280,6 +292,7 @@ class Engine:
     def _suspend_trigger(self,now):
         self.strategy.previous_quote=None
         self.compute.previous_quote=None
+        if hasattr(self.compute,'suspend'):self.compute.suspend()
         setup=self.strategy.setup
         if setup:
             setup.seen_safe_side=False
@@ -306,12 +319,23 @@ class Engine:
                 layers=(('m1','M1'),('bars','M5'),('m15','M15'),('h1','H1'))
             for attr,tf in layers:
                 try:
-                    values=list(self.broker.bars(symbol,tf))
+                    history_key=(self.market_scope(),tf)
+                    if history_key not in self._history_loaded and hasattr(self.broker,'history_bars'):
+                        values=list(self.broker.history_bars(symbol,tf,1200))
+                        self._history_loaded.add(history_key)
+                    else:
+                        values=list(self.broker.bars(symbol,tf))
                     if not values:
                         raise Blocked('MT5 вернул пустую историю '+tf)
                     ordered(values)
                     if tf!='MN1' and values[-1].time+TF_SECONDS[tf]>now+1.0:
                         raise Blocked('MT5 вернул незакрытую свечу '+tf)
+                    fingerprint=tuple((b.time,b.open,b.high,b.low,b.close,b.volume) for b in values)
+                    if self._history_fingerprint.get(history_key)!=fingerprint:
+                        self.store.save_bars(self.market_scope(),tf,values,now)
+                        self._history_fingerprint[history_key]=fingerprint
+                    if self.config.engine_mode=='SCENARIO_V2':
+                        values=[Bar(**row) for row in self.store.read_bars(self.market_scope(),tf,limit=1200)]
                     setattr(self,attr,values)
                 except Exception as exc:
                     self.bar_errors.append('История '+tf+' не обновлена: '+str(exc))
@@ -342,7 +366,7 @@ class Engine:
 
     def _reversal_enabled(self):
         # This feature is a DEMO continuation, never an implicit permission for REAL.
-        return bool(self.config.engine_mode=='COMPUTE_V1' and self.auto and not self.paused
+        return bool(self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2') and self.auto and not self.paused
                     and not self.emergency and not self.recovery and not self.store.pending()
                     and self.account.get('type')=='DEMO' and self.config.account_mode=='DEMO'
                     and self.history_ok and self.risk.get('allowed',False))
@@ -533,11 +557,12 @@ class Engine:
                 compute_decision=None
                 if not self.market_errors and self.quote_ready:
                     try:
-                        if self.config.engine_mode=='COMPUTE_V1':
+                        if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):
                             compute_decision=self.compute.evaluate(
                                 self.bars,self.m1,self.m15,self.h1,self.live_bar,self.quote,now,
                                 self.campaign['side'] if self.campaign else 0)
                             self.forecast=copy.deepcopy(compute_decision.forecast)
+                            self._archive_scenarios(now)
                         else:
                             self._update_forecast(now)
                     except Exception as exc:
@@ -552,6 +577,11 @@ class Engine:
                         components={},projection=[],engine=self.config.engine_mode,
                         reason='Вычислительный анализ ждёт свежие данные',stable_for_sec=0.)
                     self.forecast_side=0;self.forecast_since=now
+                if self.config.engine_mode=='SCENARIO_V2' and compute_decision is None:
+                    cached=copy.deepcopy(getattr(self.compute,'last_forecast',{}))
+                    if cached:
+                        cached.update(stale=True,available=False,reason='Нет свежего расчёта; сохранённая карта не разрешает вход')
+                        self.forecast=cached
                 self._update_reversal(compute_decision,now)
                 if (not exit_cycle and self.campaign and compute_decision is not None and
                     compute_decision.phase=='ENTRY_READY' and compute_decision.side in (-1,1) and
@@ -570,7 +600,7 @@ class Engine:
                 if self.market_errors:
                     raise Blocked('; '.join(self.market_errors))
                 q=self.quote;q.validate(now)
-                if self.config.engine_mode=='COMPUTE_V1':
+                if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):
                     d=compute_decision if compute_decision is not None else self.compute.evaluate(
                         self.bars,self.m1,self.m15,self.h1,self.live_bar,q,now,
                         self.campaign['side'] if self.campaign else 0)
@@ -614,7 +644,7 @@ class Engine:
                 # then may enter the opposite side only if a fresh calculation still agrees.
                 if self.campaign and d.phase=='ENTRY_READY' and d.side in (-1,1) and d.side!=self.campaign['side']:
                     old='BUY' if self.campaign['side']==1 else 'SELL'
-                    if self.config.engine_mode=='COMPUTE_V1':
+                    if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):
                         self._queue_reversal(now,d)
                     elif d.event_id:
                         self._consume_event(d.event_id);self.save()
@@ -627,7 +657,7 @@ class Engine:
                 elif not self.risk.get('allowed',False):self.execution=self._idle_status()
                 elif not self._session_allowed(now):self.execution='Текущая сессия не разрешена выбранным фильтром'
                 elif d.signal=='WAIT':
-                    self.execution=d.reason if self.config.engine_mode=='COMPUTE_V1' else (
+                    self.execution=d.reason if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2') else (
                         ('LIVE forecast '+('BUY' if int(self.forecast.get('side',0) or 0)==1 else 'SELL')+
                          f" {float(self.forecast.get('confidence',0) or 0)*100:.0f}%; вход ещё не готов")
                         if int(self.forecast.get('side',0) or 0) else 'Нет нового подтверждённого входа; ордер не отправлен')
@@ -677,7 +707,7 @@ class Engine:
         if not self.risk.get('allowed'):raise Blocked('Проверка риска не разрешила отправку')
         q=self.broker.quote(self.info['name']);q.validate(now)
         no_chase=PROFILES[self.config.mode].no_chase_atr
-        if self.config.engine_mode=='COMPUTE_V1':no_chase=min(no_chase,self.compute.MAX_CHASE_ATR)
+        if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):no_chase=min(no_chase,self.compute.MAX_CHASE_ATR)
         if (q.bid-d.trigger)*d.side<=0 or abs(q.bid-d.trigger)>no_chase*d.atr:
             raise Blocked('Котировка уже вышла из допустимой зоны входа')
         exec_cfg=self._execution_config()
@@ -697,7 +727,17 @@ class Engine:
                 entry_class=d.entry_class if d.entry_class!='NONE' else 'CONFIRMED',
                 confirmed=d.entry_class!='PROBE',confirmed_at=(now if d.entry_class!='PROBE' else 0.),
                 entry_trigger=d.trigger,initial_invalidation=d.invalidation,
-                forecast_at_entry=copy.deepcopy(d.forecast))
+                forecast_at_entry=copy.deepcopy(d.forecast),
+                scenario_id=d.forecast.get('entry_scenario_id'),scenario_version=d.forecast.get('entry_scenario_version'),
+                scenario_type=d.forecast.get('entry_type'),snapshot_id=d.forecast.get('snapshot_id'),
+                requested_volume=self.config.lot_cap,volume_mode=self.config.volume_mode)
+        if new_campaign and self.config.engine_mode=='SCENARIO_V2':
+            key=d.forecast.get('snapshot_id')
+            if key:
+                self.store.save_scenario_snapshot(self.market_scope(),dict(snapshot_id=key,
+                    forecast=copy.deepcopy(d.forecast),bars=[asdict(b) for b in self.bars[-120:]],
+                    symbol=self.config.symbol,timeframe=self.config.timeframe,data_asof=now,
+                    entry_scenario_id=d.forecast.get('entry_scenario_id')),now)
         comment='EC1:'+hashlib.sha256(d.event_id.encode()).hexdigest()[:16]
         body=dict(plan=asdict(p),comment=comment,time=now)
         self._consume_event(d.event_id);self.save();self.store.intent(d.event_id,'SENDING',body)
@@ -775,7 +815,7 @@ class Engine:
                 self.recovery=False;self.real_armed=False;self.auto=False;self.paused=True;self.pending_reversal=None
                 self.ack=[0,0];self.daily_latch='';self.deals=[];self.history_time=0.;self.history_ok=False;self.history_error='История ещё не получена'
                 self.config=replace(self.config,account_mode=a['type'],approved=False,fee_per_lot=None)
-                self.strategy=Strategy(self.config);self.compute=ComputeCore(self.config)
+                self.strategy=Strategy(self.config);self.compute=make_compute(self.config)
                 self.strategy.clear();self.compute.clear();self.save()
                 message='Текущий MT5 счёт привязан: '+a['type']+'. AUTO выключен'
             elif command=='configure':
@@ -789,7 +829,10 @@ class Engine:
                 if busy and data.get('allow_deferred') is True:
                     existing=Config(**self.pending_config) if self.pending_config else None
                     if existing is None or replace(existing,approved=False)!=replace(new,approved=False):
-                        self.pending_config=asdict(replace(new,approved=False))
+                        carry_consent=bool(data.get('accept_pending_profile') and data.get('preserve_auto')
+                            and self.auto and not self.paused and not self.emergency and not self.recovery
+                            and self.config.approved and new.account_mode==self.config.account_mode=='DEMO')
+                        self.pending_config=asdict(replace(new,approved=carry_consent))
                         self._cancel_reversal('Ожидается смена профиля',now)
                         self.store.event('PROFILE_QUEUED',dict(engine_mode=new.engine_mode),now)
                     self.save()
@@ -797,9 +840,12 @@ class Engine:
                 else:
                     if self.campaign or self._owned() or self._owned_orders() or self.store.pending():
                         raise Blocked('Профиль фиксирован до завершения кампании')
-                    new.approved=False;self.auto=False;self.paused=True;self.real_armed=False;self.pending_reversal=None
+                    keep_auto=bool(data.get('preserve_auto') and data.get('accept_pending_profile') and self.auto
+                        and not self.paused and not self.emergency and not self.recovery and self.config.approved
+                        and new.account_mode==self.config.account_mode=='DEMO')
+                    new.approved=keep_auto;self.auto=keep_auto;self.paused=not keep_auto;self.real_armed=False;self.pending_reversal=None
                     self.pending_config=None
-                    self.config=new;self.strategy=Strategy(new);self.compute=ComputeCore(new);self.bars=[];self.context=[];self.last_bars_at=0
+                    self.config=new;self.strategy=Strategy(new);self.compute=make_compute(new);self.bars=[];self.context=[];self.last_bars_at=0
                     self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
                     self.quote=None;self.info={};self.last_market_attempt=-1.;self.bar_errors=[]
                     self.market_errors=[];self.market_time=0.;self.quote_ready=False;self.analysis_time=0.
@@ -898,6 +944,8 @@ class Engine:
                 display_forecast['active_scenario']=dict(side=c['side'],entry=c['last_entry'],
                     trigger=c.get('entry_trigger',0),invalidation=c['invalidation'],
                     initial_invalidation=c.get('initial_invalidation',c['invalidation']))
+                display_forecast['active_trade_plan']=dict(scenario_id=c.get('scenario_id'),snapshot_id=c.get('snapshot_id'),
+                    side=c['side'],entry=c['last_entry'],invalidation=c['invalidation'],requested_volume=c.get('requested_volume'))
             display_forecast['reversal_status']=copy.deepcopy(self.reversal_status)
             return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,runtime_revision=REVISION,server_time=now,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
@@ -909,10 +957,13 @@ class Engine:
                 campaign_state=('OPEN' if owned else 'RECONCILING' if self.campaign else 'NONE'),
                 reconcile_detail=self.reconcile_detail,
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
-                forecast=display_forecast,
+                forecast=display_forecast,auto_requested=self.auto,entry_allowed=self._entry_gate()['allowed'],
+                market_scope=self.market_scope(),instrument=copy.deepcopy(self.info),
+                capabilities=dict(minimum_client='R5' if self.config.engine_mode=='SCENARIO_V2' else 'R4',
+                    history=True,scenario_archive=True,selected_lot=True,real_execution=False),
                 reversal_status=copy.deepcopy(self.reversal_status),
                 fee_profile=dict(fee_per_lot=self.effective_fee_per_lot,source=self.fee_source,key=self.fee_profile_key),
-                quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-100:]],
+                quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-1200:]],
                 live_bar=asdict(self.live_bar) if self.live_bar else None,
                 live_structure=list(live_structure(self.bars,self.live_bar)) if self.config.timeframe=='M5' else [],
                 context_time=self.context[-1].time if self.context else 0,
