@@ -1,0 +1,60 @@
+name: R5 fixed lots and structural scenario upgrade
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['tools/r5*', '.github/workflows/r5-upgrade-build.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: r5-upgrade-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  reproduce-build-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Require existing EC1 signing identity
+        run: |
+          test -s "$HOME/.fxm1-signing/ec1-demo.jks"
+          chmod 600 "$HOME/.fxm1-signing/ec1-demo.jks"
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+      - run: sudo chmod 666 /dev/kvm
+      - name: Reproduce baseline regressions then verify R5 on API 35 and package exact source
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash tools/r5_verify.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FXM1-R5-UPDATE-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error
