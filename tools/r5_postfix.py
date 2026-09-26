@@ -54,3 +54,46 @@ s=s[:where]+'''    @Test public void singleBarHistoryDoesNotThrow()throws Except
     }
 '''+s[where:]
 p.write_text(s,encoding='utf-8')
+
+# Restore the two preserved structure overlays. Existing API35 regression tests
+# independently failed on both paths; do not weaken or remove their assertions.
+spark='app/src/main/java/com/openai/fxm1/SparklineView.java'
+edit(spark,'private JSONArray positions=new JSONArray(),structure=new JSONArray();',
+     'private JSONArray positions=new JSONArray(),structure=new JSONArray(),liveStructure=new JSONArray();')
+edit(spark,'s.optJSONObject("live_bar"),null,s.optJSONObject("forecast")',
+     's.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast")')
+edit(spark,'liveBar=lb;forecast=f==null?new JSONObject():f;',
+     'liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;')
+edit(spark,'viewport.live()?liveBar:null,f,viewport.live()?positions:new JSONArray());',
+     'viewport.live()?liveBar:null,viewport.live()?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());')
+renderer='app/src/main/java/com/openai/fxm1/ScenarioMapRenderer.java'
+edit(renderer,'JSONObject live,JSONObject f,JSONArray positions){',
+              'JSONObject live,JSONArray liveStructure,JSONObject f,JSONArray positions){',2)
+edit(renderer,'.draw(bars,structure,live,f,positions);',
+              '.draw(bars,structure,live,liveStructure,f,positions);')
+edit(renderer,'if(live!=null)candle(live,left+step*(count-.5f),step*.30f);',
+     'if(live!=null){float xx=left+step*(count-.5f);xs.put(live.optLong("time"),xx);candle(live,xx,step*.30f);}')
+edit(renderer,'line(previousX,previousY,xx,yy,0xffaaa7bf,.8f,false);',
+              'line(previousX,previousY,xx,yy,0xff914dff,1f,false);')
+edit(renderer,'text(s.optString("label"),xx-4*d,Math.max(top+8*d,yy-5*d),MUTED,8);previousX=xx;previousY=yy;',
+              'p.setColor(0xff914dff);c.drawCircle(xx,yy,2.5f*d,p);\n            text(s.optString("label"),xx-4*d,Math.max(top+8*d,yy-5*d),0xff914dff,8);previousX=xx;previousY=yy;')
+edit(renderer,'        if(routes!=null&&v3){',
+'''        // Provisional structure describes already observed current-bar extremes,
+        // not future route nodes. Hide it when browsing old candles.
+        if(!historical&&live!=null&&liveStructure!=null){
+            float prevX=Float.NaN,prevY=0;
+            for(int i=0;i<liveStructure.length();i++){
+                JSONObject s=liveStructure.optJSONObject(i);if(s==null)continue;
+                Float xx=xs.get(s.optLong("time"));double v=s.optDouble("price");
+                if(xx==null||!Double.isFinite(v)||v<low||v>high)continue;
+                float yy=y(v);
+                if(!Float.isNaN(prevX))line(prevX,prevY,xx,yy,0xffffb04d,1.2f,true);
+                if(s.optBoolean("provisional",false)){
+                    p.setColor(0xffffb04d);c.drawCircle(xx,yy,3*d,p);
+                    text(s.optString("label"),xx+3*d,Math.max(top+8*d,yy-5*d),0xffffb04d,8);
+                }
+                prevX=xx;prevY=yy;
+            }
+        }
+        if(routes!=null&&v3){''')
+print('Confirmed violet swings and provisional amber LIVE structure restored end-to-end.')
