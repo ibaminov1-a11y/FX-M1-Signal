@@ -1,0 +1,47 @@
+name: R5 UI contract red-green
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['app/src/androidTest/java/com/openai/fxm1/R5RedContractUiTest.java', '.github/workflows/r5-red-contract.yml']
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: |
+            mkdir -p evidence
+            PYTHONPATH=mt5_bridge:tests/event_core python tests/event_core/ui_fixture.py > evidence/fixture.log 2>&1 &
+            sleep 3
+            adb reverse tcp:8765 tcp:8765
+            gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R5RedContractUiTest > evidence/android.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R5-ui-contract-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
