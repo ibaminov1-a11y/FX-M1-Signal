@@ -36,3 +36,21 @@ if p.exists():
  edit('tools/run_ec1_qa.sh','com.openai.fxm1.R5SettingsHistoryTest \\\n',
       'com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest \\\n')
 print('R5 migration preserves explicit mode/volume, lot changes queue internally, legacy assertions updated.')
+# The lot callback runs outside onCreate; use the shared preferences accessor.
+edit('app/src/main/java/com/openai/fxm1/MainActivity.java',
+     'Toast.makeText(this,"Лот сохранён: "+prefs.getString("ec_lot_cap","")',
+     'Toast.makeText(this,"Лот сохранён: "+EventClient.prefs().getString("ec_lot_cap","")')
+edit('app/src/main/java/com/openai/fxm1/ChartViewport.java',
+     'Math.max(1,Math.min(keys.size()-1,index-count))',
+     'Math.max(0,Math.min(keys.size()-1,index-count))')
+p=root/'app/src/androidTest/java/com/openai/fxm1/R5SettingsHistoryTest.java'
+s=p.read_text(encoding='utf-8');where=s.rfind('}')
+s=s[:where]+'''    @Test public void singleBarHistoryDoesNotThrow()throws Exception{
+        JSONArray only=bars(1);
+        ui(()->{SparklineView chart=new SparklineView(context);
+            chart.setMarket(only,null,null,null,"SCENARIO_V2",null,null,null);
+            chart.panHistory(12);assertEquals(1800000000L,chart.historyRightTime());
+            chart.panHistory(-12);assertEquals(1800000000L,chart.historyRightTime());});
+    }
+'''+s[where:]
+p.write_text(s,encoding='utf-8')
