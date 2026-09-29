@@ -40,6 +40,12 @@ public class EventCoreUiTest {
  void shot(String name)throws Exception{shell("mkdir -p /sdcard/Download/ec1-qa");shell("screencap -p /sdcard/Download/ec1-qa/"+name+".png");}
  void click(String label)throws Exception{for(int i=0;i<5;i++){try{UiObject2 v=device.wait(Until.findObject(By.text(label)),6000);assertNotNull(label,v);v.click();return;}catch(StaleObjectException e){if(i==4)throw e;Thread.sleep(80);}}}
  @Test public void accountModeAndCommissionProfileAreAutomatic()throws Exception{
+  // This is a pure preference/configuration contract. Stop real DEMO snapshot
+  // publishers before injecting a synthetic REAL account into those preferences.
+  java.lang.reflect.Field worker=MainActivity.class.getDeclaredField("executor");worker.setAccessible(true);
+  java.util.concurrent.ExecutorService queue=(java.util.concurrent.ExecutorService)worker.get(rule.getActivity());
+  rule.finishActivity();
+  assertTrue("Activity reads must stop before synthetic account injection",queue.awaitTermination(8,java.util.concurrent.TimeUnit.SECONDS));
   p.edit().putString("mt5_account_type_snapshot","DEMO").remove("ec_fee").commit();
   p.edit().putString("target_trade_mode","DEMO").commit();
   JSONObject demo=EventClient.config();

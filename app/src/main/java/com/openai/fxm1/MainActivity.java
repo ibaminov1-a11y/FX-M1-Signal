@@ -651,7 +651,7 @@ public class MainActivity extends Activity {
     private void applyRuntimeVersionLabels() {
         String v = appVersionName();
         if (versionBadgeText != null) versionBadgeText.setText("V" + v);
-        if (smartTitleText != null) smartTitleText.setText("УМНЫЕ ФУНКЦИИ V" + v);
+        if (smartTitleText != null) smartTitleText.setText("УМНЫЕ ФУНКЦИИ V" + v + " · нажмите статус для подробностей");
         if (footerVersionText != null) footerVersionText.setText("V" + v + " · SCALP / NORMAL · EVENT CORE · MT5");
     }
 
@@ -1235,7 +1235,7 @@ public class MainActivity extends Activity {
             try {
                 // Use the same source/account/generation checks as pull-to-refresh.
                 EventClient.refreshFinancial();
-                deliverUi(() -> {restoreTradingSnapshotFromPrefs();refreshSmartUi();});
+                deliverUi(this::syncUiFromBackgroundService);
             } catch (Exception e) {
                 deliverUi(this::refreshSmartUi);
             } finally { moneyRefreshInFlight = false; }
