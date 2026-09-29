@@ -197,6 +197,7 @@ public class MainActivity extends Activity {
         });
         qualityBarView = findViewById(R.id.qualityBarView);
         rootLayout = findViewById(R.id.rootLayout);
+        applySystemInsets();
         refreshStatusText = findViewById(R.id.refreshStatusText);
         refreshProgress = findViewById(R.id.refreshProgress);
         rootLayout.setRefreshListener(new LiveScrollView.RefreshListener(){
@@ -235,7 +236,7 @@ public class MainActivity extends Activity {
         symbolSpinner.setAdapter(symbolAdapter);
 
         ArrayAdapter<String> timeframeAdapter = darkSpinnerAdapter(
-                new String[]{"M1", "M5", "M10", "M15", "H1", "H4", "D1", "W1", "MN1"}
+                Timeframes.CHOICES
         );
         entryTimeframeSpinner.setAdapter(timeframeAdapter);
 
@@ -253,14 +254,11 @@ public class MainActivity extends Activity {
         int savedSymbolIndex = symbolItems.indexOf(savedSymbol);
         symbolSpinner.setSelection(savedSymbolIndex >= 0 ? savedSymbolIndex : 0);
         int savedTfPos = prefs.getInt("entry_tf_pos", 1);
-        if (!prefs.getBoolean("v800_tf_migrated", false)) {
-            // V8.0 inserts M10 at index 2; migrate old M15+ saved indices by +1.
-            if (savedTfPos >= 2) savedTfPos += 1;
-            prefs.edit().putInt("entry_tf_pos", savedTfPos).putBoolean("v800_tf_migrated", true).apply();
-        }
-        entryTimeframeSpinner.setSelection(Math.max(0,Math.min(8,savedTfPos)));
+        entryTimeframeSpinner.setSelection(savedTfPos);
         entryTimeframeSpinner.setEnabled(true);
         entryTimeframeSpinner.setContentDescription("Таймфрейм входа");
+        TextView legacyFrame=new TextView(this);legacyFrame.setTag("entry_timeframe_legacy");legacyFrame.setTextSize(10);legacyFrame.setTextColor(C_ORANGE);
+        ((LinearLayout)entryTimeframeSpinner.getParent()).addView(legacyFrame);updateLegacyFrameNote();
         signalModeSpinner.setSelection(Math.max(0,Math.min(1,prefs.getInt("signal_mode_pos",0))));
         apiKeyInput.setText(prefs.getString("ec_token", ""));
         serverUrlInput.setText(stripServerScheme(prefs.getString("server_url", "")));
@@ -353,7 +351,7 @@ public class MainActivity extends Activity {
         entryTimeframeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
             public void onItemSelected(AdapterView<?> parent,View view,int position,long id){
                 if(syncingScalpTimeframe||position==prefs.getInt("entry_tf_pos",1))return;
-                prefs.edit().putInt("entry_tf_pos",position).apply();
+                SharedPreferences.Editor selection=prefs.edit();Timeframes.select(selection,position);selection.apply();
                 onProfileChanged();
             }
             public void onNothingSelected(AdapterView<?> parent){}
@@ -739,11 +737,18 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void updateLegacyFrameNote(){
+        TextView note=findViewById(R.id.tfCard).findViewWithTag("entry_timeframe_legacy");if(note==null)return;
+        boolean legacy="M10".equals(EventClient.tf());note.setVisibility(legacy?View.VISIBLE:View.GONE);
+        note.setText("M10 · сохранённый профиль. Новый период выбирается явно; текущая кампания сохраняется.");
+    }
+
     private void onProfileChanged(){
         final JSONObject desired;
         try{desired=EventClient.rememberProfileSelection(String.valueOf(symbolSpinner.getSelectedItem()),
             entryTimeframeSpinner.getSelectedItemPosition(),signalModeSpinner.getSelectedItemPosition(),riskSpinner.getSelectedItemPosition());}
         catch(Exception e){Toast.makeText(this,safeMessage(e),Toast.LENGTH_LONG).show();return;}
+        updateLegacyFrameNote();
         autoStatusText.setText("Профиль выбран: "+EventClient.profileLabel(desired)+"\nОжидается подтверждение Bridge");
         if(EventClient.base().isEmpty())return;
         submitTask(()->{try{EventClient.configureUserSelection(desired);EventClient.poll();deliverUi(()->{
@@ -757,7 +762,7 @@ public class MainActivity extends Activity {
     private void restoreSparklineFromPrefs(String signal) {
         if(sparklineView==null)return;
         JSONObject s=EventClient.state();
-        ScenarioUi.populate(sparklineView,s);
+        ScenarioUi.updateLive(sparklineView,s);
         sparklineView.setSignal(signal);
     }
 
@@ -1450,6 +1455,7 @@ public class MainActivity extends Activity {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         updateMarketStatusUi();
         restoreTradingSnapshotFromPrefs();
+        updateLegacyFrameNote();
         String bridgeJournal=p.getString("ec_journal_snapshot","");
         if(!bridgeJournal.isEmpty()){
             String localJournal=p.getString("full_journal","");
@@ -1521,7 +1527,7 @@ public class MainActivity extends Activity {
         signalText.setText(offline?"КЭШ":signal);
         signalText.setTextColor(offline?C_MUTED:"BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
-        confidenceText.setText(ScenarioUi.headline(forecast));
+        confidenceText.setText("ВХОД "+(currentState.optJSONObject("config")==null?tf:currentState.optJSONObject("config").optString("timeframe",tf))+" · "+ScenarioUi.headline(forecast));
         int mapSide=forecast==null?0:forecast.optInt("side");
         confidenceText.setTextColor(offline?C_MUTED:mapSide>0?C_GREEN:mapSide<0?C_RED:C_PURPLE);
         if (qualityBarView != null) qualityBarView.setVisibility(View.GONE);
@@ -1874,7 +1880,7 @@ public class MainActivity extends Activity {
 
     private String selectedEntryTimeframe() {
         Object selected = entryTimeframeSpinner.getSelectedItem();
-        return selected == null ? "M5" : selected.toString();
+        return selected == null ? EventClient.tf() : selected.toString();
     }
 
     private long selectedMonitorIntervalMs() {
@@ -1883,6 +1889,7 @@ public class MainActivity extends Activity {
         if ("M5".equals(tf)) return 60000L;
         if ("M10".equals(tf)) return 120000L;
         if ("M15".equals(tf)) return 180000L;
+        if ("M30".equals(tf)) return 240000L;
         if ("H1".equals(tf)) return 300000L;
         if ("H4".equals(tf)) return 900000L;
         if ("D1".equals(tf)) return 1800000L;
@@ -2592,8 +2599,24 @@ public class MainActivity extends Activity {
         );
     }
 
+    private void applySystemInsets(){
+        final View content=rootLayout.getChildAt(0);
+        final int left=content.getPaddingLeft(),right=content.getPaddingRight();
+        rootLayout.setOnApplyWindowInsetsListener((view,insets)->{
+            int top=insets.getSystemWindowInsetTop(),bottom=insets.getSystemWindowInsetBottom();
+            rootLayout.setPadding(0,top,0,bottom);
+            content.setPadding(left,dp(12),right,dp(18));
+            return insets;
+        });
+        rootLayout.requestApplyInsets();
+    }
+
+    @Override protected void onStart(){super.onStart();ScenarioUi.setActive(this,true);}
+    @Override protected void onStop(){ScenarioUi.setActive(this,false);super.onStop();}
+
     @Override
     protected void onDestroy() {
+        ScenarioUi.release(this);
         uiClosed = true;
         ++refreshSerial;
         if(refreshTask!=null)refreshTask.cancel(true);

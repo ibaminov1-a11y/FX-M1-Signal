@@ -128,7 +128,7 @@ class ScenarioCore:
                      SELL=dict(trigger=support-.04*a,invalidation=resistance+.10*a))
         sigdata=[q.time_msc,q.bid,q.ask,frame,[(s['scenario_id'],s['status'],s['stage']) for s in selected]]
         snapshot=hashlib.sha256(json.dumps(sigdata,sort_keys=True).encode()).hexdigest()[:24]
-        forecast=dict(map_version=3,available=True,engine=self.VERSION,side=routes[0]['side'] if routes and not tied else 0,
+        forecast=dict(map_version=3,available=True,timeframe=self.config.timeframe,engine=self.VERSION,side=routes[0]['side'] if routes and not tied else 0,
             selection_status=selection_status,selection_reason='Равнозначные гипотезы — предпочтение не определено' if tied else '',
             primary_scenario_id=routes[0]['scenario_id'] if routes and not tied else None,
             history_clock=clock_generation,boundary_asof=price_time,context_timeframe=context_tf,

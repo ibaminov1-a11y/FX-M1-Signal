@@ -16,7 +16,7 @@ def stamp(year, month, day=1):
 
 
 NOW = stamp(2026, 9, 29) + 43200
-CONTEXTS = {'M1':'M5', 'M5':'M15', 'M10':'H1', 'M15':'H1', 'H1':'H4',
+CONTEXTS = {'M1':'M5', 'M5':'M15', 'M10':'H1', 'M15':'H1', 'M30':'H1', 'H1':'H4',
             'H4':'D1', 'D1':'W1', 'W1':'MN1', 'MN1':'MN1'}
 
 

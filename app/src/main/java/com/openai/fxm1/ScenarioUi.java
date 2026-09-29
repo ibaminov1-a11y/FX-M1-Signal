@@ -152,7 +152,17 @@ public final class ScenarioUi {
     }
     public static void attachControls(Activity a,SparklineView chart){
         ViewGroup parent=(ViewGroup)chart.getParent();if(parent==null)return;
+        TimeframeViewer viewer=new TimeframeViewer(a);chart.setTag(viewer);
+        parent.addView(viewer.bind(chart),parent.indexOfChild(chart));
         parent.addView(controls(a,chart,false),parent.indexOfChild(chart)+1);
+    }
+    private static TimeframeViewer viewer(Activity a){
+        View chart=a.findViewById(R.id.sparklineView);return chart!=null&&chart.getTag() instanceof TimeframeViewer?(TimeframeViewer)chart.getTag():null;
+    }
+    static void setActive(Activity a,boolean active){TimeframeViewer v=viewer(a);if(v!=null)v.setActive(active);}
+    static void release(Activity a){TimeframeViewer v=viewer(a);if(v!=null)v.close();}
+    static void updateLive(SparklineView chart,JSONObject state){
+        if(chart.getTag() instanceof TimeframeViewer)((TimeframeViewer)chart.getTag()).update(state);else populate(chart,state);
     }
     private static View controls(Activity a,SparklineView chart,boolean archive){
         LinearLayout pinned=new LinearLayout(a);pinned.setOrientation(LinearLayout.HORIZONTAL);
@@ -162,7 +172,7 @@ public final class ScenarioUi {
         button(a,row,"◀",()->chart.panHistory(12));button(a,row,"▶",()->chart.panHistory(-12));
         button(a,row,"−",()->chart.zoomHistory(.8));button(a,row,"+",()->chart.zoomHistory(1.25));
         Button branches=button(a,row,"ВЕТКИ",()->choose(a,chart));branches.setTag("scenario_branches");
-        if(!archive){Button history=button(a,row,"ЕЩЁ ИСТОРИЯ",()->older(a,chart));history.setTag("scenario_history");button(a,row,"АРХИВ ПРОГНОЗОВ",()->archiveList(a,null));}
+        if(!archive){Button history=button(a,row,"ЕЩЁ ИСТОРИЯ",()->older(a,chart));history.setTag("scenario_history");Button archiveButton=button(a,row,"АРХИВ ВХОДА",()->archiveList(a,null));archiveButton.setTag("scenario_archive");}
         return pinned;
     }
     private static void updateControls(SparklineView chart){
@@ -211,7 +221,7 @@ public final class ScenarioUi {
                 int n=rows.length();boolean more=result.optBoolean("has_more");String[] labels=new String[n+(more?1:0)];
                 for(int i=0;i<n;i++){JSONObject s=rows.optJSONObject(i);labels[i]=new java.text.SimpleDateFormat("dd.MM HH:mm:ss",Locale.US).format(new Date((long)(s.optDouble("recorded_at")*1000)))+" · "+s.optString("title");}
                 if(more)labels[n]="РАНЬШЕ…";
-                new AlertDialog.Builder(a).setTitle("Неизменяемые снимки · не LIVE").setItems(labels,(d,pos)->{
+                new AlertDialog.Builder(a).setTitle("Архив торгового периода · не LIVE").setItems(labels,(d,pos)->{
                     if(pos==n){archiveList(a,result.optDouble("next_before"));return;}
                     String id=rows.optJSONObject(pos).optString("snapshot_id");io.execute(()->{try{
                         JSONObject response=EventClient.http("GET",EventClient.base()+"/ec/scenarios?id="+URLEncoder.encode(id,"UTF-8"),null);
@@ -247,7 +257,10 @@ public final class ScenarioUi {
         if(a.isFinishing())return;
         Dialog dialog=new Dialog(a);LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(12,12,12,12);box.setBackgroundColor(0xff141125);
         TextView title=new TextView(a);title.setText(snapshot==null?chartTitle(EventClient.state()):"ИСХОДНЫЙ ПРОГНОЗ · НЕ LIVE");title.setTextColor(0xffdddded);title.setTextSize(16);box.addView(title);
-        SparklineView chart=new SparklineView(a);chart.setArchive(snapshot!=null);box.addView(chart,new LinearLayout.LayoutParams(-1,0,1));box.addView(controls(a,chart,snapshot!=null));
+        SparklineView chart=new SparklineView(a);chart.setArchive(snapshot!=null);
+        TimeframeViewer viewer=snapshot==null?viewer(a):null;
+        if(viewer!=null)box.addView(viewer.bind(chart));
+        box.addView(chart,new LinearLayout.LayoutParams(-1,0,1));box.addView(controls(a,chart,snapshot!=null));
         Button close=new Button(a);close.setText("ЗАКРЫТЬ КАРТУ");box.addView(close);close.setOnClickListener(v->dialog.dismiss());
         dialog.setContentView(box);dialog.show();if(dialog.getWindow()!=null)dialog.getWindow().setLayout(-1,-1);
         if(snapshot!=null){
@@ -258,6 +271,7 @@ public final class ScenarioUi {
                 title.setText("АРХИВ · ДРУГАЯ НАСТРОЙКА ВРЕМЕНИ · НЕ LIVE");
             populate(chart,snapshot);return;
         }
+        if(viewer!=null){viewer.update(EventClient.state());dialog.setOnDismissListener(d->viewer.unbind(chart));return;}
         Handler handler=new Handler(Looper.getMainLooper());Runnable update=new Runnable(){public void run(){if(!dialog.isShowing())return;JSONObject state=EventClient.state();title.setText(chartTitle(state));populate(chart,state);handler.postDelayed(this,1000);}};
         dialog.setOnDismissListener(d->handler.removeCallbacks(update));handler.post(update);
     }

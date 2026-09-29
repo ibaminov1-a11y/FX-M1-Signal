@@ -6,8 +6,8 @@ from .strategy import Strategy
 from .compute_core import ComputeCore, make_compute
 from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key
 from .mt5_adapter import MAGIC
+from .observers import ForecastObservers, CONTEXT, PUBLIC_TIMEFRAMES
 
-CONTEXT={'M1':'M5','M5':'M15','M10':'H1','M15':'H1','H1':'H4','H4':'D1','D1':'W1','W1':'MN1','MN1':'MN1'}
 # Broker/server candle clocks can cross the M5 boundary slightly before the PC clock.
 # The forming M5 stays isolated from confirmed-pivot history; larger future jumps remain blocked.
 LIVE_M5_CLOCK_SKEW_SEC=60
@@ -74,6 +74,7 @@ class Engine:
         self.analysis_time=0.;self.decision=Decision();self.execution='AUTO выключен: только анализ'
         self.forecast={};self.forecast_side=0;self.forecast_since=0.
         self.rate_times=[];self.next_close=0.;self.last_persist=0.;self.last_audit_key=None
+        self.observers=ForecastObservers()
         self.save()
 
     def save(self):
@@ -356,6 +357,7 @@ class Engine:
             self.save()
 
     def _refresh_market(self,now):
+        self.observers.sync(self)
         self.market_errors=[];self.quote_ready=False
         try:
             self.info=self.broker.symbol(self.config.symbol)
@@ -410,8 +412,11 @@ class Engine:
                     setattr(self,attr,values)
                     loaded[tf]=values
                     self._history_loaded.add(history_key)
+                    self.observers.remember(tf,values,now)
                 except Exception as exc:
-                    self.bar_errors.append('История '+tf+' не обновлена: '+str(exc))
+                    error='История '+tf+' не обновлена: '+str(exc)
+                    self.bar_errors.append(error)
+                    self.observers.remember(tf,[],now,error)
             if scenario or self.config.timeframe=='M5':
                 if not scenario:self.context=self.m15
                 live_tf=self.config.timeframe
@@ -676,6 +681,7 @@ class Engine:
                     except Exception as exc:
                         self.execution='Закрытие EC1 пока не подтверждено: '+str(exc)
                 self._refresh_market(now)
+                self._refresh_observers(now)
                 compute_decision=None
                 if not self.market_errors and self.quote_ready:
                     try:
@@ -934,6 +940,16 @@ class Engine:
                 if a.get('type') not in ('DEMO','REAL') or a.get('margin_mode')!='HEDGING' or a.get('currency')!='USD':
                     raise Blocked('Можно привязать только USD DEMO/REAL hedging')
                 self.account_key=a['key'];self.account=a;self.account_time=now;self.positions=pos;self.orders=orders
+                # Account adoption changes the namespace immediately. No candle,
+                # tick or calculated scenario from the prior binding may be
+                # relabelled as this account before the worker reads its market.
+                self.bars=[];self.context=[];self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
+                self.quote=None;self.info={};self.quote_ready=False;self.quote_diagnostics={}
+                self.last_market_attempt=-1.;self.last_bars_at=0.;self.market_time=0.;self.bar_errors=[]
+                self.market_errors=['Новый счёт привязан; ожидаем свежие рыночные данные MT5']
+                self.forecast={};self.forecast_side=0;self.forecast_since=0.;self.analysis_time=0.
+                self.decision=Decision(phase='DATA_BLOCK',reason=self.market_errors[0]);self.last_audit_key=None
+                self.observers=ForecastObservers()
                 self.chart_market=None;self.last_chart_attempt=-1.
                 self.campaign_history_cache={};self.pending_config=None
                 self.recovery=False;self.real_armed=False;self.auto=False;self.paused=True;self.pending_reversal=None
@@ -1059,6 +1075,15 @@ class Engine:
             self.store.command_done(key,out)
             return out
 
+    def _refresh_observers(self,now,budget=2):
+        self.observers.refresh(self,now,budget)
+
+    def forecast_snapshot(self,tf):
+        with self.lock:
+            if tf not in PUBLIC_TIMEFRAMES and tf!=self.config.timeframe:
+                raise Blocked('Неизвестный таймфрейм прогноза')
+            return self.observers.frame(self,tf,self.clock())
+
     def snapshot(self):
         from . import VERSION, PROTOCOL, BUILD, REVISION
         with self.lock:
@@ -1072,10 +1097,12 @@ class Engine:
                 display_forecast['active_trade_plan']=dict(scenario_id=c.get('scenario_id'),snapshot_id=c.get('snapshot_id'),
                     side=c['side'],entry=c['last_entry'],invalidation=c['invalidation'],requested_volume=c.get('requested_volume'))
             display_forecast['reversal_status']=copy.deepcopy(self.reversal_status)
+            timeframes,timeframe_context=self.observers.overview(self,now)
             return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,runtime_revision=REVISION,server_time=now,
                 market_history_generation=self.broker_clock_identity,history_migration=self.history_migration,
                 quote_diagnostics=self.quote_diagnostics,
                 chart_market=self.chart_market,
+                timeframes=timeframes,timeframe_context=timeframe_context,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
                 market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
                 risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),
@@ -1093,7 +1120,7 @@ class Engine:
                 fee_profile=dict(fee_per_lot=self.effective_fee_per_lot,source=self.fee_source,key=self.fee_profile_key),
                 quote=asdict(q) if q else None,bars=[asdict(b) for b in self.bars[-1200:]],
                 live_bar=asdict(self.live_bar) if self.live_bar else None,
-                live_structure=list(live_structure(self.bars,self.live_bar)) if self.config.timeframe=='M5' else [],
+                live_structure=list(live_structure(self.bars,self.live_bar)),
                 context_time=self.context[-1].time if self.context else 0,
                 positions=owned,all_positions=self.positions,campaign=self.campaign,
                 history_ok=self.history_ok and now-self.history_time<15,history_time=self.history_time,

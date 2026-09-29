@@ -42,6 +42,10 @@ def create_app(engine,token):
                 return jsonify(engine.refresh_view())
             return jsonify(snap())
 
+    @app.get('/ec/forecast')
+    def forecast():
+        return jsonify(engine.forecast_snapshot(request.args.get('tf',engine.config.timeframe)))
+
     @app.get('/ec/history')
     def chart_history():
         with engine.lock:

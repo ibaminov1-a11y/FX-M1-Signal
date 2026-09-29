@@ -90,7 +90,7 @@ final class ScenarioMapRenderer {
         boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2&&!unverified;
         historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
-        JSONObject levels=valid&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
+        JSONObject levels=valid&&!v3&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
         int routeCount=routes==null?0:Math.min(2,routes.length());
         top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:60)*d;
         split=historical||unverified?right:left+(right-left)*.44f;
@@ -121,7 +121,9 @@ final class ScenarioMapRenderer {
         }
         }
         if(tied&&!historical&&!unverified)text("Равнозначные варианты · без предпочтения",left,(16+16*routeCount)*d,MUTED,8);
-        if(!unverified)text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":"ИСТОРИЯ MT5"),left,top-7*d,stale?0xffffb04d:MUTED,8);
+        String stamp=f.optDouble("data_asof",0)>0?new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date((long)(f.optDouble("data_asof")*1000))):"—";
+        String marketHeading="MT5 · "+f.optString("timeframe","—")+" · "+stamp;
+        if(!unverified)text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":marketHeading),left,top-7*d,stale?0xffffb04d:MUTED,8);
         for(int i=0;i<5;i++){
             float yy=top+(bottom-top)*i/4;line(left,yy,right,yy,0xff312b43,.6f,false);
             text(price(high-(high-low)*i/4),right+4*d,yy+3*d,MUTED,8.5f);
@@ -155,7 +157,7 @@ final class ScenarioMapRenderer {
                 if(!Float.isNaN(prevX))line(prevX,prevY,xx,yy,0xffffb04d,1.2f,true);
                 if(s.optBoolean("provisional",false)){
                     p.setColor(0xffffb04d);c.drawCircle(xx,yy,3*d,p);
-                    text(s.optString("label"),xx+3*d,Math.max(top+8*d,yy-5*d),0xffffb04d,8);
+                    if(!"LIVE".equals(s.optString("label")))text(s.optString("label"),xx+3*d,Math.max(top+8*d,yy-5*d),0xffffb04d,8);
                 }
                 prevX=xx;prevY=yy;
             }
@@ -185,8 +187,15 @@ final class ScenarioMapRenderer {
         }
         if(levels!=null){
             for(String side:new String[]{"BUY","SELL"}){JSONObject l=levels.optJSONObject(side);if(l!=null)level(l.optDouble("trigger"),side+" "+price(l.optDouble("trigger")),0xff879bb4);}
+        }
+        if(valid){
             level(f.optDouble("support"),"Поддержка "+price(f.optDouble("support")),0xff789e8d);
             level(f.optDouble("resistance"),"Сопротивление "+price(f.optDouble("resistance")),0xffae7785);
+        }
+        if(v3&&routes!=null)for(int i=0;i<routeCount;i++){
+            JSONObject route=routes.optJSONObject(i);if(route==null)continue;
+            double event=route.optDouble("event_level",Double.NaN);
+            if(Double.isFinite(event))level(event,"Проверка "+ScenarioUi.role(route,i)+" "+price(event),0xffc7bbdd);
         }
         if(routeCount>0){JSONObject r=routes.optJSONObject(0);level(r.optDouble("invalidation"),"Отмена "+(r.optInt("side")>0?"BUY ":"SELL ")+price(r.optDouble("invalidation")),0xffa996b6);}
         if(active!=null)level(active.optDouble("invalidation"),"Активный "+(active.optInt("side")>0?"BUY":"SELL")+": отмена",0xffffb04d);

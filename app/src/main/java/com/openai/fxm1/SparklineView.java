@@ -108,7 +108,7 @@ public class SparklineView extends View {
         if("TIED".equals(f.optString("selection_status")))text.append(" Равнозначные гипотезы — предпочтение не определено.");
         if(!hasScenarioMap(f))text.append(" WAIT — нет ясного сценария.");
         JSONObject entries=f.optJSONObject("entry_levels");
-        if(entries!=null)for(String side:new String[]{"BUY","SELL"}){
+        if(entries!=null&&f.optInt("map_version")<3)for(String side:new String[]{"BUY","SELL"}){
             JSONObject level=entries.optJSONObject(side);if(level==null)continue;
             text.append(" ").append(side).append(" ").append(priceText(level.optDouble("trigger")))
                 .append("; отмена ").append(priceText(level.optDouble("invalidation"))).append(".");
@@ -118,6 +118,8 @@ public class SparklineView extends View {
             JSONObject v=scenarios.optJSONObject(i);if(v==null)continue;
             text.append(" ").append(ScenarioUi.role(v,i)).append(" ").append(v.optInt("side")>0?"BUY":v.optInt("side")<0?"SELL":"WAIT");
             if(!v.optString("stage").isEmpty())text.append("; этап: ").append(ScenarioUi.stage(v.optString("stage")));
+            double event=v.optDouble("event_level",Double.NaN);
+            if(f.optInt("map_version")>=3&&Double.isFinite(event)&&event>0)text.append("; уровень проверки ").append(priceText(event));
             double t1=v.optDouble("target1",v.optDouble("target",Double.NaN)),t2=v.optDouble("target2",Double.NaN);
             if(Double.isFinite(t1)&&t1>0)text.append(" T1 ").append(priceText(t1));
             if(Double.isFinite(t2)&&t2>0)text.append(" T2 ").append(priceText(t2));

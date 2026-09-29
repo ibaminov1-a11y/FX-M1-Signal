@@ -1,0 +1,4 @@
+R5.5 source commit 24e280c6dfc87b239e21dd7863266c8b6e741922 + new tests.
+Native API35 RED: run36576380521 attempt2 job109434330871, commit165a3434309c2a1dfd1e46030770a3b7125f9937.
+2/2 expected failures: Generic SELL below support is not this waiting SELL hypothesis entry; Chart must show the actual frame and quote timestamp.
+Attempt1 infrastructure dependency download failure, not counted as RED.

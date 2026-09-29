@@ -1,16 +1,18 @@
 """CI fixture only: actual Engine/Flask with a fake broker. Never imports MetaTrader5."""
-import sys,tempfile,time,uuid
+import calendar,sys,tempfile,time,uuid
+from dataclasses import replace
 from pathlib import Path
 sys.path[:0]=[str(Path(__file__).resolve().parents[2]/'mt5_bridge'),str(Path(__file__).resolve().parent)]
 from event_core.server import create_app
 from event_core.engine import Engine
 from event_core.store import Store
-from event_core.model import Bar,Config,Decision,atr,pivots
+from event_core.model import Bar,Blocked,Config,Decision,TF_SECONDS,atr,pivots
+from event_core.observers import ForecastObservers,PUBLIC_TIMEFRAMES
 from event_core.strategy import Strategy
 from event_core.compute_core import ComputeCore
 from test_compute_core import market, NOW
 from fakes import FakeBroker,wave
-from flask import jsonify,request
+from flask import g,jsonify,request
 
 folder=tempfile.TemporaryDirectory();broker=FakeBroker(time.time);broker.balance=99868.35
 store=Store(Path(folder.name)/'fixture.db');engine=Engine(broker,store)
@@ -19,6 +21,7 @@ freeze_until=0.0
 normal_broker=broker
 r54_refresh_config={}
 r54_refresh_audit={'refresh_requests':0,'ledger_requests':0,'events_requests':0}
+r56_config={}
 
 def clear_market():
     engine.last_bars_at=0;engine.last_market_attempt=-1.
@@ -28,10 +31,11 @@ def clear_market():
     engine.chart_market=None;engine.last_chart_attempt=-1.
 
 def reset():
-    global freeze_until,broker,r54_refresh_config
+    global freeze_until,broker,r54_refresh_config,r56_config
     with engine.lock:
         broker=normal_broker;engine.broker=broker
         r54_refresh_config={}
+        r56_config={};engine.observers=ForecastObservers()
         r54_refresh_audit.update(refresh_requests=0,ledger_requests=0,events_requests=0)
         freeze_until=0.0
         anchor=int(time.time())
@@ -151,6 +155,92 @@ def r5_market():
         prime_r5_market(str(data.get('family','TRIANGLE')))
         engine.step()
         return jsonify(ok=True,forecast=engine.forecast)
+
+
+class R56Broker(FakeBroker):
+    """Native frame data only; forecasts remain the production Engine's work."""
+    def __init__(self,clock):
+        from test_r5_scenarios import lane
+        super().__init__(clock)
+        self.balance=99868.35;self.bid=1.101;self.ask=self.bid+.00001
+        self.frames={};self.fail=set();now=int(clock())
+        source=lane('RANGE')
+        for index,tf in enumerate(PUBLIC_TIMEFRAMES):
+            end=self.frame_start(tf,now);span=TF_SECONDS[tf]
+            times=[end-(len(source)-i)*span for i in range(len(source))]
+            if tf=='MN1':
+                current=time.gmtime(now);month=current.tm_year*12+current.tm_mon-1
+                times=[calendar.timegm(((month-len(source)+i)//12,(month-len(source)+i)%12+1,1,0,0,0))
+                       for i in range(len(source))]
+            offset=index*.00001
+            self.frames[tf]=[replace(b,time=t,open=b.open+offset,high=b.high+offset,
+                low=b.low+offset,close=b.close+offset) for b,t in zip(source,times)]
+
+    @staticmethod
+    def frame_start(tf,now):
+        if tf=='MN1':
+            current=time.gmtime(now)
+            return calendar.timegm((current.tm_year,current.tm_mon,1,0,0,0))
+        return int(now)//TF_SECONDS[tf]*TF_SECONDS[tf]
+
+    def bars(self,symbol,tf):
+        if tf in self.fail:raise Blocked('Тестовые данные '+tf+' недоступны')
+        return list(self.frames[tf])
+
+    def current_bar(self,symbol,tf):
+        if tf in self.fail:raise Blocked('Тестовые данные '+tf+' недоступны')
+        offset=PUBLIC_TIMEFRAMES.index(tf)*.00001
+        return Bar(self.frame_start(tf,self.clock()),1.101+offset,
+            max(1.1013+offset,self.bid),min(1.1007+offset,self.bid),self.bid,1)
+
+
+@app.post('/test/r56-multiframe')
+def r56_multiframe():
+    global broker,freeze_until,r56_config
+    from event_core.compute_core import make_compute
+    data=request.get_json(silent=True) or {}
+    with engine.lock:
+        if not isinstance(broker,R56Broker):
+            broker=R56Broker(engine.clock);engine.broker=broker
+            engine.config=Config(engine_mode='SCENARIO_V2',timeframe='M5',fee_per_lot=0,approved=True)
+            engine.compute=make_compute(engine.config);engine.strategy=Strategy(engine.config)
+            engine.observers=ForecastObservers();engine.auto=False;engine.paused=True
+            engine.campaign=None;engine.account_key='';engine.history_time=0
+            clear_market();r53_commands.clear()
+        r56_config=dict(data)
+        broker.fail={str(data['unavailable_tf'])} if data.get('unavailable_tf') else set()
+        if data.get('bump'):broker.bid+=.0002;broker.ask=broker.bid+.00001
+        # Controls may be changed inside the normal one-second observer throttle.
+        # Keep each real ScenarioCore; only force its next data observation.
+        engine.observers.attempts.clear();engine.observers.series.clear()
+        engine.last_market_attempt=-1.;engine.last_bars_at=0
+        freeze_until=0.;now=engine.clock()
+        engine.step();engine._refresh_observers(now,budget=9)
+        return jsonify(ok=True,timeframes=list(PUBLIC_TIMEFRAMES),trade_timeframe=engine.config.timeframe)
+
+
+@app.before_request
+def r56_forecast_delay():
+    if request.path=='/ec/forecast':
+        g.r56_options=dict(r56_config)
+        if request.args.get('tf')==g.r56_options.get('delayed_tf'):
+            time.sleep(max(0,min(float(g.r56_options.get('delay_ms',0)),8000))/1000)
+
+
+@app.after_request
+def r56_forecast_faults(response):
+    # Happy-path responses are untouched. Identity faults test only UI guards.
+    if request.path!='/ec/forecast' or response.status_code!=200:return response
+    options=getattr(g,'r56_options',{})
+    if not any(options.get(k) for k in ('wrong_frame','wrong_scope','wrong_clock','wrong_account')):return response
+    data=response.get_json()
+    if options.get('wrong_frame'):
+        data['config']['timeframe']='H4' if request.args.get('tf')!='H4' else 'M1'
+    if options.get('wrong_scope'):data['market_scope']+='|WRONG_SCOPE'
+    if options.get('wrong_clock'):data['market_history_generation']='WRONG_CLOCK'
+    if options.get('wrong_account'):data['account']['key']='999@OTHER_DEMO'
+    response.set_data(app.json.dumps(data))
+    return response
 
 # Test-only transport audit and deterministic financial data; never loaded by the shipped Bridge.
 r53_commands=[]

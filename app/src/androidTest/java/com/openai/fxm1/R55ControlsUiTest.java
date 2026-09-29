@@ -115,7 +115,7 @@ public class R55ControlsUiTest {
     }
     @Test public void explicitDraftSurvivesPollBeforeItsCommandIsSent()throws Exception {
         prime(false);
-        EventClient.rememberProfileSelection("GBP/USD",3,1,1);
+        EventClient.rememberProfileSelection("GBP/USD",2,1,1);
         EventClient.poll();EventClient.configure();
         assertEquals("GBP/USD",prefs.getString("selected_symbol",""));
         assertEquals("M15",EventClient.config().getString("timeframe"));
@@ -150,7 +150,7 @@ public class R55ControlsUiTest {
         JSONObject accepted=EventClient.poll();
         assertEquals("SCALP",accepted.getJSONObject("pending_config").getString("mode"));
         assertFalse("Matching server acceptance clears draft even when configure's response was lost",EventClient.hasProfileDraft());
-        EventClient.rememberProfileSelection("GBP/USD",3,1,0);
+        EventClient.rememberProfileSelection("GBP/USD",2,1,0);
         EventClient.cache(accepted);
         assertTrue("Acceptance of previous selection cannot clear newer unmatched draft",EventClient.hasProfileDraft());
         assertEquals("GBP/USD",prefs.getString("selected_symbol",""));
@@ -183,7 +183,7 @@ public class R55ControlsUiTest {
             Spinner timeframe=activity().findViewById(R.id.entryTimeframeSpinner);
             // Android dispatches onItemSelected during the next layout. Reproduce
             // a periodic snapshot repaint before that callback can record the draft.
-            timeframe.setSelection(3);
+            timeframe.setSelection(2);
             try{restore.invoke(activity());}catch(Exception e){throw new AssertionError(e);}
             assertEquals("An unchanged remote M5 profile cannot erase a pending native M15 choice","M15",timeframe.getSelectedItem().toString());
         });

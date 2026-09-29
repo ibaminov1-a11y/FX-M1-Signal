@@ -77,7 +77,7 @@ PROFILES = {
     'SCALP': Profile('SCALP', .20, .30, .30, 4, 4, 1.0, .35),
 }
 # Parameters are fixed research hypotheses, not fitted performance claims.
-TF_SECONDS = {'M1': 60, 'M5': 300, 'M10': 600, 'M15': 900,
+TF_SECONDS = {'M1': 60, 'M5': 300, 'M10': 600, 'M15': 900, 'M30': 1800,
               'H1': 3600, 'H4': 14400, 'D1': 86400, 'W1': 604800, 'MN1': 2592000}
 
 
@@ -343,7 +343,7 @@ def validate_bar_history(bars,tf,now):
     span=TF_SECONDS[tf]
     if bar_close_time(bars[-1].time,tf,bars[-1].clock_offset_seconds)>now+1.0:
         raise Blocked('Незакрытая/будущая свеча в истории '+tf)
-    if tf in ('M1','M5','M10','M15','H1','H4'):
+    if tf in ('M1','M5','M10','M15','M30','H1','H4'):
         for left,right in zip(bars,bars[1:]):
             delta=right.time-left.time
             if delta<span or delta%span!=0:

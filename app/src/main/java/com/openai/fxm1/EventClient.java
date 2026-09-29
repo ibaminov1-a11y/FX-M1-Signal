@@ -55,6 +55,7 @@ public final class EventClient {
     public static synchronized void init(Context context) {
         app=context.getApplicationContext();
         SharedPreferences p=prefs();
+        Timeframes.migrate(p);
         if(!p.getBoolean("ec1_migrated",false))p.edit().putBoolean("ec1_migrated",true)
             .putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false)
             .putBoolean("bg_running",false).putBoolean("server_verified",false)
@@ -68,7 +69,7 @@ public final class EventClient {
     }
     public static SharedPreferences prefs(){if(app==null)throw new IllegalStateException("Client not initialized");return app.getSharedPreferences("fxm1",Context.MODE_PRIVATE);}
     public static String base(){String b=prefs().getString("server_url","").trim();if(!b.isEmpty()&&!b.startsWith("http://")&&!b.startsWith("https://"))b="http://"+b;while(b.endsWith("/"))b=b.substring(0,b.length()-1);return b;}
-    public static String tf(){String[] t={"M1","M5","M10","M15","H1","H4","D1","W1","MN1"};return t[Math.max(0,Math.min(8,prefs().getInt("entry_tf_pos",1)))];}
+    public static String tf(){return Timeframes.selected(prefs());}
     public static String mode(){return prefs().getInt("signal_mode_pos",0)==1?"SCALP":"NORMAL";}
     public static JSONObject state(){
         try{
@@ -183,8 +184,9 @@ public final class EventClient {
     /** Called only from an actual selector change; a poll may never create this draft. */
     public static JSONObject rememberProfileSelection(String symbol,int timeframe,int mode,int risk) throws Exception {
         synchronized(STATE_READ_LOCK){
-            prefs().edit().putString("selected_symbol",symbol).putInt("entry_tf_pos",timeframe)
-                .putInt("signal_mode_pos",mode).putInt("risk_pos",risk).apply();
+            SharedPreferences.Editor choice=prefs().edit().putString("selected_symbol",symbol)
+                .putInt("signal_mode_pos",mode).putInt("risk_pos",risk);
+            Timeframes.select(choice,timeframe);choice.apply();
             JSONObject desired=config();prefs().edit().putString("ec_profile_draft",desired.toString()).apply();return desired;
         }
     }
@@ -246,6 +248,16 @@ public final class EventClient {
         requireActiveRead();requireSameSource(read);
         JSONObject value=http("GET",read.source+path,null,read.source,read.token);
         requireActiveRead();requireSameSource(read);return value;
+    }
+    /** Foreground view refresh: deliberately excludes poll()'s pending command path. */
+    static JSONObject readState(ReadRequest read) throws Exception {
+        startRead(read);JSONObject snapshot=readHttp(read,"/ec/state");
+        if(!PROTOCOL.equals(snapshot.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
+        return publishSnapshot(read,snapshot)?snapshot:state();
+    }
+    static JSONObject forecast(ReadRequest read,String frame) throws Exception {
+        if(Timeframes.index(frame)<0)throw new IOException("Недоступный период просмотра");
+        return readHttp(read,"/ec/forecast?tf="+frame);
     }
     private static JSONObject refreshPart(ReadRequest read,String path,String label,String required,JSONArray errors) throws Exception {
         requireActiveRead();requireSameSource(read);
@@ -408,8 +420,7 @@ public final class EventClient {
         if(!draftPending&&(s.optJSONObject("campaign")!=null||s.optJSONObject("pending_config")!=null||s.optBoolean("auto",false))){
             e.putInt("signal_mode_pos","SCALP".equalsIgnoreCase(choice.optString("mode"))?1:0)
                 .putString("selected_symbol",choice.optString("symbol",symbol));
-            String[] frames={"M1","M5","M10","M15","H1","H4","D1","W1","MN1"};
-            for(int i=0;i<frames.length;i++)if(frames[i].equals(choice.optString("timeframe","M5")))e.putInt("entry_tf_pos",i);
+            Timeframes.project(e,choice.optString("timeframe","M5"));
             double riskPct=choice.optDouble("risk_pct",.25);
             e.putInt("risk_pos",riskPct>=1?2:riskPct>=.5?1:0);
         }
