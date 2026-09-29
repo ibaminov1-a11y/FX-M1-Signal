@@ -176,4 +176,26 @@ public class R55ControlsUiTest {
         device.findObject(By.text("ЗАКРЫТЬ")).click();
     }
 
+    @Test public void pendingSpinnerSelectionSurvivesUnchangedAuthoritativeRepaint()throws Exception {
+        prime(false);
+        Method restore=MainActivity.class.getDeclaredMethod("restoreTradingSnapshotFromPrefs");restore.setAccessible(true);
+        ui(()->{
+            Spinner timeframe=activity().findViewById(R.id.entryTimeframeSpinner);
+            // Android dispatches onItemSelected during the next layout. Reproduce
+            // a periodic snapshot repaint before that callback can record the draft.
+            timeframe.setSelection(3);
+            try{restore.invoke(activity());}catch(Exception e){throw new AssertionError(e);}
+            assertEquals("An unchanged remote M5 profile cannot erase a pending native M15 choice","M15",timeframe.getSelectedItem().toString());
+        });
+        await(()->"M15".equals(EventClient.state().optJSONObject("config").optString("timeframe")),"Deferred native timeframe callback reaches Bridge");
+        sync();
+        ui(()->{
+            Spinner mode=activity().findViewById(R.id.signalModeSpinner);mode.setSelection(1);
+            try{restore.invoke(activity());}catch(Exception e){throw new AssertionError(e);}
+            assertEquals("An unchanged remote NORMAL profile cannot erase a pending native SCALP choice","SCALP",mode.getSelectedItem().toString());
+        });
+        await(()->"SCALP".equals(EventClient.state().optJSONObject("config").optString("mode")),"Deferred native mode callback reaches Bridge");
+        assertTrue(state().getBoolean("auto"));
+    }
+
 }
