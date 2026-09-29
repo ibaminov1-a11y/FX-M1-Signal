@@ -31,11 +31,29 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install fixture dependencies
         run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Record Python regression evidence
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p evidence
+          PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - name: Restore persistent EC1 DEMO signing identity
+        uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Select persistent DEMO signing file
+        shell: bash
+        run: |
+          test -s "$HOME/.fxm1-signing/ec1-demo.jks"
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

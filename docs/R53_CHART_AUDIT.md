@@ -24,14 +24,15 @@ File: `app/src/androidTest/java/com/openai/fxm1/R53ScenarioDisplayUiTest.java`.
 5. Current WATCHING hypothesis and saved campaign entry are distinct. The frozen matching entry is deliberately the second archived branch, so selecting the first item fails the test. ID, version, snapshot, frozen title, and target are asserted.
 6. A missing frozen forecast keeps recorded identity and does not borrow the live WATCHING scenario.
 7. Recorded entry identity survives a missing live forecast.
+8. A cached offline route has neutral target segments and explicit cache wording, without claiming independent Bridge AUTO is stopped.
 
 Tests render the real Android `SparklineView` to a Canvas. Pixel checks isolate path segments from headers, candles, grid colors, and annotations; neutral dash gaps are checked as separate connected strokes, rather than inferring color from text. Screenshots export to `/sdcard/Download/ec1-qa/`: `r53-sell-preparation.png`, `r53-buy-preparation.png`, `r53-live-versus-entry.png`.
 
-## Verification status
+## Verification record
 
 - Tests were written before production edits and use only APIs that already exist in the baseline.
 - `git diff --check` passed locally after the edits.
 - This environment has no Java/Gradle/Android SDK or emulator, so no local compilation or Android pass is claimed.
-- Parent agent is responsible for the remote baseline-red then fixed-green workflow and full Android suite, plus screenshot inspection. Record remote outcomes before claiming the UI fix is verified.
+- The release's generated `Verification/R53_REPORT_RU.md`, final XML and screenshots record the actual remote baseline-red and fixed-green outcomes. This audit describes the implementation and does not substitute for those results.
 
 No backend, MainActivity, EventClient, or other agent-owned files were edited by this subtask. No commits were created.

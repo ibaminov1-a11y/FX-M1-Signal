@@ -4,7 +4,7 @@
 
 Reviewed the active EventCore paths in `MainActivity`, `EventClient`, and `MonitoringService`, including listeners installed in `onCreate`, settings dialogs, the one second UI refresh, service lifecycle, HTTP configuration, and cache updates. The older local-analysis methods are unreachable from the active EventCore monitor and were not treated as runtime bugs.
 
-Added `R53ControlsUiTest` with 12 Android instrumentation cases. These use real Android views and the real authenticated Flask/Engine HTTP endpoints with the fake MT5 broker. Test source was written before the corresponding production edits; the parent will run a baseline-production red pass and then a corrected-production pass remotely. This workspace has no Java compiler, Android SDK, emulator, or Gradle, so there is no local Android execution result. `git diff --check` passed for the owned files. No commits made.
+Added `R53ControlsUiTest` with 13 Android instrumentation cases. These use real Android views and the real authenticated Flask/Engine HTTP endpoints with the fake MT5 broker. At implementation time, test source preceded the corresponding production edits; Android execution was delegated to remote baseline-production red and corrected-production verification runs because this workspace has no Java compiler, Android SDK, emulator, or Gradle. `git diff --check` passed for the owned files. Final test counts, results and evidence are recorded in the generated `Verification/R53_REPORT_RU.md`.
 
 ## Findings addressed
 
@@ -16,6 +16,8 @@ Added `R53ControlsUiTest` with 12 Android instrumentation cases. These use real 
 | Successful Settings reset leaves emergency blocked | Settings called transport directly; cleanup existed only in the unused generic reset UI branch | Successful transport reset clears both local latch and pending retry; failed HTTP reset preserves latch |
 | Emergency retry could be lost before service dispatch | Pending retry was first persisted by service, after Activity dispatched start | Activity durably sets retry and latch before service request; double-tap test verifies immediate pending flag |
 | Disconnected UI can keep active controls | UI refresh skipped restoring controls when `server_verified` became false | Every refresh applies online/offline snapshot; disconnect and recovery checked |
+| Disconnected cached forecast still appears LIVE | Cached forecast and signal were rendered without phone-connection provenance | `EventClient.state()` annotates a cloned root/forecast with `client_offline`; cache, neutral signal/headline, snapshot age and explanation are explicit; recovery restores current presentation without clearing independent Bridge AUTO |
+| Recreation test can interact with a destroyed Activity | ActivityTestRule retains the instance launched before recreation | Tests resolve the resumed MainActivity through lifecycle monitoring, wait for a distinct resumed instance, and finish the actual current Activity during cleanup |
 | Last check time stays empty | EventCore poll never updated the timestamp used by the label | Poll records attempt timestamp |
 | Market session labels stay at launch values | Calendar/session refresh only ran in `onCreate` | UI ticker refreshes both labels; test replaces labels with stale sentinel then verifies refresh |
 | Missing quote can preserve old price or display NaN | Price render skipped NaN entry; price formatter accepted nonfinite values | Price render always runs; nonfinite values use unavailable marker |
@@ -57,12 +59,12 @@ The instrumentation checks every listed field is populated; data-bearing fields 
 | statusText | Current state symbol/timeframe and monitor state |
 | marketStatusText | Calendar recomputed by UI tick, stale sentinel replaced |
 | marketSessionText | Calendar session recomputed by UI tick, stale sentinel replaced |
-| confidenceText | Exactly `ScenarioUi.headline` of real server forecast |
-| signalAgeText | Cached update and poll timestamps; stopped/live presentation paths inspected |
+| confidenceText | Exactly `ScenarioUi.headline` of real server forecast; neutral cache label on disconnect |
+| signalAgeText | Cached update and poll timestamps; explicit saved-signal timestamp on disconnect |
 | levelsText | Real scenario/campaign/decision formatter, nonempty |
 | contextText | Exact EventClient context derived from actual state |
 | whyWaitText | Actual decision reason plus execution feedback |
-| componentScoresText | Cached scenario explanation from actual server state |
+| componentScoresText | Scenario explanation recomputed from current presentation snapshot, including offline provenance |
 | autoStatusText | Actual AUTO, PAUSE, emergency, connection loss and recovery |
 | accountText | Two changed balance fixtures reflected exactly |
 | positionsText | Actual manual position count and current floating P/L path |
@@ -76,4 +78,4 @@ The instrumentation checks every listed field is populated; data-bearing fields 
 
 ## Remaining verification constraints
 
-Remote CI must compile and run both the 12 new instrumentation cases and the existing suite. Navigation/dialog tests exercise representative branches; the audit does not claim every dialog confirmation has an independent automated case. DEMO-only execution and informational notifications remain intact. Exact on-device visual behavior still depends on the Android CI screenshots/emulator evidence collected by the parent.
+This document describes implementation-time coverage. Consult generated `Verification/R53_REPORT_RU.md` for the final remote Android and Python verification counts/results and screenshot evidence. Navigation/dialog tests exercise representative branches; the audit does not claim every dialog confirmation has an independent automated case. DEMO-only execution and informational notifications remain intact.

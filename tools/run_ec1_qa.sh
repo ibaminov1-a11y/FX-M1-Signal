@@ -38,5 +38,9 @@ CHECK
   test -s evidence/ui/ec1-qa/scenario-active-reversal.png || exit 1
   test -s evidence/ui/ec1-qa/r5-fullscreen-scenarios.png || exit 1
   test -s evidence/ui/ec1-qa/r5-history-viewport.png || exit 1
+  test -s evidence/ui/ec1-qa/r53-sell-preparation.png || exit 1
+  test -s evidence/ui/ec1-qa/r53-buy-preparation.png || exit 1
+  test -s evidence/ui/ec1-qa/r53-live-versus-entry.png || exit 1
+  test -s evidence/ui/ec1-qa/r53-offline-cache.png || exit 1
 fi
 exit "$rc"

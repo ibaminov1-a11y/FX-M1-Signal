@@ -43,6 +43,8 @@ with zipfile.ZipFile(full,'w',zipfile.ZIP_DEFLATED) as z:
         p=dest/name
         if p.exists():z.write(p,'Verification/'+name)
     for p in (dest/'r53-red').rglob('*.xml'):z.write(p,'Verification/'+str(p.relative_to(dest)))
+    for p in (root/'docs/verification').glob('R53_*_RED.log'):z.write(p,'Verification/'+p.name)
+    for p in (root/'app/build/outputs/androidTest-results').rglob('TEST-*.xml'):z.write(p,'Verification/android-results/'+str(p.relative_to(root/'app/build/outputs/androidTest-results')))
     for p in (dest/'ui').rglob('*.png'):z.write(p,'Verification/'+str(p.relative_to(dest)))
 
 # A separate Bridge archive is identical to the Bridge in the combined installation bundle.

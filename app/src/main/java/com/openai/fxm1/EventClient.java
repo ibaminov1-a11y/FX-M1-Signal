@@ -34,7 +34,18 @@ public final class EventClient {
     public static String base(){String b=prefs().getString("server_url","").trim();if(!b.isEmpty()&&!b.startsWith("http://")&&!b.startsWith("https://"))b="http://"+b;while(b.endsWith("/"))b=b.substring(0,b.length()-1);return b;}
     public static String tf(){String[] t={"M1","M5","M10","M15","H1","H4","D1","W1","MN1"};return t[Math.max(0,Math.min(8,prefs().getInt("entry_tf_pos",1)))];}
     public static String mode(){return prefs().getInt("signal_mode_pos",0)==1?"SCALP":"NORMAL";}
-    public static JSONObject state(){try{return new JSONObject(prefs().getString("ec_state","{}"));}catch(Exception e){return new JSONObject();}}
+    public static JSONObject state(){
+        try{
+            // This is a presentation copy. Losing phone connectivity neither makes the
+            // Bridge's own market data stale nor changes its independent AUTO state.
+            JSONObject snapshot=new JSONObject(prefs().getString("ec_state","{}"));
+            boolean offline=!prefs().getBoolean("server_verified",false);
+            snapshot.put("client_offline",offline);
+            JSONObject forecast=snapshot.optJSONObject("forecast");
+            if(forecast!=null)forecast.put("client_offline",offline);
+            return snapshot;
+        }catch(Exception e){return new JSONObject();}
+    }
     public static String campaignSummary(JSONObject state){
         if(state==null)return "";
         JSONObject campaign=state.optJSONObject("campaign");JSONArray positions=state.optJSONArray("positions");

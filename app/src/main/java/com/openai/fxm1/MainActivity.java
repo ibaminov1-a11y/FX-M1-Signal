@@ -1134,7 +1134,7 @@ public class MainActivity extends Activity {
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);JSONObject s=EventClient.state(),cfg=s.optJSONObject("config");
         p.edit().putInt("ec_limit",0).putString("maxpos_label","По риску").apply();
         String accountLabel=s.optJSONObject("account")==null?targetTradeMode():s.optJSONObject("account").optString("type",targetTradeMode());
-        if(smartStatusText!=null)smartStatusText.setText("Режим: "+(cfg==null?EventClient.mode():cfg.optString("mode"))+" · счёт: "+accountLabel+"\nИсточник: MT5\n"+
+        if(smartStatusText!=null)smartStatusText.setText((s.optBoolean("client_offline")?"КЭШ · состояние Bridge не подтверждено\n":"")+"Режим: "+(cfg==null?EventClient.mode():cfg.optString("mode"))+" · счёт: "+accountLabel+"\nИсточник: MT5\n"+
             "Наращивание: "+(cfg!=null&&cfg.optBoolean("dynamic_adds")?"по новым подтверждениям и общему риску":"один вход")+
             "\nСопровождение: независимый Bridge\n"+ExecutionFeedback.riskText(p.getString("risk_snapshot","не проверен"))+"\n"+bridgeOperationalText(s));
         if(statsText!=null)statsText.setText("СТАТИСТИКА\n"+p.getString("stats_snapshot","—"));
@@ -1431,18 +1431,26 @@ public class MainActivity extends Activity {
         String selectedSymbol = (String) symbolSpinner.getSelectedItem();
         String selectedTf = selectedEntryTimeframe();
 
+        JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
+        boolean offline=currentState.optBoolean("client_offline",false);
         String signal = p.getString("state_signal", "WAIT");
         String context = p.getString("state_context", "");
         String why = p.getString("state_why", "");
-        String components = p.getString("state_components", "");
+        String components = ScenarioUi.explanation(currentState);
         int quality = p.getInt("state_quality", -1);
         int fresh = p.getInt("state_api_count", 0);
         int cached = p.getInt("state_cache_count", 0);
         long since = p.getLong("state_signal_since_ms", 0L);
         long updated = p.getLong("state_last_update_ms", 0L);
-        String source = bgRunning ? "LIVE" : "STOP";
+        String source = offline ? "КЭШ · НЕТ СВЯЗИ С BRIDGE" : bgRunning ? "LIVE" : "STOP";
+        statusText.setText(symbol+" · "+tf+" · "+source+" · ДАННЫЕ MT5");
 
         if (!symbol.equals(selectedSymbol) || !tf.equals(selectedTf)) {
+            statusText.setText(selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));
+            // A cached chart belongs to its recorded instrument. Clear it while the
+            // selected profile awaits data, including during phone disconnection.
+            sparklineView.setMarketIdentity("pending:"+selectedSymbol+"|"+selectedTf);
+            sparklineView.setMarket(new JSONArray(),new JSONArray(),new JSONArray(),new JSONArray(),"SCENARIO_V2",null,null,new JSONObject());
             signalText.setText("WAIT");
             signalText.setTextColor(C_PURPLE);
             confidenceText.setText("Сценарий: ожидание данных");
@@ -1459,18 +1467,15 @@ public class MainActivity extends Activity {
         double tp1 = Double.longBitsToDouble(p.getLong("state_tp1_bits", Double.doubleToLongBits(Double.NaN)));
         double tp2 = Double.longBitsToDouble(p.getLong("state_tp2_bits", Double.doubleToLongBits(Double.NaN)));
 
-        statusText.setText(symbol+" · "+tf+" · "+source+" · ДАННЫЕ MT5");
+        signalText.setText(offline?"КЭШ":signal);
+        signalText.setTextColor(offline?C_MUTED:"BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
-        signalText.setText(signal);
-        signalText.setTextColor("BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
-
-        JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
         confidenceText.setText(ScenarioUi.headline(forecast));
         int mapSide=forecast==null?0:forecast.optInt("side");
-        confidenceText.setTextColor(mapSide>0?C_GREEN:mapSide<0?C_RED:C_PURPLE);
+        confidenceText.setTextColor(offline?C_MUTED:mapSide>0?C_GREEN:mapSide<0?C_RED:C_PURPLE);
         if (qualityBarView != null) qualityBarView.setVisibility(View.GONE);
         updateSignalAgeText(signal, since, updated);
-        restoreSparklineFromPrefs(signal);
+        restoreSparklineFromPrefs(offline?"WAIT":signal);
 
         String campaignSummary=EventClient.campaignSummary(currentState);
         if(!campaignSummary.isEmpty()){
@@ -1495,8 +1500,9 @@ public class MainActivity extends Activity {
         }
         String scenarioLevels=ScenarioUi.levels(currentState);
         if(!scenarioLevels.isEmpty())levelsText.setText(scenarioLevels);
-        contextText.setText(context);
-        if (whyWaitText != null) whyWaitText.setText(("WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
+        else if(offline)levelsText.setText("КЭШ · последняя полученная информация\n"+levelsText.getText());
+        contextText.setText(offline?"КЭШ · нет связи с Bridge\n"+context:context);
+        if (whyWaitText != null) whyWaitText.setText((offline?"СОХРАНЁННЫЙ СИГНАЛ: ":"WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
         if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));
         refreshSmartUi();
 
@@ -2374,6 +2380,13 @@ public class MainActivity extends Activity {
         long lastAttempt = p.getLong("state_last_attempt_ms", 0L);
         long lastSuccess = p.getLong("state_last_success_ms", updatedMs);
         long reference = active ? System.currentTimeMillis() : (stoppedAt > 0L ? stoppedAt : System.currentTimeMillis());
+
+        if(!p.getBoolean("server_verified",false)&&updatedMs>0){
+            signalAgeText.setText("Сохранённый сигнал "+signal+" · снимок "+formatClock(updatedMs)
+                +"\nНет связи с Bridge · получен "+formatElapsed(updatedMs)+" назад");
+            signalAgeText.setTextColor(C_MUTED);
+            return;
+        }
 
         if ("BUY".equals(signal) || "SELL".equals(signal)) {
             String elapsed = active ? formatElapsed(sinceMs) : formatElapsedUntil(sinceMs, reference);

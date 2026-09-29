@@ -111,6 +111,18 @@ public class R53ScenarioDisplayUiTest {
     @Test public void buyFallsInNeutralPreparationThenRisesInGreen()throws Exception{
         checkPhases(1,"r53-buy-preparation");
     }
+    @Test public void cachedOfflineRouteIsNeutralAndDoesNotClaimBridgeStopped()throws Exception{
+        JSONObject f=forecast(-1).put("client_offline",true);Render image=render(f);
+        try{
+            assertEquals("An offline cached target must lose its live direction color",0,count(image,SELL,252,284));
+            assertTrue(count(image,PREPARATION,252,284)>20);
+            assertTrue(image.description,image.description.contains("КЭШ"));
+            assertFalse(image.description,image.description.contains("Текущие гипотезы LIVE"));
+            assertFalse(image.description,image.description.contains("вход запрещён"));
+            assertTrue(image.description,image.description.contains("AUTO может продолжать"));
+            save(image.bitmap,"r53-offline-cache");
+        }finally{image.bitmap.recycle();}
+    }
     @Test public void oldV3AnchorsStillSeparatePreparationFromTargets()throws Exception{
         JSONObject f=forecast(-1);JSONArray path=f.getJSONArray("scenarios").getJSONObject(0).getJSONArray("path");
         for(int i=0;i<path.length();i++)path.getJSONObject(i).remove("phase");

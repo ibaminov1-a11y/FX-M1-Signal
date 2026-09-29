@@ -1,0 +1,28 @@
+test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) ... ok
+test_completed_source_cannot_authorize_an_add_after_pause (test_r53_scale_in.ScaleInTests.test_completed_source_cannot_authorize_an_add_after_pause) ... FAIL
+test_no_add_from_rising_price_without_new_pullback (test_r53_scale_in.ScaleInTests.test_no_add_from_rising_price_without_new_pullback) ... ok
+test_no_add_if_disabled_or_budget_exhausted (test_r53_scale_in.ScaleInTests.test_no_add_if_disabled_or_budget_exhausted) ... ok
+test_overshot_micro_break_allows_a_later_independent_sequence (test_r53_scale_in.ScaleInTests.test_overshot_micro_break_allows_a_later_independent_sequence) ... FAIL
+test_pause_and_fresh_feed_gap_cancel_previously_armed_add (test_r53_scale_in.ScaleInTests.test_pause_and_fresh_feed_gap_cancel_previously_armed_add) ... ok
+test_restart_does_not_reuse_armed_continuation (test_r53_scale_in.ScaleInTests.test_restart_does_not_reuse_armed_continuation) ... ok
+
+======================================================================
+FAIL: test_completed_source_cannot_authorize_an_add_after_pause (test_r53_scale_in.ScaleInTests.test_completed_source_cannot_authorize_an_add_after_pause)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_scale_in.py", line 96, in test_completed_source_cannot_authorize_an_add_after_pause
+    self.assertEqual(len(self.b.sent),1)
+AssertionError: 2 != 1
+
+======================================================================
+FAIL: test_overshot_micro_break_allows_a_later_independent_sequence (test_r53_scale_in.ScaleInTests.test_overshot_micro_break_allows_a_later_independent_sequence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_scale_in.py", line 104, in test_overshot_micro_break_allows_a_later_independent_sequence
+    self.assertEqual(len(self.b.sent),2,self.e.execution)
+AssertionError: 1 != 2 : Добавление: микропробой пропущен, цену не догоняем; Диапазон: Прямой пробой; Заявка по этому событию уже обработана
+
+----------------------------------------------------------------------
+Ran 7 tests in 3.451s
+
+FAILED (failures=2)

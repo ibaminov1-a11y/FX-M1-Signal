@@ -33,6 +33,7 @@ public final class ScenarioUi {
             +s.optString("market_history_generation","UNVERIFIED")+"|"+(cfg==null?s.optString("timeframe","M5"):cfg.optString("timeframe","M5"));
     }
     public static String headline(JSONObject f){
+        if(f!=null&&f.optBoolean("client_offline"))return "ПОСЛЕДНЯЯ КАРТА · КЭШ · НЕТ СВЯЗИ С BRIDGE";
         if(f==null||f.optInt("map_version")<2)return "КАРТА: ожидаем профиль / данные Bridge";
         if(f.optBoolean("stale"))return "ПОСЛЕДНЯЯ КАРТА · данные устарели, вход запрещён";
         if("TIED".equals(f.optString("selection_status")))return "Равнозначные гипотезы — предпочтение не определено";
@@ -47,7 +48,8 @@ public final class ScenarioUi {
         JSONObject f=state.optJSONObject("forecast");boolean valid=f!=null&&f.optInt("map_version")>=2;
         if(!valid&&state.optJSONObject("campaign")==null)return "";
         StringBuilder out=new StringBuilder();JSONArray rows=valid?f.optJSONArray("scenarios"):null;boolean v3=valid&&f.optInt("map_version")>=3;
-        if(valid)out.append(f.optBoolean("archive")?"ГИПОТЕЗЫ ИЗ СНИМКА · НЕ LIVE":f.optBoolean("stale")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · ДАННЫЕ УСТАРЕЛИ":"ТЕКУЩИЕ ГИПОТЕЗЫ · LIVE");
+        if(state.optBoolean("client_offline"))out.append("КЭШ · НЕТ СВЯЗИ С BRIDGE\nПоказаны последние полученные данные; текущее состояние кампании неизвестно.\n");
+        if(valid)out.append(f.optBoolean("archive")?"ГИПОТЕЗЫ ИЗ СНИМКА · НЕ LIVE":f.optBoolean("client_offline")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · КЭШ":f.optBoolean("stale")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · ДАННЫЕ УСТАРЕЛИ":"ТЕКУЩИЕ ГИПОТЕЗЫ · LIVE");
         if(valid&&!v3){JSONObject lv=f.optJSONObject("entry_levels");for(String side:new String[]{"BUY","SELL"}){
             JSONObject l=lv==null?null:lv.optJSONObject(side);if(l!=null)out.append("\n").append(side).append(side.equals("BUY")?" выше ":" ниже ").append(px(l.optDouble("trigger")));}}
         if(rows!=null)for(int i=0;i<Math.min(v3?4:2,rows.length());i++){
@@ -108,6 +110,7 @@ public final class ScenarioUi {
     private static String source(String s){switch(s){case "HISTORICAL_LEVEL":case "CONFIRMED_STRUCTURE":return "исторический уровень";case "CHANNEL_BOUNDARY":return "граница / середина диапазона";case "POLE_PROJECTION":return "проекция измеренного импульса";default:return "геометрическая проекция, не обещание цены";}}
     public static String explanation(JSONObject state){
         JSONObject f=state.optJSONObject("forecast"),cfg=state.optJSONObject("config");
+        if(state.optBoolean("client_offline")||(f!=null&&f.optBoolean("client_offline")))return "Телефон потерял связь с Bridge. Показан последний полученный снимок; текущие котировки, гипотезы и состояние кампании неизвестны. AUTO в Bridge может продолжать работу самостоятельно. После восстановления связи данные обновятся.";
         if(f==null||f.optInt("map_version")<2){
             if(!state.optBoolean("quote_fresh",false))return "Нет свежих данных. История сохраняется; новые входы запрещены. Проверьте время последнего тика и связь MT5. Это само по себе не означает старый профиль.";
             return "Карта ожидает профиль SCENARIO_V2. Действующий профиль: "+(cfg==null?"неизвестен":cfg.optString("engine_mode"))+". Существующая кампания сверяется отдельно.";

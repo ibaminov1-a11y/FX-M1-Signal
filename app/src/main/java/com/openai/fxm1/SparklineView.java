@@ -92,9 +92,9 @@ public class SparklineView extends View {
     private static String priceText(double value){return String.format(Locale.US,"%.5f",value);}
     public static String mapDescription(JSONObject f){
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
-        if(f.optBoolean("history_only"))return "История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
+        if(f.optBoolean("history_only"))return f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время условно.");
-        text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");
+        text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("client_offline")?" КЭШ: телефон потерял связь с Bridge. Последние полученные гипотезы; AUTO может продолжать работу самостоятельно.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");
         text.append(" Серый пунктир — подготовка до подтверждения входа. Цвет — условный путь к целям после подтверждения, не факт сделки. Цвет обозначает ветку, а не наклон отрезка. Старые ветки без этапов сохраняют исходный цвет.");
         if("TIED".equals(f.optString("selection_status")))text.append(" Равнозначные гипотезы — предпочтение не определено.");
         if(!hasScenarioMap(f))text.append(" WAIT — нет ясного сценария.");
@@ -114,7 +114,7 @@ public class SparklineView extends View {
             if(Double.isFinite(t2)&&t2>0)text.append(" T2 ").append(priceText(t2));
             text.append(". ").append(v.optString("next_event", ""));
         }
-        text.append(" LIVE ").append(priceText(f.optDouble("live_price"))).append(".");
+        text.append(f.optBoolean("client_offline")?" Последняя цена из кэша ":" LIVE ").append(priceText(f.optDouble("live_price"))).append(".");
         JSONObject active=f.optJSONObject("active_scenario"),reversal=f.optJSONObject("reversal_status");
         if(active!=null)text.append(" Активный ").append(active.optInt("side")>0?"BUY":"SELL")
             .append("; отмена ").append(priceText(active.optDouble("invalidation"))).append(".");

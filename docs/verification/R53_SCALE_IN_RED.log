@@ -1,0 +1,45 @@
+test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) ... 
+  test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='NORMAL', side=1) ... FAIL
+  test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='NORMAL', side=-1) ... FAIL
+  test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='SCALP', side=1) ... FAIL
+  test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='SCALP', side=-1) ... FAIL
+test_no_add_from_rising_price_without_new_pullback (test_r53_scale_in.ScaleInTests.test_no_add_from_rising_price_without_new_pullback) ... ok
+test_no_add_if_disabled_or_budget_exhausted (test_r53_scale_in.ScaleInTests.test_no_add_if_disabled_or_budget_exhausted) ... ok
+test_pause_and_fresh_feed_gap_cancel_previously_armed_add (test_r53_scale_in.ScaleInTests.test_pause_and_fresh_feed_gap_cancel_previously_armed_add) ... ok
+
+======================================================================
+FAIL: test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='NORMAL', side=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_scale_in.py", line 59, in test_actual_engine_one_two_three_in_both_modes_and_directions
+    self.assertEqual(len(self.b._positions),count,self.e.execution)
+AssertionError: 1 != 2 : Диапазон: Прямой пробой; Заявка по этому событию уже обработана
+
+======================================================================
+FAIL: test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='NORMAL', side=-1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_scale_in.py", line 59, in test_actual_engine_one_two_three_in_both_modes_and_directions
+    self.assertEqual(len(self.b._positions),count,self.e.execution)
+AssertionError: 1 != 2 : Диапазон: Прямой пробой; Заявка по этому событию уже обработана
+
+======================================================================
+FAIL: test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='SCALP', side=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_scale_in.py", line 59, in test_actual_engine_one_two_three_in_both_modes_and_directions
+    self.assertEqual(len(self.b._positions),count,self.e.execution)
+AssertionError: 1 != 2 : Диапазон: Прямой пробой; Заявка по этому событию уже обработана
+
+======================================================================
+FAIL: test_actual_engine_one_two_three_in_both_modes_and_directions (test_r53_scale_in.ScaleInTests.test_actual_engine_one_two_three_in_both_modes_and_directions) (mode='SCALP', side=-1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_scale_in.py", line 59, in test_actual_engine_one_two_three_in_both_modes_and_directions
+    self.assertEqual(len(self.b._positions),count,self.e.execution)
+AssertionError: 1 != 2 : Диапазон: Прямой пробой; Заявка по этому событию уже обработана
+
+----------------------------------------------------------------------
+Ran 4 tests in 2.191s
+
+FAILED (failures=4)

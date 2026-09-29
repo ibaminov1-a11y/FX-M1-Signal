@@ -122,4 +122,19 @@ public class LiveLayoutUiTest {
         }
         shot("r52-live-history-stable");
     }
+    @Test public void offlineInstrumentChangeClearsUnrelatedLiveChart()throws Exception {
+        EventClient.http("POST",EventClient.base()+"/test/r5-market",new JSONObject().put("family","TRIANGLE"));
+        EventClient.poll();
+        Method sync=MainActivity.class.getDeclaredMethod("syncUiFromBackgroundService");sync.setAccessible(true);
+        ui(()->{try{sync.invoke(rule.getActivity());}catch(Exception e){throw new AssertionError(e);}});settle();
+        EventClient.offline(new IOException("phone disconnected"));
+        ui(()->{Spinner symbol=rule.getActivity().findViewById(R.id.symbolSpinner);
+            for(int i=0;i<symbol.getCount();i++)if("GBP/USD".equals(symbol.getItemAtPosition(i).toString())){symbol.setSelection(i);break;}});settle();
+        ui(()->{try{sync.invoke(rule.getActivity());}catch(Exception e){throw new AssertionError(e);}
+            SparklineView chart=rule.getActivity().findViewById(R.id.sparklineView);
+            assertEquals("pending:GBP/USD|M5",chart.marketIdentity());
+            assertEquals(0,chart.scenarioChoices().length());
+            assertFalse(String.valueOf(chart.getContentDescription()).contains("Текущие гипотезы LIVE"));
+            assertTrue(((TextView)rule.getActivity().findViewById(R.id.statusText)).getText().toString().contains("НЕТ СВЯЗИ"));});
+    }
 }

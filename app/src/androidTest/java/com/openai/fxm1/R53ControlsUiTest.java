@@ -1,5 +1,6 @@
 package com.openai.fxm1;
 
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.*;
 import android.os.*;
@@ -8,13 +9,17 @@ import android.widget.*;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
+import androidx.test.runner.lifecycle.Stage;
 import androidx.test.uiautomator.*;
 import org.json.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import java.io.*;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Pattern;
 import static org.junit.Assert.*;
 
 /** Real Android controls -> authenticated HTTP -> production Engine + fake MT5. */
@@ -27,6 +32,12 @@ public class R53ControlsUiTest {
         R.id.autoStatusText,R.id.accountText,R.id.positionsText,R.id.priceCompareText,R.id.smartStatusText,
         R.id.statsText,R.id.signalHistoryText,R.id.tradeHistoryText,R.id.serverStatusText,R.id.journalText};
     void ui(Runnable r){InstrumentationRegistry.getInstrumentation().runOnMainSync(r);}
+    MainActivity resumedActivity(){
+        for(Activity candidate:ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED))
+            if(candidate instanceof MainActivity)return (MainActivity)candidate;
+        return null;
+    }
+    MainActivity activity(){MainActivity current=resumedActivity();assertNotNull("Expected a resumed MainActivity",current);return current;}
     void shell(String command)throws Exception {
         try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
             InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] bytes=new byte[4096];while(in.read(bytes)!=-1){}}
@@ -36,12 +47,21 @@ public class R53ControlsUiTest {
         while(SystemClock.elapsedRealtime()<end){if(condition.getAsBoolean())return;Thread.sleep(100);}
         fail(label);
     }
-    String text(int id){final String[] result={""};ui(()->result[0]=((TextView)rule.getActivity().findViewById(id)).getText().toString());return result[0];}
-    void press(int id){ui(()->assertTrue(rule.getActivity().findViewById(id).performClick()));}
-    void click(String label){UiObject2 view=device.wait(Until.findObject(By.text(label)),7000);assertNotNull(label,view);view.click();}
+    String text(int id){final String[] result={""};ui(()->result[0]=((TextView)activity().findViewById(id)).getText().toString());return result[0];}
+    void press(int id){
+        ui(()->{View view=activity().findViewById(id);
+            view.requestRectangleOnScreen(new android.graphics.Rect(0,0,view.getWidth(),view.getHeight()),true);});
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        ui(()->assertTrue(activity().findViewById(id).performClick()));
+    }
+    void click(String label){
+        // Android's button style uppercases labels, including Cyrillic text.
+        Pattern visibleLabel=Pattern.compile(Pattern.quote(label),Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CASE);
+        UiObject2 view=device.wait(Until.findObject(By.text(visibleLabel)),7000);assertNotNull(label,view);view.click();
+    }
     void sync()throws Exception {
         Method method=MainActivity.class.getDeclaredMethod("syncUiFromBackgroundService");method.setAccessible(true);
-        ui(()->{try{method.invoke(rule.getActivity());}catch(Exception e){throw new AssertionError(e);}});
+        ui(()->{try{method.invoke(activity());}catch(Exception e){throw new AssertionError(e);}});
     }
     JSONObject state()throws Exception{return EventClient.http("GET",EventClient.base()+"/ec/state",null);}
     void fixture(JSONObject data)throws Exception{EventClient.http("POST",EventClient.base()+"/test/r53-state",data);EventClient.poll();sync();}
@@ -59,7 +79,12 @@ public class R53ControlsUiTest {
         EventClient.init(context);EventClient.http("POST",EventClient.base()+"/test/reset",new JSONObject());EventClient.poll();
         rule.launchActivity(new Intent());InstrumentationRegistry.getInstrumentation().waitForIdleSync();
     }
-    @After public void stop()throws Exception{context.stopService(new Intent(context,MonitoringService.class));Thread.sleep(400);}
+    @After public void stop()throws Exception{
+        context.stopService(new Intent(context,MonitoringService.class));
+        ui(()->{for(Activity current:new ArrayList<>(ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED)))
+            if(current instanceof MainActivity)current.finish();});
+        Thread.sleep(400);
+    }
 
     @Test public void scalpSelectionReachesBridgeAndSurvivesActivityRecreation()throws Exception {
         press(R.id.signalModeSpinner);click("SCALP");
@@ -70,9 +95,11 @@ public class R53ControlsUiTest {
         assertEquals("M5",state().getJSONObject("config").getString("timeframe"));
         await(()->{for(android.service.notification.StatusBarNotification notification:context.getSystemService(NotificationManager.class).getActiveNotifications())
             if(String.valueOf(notification.getNotification().extras.getCharSequence("android.text")).contains("SCALP"))return true;return false;},"Information-only notification must identify active SCALP mode");
-        ui(()->rule.getActivity().recreate());Thread.sleep(500);
-        ui(()->{Spinner mode=rule.getActivity().findViewById(R.id.signalModeSpinner);assertEquals("SCALP",mode.getSelectedItem().toString());
-            Spinner tf=rule.getActivity().findViewById(R.id.entryTimeframeSpinner);assertEquals("M5",tf.getSelectedItem().toString());
+        final MainActivity[] previous={null};
+        ui(()->{previous[0]=activity();previous[0].recreate();});
+        await(()->{final boolean[] replaced={false};ui(()->{MainActivity current=resumedActivity();replaced[0]=current!=null&&current!=previous[0];});return replaced[0];},"A new Activity must resume after recreation");
+        ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertEquals("SCALP",mode.getSelectedItem().toString());
+            Spinner tf=activity().findViewById(R.id.entryTimeframeSpinner);assertEquals("M5",tf.getSelectedItem().toString());
             assertFalse("Scenario V2 only supports M5; unsupported frames must not be selectable",tf.isEnabled());});
         press(R.id.signalModeSpinner);click("NORMAL");
         await(()->"NORMAL".equals(EventClient.state().optJSONObject("config").optString("mode")),"Switching back must reconfigure Bridge");
@@ -90,7 +117,7 @@ public class R53ControlsUiTest {
         assertTrue("Starting phone monitoring must preserve active Bridge AUTO",state().getBoolean("auto"));
         assertFalse(state().getBoolean("paused"));
         assertEquals("Active remote mode must become the saved phone mode",1,prefs.getInt("signal_mode_pos",-1));
-        ui(()->{Spinner mode=rule.getActivity().findViewById(R.id.signalModeSpinner);assertFalse(mode.isEnabled());assertEquals("SCALP",mode.getSelectedItem().toString());});
+        ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertFalse(mode.isEnabled());assertEquals("SCALP",mode.getSelectedItem().toString());});
         EventClient.command("disable",new JSONObject());EventClient.poll();sync();
         assertFalse("Unlocking must not queue the phone's stale NORMAL profile",EventClient.needsConfigure(EventClient.state()));
         assertTrue(state().isNull("pending_config"));
@@ -109,7 +136,7 @@ public class R53ControlsUiTest {
 
     @Test public void emergencyNeedsDoubleTapAndSuccessfulSettingsResetClearsBothLatches()throws Exception {
         press(R.id.emergencyStopButton);assertFalse("First tap is confirmation only",state().getBoolean("emergency"));
-        ui(()->{assertTrue(rule.getActivity().findViewById(R.id.emergencyStopButton).performClick());
+        ui(()->{assertTrue(activity().findViewById(R.id.emergencyStopButton).performClick());
             assertTrue("Emergency retry must be durable before Android starts the service",prefs.getBoolean("ec_emergency_pending",false));});
         await(()->EventClient.state().optBoolean("emergency",false),"Emergency acknowledged by Bridge");
         assertTrue(prefs.getBoolean("v108_emergency_latched",false));
@@ -149,17 +176,49 @@ public class R53ControlsUiTest {
         press(R.id.maxPositionsSpinner);click("0.05");
         await(()->EventClient.state().optJSONObject("config").optDouble("lot_cap")==.05,"selected fixed lot applied by Bridge");
         assertEquals(.05,state().getJSONObject("config").getDouble("probe_lot_cap"),1e-9);
-        ui(()->assertFalse("Legacy drift control is explicitly unavailable",rule.getActivity().findViewById(R.id.maxDriftSpinner).isEnabled()));
+        ui(()->assertFalse("Legacy drift control is explicitly unavailable",activity().findViewById(R.id.maxDriftSpinner).isEnabled()));
     }
 
     @Test public void offlineRefreshDisablesControlsAndRecoveryRefreshRestoresThem()throws Exception {
         EventClient.offline(new IOException("r53 simulated phone disconnect"));sync();
         assertTrue(text(R.id.serverStatusText),text(R.id.serverStatusText).contains("OFFLINE"));
         assertTrue(text(R.id.autoStatusText).contains("Связь потеряна"));
-        ui(()->assertFalse(((Switch)rule.getActivity().findViewById(R.id.autoTradingSwitch)).isEnabled()));
+        ui(()->assertFalse(((Switch)activity().findViewById(R.id.autoTradingSwitch)).isEnabled()));
         EventClient.poll();sync();
         assertTrue(text(R.id.serverStatusText).contains("MT5: CONNECTED"));
-        ui(()->assertTrue(((Switch)rule.getActivity().findViewById(R.id.autoTradingSwitch)).isEnabled()));
+        ui(()->assertTrue(((Switch)activity().findViewById(R.id.autoTradingSwitch)).isEnabled()));
+    }
+
+    @Test public void offlineCachedForecastIsExplicitAndRecoveryRestoresLive()throws Exception {
+        scene("TRIANGLE");EventClient.configure();
+        EventClient.command("approve_profile",new JSONObject().put("confirmation","APPROVE_DEMO_RISK"));
+        EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO").put("allow_wait",true));
+        fixture(new JSONObject()); // Configure clears the forecast until the next engine step.
+        assertEquals(3,EventClient.state().getJSONObject("forecast").getInt("map_version"));
+        assertTrue(state().getBoolean("auto"));
+        String stored=prefs.getString("ec_state","");
+        EventClient.offline(new IOException("r53 simulated phone disconnect"));sync();
+        JSONObject cached=EventClient.state();
+        assertFalse("Cached forecast must not be labelled LIVE",ScenarioUi.levels(cached).contains("· LIVE"));
+        assertTrue(cached.getBoolean("client_offline"));
+        assertTrue(cached.getJSONObject("forecast").getBoolean("client_offline"));
+        assertEquals("Presentation marker must not rewrite the cached Bridge response",stored,prefs.getString("ec_state",""));
+        assertTrue(cached.getBoolean("auto"));assertTrue(prefs.getBoolean("auto_trading",false));
+        assertTrue("Phone disconnect must not disable independent Bridge AUTO",state().getBoolean("auto"));
+        assertEquals("КЭШ",text(R.id.signalText));
+        assertTrue(text(R.id.statusText).contains("НЕТ СВЯЗИ"));
+        assertTrue(text(R.id.confidenceText).contains("КЭШ"));
+        assertTrue(text(R.id.signalAgeText).contains("Сохранённый сигнал"));
+        assertTrue(text(R.id.componentScoresText).contains(ScenarioUi.explanation(cached)));
+        assertFalse(text(R.id.componentScoresText).contains("Текущие гипотезы LIVE"));
+        EventClient.poll();sync();
+        JSONObject recovered=EventClient.state();
+        assertFalse(recovered.optBoolean("client_offline",false));
+        assertFalse(recovered.getJSONObject("forecast").optBoolean("client_offline",false));
+        assertEquals(recovered.getJSONObject("decision").optString("signal","WAIT"),text(R.id.signalText));
+        assertEquals(ScenarioUi.headline(recovered.getJSONObject("forecast")),text(R.id.confidenceText));
+        assertFalse(text(R.id.statusText).contains("НЕТ СВЯЗИ"));
+        assertTrue(recovered.getBoolean("auto"));assertFalse(recovered.getBoolean("paused"));
     }
 
     @Test public void missingQuoteReplacesPreviouslyDisplayedPriceWithUnavailableMarker()throws Exception {
@@ -198,8 +257,8 @@ public class R53ControlsUiTest {
         assertTrue(text(R.id.signalAgeText).contains("последний анализ"));
         for(int id:liveFields)assertFalse(context.getResources().getResourceEntryName(id)+" must not be empty",text(id).trim().isEmpty());
         String previous=context.getResources().getResourceEntryName(R.id.marketStatusText);
-        ui(()->{((TextView)rule.getActivity().findViewById(R.id.marketStatusText)).setText("STALE SESSION");
-            ((TextView)rule.getActivity().findViewById(R.id.marketSessionText)).setText("STALE SESSION");});
+        ui(()->{((TextView)activity().findViewById(R.id.marketStatusText)).setText("STALE SESSION");
+            ((TextView)activity().findViewById(R.id.marketSessionText)).setText("STALE SESSION");});
         fixture(new JSONObject().put("balance",22345.67).put("bid",1.10678));
         assertTrue(text(R.id.accountText).contains("22345.67"));assertTrue(text(R.id.priceCompareText).contains("1.10678"));
         assertFalse(previous,text(R.id.marketStatusText).contains("STALE SESSION"));
@@ -208,15 +267,15 @@ public class R53ControlsUiTest {
 
     @Test public void navigationDetailsAndSettingsButtonsOpenTheirDestinations()throws Exception {
         for(int id:new int[]{R.id.navPositions,R.id.navSignals,R.id.navSettings}){
-            press(id);await(()->{final boolean[] scrolled={false};ui(()->scrolled[0]=((ScrollView)rule.getActivity().findViewById(R.id.rootLayout)).getScrollY()>0);return scrolled[0];},"Navigation scrolls");
+            press(id);await(()->{final boolean[] scrolled={false};ui(()->scrolled[0]=((ScrollView)activity().findViewById(R.id.rootLayout)).getScrollY()>0);return scrolled[0];},"Navigation scrolls");
         }
-        press(R.id.navOverview);await(()->{final int[] y={1};ui(()->y[0]=((ScrollView)rule.getActivity().findViewById(R.id.rootLayout)).getScrollY());return y[0]==0;},"Overview returns to top");
+        press(R.id.navOverview);await(()->{final int[] y={1};ui(()->y[0]=((ScrollView)activity().findViewById(R.id.rootLayout)).getScrollY());return y[0]==0;},"Overview returns to top");
         press(R.id.liveDetailsButton);assertTrue(device.wait(Until.hasObject(By.text("ПОЛНЫЕ ДАННЫЕ СИГНАЛА")),5000));device.pressBack();
         press(R.id.navJournal);assertTrue(device.wait(Until.hasObject(By.text("Торговый журнал · подробно")),5000));click("ЗАКРЫТЬ");
         press(R.id.moneyHistoryButton);assertTrue(device.wait(Until.hasObject(By.text("Деньги / история MT5")),5000));click("ЗАКРЫТЬ");
         press(R.id.smartFeaturesButton);assertTrue(device.wait(Until.hasObject(By.text("Умные функции")),5000));click("ОТМЕНА");
         press(R.id.serverCheckButton);assertTrue(device.wait(Until.hasObject(By.text("Адрес MT5 Bridge")),5000));click("ОТМЕНА");
-        press(R.id.saveKeyButton);ui(()->{EditText key=rule.getActivity().findViewById(R.id.apiKeyInput);assertEquals(View.VISIBLE,key.getVisibility());});
+        press(R.id.saveKeyButton);ui(()->{EditText key=activity().findViewById(R.id.apiKeyInput);assertEquals(View.VISIBLE,key.getVisibility());});
         press(R.id.saveKeyButton);assertEquals("ci-fixture-token-not-for-real-trading",prefs.getString("ec_token",""));
         fixture(new JSONObject().put("manual_position",true));press(R.id.managePositionsButton);
         assertTrue(device.wait(Until.hasObject(By.text("Позиции MT5")),5000));click("ЗАКРЫТЬ");

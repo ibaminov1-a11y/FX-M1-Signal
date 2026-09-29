@@ -61,7 +61,7 @@ public class EventCoreUiTest {
  @Test public void legacyUiActualBalanceAndModesArePreserved()throws Exception{
   main(()->{MainActivity a=rule.getActivity();assertNotNull(a.findViewById(R.id.symbolSpinner));assertNotNull(a.findViewById(R.id.moneyHistoryButton));
    assertTrue(((TextView)a.findViewById(R.id.accountText)).getText().toString().contains("99868.35"));
-   assertEquals("10.9-EC1-R5.2",FeatureEngine.appVersionName(a));
+   assertEquals("10.9-EC1-R5.3",FeatureEngine.appVersionName(a));
    Spinner modes=a.findViewById(R.id.signalModeSpinner),tf=a.findViewById(R.id.entryTimeframeSpinner);
    assertNotNull(modes);assertEquals(2,modes.getCount());String before=tf.getSelectedItem().toString();modes.setSelection(1);
    assertEquals(before,tf.getSelectedItem().toString());

@@ -1,0 +1,50 @@
+test_bar_frame_does_not_change_scenario_identity (test_r5_scenarios.LifecycleTests.test_bar_frame_does_not_change_scenario_identity) ... ok
+test_direct_break_does_not_require_retest (test_r5_scenarios.LifecycleTests.test_direct_break_does_not_require_retest) ... ok
+test_expiry_never_moves_with_repeated_quotes (test_r5_scenarios.LifecycleTests.test_expiry_never_moves_with_repeated_quotes) ... ok
+test_first_tick_beyond_level_is_not_an_entry (test_r5_scenarios.LifecycleTests.test_first_tick_beyond_level_is_not_an_entry) ... ok
+test_invalidation_finishes_a_confirmed_scenario (test_r5_scenarios.LifecycleTests.test_invalidation_finishes_a_confirmed_scenario) ... ok
+test_moving_line_under_a_stationary_quote_is_not_a_crossing (test_r5_scenarios.LifecycleTests.test_moving_line_under_a_stationary_quote_is_not_a_crossing) ... ok
+test_no_fabricated_second_target_is_required (test_r5_scenarios.LifecycleTests.test_no_fabricated_second_target_is_required) ... ok
+test_retest_scenario_cannot_confirm_without_return (test_r5_scenarios.LifecycleTests.test_retest_scenario_cannot_confirm_without_return) ... ok
+test_two_buy_hypotheses_exist_and_paths_differ (test_r5_scenarios.LifecycleTests.test_two_buy_hypotheses_exist_and_paths_differ) ... ok
+test_bar_frame_does_not_change_scenario_identity (test_r53_paths.PathTests.test_bar_frame_does_not_change_scenario_identity) ... ok
+test_direct_break_continuation_is_still_visible_after_break (test_r53_paths.PathTests.test_direct_break_continuation_is_still_visible_after_break) ... FAIL
+test_direct_break_does_not_require_retest (test_r53_paths.PathTests.test_direct_break_does_not_require_retest) ... ok
+test_expiry_never_moves_with_repeated_quotes (test_r53_paths.PathTests.test_expiry_never_moves_with_repeated_quotes) ... ok
+test_false_break_has_explicit_neutral_confirmation_before_trade (test_r53_paths.PathTests.test_false_break_has_explicit_neutral_confirmation_before_trade) ... FAIL
+test_first_tick_beyond_level_is_not_an_entry (test_r53_paths.PathTests.test_first_tick_beyond_level_is_not_an_entry) ... ok
+test_invalidation_finishes_a_confirmed_scenario (test_r53_paths.PathTests.test_invalidation_finishes_a_confirmed_scenario) ... ok
+test_moving_line_under_a_stationary_quote_is_not_a_crossing (test_r53_paths.PathTests.test_moving_line_under_a_stationary_quote_is_not_a_crossing) ... ok
+test_no_entry_when_nearest_target_already_passed (test_r53_paths.PathTests.test_no_entry_when_nearest_target_already_passed) ... FAIL
+test_no_fabricated_second_target_is_required (test_r53_paths.PathTests.test_no_fabricated_second_target_is_required) ... ok
+test_retest_scenario_cannot_confirm_without_return (test_r53_paths.PathTests.test_retest_scenario_cannot_confirm_without_return) ... ok
+test_two_buy_hypotheses_exist_and_paths_differ (test_r53_paths.PathTests.test_two_buy_hypotheses_exist_and_paths_differ) ... ok
+
+======================================================================
+FAIL: test_direct_break_continuation_is_still_visible_after_break (test_r53_paths.PathTests.test_direct_break_continuation_is_still_visible_after_break)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_paths.py", line 21, in test_direct_break_continuation_is_still_visible_after_break
+    self.assertTrue(any(p.get('anchor')=='MICRO_CONFIRM' for p in path))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_false_break_has_explicit_neutral_confirmation_before_trade (test_r53_paths.PathTests.test_false_break_has_explicit_neutral_confirmation_before_trade)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_paths.py", line 12, in test_false_break_has_explicit_neutral_confirmation_before_trade
+    self.assertIsNotNone(confirm,'SELL return is preparation; fresh continuation confirmation must be visible')
+AssertionError: unexpectedly None : SELL return is preparation; fresh continuation confirmation must be visible
+
+======================================================================
+FAIL: test_no_entry_when_nearest_target_already_passed (test_r53_paths.PathTests.test_no_entry_when_nearest_target_already_passed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r53_paths.py", line 28, in test_no_entry_when_nearest_target_already_passed
+    self.assertFalse(s['entry_ready'],'A completed target cannot justify a new entry')
+AssertionError: True is not false : A completed target cannot justify a new entry
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.086s
+
+FAILED (failures=3)

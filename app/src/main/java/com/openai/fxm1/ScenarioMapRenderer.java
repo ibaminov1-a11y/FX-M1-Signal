@@ -17,7 +17,7 @@ final class ScenarioMapRenderer {
     private boolean tied;
     private static final int GREEN=0xff42d67a,RED=0xffff4857,ALT=0xffffc857,MUTED=0xffaaa7bf;
     private static final int[] ALTS={ALT,0xff5bd6ff,0xffdd91ff};
-    private boolean historical,stale;
+    private boolean historical,stale,clientOffline;
     private ScenarioMapRenderer(Canvas c,int width,int height,float density){
         this.c=c;d=density;w=width;h=height;left=8*d;right=w-58*d;
     }
@@ -75,7 +75,7 @@ final class ScenarioMapRenderer {
     private int routeColor(JSONObject s,int i){return stale?MUTED:i==0?(s.optInt("side")>0?GREEN:s.optInt("side")<0?RED:0xffbbbbcf):ALTS[(i-1)%3];}
     private void draw(JSONArray bars,JSONArray structure,JSONObject live,JSONArray liveStructure,JSONObject f,JSONArray positions){
         boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2;
-        historical=f.optBoolean("history_only");stale=f.optBoolean("stale");tied="TIED".equals(f.optString("selection_status"));
+        historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
         JSONObject levels=valid&&!historical?f.optJSONObject("entry_levels"):null,active=historical?null:f.optJSONObject("active_scenario");
         int routeCount=routes==null?0:Math.min(2,routes.length());
@@ -93,7 +93,7 @@ final class ScenarioMapRenderer {
             for(int j=0;j<path.length();j++){JSONObject pt=path.optJSONObject(j);if(pt!=null)nearBound(pt.optDouble("price"),historyLow,historyHigh,historyRange);}}
         if(!Double.isFinite(low)||!Double.isFinite(high)||high<=low||bottom<=top||right<=left)return;
         double margin=(high-low)*.10;low-=margin;high+=margin;
-        if(historical){text("ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
+        if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
         else if(routeCount==0)text(valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
@@ -103,7 +103,7 @@ final class ScenarioMapRenderer {
             text(name+" · "+title+" · "+score+"/100",left,(16+16*i)*d,routeColor(r,i),9.5f);
         }
         if(tied&&!historical)text("Равнозначные варианты · без предпочтения",left,(16+16*routeCount)*d,MUTED,8);
-        text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":"ИСТОРИЯ MT5"),left,top-7*d,stale?0xffffb04d:MUTED,8);
+        text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":"ИСТОРИЯ MT5"),left,top-7*d,stale?0xffffb04d:MUTED,8);
         for(int i=0;i<5;i++){
             float yy=top+(bottom-top)*i/4;line(left,yy,right,yy,0xff312b43,.6f,false);
             text(price(high-(high-low)*i/4),right+4*d,yy+3*d,MUTED,8.5f);
@@ -170,7 +170,7 @@ final class ScenarioMapRenderer {
         for(int i=routeCount-1;i>=0;i--)route(routes.optJSONObject(i),i,current);
         if(Double.isFinite(current)){
             p.setColor(0xffeeeeff);c.drawCircle(split,clippedY(current),3*d,p);
-            text("LIVE",split-29*d,clippedY(current)-6*d,0xffeeeeff,9);
+            text(clientOffline?"КЭШ":"LIVE",split-29*d,clippedY(current)-6*d,0xffeeeeff,9);
         }
         drawAnnotations();
         boolean legacy=false;
