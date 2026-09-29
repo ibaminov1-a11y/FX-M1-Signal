@@ -34,7 +34,14 @@ public class MonitoringService extends Service {
             running=false;prefs().edit().putBoolean("bg_running",false).apply();handler.removeCallbacks(tick);
             stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();return START_NOT_STICKY;
         }
-        running=true;prefs().edit().putBoolean("bg_running",true).putLong("monitor_stopped_ms",0).apply();notifyState();
+        running=true;
+        if(!notifyState()){
+            running=false;prefs().edit().putBoolean("bg_running",false).apply();
+            stopSelf(startId);return START_NOT_STICKY;
+        }
+        // Consumers may stop immediately after observing this acknowledgement.
+        // Publish it only after Android has completed foreground promotion.
+        prefs().edit().putBoolean("bg_running",true).putLong("monitor_stopped_ms",0).apply();
         if(ACTION_EMERGENCY_CONFIRMED.equals(action)||ACTION_STOP_ALL.equals(action))emergency();
         else if(ACTION_REFRESH.equals(action)||ACTION_START.equals(action))io.execute(()->{
             try{EventClient.configure();}catch(Exception e){prefs().edit().putString("ec_message",String.valueOf(e.getMessage())).apply();}
@@ -51,7 +58,7 @@ public class MonitoringService extends Service {
             catch(Exception e){prefs().edit().putString("ec_message",String.valueOf(e.getMessage())).apply();}
             finally{handler.post(this::notifyState);}});
     }
-    private void notifyState(){if(!running)return;JSONObject s=EventClient.state(),d=s.optJSONObject("decision"),cfg=s.optJSONObject("config"),fc=s.optJSONObject("forecast");
+    private boolean notifyState(){if(!running)return false;JSONObject s=EventClient.state(),d=s.optJSONObject("decision"),cfg=s.optJSONObject("config"),fc=s.optJSONObject("forecast");
         String signal=d==null?"WAIT":d.optString("signal","WAIT");
         String symbol=cfg==null?"MT5":cfg.optString("symbol","MT5");
         String engine=cfg==null?"COMPUTE V1":cfg.optString("engine_mode","COMPUTE_V1");
@@ -71,7 +78,8 @@ public class MonitoringService extends Service {
             .setVisibility(Notification.VISIBILITY_PUBLIC).setStyle(style);
         if(Build.VERSION.SDK_INT>=31)b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         try{if(Build.VERSION.SDK_INT>=34)startForeground(ID,b.build(),ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);else startForeground(ID,b.build());}
-        catch(Exception e){prefs().edit().putString("ec_message","Уведомление: "+e.getMessage()).apply();}
+        catch(Exception e){prefs().edit().putString("ec_message","Уведомление: "+e.getMessage()).apply();return false;}
+        return true;
     }
     @Override public IBinder onBind(Intent i){return null;}
     @Override public void onDestroy(){running=false;prefs().edit().putBoolean("bg_running",false).apply();handler.removeCallbacksAndMessages(null);io.shutdown();super.onDestroy();}

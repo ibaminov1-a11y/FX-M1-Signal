@@ -136,8 +136,13 @@ public final class EventClient {
         JSONObject result=http("POST",base()+"/ec/command/"+cmd,envelope(data));
         // Clear the phone latch only after Bridge has accepted explicit reconciliation.
         // Settings calls this method directly, so cleanup belongs at the transport boundary.
-        if("reset".equals(cmd))prefs().edit().putBoolean("v108_emergency_latched",false)
-            .putBoolean("ec_emergency_pending",false).commit();
+        if("reset".equals(cmd))synchronized(STATE_READ_LOCK){
+            // A response captured before accepted reconciliation must not restore
+            // the emergency latch after it has been explicitly cleared.
+            prefs().edit().putBoolean("v108_emergency_latched",false)
+                .putBoolean("ec_emergency_pending",false).commit();
+            lastPublishedRead=++nextReadSequence;
+        }
         return result;
     }
     public static String accountMode(){

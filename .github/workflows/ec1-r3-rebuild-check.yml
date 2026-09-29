@@ -129,3 +129,11 @@ jobs:
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: error
+
+      - name: Publish single install bundle within download size limit
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: FXM1-R56-DELIVERY-${{ github.sha }}
+          path: evidence/FXM1_R5_6_FULL.zip
+          if-no-files-found: error

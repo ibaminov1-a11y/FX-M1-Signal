@@ -1,7 +1,9 @@
 """The Android R56 scene must exercise real observer forecasts and scoped faults."""
 import calendar
+import threading
 import time
 import unittest
+import uuid
 from unittest.mock import patch
 
 import ui_fixture as fixture
@@ -115,3 +117,54 @@ class R56UiFixtureTests(unittest.TestCase):
         self.setup_scene()
         started=time.monotonic();self.view('M15')
         self.assertLess(time.monotonic()-started,.35)
+
+    def hold_state_response(self):
+        armed=self.client.post('/test/r56-read-hold',json={'hold':True},headers=HEADERS)
+        self.assertEqual(armed.status_code,200,armed.get_json())
+        self.assertFalse(armed.get_json()['captured'])
+        result={}
+        def read():
+            result['response']=fixture.app.test_client().get('/ec/state',headers=HEADERS)
+        worker=threading.Thread(target=read,daemon=True)
+        worker.start()
+        self.addCleanup(worker.join,9)
+        self.addCleanup(lambda:self.client.post('/test/r56-read-release',json={},headers=HEADERS))
+        deadline=time.monotonic()+2
+        while time.monotonic()<deadline:
+            status=self.client.get('/test/r56-read-hold',headers=HEADERS)
+            if status.get_json().get('captured'):break
+            time.sleep(.005)
+        self.assertTrue(status.get_json()['captured'])
+        self.assertTrue(worker.is_alive(),'Captured response must remain withheld until release')
+        return worker,result
+
+    def test_held_snapshot_allows_real_reset_and_new_state_then_releases_old_body(self):
+        self.setup_scene()
+        with fixture.engine.lock:fixture.engine.emergency=True
+        worker,result=self.hold_state_response()
+        command=self.client.post('/ec/command/reset',headers=HEADERS,json={
+            'client_id':'fixture-r56-'+str(uuid.uuid4()),'sequence':1,'command_id':str(uuid.uuid4()),
+            'confirmation':'RESET_DEMO_FLAT'})
+        self.assertEqual(command.status_code,200,command.get_json())
+        self.assertFalse(command.get_json()['emergency'])
+        newer=self.client.get('/ec/state',headers=HEADERS)
+        self.assertFalse(newer.get_json()['emergency'])
+        self.assertTrue(worker.is_alive(),'Only the captured response remains held')
+        released=self.client.post('/test/r56-read-release',json={},headers=HEADERS)
+        self.assertEqual(released.status_code,200)
+        worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertTrue(result['response'].get_json()['emergency'],'Held body is the actual pre-reset snapshot')
+
+    def test_fixture_reset_releases_inflight_hold_and_disarms_next_read(self):
+        self.setup_scene()
+        worker,result=self.hold_state_response()
+        reset=self.client.post('/test/reset',json={},headers=HEADERS)
+        self.assertEqual(reset.status_code,200)
+        worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(result['response'].status_code,200)
+        status=self.client.get('/test/r56-read-hold',headers=HEADERS).get_json()
+        self.assertFalse(status['captured'])
+        self.assertFalse(status['armed'])
+        self.assertEqual(self.client.get('/ec/state',headers=HEADERS).status_code,200)

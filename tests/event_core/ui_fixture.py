@@ -1,5 +1,5 @@
 """CI fixture only: actual Engine/Flask with a fake broker. Never imports MetaTrader5."""
-import calendar,sys,tempfile,time,uuid
+import calendar,sys,tempfile,threading,time,uuid
 from dataclasses import replace
 from pathlib import Path
 sys.path[:0]=[str(Path(__file__).resolve().parents[2]/'mt5_bridge'),str(Path(__file__).resolve().parent)]
@@ -22,6 +22,15 @@ normal_broker=broker
 r54_refresh_config={}
 r54_refresh_audit={'refresh_requests':0,'ledger_requests':0,'events_requests':0}
 r56_config={}
+r56_read_lock=threading.Lock()
+r56_read_hold=dict(armed=False,captured=False,release=threading.Event())
+
+
+def clear_read_hold(armed=False):
+    global r56_read_hold
+    with r56_read_lock:
+        r56_read_hold['release'].set()
+        r56_read_hold=dict(armed=armed,captured=False,release=threading.Event())
 
 def clear_market():
     engine.last_bars_at=0;engine.last_market_attempt=-1.
@@ -32,6 +41,7 @@ def clear_market():
 
 def reset():
     global freeze_until,broker,r54_refresh_config,r56_config
+    clear_read_hold()
     with engine.lock:
         broker=normal_broker;engine.broker=broker
         r54_refresh_config={}
@@ -240,6 +250,37 @@ def r56_forecast_faults(response):
     if options.get('wrong_clock'):data['market_history_generation']='WRONG_CLOCK'
     if options.get('wrong_account'):data['account']['key']='999@OTHER_DEMO'
     response.set_data(app.json.dumps(data))
+    return response
+
+
+@app.route('/test/r56-read-hold',methods=['GET','POST'])
+def r56_read_hold_control():
+    if request.method=='POST':
+        clear_read_hold(bool((request.get_json(silent=True) or {}).get('hold')))
+    with r56_read_lock:
+        return jsonify(ok=True,armed=r56_read_hold['armed'],captured=r56_read_hold['captured'],
+            ready=r56_read_hold['captured'],released=r56_read_hold['release'].is_set())
+
+
+@app.post('/test/r56-read-release')
+def r56_read_release():
+    with r56_read_lock:
+        r56_read_hold['armed']=False
+        r56_read_hold['release'].set()
+    return jsonify(ok=True)
+
+
+@app.after_request
+def r56_hold_completed_state(response):
+    # Flask has already built the genuine snapshot and released Engine.lock.
+    # Claim exactly one response; all other reads and commands remain free.
+    if request.path!='/ec/state' or request.method!='GET' or response.status_code!=200:return response
+    with r56_read_lock:
+        if not r56_read_hold['armed']:return response
+        r56_read_hold['armed']=False;r56_read_hold['captured']=True
+        release=r56_read_hold['release']
+    release.wait(8)
+    release.set()
     return response
 
 # Test-only transport audit and deterministic financial data; never loaded by the shipped Bridge.

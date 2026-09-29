@@ -7,7 +7,7 @@ for p in (root/'app/build/outputs/androidTest-results').rglob('TEST-*.xml'):
     cases.extend(ET.parse(p).getroot().iter('testcase'))
 assert cases and not any(c.find(x) is not None for c in cases for x in ('failure','error','skipped'))
 rows=[dict(classname=c.get('classname'),name=c.get('name')) for c in cases]
-for name in ('R56TimeframesUiTest','R56ChartSemanticsTest','R55ControlsUiTest','R54RefreshUiTest','R54ChartUiTest'):
+for name in ('R56ConcurrencyUiTest','R56TimeframesUiTest','R56ChartSemanticsTest','R55ControlsUiTest','R54RefreshUiTest','R54ChartUiTest'):
     assert any(x['classname'].endswith(name) for x in rows),name
 (e/'ANDROID_TESTS.json').write_text(json.dumps(rows,indent=2))
 match=re.search(r'Ran (\d+) tests',(e/'python-tests.log').read_text());assert match
