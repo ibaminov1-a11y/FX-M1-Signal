@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from typing import Literal
 import math
+from datetime import datetime, timezone
 
 class Blocked(ValueError):
     """A deliberate inhibition, not permission to substitute unsafe defaults."""
@@ -22,6 +23,7 @@ class Bar:
     low: float
     close: float
     volume: float = 0
+    clock_offset_seconds: int = 0
 
     def __post_init__(self):
         if self.time < 0:
@@ -77,6 +79,16 @@ PROFILES = {
 # Parameters are fixed research hypotheses, not fitted performance claims.
 TF_SECONDS = {'M1': 60, 'M5': 300, 'M10': 600, 'M15': 900,
               'H1': 3600, 'H4': 14400, 'D1': 86400, 'W1': 604800, 'MN1': 2592000}
+
+
+def bar_close_time(open_time, tf, offset_seconds=0):
+    """Closed-history boundary; monthly candles use the next calendar month."""
+    if tf != 'MN1':
+        return open_time + TF_SECONDS[tf]
+    opened = datetime.fromtimestamp(open_time + offset_seconds, timezone.utc)
+    year = opened.year + (opened.month == 12)
+    month = opened.month % 12 + 1
+    return int(datetime(year, month, 1, tzinfo=timezone.utc).timestamp()) - offset_seconds
 
 
 @dataclass
@@ -329,7 +341,7 @@ def validate_bar_history(bars,tf,now):
     ordered(bars)
     if not bars:return
     span=TF_SECONDS[tf]
-    if tf!='MN1' and bars[-1].time+span>now+1.0:
+    if bar_close_time(bars[-1].time,tf,bars[-1].clock_offset_seconds)>now+1.0:
         raise Blocked('Незакрытая/будущая свеча в истории '+tf)
     if tf in ('M1','M5','M10','M15','H1','H4'):
         for left,right in zip(bars,bars[1:]):

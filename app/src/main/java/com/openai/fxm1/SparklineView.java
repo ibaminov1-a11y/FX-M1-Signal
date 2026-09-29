@@ -11,7 +11,11 @@ public class SparklineView extends View {
     private final ChartViewport viewport=new ChartViewport();
     private JSONArray positions=new JSONArray(),structure=new JSONArray(),liveStructure=new JSONArray();
     private JSONObject liveBar=null,forecast=new JSONObject();
-    private String identity="";
+    private String identity="",historyScope="",historyFrame="M5",historyClock="";
+    public void setHistoryContext(String scope,String frame,String clock){historyScope=scope;historyFrame=frame;historyClock=clock;}
+    public String historyScope(){return historyScope;}
+    public String historyFrame(){return historyFrame;}
+    public String historyClock(){return historyClock;}
     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
     private boolean customSelection=false,archive=false,panning=false;
     private float downX,downY,lastX;
@@ -94,7 +98,7 @@ public class SparklineView extends View {
     private static String priceText(double value){return String.format(Locale.US,"%.5f",value);}
     public static String mapDescription(JSONObject f){
         if(f!=null&&f.optBoolean("chart_read_only"))return ScenarioUi.rawChartLabel(f)+". "+f.optString("chart_reason")
-            +". Только просмотр. Время MT5 без коррекции; прогноз и уровни входа скрыты."
+            +". Только просмотр. "+ScenarioUi.chartClockLabel(f)+"; прогноз и уровни входа скрыты."
             +(f.optBoolean("client_offline")?" КЭШ · НЕТ СВЯЗИ С BRIDGE. Телефон потерял связь; текущие данные неизвестны.":"");
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
         if(f.optBoolean("history_only"))return f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";

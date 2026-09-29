@@ -9,14 +9,12 @@ for i in $(seq 1 30); do
   sleep 1
 done
 adb reverse tcp:8765 tcp:8765
-gradle --no-daemon :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.LiveLayoutUiTest#cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored' \
-  > evidence/layout-targeted.log 2>&1 || { cat evidence/layout-targeted.log; exit 1; }
+# LiveLayoutUiTest remains in the full suite below; avoid running the same case twice.
 set +e
 bash tools/audit53_red_ui.sh
 red_rc=$?
 gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R55ControlsUiTest,com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest \
   > evidence/android-runtime.log 2>&1
 rc=$?
 adb logcat -d > evidence/android-logcat.txt
@@ -24,14 +22,14 @@ adb pull /sdcard/Download/ec1-qa evidence/ui || true
 cat evidence/android-runtime.log
 if [ "$red_rc" -ne 0 ]; then exit "$red_rc"; fi
 if [ "$rc" -eq 0 ]; then
-  python tools/audit54_report.py
+  python tools/audit55_report.py
   signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
   "$signer" verify --print-certs app/build/outputs/apk/debug/app-debug.apk > evidence/apk-signature.txt
   grep -q '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885' evidence/apk-signature.txt
   python - <<'CHECK'
 from pathlib import Path
-assert 'versionCode 923' in Path('app/build.gradle').read_text()
-Path('evidence/package-check.txt').write_text('versionCode 923; original EC1 signing identity verified; exact commit recorded in COMMIT.txt\n')
+assert 'versionCode 924' in Path('app/build.gradle').read_text()
+Path('evidence/package-check.txt').write_text('versionCode 924; original EC1 signing identity verified; exact commit recorded in COMMIT.txt\n')
 CHECK
   test -s evidence/ui/ec1-qa/r52-layout-short.png || exit 1
   test -s evidence/ui/ec1-qa/r52-layout-long.png || exit 1

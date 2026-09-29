@@ -100,7 +100,7 @@ public class R53ControlsUiTest {
         await(()->{final boolean[] replaced={false};ui(()->{MainActivity current=resumedActivity();replaced[0]=current!=null&&current!=previous[0];});return replaced[0];},"A new Activity must resume after recreation");
         ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertEquals("SCALP",mode.getSelectedItem().toString());
             Spinner tf=activity().findViewById(R.id.entryTimeframeSpinner);assertEquals("M5",tf.getSelectedItem().toString());
-            assertFalse("Scenario V2 only supports M5; unsupported frames must not be selectable",tf.isEnabled());});
+            assertTrue("Supported entry frames remain selectable",tf.isEnabled());});
         press(R.id.signalModeSpinner);click("NORMAL");
         await(()->"NORMAL".equals(EventClient.state().optJSONObject("config").optString("mode")),"Switching back must reconfigure Bridge");
     }
@@ -117,7 +117,7 @@ public class R53ControlsUiTest {
         assertTrue("Starting phone monitoring must preserve active Bridge AUTO",state().getBoolean("auto"));
         assertFalse(state().getBoolean("paused"));
         assertEquals("Active remote mode must become the saved phone mode",1,prefs.getInt("signal_mode_pos",-1));
-        ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertFalse(mode.isEnabled());assertEquals("SCALP",mode.getSelectedItem().toString());});
+        ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertTrue(mode.isEnabled());assertEquals("SCALP",mode.getSelectedItem().toString());});
         EventClient.command("disable",new JSONObject());EventClient.poll();sync();
         assertFalse("Unlocking must not queue the phone's stale NORMAL profile",EventClient.needsConfigure(EventClient.state()));
         assertTrue(state().isNull("pending_config"));
@@ -238,8 +238,24 @@ public class R53ControlsUiTest {
     }
 
     @Test public void allNineteenLiveFieldsRenderRealChangingBridgeData()throws Exception {
+        // Compare each real Bridge snapshot as one generation; independent periodic
+        // reads must not move preference timestamps between the field assertions.
+        final java.util.concurrent.ExecutorService[] queue={null};
+        ui(()->{try{
+            for(String name:new String[]{"serviceUiHandler","monitorHandler"}){
+                java.lang.reflect.Field field=MainActivity.class.getDeclaredField(name);field.setAccessible(true);
+                ((Handler)field.get(activity())).removeCallbacksAndMessages(null);
+            }
+            java.lang.reflect.Field money=MainActivity.class.getDeclaredField("lastMoneyRefreshMs");money.setAccessible(true);
+            money.setLong(activity(),System.currentTimeMillis()+60000);
+            java.lang.reflect.Field worker=MainActivity.class.getDeclaredField("executor");worker.setAccessible(true);
+            queue[0]=(java.util.concurrent.ExecutorService)worker.get(activity());
+        }catch(Exception e){throw new AssertionError(e);}});
+        queue[0].submit(()->{}).get(12,java.util.concurrent.TimeUnit.SECONDS);
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
         scene("TRIANGLE");
         fixture(new JSONObject().put("balance",12345.67).put("bid",1.10456).put("completed_trade",true).put("manual_position",true));
+        EventClient.refreshFinancial();sync();
         await(()->text(R.id.statsText).contains("1")&&text(R.id.tradeHistoryText).contains("EURUSD"),"Actual ledger reaches statistics and trade history");
         assertTrue(text(R.id.accountText).contains("12345.67"));
         assertTrue(text(R.id.priceCompareText).contains("1.10456"));

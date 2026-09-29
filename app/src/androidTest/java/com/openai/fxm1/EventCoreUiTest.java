@@ -40,6 +40,12 @@ public class EventCoreUiTest {
  void shot(String name)throws Exception{shell("mkdir -p /sdcard/Download/ec1-qa");shell("screencap -p /sdcard/Download/ec1-qa/"+name+".png");}
  void click(String label)throws Exception{for(int i=0;i<5;i++){try{UiObject2 v=device.wait(Until.findObject(By.text(label)),6000);assertNotNull(label,v);v.click();return;}catch(StaleObjectException e){if(i==4)throw e;Thread.sleep(80);}}}
  @Test public void accountModeAndCommissionProfileAreAutomatic()throws Exception{
+  // This is a pure preference/configuration contract. Stop real DEMO snapshot
+  // publishers before injecting a synthetic REAL account into those preferences.
+  java.lang.reflect.Field worker=MainActivity.class.getDeclaredField("executor");worker.setAccessible(true);
+  java.util.concurrent.ExecutorService queue=(java.util.concurrent.ExecutorService)worker.get(rule.getActivity());
+  rule.finishActivity();
+  assertTrue("Activity reads must stop before synthetic account injection",queue.awaitTermination(8,java.util.concurrent.TimeUnit.SECONDS));
   p.edit().putString("mt5_account_type_snapshot","DEMO").remove("ec_fee").commit();
   p.edit().putString("target_trade_mode","DEMO").commit();
   JSONObject demo=EventClient.config();
@@ -61,7 +67,7 @@ public class EventCoreUiTest {
  @Test public void legacyUiActualBalanceAndModesArePreserved()throws Exception{
   main(()->{MainActivity a=rule.getActivity();assertNotNull(a.findViewById(R.id.symbolSpinner));assertNotNull(a.findViewById(R.id.moneyHistoryButton));
    assertTrue(((TextView)a.findViewById(R.id.accountText)).getText().toString().contains("99868.35"));
-   assertEquals("10.9-EC1-R5.4",FeatureEngine.appVersionName(a));
+   assertEquals("10.9-EC1-R5.5",FeatureEngine.appVersionName(a));
    Spinner modes=a.findViewById(R.id.signalModeSpinner),tf=a.findViewById(R.id.entryTimeframeSpinner);
    assertNotNull(modes);assertEquals(2,modes.getCount());String before=tf.getSelectedItem().toString();modes.setSelection(1);
    assertEquals(before,tf.getSelectedItem().toString());
@@ -271,7 +277,7 @@ public class EventCoreUiTest {
   main(()->rule.getActivity().recreate());Thread.sleep(600);
   main(()->{Spinner mode=rule.getActivity().findViewById(R.id.signalModeSpinner);
    assertEquals("Bridge AUTO mode must be authoritative in UI","NORMAL",String.valueOf(mode.getSelectedItem()));
-   assertFalse("profile controls must be locked while Bridge AUTO is active",mode.isEnabled());});
+   assertTrue("Armed AUTO must keep profile controls usable",mode.isEnabled());});
   shot("05-auto-synced");
  }
  @Test public void transientOfflineAndActivityReturnDoNotDisableBridgeAuto()throws Exception{

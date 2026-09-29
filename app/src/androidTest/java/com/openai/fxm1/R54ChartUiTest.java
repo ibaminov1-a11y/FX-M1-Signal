@@ -201,4 +201,34 @@ public class R54ChartUiTest {
             device.findObject(By.text("ЗАКРЫТЬ КАРТУ")).click();
         }finally{context.stopService(new Intent(context,MonitoringService.class));}
     }
+    @Test public void historyUsesDisplayedFrameAndRejectsOtherMarketClock()throws Exception {
+        JSONObject state=verified().put("market_scope","account|EURUSD|explicit")
+            .put("market_history_generation","UTC_EXPLICIT_R55:account:180");
+        state.getJSONObject("config").put("timeframe","M15");
+        JSONObject response=new JSONObject().put("cache_verified",true).put("scope","account|EURUSD|explicit")
+            .put("tf","M15").put("clock","UTC_EXPLICIT_R55:account:180").put("bars",bars(VERIFIED_START-15000));
+        ui(()->{
+            SparklineView chart=new SparklineView(context);ScenarioUi.populate(chart,state);
+            assertTrue(ScenarioUi.historyPath(chart).contains("tf=M15"));
+            String identity=chart.marketIdentity();
+            assertTrue(ScenarioUi.historyResponseMatches(chart,identity,response));
+            try{
+                assertFalse(ScenarioUi.historyResponseMatches(chart,identity,new JSONObject(response.toString()).put("tf","M5")));
+                assertFalse(ScenarioUi.historyResponseMatches(chart,identity,new JSONObject(response.toString()).put("clock","UTC_NATIVE_R51")));
+                assertFalse(ScenarioUi.historyResponseMatches(chart,identity,new JSONObject(response.toString()).put("scope","other-account")));
+                state.getJSONObject("config").put("timeframe","H1");ScenarioUi.populate(chart,state);
+                assertFalse(ScenarioUi.historyResponseMatches(chart,identity,response));
+            }catch(JSONException e){throw new AssertionError(e);}
+        });
+    }
+    @Test public void explicitClockPreviewDisclosesNormalization()throws Exception {
+        JSONObject state=blocked();state.getJSONObject("chart_market").put("offset_minutes",180);
+        ui(()->{
+            SparklineView chart=new SparklineView(context);ScenarioUi.populate(chart,state);
+            String description=chart.getContentDescription().toString();
+            assertTrue(description,description.contains("UTC")&&description.contains("+180"));
+            assertFalse(description,description.contains("без коррекции"));
+        });
+    }
+
 }

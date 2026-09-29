@@ -11,7 +11,7 @@ done
 adb reverse tcp:8765 tcp:8765
 set +e
 gradle --no-daemon :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R55ControlsUiTest' \
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R55ControlsUiTest#smartStatusDetailsShowFullCurrentBridgeStateWithoutResizingPreview,com.openai.fxm1.EventCoreUiTest#accountModeAndCommissionProfileAreAutomatic,com.openai.fxm1.LiveLayoutUiTest#offlineInstrumentChangeClearsUnrelatedLiveChart,com.openai.fxm1.R53ControlsUiTest#allNineteenLiveFieldsRenderRealChangingBridgeData' \
   > evidence/android-focus.log 2>&1
 rc=$?
 adb logcat -d > evidence/android-logcat.txt

@@ -8,7 +8,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from ..model import Config, Decision, atr, ordered, pivots, direction, swing_labels, TF_SECONDS
+from ..model import Config, Decision, atr, ordered, pivots, direction, swing_labels, TF_SECONDS, bar_close_time
 from .structure import detect_patterns, value, FAMILIES
 from .continuation import Continuation
 from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
@@ -52,12 +52,12 @@ class ScenarioCore:
                     s['sent']=True;s['entry_ready']=False
                     if s['event_id']:self.consumed.add(s['event_id'])
         if len(self.consumed)>4096:self.consumed=set(sorted(self.consumed)[-4096:])
-    def _rank(self,rows,m15,h1,now,q,a):
-        contexts=[direction(pivots(b)) if len(b)>12 else 0 for b in (m15,h1)]
+    def _rank(self,rows,m15,h1,now,q,a,context=None):
+        contexts=[direction(pivots(b)) if len(b)>12 else 0 for b in ((m15,h1) if context is None else (context,))]
         progress={'WATCHING':.10,'BREAK_SEEN':.45,'TOUCH_SEEN':.60,'RETURN_SEEN':.70,'RETEST_SEEN':.75,'CONFIRMED':1.}
         for s in rows:
             side=s['side'];reversal=s['type'] in ('FALSE_BREAK_RETURN','STRUCTURE_REVERSAL')
-            alignment=sum(1 if x==side else .5 if x==0 else 0 for x in contexts)/2 if side else .5
+            alignment=sum(1 if x==side else .5 if x==0 else 0 for x in contexts)/len(contexts) if side else .5
             if reversal:alignment=max(.5,alignment)  # Old trend opposition alone cannot veto a confirmed reversal structure.
             freshness=max(0.,1-(now-s['created_at'])/max(1,s['expires_at']-s['created_at']))
             parts=dict(geometry=s['geometry_score'],context=alignment,event=progress.get(s['stage'],0),freshness=freshness)
@@ -76,12 +76,11 @@ class ScenarioCore:
             selected.append(s)
             if len(selected)==4:break
         return selected,unique
-    def evaluate(self,bars,m1,m15,h1,live_bar,q,now,campaign_side=0,campaign=None):
+    def evaluate(self,bars,m1,m15,h1,live_bar,q,now,campaign_side=0,campaign=None,context=None,context_tf=None,clock_generation='UTC_NATIVE_R51'):
         q.validate(now);ordered(bars)
-        if self.config.timeframe!='M5' or len(bars)<24 or len(m1)<2 or live_bar is None:
-            return Decision(phase='DATA_BLOCK',reason='Scenario V2: ожидаем закрытые M1/M5 и LIVE',path='SCENARIO_V2')
-        span=TF_SECONDS[self.config.timeframe]
-        if bars[-1].time+span>now+1:raise ValueError('Будущая незакрытая свеча в Scenario V2')
+        if self.config.timeframe not in TF_SECONDS or len(bars)<24 or len(m1)<2 or live_bar is None:
+            return Decision(phase='DATA_BLOCK',reason=f'Scenario V2: ожидаем закрытые M1/{self.config.timeframe} и LIVE',path='SCENARIO_V2')
+        if bar_close_time(bars[-1].time,self.config.timeframe,bars[-1].clock_offset_seconds)>now+1:raise ValueError('Будущая незакрытая свеча в Scenario V2')
         a=atr(bars);frame=(bars[-1].time,bars[-1].high,bars[-1].low,bars[-1].close)
         if frame!=self.frame:
             for p in detect_patterns(bars,self.config.symbol,self.config.timeframe):
@@ -109,7 +108,7 @@ class ScenarioCore:
             self.events.append(dict(scenario_id=addition['scenario_id'],type=addition['type'],side=addition['side'],
                 status='CONFIRMED',stage='CONFIRMED',reason=addition['reason'],time=now))
         active=[s for s in self.scenarios.values() if s['status'] not in TERMINAL]
-        selected,ranked=self._rank(active,m15,h1,now,q,a)
+        selected,ranked=self._rank(active,m15,h1,now,q,a,context=None if self.config.timeframe=='M5' else context)
         tied=len(selected)>1 and int(selected[0]['quality_score']+.5)==int(selected[1]['quality_score']+.5)
         selection_status='TIED' if tied else 'PREFERRED' if selected else 'NONE'
         price_time=q.time_msc/1000.0
@@ -132,7 +131,7 @@ class ScenarioCore:
         forecast=dict(map_version=3,available=True,engine=self.VERSION,side=routes[0]['side'] if routes and not tied else 0,
             selection_status=selection_status,selection_reason='Равнозначные гипотезы — предпочтение не определено' if tied else '',
             primary_scenario_id=routes[0]['scenario_id'] if routes and not tied else None,
-            history_clock='UTC_NATIVE_R51',boundary_asof=price_time,
+            history_clock=clock_generation,boundary_asof=price_time,context_timeframe=context_tf,
             confidence=routes[0]['model_weight'] if routes else 0.,live_price=q.bid,data_asof=q.time_msc/1000,
             addition=self.continuation.status() if campaign else None,
             snapshot_id=snapshot,support=support,resistance=resistance,entry_levels=entries,

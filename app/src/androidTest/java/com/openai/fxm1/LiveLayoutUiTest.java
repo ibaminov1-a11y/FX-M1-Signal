@@ -128,6 +128,9 @@ public class LiveLayoutUiTest {
         EventClient.poll();
         Method sync=MainActivity.class.getDeclaredMethod("syncUiFromBackgroundService");sync.setAccessible(true);
         ui(()->{try{sync.invoke(rule.getActivity());}catch(Exception e){throw new AssertionError(e);}});settle();
+        // offline() labels a lost read; it does not disable the transport. A user
+        // selection now sends immediately, so reproduce an actual unreachable Bridge.
+        EventClient.prefs().edit().putString("server_url","http://127.0.0.1:1").commit();
         EventClient.offline(new IOException("phone disconnected"));
         ui(()->{Spinner symbol=rule.getActivity().findViewById(R.id.symbolSpinner);
             for(int i=0;i<symbol.getCount();i++)if("GBP/USD".equals(symbol.getItemAtPosition(i).toString())){symbol.setSelection(i);break;}});settle();

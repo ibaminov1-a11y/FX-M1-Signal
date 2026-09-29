@@ -7,7 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from ..model import atr, pivots, ordered, TF_SECONDS
+from ..model import atr, pivots, ordered, TF_SECONDS, bar_close_time
 
 VERSION='geometry-1'
 FAMILIES=('TRIANGLE','FLAG','PENNANT','CHANNEL','RANGE','WEDGE','BROADENING',
@@ -19,14 +19,14 @@ def value(line, when):
 
 
 def causal_points(bars,tf='M5'):
-    span=TF_SECONDS[tf]
+    offsets={b.time:b.clock_offset_seconds for b in bars}
     raw=pivots(bars,2)
     # Outside bars with simultaneous H/L do not tell us intrabar ordering.
     ambiguous={p['time'] for p in raw if sum(q['time']==p['time'] for q in raw)>1}
     out=[]
     for p in raw:
         if p['time'] in ambiguous:continue
-        point=dict(p,occurred_at=p['time'],available_at=p['known_at']+span,
+        point=dict(p,occurred_at=p['time'],available_at=bar_close_time(p['known_at'],tf,offsets[p['known_at']]),
                    provisional=False,role=p['kind'])
         if out and out[-1]['kind']==point['kind']:
             if (point['price']-out[-1]['price'])*(1 if point['kind']=='H' else -1)>0:out[-1]=point
@@ -70,7 +70,7 @@ def _pole(bars,start,a,width,drift):
 
 
 def _lanes(bars,pts,a,symbol,tf):
-    out=[];now=bars[-1].time+TF_SECONDS[tf]
+    out=[];now=bar_close_time(bars[-1].time,tf,bars[-1].clock_offset_seconds)
     for count in (6,8,10):
         anchors=pts[-count:]
         hs=[p for p in anchors if p['kind']=='H'];ls=[p for p in anchors if p['kind']=='L']
@@ -158,8 +158,9 @@ def detect_patterns(bars,symbol='EUR/USD',tf='M5'):
     if len(bars)<24:return []
     ordered(bars);a=atr(bars);pts=causal_points(bars,tf)
     if len(pts)<3:return []
-    now=bars[-1].time+TF_SECONDS[tf]
+    now=bar_close_time(bars[-1].time,tf,bars[-1].clock_offset_seconds)
     patterns=_lanes(bars,pts,a,symbol,tf)+_reversals(pts,a,symbol,tf)
     # Detection at bar close only. Old shapes are not fresh trading invitations.
     patterns=[p for p in patterns if now-p['available_at']<=TF_SECONDS[tf]*8]
+    for p in patterns:p['clock_offset_seconds']=bars[-1].clock_offset_seconds
     return sorted(patterns,key=lambda p:(p['available_at'],p['quality']),reverse=True)[:8]

@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import math
 from .structure import value, causal_points
+from ..model import TF_SECONDS, bar_close_time
 
 TERMINAL={'FAILED','EXPIRED','TARGET_REACHED'}
 TITLES={
@@ -21,7 +22,7 @@ NEXT={'WATCHING':'ждём новое событие у границы','BREAK_S
 
 def _targets(p,bars,side,activation,a,rotation=False):
     if rotation:
-        opposite=value(p['upper' if side>0 else 'lower'],bars[-1].time+300)
+        opposite=value(p['upper' if side>0 else 'lower'],bar_close_time(bars[-1].time,p['timeframe'],p.get('clock_offset_seconds',0)))
         near=(activation+opposite)/2
         distinct=abs(opposite-near)>=.15*a
         return near,opposite if distinct else None,'CHANNEL_BOUNDARY','CHANNEL_BOUNDARY' if distinct else None
@@ -41,6 +42,7 @@ def _targets(p,bars,side,activation,a,rotation=False):
 
 def create_scenarios(p,bars,a,current,now):
     family=p['family'];bias=p.get('bias',0);pad=.04*a
+    span=TF_SECONDS[p['timeframe']]
     sides=(bias,) if family in ('MULTI_EXTREME','HEAD_SHOULDERS') else (1,-1)
     specs=[]
     for side in sides:
@@ -85,12 +87,12 @@ def create_scenarios(p,bars,a,current,now):
         if t1 is not None:points.append(dict(price=t1,anchor=src1,label='T1'))
         if t2 is not None:points.append(dict(price=t2,anchor=src2,label='T2'))
         for i,point in enumerate(points):
-            point.update(step=i,minutes=15*i/max(1,len(points)-1),uncertainty=.12*a*math.sqrt(i),observed=i==0,
+            point.update(step=i,minutes=(3*span/60)*i/max(1,len(points)-1),uncertainty=.12*a*math.sqrt(i),observed=i==0,
                 phase='LIVE' if i==0 else 'TRADE' if point.get('label') in ('T1','T2') else 'PREPARATION')
         out.append(dict(scenario_id=ident,scenario_version=1,pattern_id=p['pattern_id'],family=family,
             title=FAMILY_TITLES[family]+': '+TITLES[typ],type=typ,side=side,trade_side=side,terminal_bias=side,
             outside_side=outside,created_at=now,available_at=max(now,p['available_at']),updated_at=now,
-            expires_at=now+max(300,min(7200,p['measurements']['duration']*1.5)),
+            expires_at=now+max(span,min(24*span,p['measurements']['duration']*1.5)),
             status='WATCHING',stage='WATCHING',boundary=b,activation=activation,invalidation=invalidation,
             target=t2 or t1,target1=t1,target2=t2,target_source=src2 or src1,target1_source=src1,target2_source=src2,
             path=points,pattern=copy.deepcopy(p),observed_events=[],geometry_score=p['quality'],
@@ -177,7 +179,7 @@ def advance(s,q,prev,now,a,m1):
             s['break_at']=now;s['break_price']=q.bid
             _event(s,'BREAK_SEEN',q,now,'Пробой состоялся; сценарий требует возврата к границе')
         elif stage=='BREAK_SEEN':
-            if now-s['break_at']>600:_event(s,'EXPIRED',q,now,'Ретест не состоялся в отведённое окно')
+            if now-s['break_at']>2*TF_SECONDS[s['pattern']['timeframe']]:_event(s,'EXPIRED',q,now,'Ретест не состоялся в отведённое окно')
             elif abs(q.bid-boundary)<=.10*a and (q.bid-prev.bid)*side<0:
                 micro=_micro(s,m1,q,a,side)
                 if micro is not None:
@@ -236,7 +238,7 @@ def remaining_path(s,current,now=None):
     else:pts=pts[1:]
     pts.insert(0,dict(price=current,anchor='LIVE',label='LIVE',uncertainty=0,observed=True))
     for i,p in enumerate(pts):
-        p.update(step=i,minutes=15*i/max(1,len(pts)-1),
+        p.update(step=i,minutes=(3*TF_SECONDS[s['pattern']['timeframe']]/60)*i/max(1,len(pts)-1),
             phase='LIVE' if i==0 else 'TRADE' if p.get('label') in ('T1','T2') else 'PREPARATION')
     return pts
 
