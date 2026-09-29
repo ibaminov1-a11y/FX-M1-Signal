@@ -1,0 +1,15 @@
+{
+  "app/build.gradle": {"before":"0bffe6b8fe2ba6d37a690cb866059bec03bbf2ddc2967749dd554c000388700b","after":"3e1abd9d6e9506f9840b45747d7bee4da1618cdcb46b70559a5d03f5bfe2e5f7"},
+  "app/src/androidTest/java/com/openai/fxm1/EventCoreUiTest.java": {"before":"258f4706918919997a0b8d3cb089e52865dec00f4abbb1bd312ed405cfbaba38","after":"a4a41450cf091da592cb68cf5ee9e95687ce543529096bd1fc587e82489847d9"},
+  "app/src/androidTest/java/com/openai/fxm1/LiveLayoutUiTest.java": {"before":"f91dce7c42e48348dfd79da1c87193507da1b020561a57869ddb6c2d44acec24","after":"63bdf0cc733855e2ff4dde2c8f9e2fb51836adcef52fb2a5752057b37c3d0b8f"},
+  "app/src/main/java/com/openai/fxm1/MainActivity.java": {"before":"684577885c1bedf9c488a5ee2f0b327a2026df10b5f230f2862776dafdce9e10","after":"0630f4b261a53448920752ffcf6d7ffe10bab78a6a3dc13846de21bd5617be8b"},
+  "app/src/main/java/com/openai/fxm1/StableLiveTextView.java": {"before":null,"after":"7dcf43a4ecc8138fc0a0c8ce02e6276eeb318da9b64fd81d654b2a3a2fa99101"},
+  "app/src/main/res/layout/activity_main.xml": {"before":"50d77bf4b0f9453b574b3c1719f82563280b5d0fdf6a00fb904b987be21ee6ed","after":"1336ed0e4f8ef39a081ef5d178a945c4acc0d8f4641c1a597f25136e15600bb0"},
+  "docs/UPGRADE_R52.md": {"before":null,"after":"21128f10ce2b8e61c8ee0cc3b753bdefdcd08fe46b313d6d9f86541ffa1bb2a6"},
+  "mt5_bridge/event_core/__init__.py": {"before":"03ef93c05a6cef1f9cbc833c1b8b6cee91050a471bc682e034c9f71d5c5e8e2e","after":"8bebc266c0922db3cd038bd20435e2d1d45d520b80dd41c2587f05746b33fe2d"},
+  "tests/event_core/test_live_layout_contract.py": {"before":null,"after":"89990f2cb1bb697c6aa70e105aec4dc1803427feb42236f9ec0ca98e4235fec5"},
+  "tests/event_core/test_ui_fixture_contract.py": {"before":null,"after":"72a30219eb1fffc5ccd300d1fbbedee16e63c231c681fe46cead843dd1cac7ee"},
+  "tests/event_core/ui_fixture.py": {"before":"ca4fca4f8b15179010f6c2e07046a1e3626da5b665088507fb8c1d4ebfa8cb96","after":"aa0ac2f4c5dece92258df75e0b673af8764e61061defae341b755f6456c7ecaf"},
+  "tools/package_ec1.py": {"before":"cba7f66919486264fe5c238e0e699b897f6f87b7f0ab880e621f5a5a641eaecf","after":"eceb80fdfbd42b74f37472b86f7350209dcae8b720b79b62904bb6e05c72c271"},
+  "tools/run_ec1_qa.sh": {"before":"067edf246886d70ee44be75202fc4c050cba93224d9eaa93cc1c4739c42887d9","after":"c95dc8888ffc2da2d32d54671b72466a51a6209579791555a985f450a12f3561"}
+}

@@ -1,0 +1,88 @@
+name: R5.2 complete APK Bridge and live layout gate
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['tools/repair_layout52*', '.github/workflows/r52-final.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: r52-final-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Restore exact R5.1 and apply reviewed layout delta
+        run: |
+          python tools/repair_data51_apply.py
+          python tools/repair_layout52_apply.py
+          git diff --cached --check
+          test -z "$(git diff --cached --name-only -- .github/)"
+          git config user.name 'FXM1 CI'
+          git config user.email 'fxm1-ci@users.noreply.github.com'
+          git commit -m 'fix: R5.2 stable live layout, safe lifecycle, watchlist and native UTC scenarios'
+          git rev-parse HEAD > evidence/COMMIT.txt
+          git archive --format=zip HEAD -o evidence/R52_CANDIDATE_SOURCE.zip
+      - name: Full Python suite
+        run: |
+          set -o pipefail
+          python -m compileall -q mt5_bridge/event_core tests/event_core
+          PYTHONPATH=mt5_bridge:tests/event_core python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - name: Require existing APK signing identity
+        run: |
+          test -s "$HOME/.fxm1-signing/ec1-demo.jks"
+          chmod 600 "$HOME/.fxm1-signing/ec1-demo.jks"
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          sudo chmod 666 /dev/kvm
+      - name: Complete Android interaction and layout suite
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_ec1_qa.sh
+      - name: Verify complete test results, signature and package identity
+        run: |
+          set -euo pipefail
+          python tools/repair_layout52_verify.py
+          python tools/repair_layout52_apply.py --verify
+          git diff --exit-code
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$signer" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | tee evidence/apk-signature.txt
+          grep -q '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885' evidence/apk-signature.txt
+          python tools/package_ec1.py
+          python tools/repair_layout52_verify.py --package
+          python tools/package_ec1.py
+          python tools/repair_layout52_verify.py --package
+          git push origin HEAD:feature/r4-compute-rebuild
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FXM1-R52-VERIFICATION-${{ github.run_number }}
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: error
