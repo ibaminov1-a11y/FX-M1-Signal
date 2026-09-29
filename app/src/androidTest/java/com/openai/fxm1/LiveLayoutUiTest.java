@@ -78,7 +78,11 @@ public class LiveLayoutUiTest {
         assertTrue(d.wait(Until.hasObject(By.textContains("END OF FULL DETAILS")),5000));
         ui(()->((TextView)rule.getActivity().findViewById(R.id.levelsText)).setText("NEW LIVE DATA"));settle();
         assertNotNull("Reading snapshot must not be replaced by incoming ticks",d.findObject(By.textContains("END OF FULL DETAILS")));
-        shot("r52-full-details");d.pressBack();
+        UiObject2 close=d.findObject(By.res("android","button1"));
+        assertNotNull("Snapshot close button must remain on screen",close);
+        android.graphics.Rect button=close.getVisibleBounds();
+        assertTrue("Snapshot close button must not be pushed below the screen",button.height()>=32*context.getResources().getDisplayMetrics().density && button.top>=0 && button.bottom<=d.getDisplayHeight());
+        shot("r52-full-details");close.click();
         ui(()->assertEquals("NEW LIVE DATA",((TextView)rule.getActivity().findViewById(R.id.levelsText)).getText().toString()));
     }
     @Test public void lateServerCallbackAfterDestroyIsIgnored()throws Exception {

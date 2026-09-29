@@ -7,7 +7,7 @@ android {
         applicationId "com.openai.fxm1.ec1"
         minSdk 26
         targetSdk 35
-        versionCode 920
+        versionCode 921
         versionName "10.9-EC1-R5.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -7,6 +7,8 @@ import android.content.ContextWrapper;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.widget.ScrollView;
+import android.widget.LinearLayout;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 /** A fixed-size live preview. The full value remains available as a reading snapshot. */
@@ -48,15 +50,22 @@ public final class StableLiveTextView extends TextView {
         text.setTag("stable-live-detail-text");
         text.setTextSize(15);
         text.setTextColor(0xfff4f1ff);
-        text.setText(snapshot);
+        text.setText("Снимок на момент открытия. LIVE продолжает обновляться на основном экране.\n\n" + snapshot);
         text.setTextIsSelectable(true);
         int padding = Math.round(16 * getDensity(activity));
         text.setPadding(padding, padding, padding, padding);
         scroll.setBackgroundColor(0xff111227);
         scroll.addView(text);
+        // Constrain the reading viewport, not the content. Reserve room for title and close.
+        android.util.DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+        int reserve = Math.round(220 * dm.density * activity.getResources().getConfiguration().fontScale);
+        int viewport = Math.max(Math.round(80 * dm.density),
+            Math.min(Math.round(dm.heightPixels * 0.60f), dm.heightPixels - reserve));
+        LinearLayout body = new LinearLayout(activity);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, viewport));
         new AlertDialog.Builder(activity).setTitle(title)
-            .setMessage("Снимок на момент открытия. LIVE продолжает обновляться на основном экране.")
-            .setView(scroll).setPositiveButton("ЗАКРЫТЬ", null).show();
+            .setView(body).setPositiveButton("ЗАКРЫТЬ", null).show();
     }
 
     private static float getDensity(Context context) { return context.getResources().getDisplayMetrics().density; }

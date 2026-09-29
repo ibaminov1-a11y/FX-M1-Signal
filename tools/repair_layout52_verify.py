@@ -29,7 +29,7 @@ meta=json.loads((e/'package/PROVENANCE.json').read_text());assert meta['commit']
 apk=e/'package/FXM1_10_9_EVENT_CORE_DEMO.apk'
 assert hashlib.sha256(apk.read_bytes()).hexdigest()==meta['apk_sha256']
 assert meta['revision']=='R5.2-stable-live-ui-native-utc'
-assert 'versionCode 920' in (root/'app/build.gradle').read_text()
+assert 'versionCode 921' in (root/'app/build.gradle').read_text()
 with zipfile.ZipFile(e/'FXM1_EVENT_CORE_SOURCE.zip') as z:
     for f in (e/'package/Bridge/event_core').rglob('*.py'):
         source='mt5_bridge/event_core/'+str(f.relative_to(e/'package/Bridge/event_core'))
