@@ -236,7 +236,11 @@ public class MainActivity extends Activity {
             if (savedTfPos >= 2) savedTfPos += 1;
             prefs.edit().putInt("entry_tf_pos", savedTfPos).putBoolean("v800_tf_migrated", true).apply();
         }
-        entryTimeframeSpinner.setSelection(Math.max(0, Math.min(savedTfPos, 8)));
+        // Scenario V2 consumes M5 candles. Do not offer frames that the Bridge ignores.
+        prefs.edit().putInt("entry_tf_pos",1).apply();
+        entryTimeframeSpinner.setSelection(1);
+        entryTimeframeSpinner.setEnabled(false);
+        entryTimeframeSpinner.setContentDescription("M5 · Scenario V2");
         signalModeSpinner.setSelection(Math.max(0,Math.min(1,prefs.getInt("signal_mode_pos",0))));
         apiKeyInput.setText(prefs.getString("ec_token", ""));
         serverUrlInput.setText(stripServerScheme(prefs.getString("server_url", "")));
@@ -300,6 +304,7 @@ public class MainActivity extends Activity {
         riskSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if(syncingScalpTimeframe||position==prefs.getInt("risk_pos",0))return;
                 prefs.edit().putInt("risk_pos", position).putString("risk_label", String.valueOf(riskSpinner.getSelectedItem())).apply();
                 if(monitoring)sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
             }
@@ -314,6 +319,7 @@ public class MainActivity extends Activity {
                     if (!addingCustomSymbol) showAddSymbolDialog();
                     return;
                 }
+                if(syncingScalpTimeframe||selected.equals(prefs.getString("selected_symbol","EUR/USD")))return;
                 prefs.edit().putInt("symbol_pos", position).putString("selected_symbol", selected).apply();
                 lastSentSignal.clear();
                 lastAlertSignal.clear();
@@ -328,6 +334,7 @@ public class MainActivity extends Activity {
 
         entryTimeframeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
             public void onItemSelected(AdapterView<?> parent,View view,int position,long id){
+                if(syncingScalpTimeframe||position==prefs.getInt("entry_tf_pos",1))return;
                 prefs.edit().putInt("entry_tf_pos",position).apply();
                 if(monitoring)sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
             }
@@ -335,7 +342,7 @@ public class MainActivity extends Activity {
         });
         signalModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
             public void onItemSelected(AdapterView<?> parent,View view,int position,long id){
-                if(syncingScalpTimeframe)return;
+                if(syncingScalpTimeframe||position==prefs.getInt("signal_mode_pos",0))return;
                 prefs.edit().putInt("signal_mode_pos",position).apply();
                 if(monitoring)sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
             }
@@ -606,8 +613,7 @@ public class MainActivity extends Activity {
     }
 
     private String targetTradeMode() {
-        String type=getSharedPreferences("fxm1",MODE_PRIVATE).getString("mt5_account_type_snapshot","UNKNOWN").toUpperCase(Locale.US);
-        return "REAL".equals(type)?"REAL":"DEMO";
+        return EventClient.accountMode();
     }
 
     private boolean currentAccountAllowedForAuto() {
@@ -659,11 +665,13 @@ public class MainActivity extends Activity {
         JSONObject authoritativeState=EventClient.state(),authoritativeCfg=authoritativeState.optJSONObject("config");
         boolean profileLocked=authoritativeState.optJSONObject("campaign")!=null||authoritativeState.optBoolean("auto",false);
         boolean profileEditable=!profileLocked;
-        for(Spinner control:new Spinner[]{symbolSpinner,entryTimeframeSpinner,signalModeSpinner,riskSpinner})if(control!=null)control.setEnabled(profileEditable);
+        for(Spinner control:new Spinner[]{symbolSpinner,signalModeSpinner,riskSpinner})if(control!=null)control.setEnabled(profileEditable);
+        if(entryTimeframeSpinner!=null)entryTimeframeSpinner.setEnabled(false);
         if(maxPositionsSpinner!=null)maxPositionsSpinner.setEnabled(true);
         if(profileLocked&&authoritativeCfg!=null){
             syncingScalpTimeframe=true;
             if(signalModeSpinner!=null)signalModeSpinner.setSelection("SCALP".equalsIgnoreCase(authoritativeCfg.optString("mode","NORMAL"))?1:0);
+            if(riskSpinner!=null)riskSpinner.setSelection(p.getInt("risk_pos",0));
             if(entryTimeframeSpinner!=null){
                 String[] t={"M1","M5","M10","M15","H1","H4","D1","W1","MN1"};
                 String remoteTf=authoritativeCfg.optString("timeframe","M5");
@@ -873,6 +881,7 @@ public class MainActivity extends Activity {
 
     private void executeEmergencyStop() {
         getSharedPreferences("fxm1",MODE_PRIVATE).edit().putBoolean("v108_emergency_latched",true)
+            .putBoolean("ec_emergency_pending",true)
             .putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).commit();
         sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY_CONFIRMED);
         addJournal("Emergency: запрет новых входов сохранён; закрытие проверяется по MT5");
@@ -1394,8 +1403,9 @@ public class MainActivity extends Activity {
 
     private void syncUiFromBackgroundService() {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        updateMarketStatusUi();
+        restoreTradingSnapshotFromPrefs();
         if (p.getBoolean("server_verified", false)) {
-            restoreTradingSnapshotFromPrefs();
             long nowMoney = System.currentTimeMillis();
             if (nowMoney - lastMoneyRefreshMs >= 5000L) {
                 lastMoneyRefreshMs = nowMoney;
@@ -1490,10 +1500,8 @@ public class MainActivity extends Activity {
         if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));
         refreshSmartUi();
 
-        if (!Double.isNaN(entry)) {
-            lastApiPrice = entry;
-            updatePriceComparison();
-        }
+        lastApiPrice = entry;
+        updatePriceComparison();
     }
 
     private void scheduleNext(long delayMs) {
@@ -2503,7 +2511,7 @@ public class MainActivity extends Activity {
     }
 
     private String fmt(double x) {
-        if (x == 0) return "—";
+        if (!Double.isFinite(x) || x == 0) return "—";
 
         if (x >= 100) {
             return String.format(

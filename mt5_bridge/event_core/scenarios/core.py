@@ -10,6 +10,7 @@ import hashlib
 import json
 from ..model import Config, Decision, atr, ordered, pivots, direction, swing_labels, TF_SECONDS
 from .structure import detect_patterns, value, FAMILIES
+from .continuation import Continuation
 from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
 
 
@@ -22,6 +23,7 @@ class ScenarioCore:
         self.known=set(saved.get('known',[]));self.consumed=set(saved.get('consumed',[]))
         self.previous_quote=None;self.frame=None;self.snapshots={};self.archive_key=None
         self.pending_snapshots=[];self.events=[];self.last_forecast={}
+        self.continuation=Continuation()
         # Observation evidence is not an executable order after process restart.
         for s in self.scenarios.values():
             s['entry_ready']=False
@@ -34,6 +36,7 @@ class ScenarioCore:
         self.suspend()
     def suspend(self):
         self.previous_quote=None
+        self.continuation.reset()
         for s in self.scenarios.values():
             s['entry_ready']=False
             if s['status'] not in TERMINAL and not s.get('sent') and s['stage']!='WATCHING':
@@ -73,7 +76,7 @@ class ScenarioCore:
             selected.append(s)
             if len(selected)==4:break
         return selected,unique
-    def evaluate(self,bars,m1,m15,h1,live_bar,q,now,campaign_side=0):
+    def evaluate(self,bars,m1,m15,h1,live_bar,q,now,campaign_side=0,campaign=None):
         q.validate(now);ordered(bars)
         if self.config.timeframe!='M5' or len(bars)<24 or len(m1)<2 or live_bar is None:
             return Decision(phase='DATA_BLOCK',reason='Scenario V2: ожидаем закрытые M1/M5 и LIVE',path='SCENARIO_V2')
@@ -99,6 +102,12 @@ class ScenarioCore:
                 self.events.append(dict(scenario_id=s['scenario_id'],type=s['type'],side=s['side'],
                     status=s['status'],stage=s['stage'],reason=s['reason'],time=now))
         self.previous_quote=q
+        source=self.scenarios.get(campaign.get('scenario_id')) if campaign else None
+        addition=self.continuation.observe(campaign,source,q,now,a,self.config.mode)
+        if addition:
+            self.scenarios[addition['scenario_id']]=addition;self.known.add(addition['scenario_id'])
+            self.events.append(dict(scenario_id=addition['scenario_id'],type=addition['type'],side=addition['side'],
+                status='CONFIRMED',stage='CONFIRMED',reason=addition['reason'],time=now))
         active=[s for s in self.scenarios.values() if s['status'] not in TERMINAL]
         selected,ranked=self._rank(active,m15,h1,now,q,a)
         tied=len(selected)>1 and int(selected[0]['quality_score']+.5)==int(selected[1]['quality_score']+.5)
@@ -125,6 +134,7 @@ class ScenarioCore:
             primary_scenario_id=routes[0]['scenario_id'] if routes and not tied else None,
             history_clock='UTC_NATIVE_R51',boundary_asof=price_time,
             confidence=routes[0]['model_weight'] if routes else 0.,live_price=q.bid,data_asof=q.time_msc/1000,
+            addition=self.continuation.status() if campaign else None,
             snapshot_id=snapshot,support=support,resistance=resistance,entry_levels=entries,
             scenarios=routes,selection=[s['scenario_id'] for s in selected],candidate_count=len(ranked),
             model_weight_kind='UNCALIBRATED_SCORE',path_time_kind='EVENT_STAGES_NOT_ETA',
@@ -152,9 +162,11 @@ class ScenarioCore:
             # A high score never waives a fresh spread/no-chase/risk check in Engine.
             forecast['entry_scenario_id']=s['scenario_id'];forecast['entry_scenario_version']=s['scenario_version']
             forecast['entry_type']=s['type']
+            forecast['entry_target1']=s.get('target1')
             levels=({'kind':'trigger','price':trigger},{'kind':'invalidation','price':stop})
             return Decision('BUY' if side>0 else 'SELL','ENTRY_READY',s['title']+' — события подтверждены',
                 s['event_id'],side,stop,trigger,stop,a,q.time_msc,levels,path='SCENARIO_V2',
                 structure=swing_labels(bars),forecast=forecast,entry_class='CONFIRMED')
         reason=(('Равнозначные гипотезы; ' if tied else '')+routes[0]['title']+'; '+routes[0]['next_event']) if routes else forecast['reason']
+        if campaign:reason=self.continuation.reason+'; '+reason
         return Decision(reason=reason,atr=a,path='SCENARIO_V2',structure=swing_labels(bars),forecast=forecast)

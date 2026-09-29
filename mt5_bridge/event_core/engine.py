@@ -80,6 +80,15 @@ class Engine:
     def market_scope(self):
         return (self.account_key or 'UNBOUND')+'|'+symbol_key(self.config.symbol)
 
+    def _evaluate_compute(self,now):
+        extra={}
+        if self.config.engine_mode=='SCENARIO_V2':
+            extra['campaign']=self.campaign if (self.auto and not self.paused and not self.emergency
+                and not self.recovery and not self.exit_pending and not self.pending_config
+                and self.config.dynamic_adds and self._owned()) else None
+        return self.compute.evaluate(self.bars,self.m1,self.m15,self.h1,self.live_bar,self.quote,now,
+            self.campaign['side'] if self.campaign else 0,**extra)
+
     def _archive_scenarios(self,now):
         if self.config.engine_mode!='SCENARIO_V2':return
         for snapshot in self.compute.pending_snapshots:
@@ -586,9 +595,7 @@ class Engine:
                 if not self.market_errors and self.quote_ready:
                     try:
                         if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):
-                            compute_decision=self.compute.evaluate(
-                                self.bars,self.m1,self.m15,self.h1,self.live_bar,self.quote,now,
-                                self.campaign['side'] if self.campaign else 0)
+                            compute_decision=self._evaluate_compute(now)
                             self.forecast=copy.deepcopy(compute_decision.forecast)
                             self._archive_scenarios(now)
                         else:
@@ -629,9 +636,7 @@ class Engine:
                     raise Blocked('; '.join(self.market_errors))
                 q=self.quote;q.validate(now)
                 if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):
-                    d=compute_decision if compute_decision is not None else self.compute.evaluate(
-                        self.bars,self.m1,self.m15,self.h1,self.live_bar,q,now,
-                        self.campaign['side'] if self.campaign else 0)
+                    d=compute_decision if compute_decision is not None else self._evaluate_compute(now)
                     self.forecast=copy.deepcopy(d.forecast)
                     if self.campaign and d.signal in ('BUY','SELL') and d.side==self.campaign['side']:
                         d=replace(d,entry_class='CONFIRMED')
@@ -691,9 +696,10 @@ class Engine:
                         if int(self.forecast.get('side',0) or 0) else 'Нет нового подтверждённого входа; ордер не отправлен')
                 else:
                     try:self._entry(d,now)
-                    finally:
-                        self._consume_event(d.event_id);self.save()
-                if d.event_id:self._consume_event(d.event_id);self.save()
+                    except Blocked as exc:
+                        self.store.event('ENTRY_BLOCKED',dict(event_id=d.event_id,reason=str(exc),
+                            addition=bool(self.campaign),mode=self.config.mode),now)
+                        raise
             except Exception as e:
                 self._cancel_reversal('Ошибка проверки данных/исполнения: '+str(e),now)
                 self._suspend_trigger(now)
@@ -738,6 +744,10 @@ class Engine:
         if self.config.engine_mode in ('COMPUTE_V1','SCENARIO_V2'):no_chase=min(no_chase,self.compute.MAX_CHASE_ATR)
         if (q.bid-d.trigger)*d.side<=0 or abs(q.bid-d.trigger)>no_chase*d.atr:
             raise Blocked('Котировка уже вышла из допустимой зоны входа')
+        if self.config.engine_mode=='SCENARIO_V2' and d.forecast.get('entry_target1') is not None:
+            target=number(d.forecast['entry_target1'],'scenario target',positive=True)
+            if (target-(q.ask if d.side>0 else q.bid))*d.side<=0:
+                raise Blocked('Исполнимая цена уже за ближайшей целью сценария; вход отменён')
         exec_cfg=self._execution_config()
         p=plan_order(self.broker,exec_cfg,account,self.info,q,d,self._owned(),self.campaign,now)
         # Broker preflight calls may block. Recheck wall-clock freshness/expiry,

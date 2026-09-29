@@ -82,7 +82,12 @@ public final class EventClient {
         JSONObject data=body==null?new JSONObject():new JSONObject(body.toString());
         if("enable".equals(cmd)&&"ENABLE_DEMO".equals(data.optString("confirmation")))
             data.put("allow_wait",true).put("accept_pending_profile",true).put("config",config());
-        return http("POST",base()+"/ec/command/"+cmd,envelope(data));
+        JSONObject result=http("POST",base()+"/ec/command/"+cmd,envelope(data));
+        // Clear the phone latch only after Bridge has accepted explicit reconciliation.
+        // Settings calls this method directly, so cleanup belongs at the transport boundary.
+        if("reset".equals(cmd))prefs().edit().putBoolean("v108_emergency_latched",false)
+            .putBoolean("ec_emergency_pending",false).commit();
+        return result;
     }
     public static String accountMode(){
         String target=prefs().getString("target_trade_mode","DEMO").toUpperCase(Locale.US);
@@ -99,7 +104,7 @@ public final class EventClient {
         String fee="REAL".equals(accountMode)?p.getString(feePrefKey(),"").trim():"0";
         double lot=TradeSettings.parseVolume(p.getString("ec_lot_cap","0.01"),null);
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
-            .put("timeframe","M5").put("mode","NORMAL").put("engine_mode","SCENARIO_V2").put("volume_mode","FIXED")
+            .put("timeframe","M5").put("mode",mode()).put("engine_mode","SCENARIO_V2").put("volume_mode","FIXED")
             .put("account_mode",accountMode).put("risk_pct",risk)
             .put("optional_position_limit",0)
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
@@ -134,9 +139,13 @@ public final class EventClient {
     public static void configure() throws Exception { configure(false); }
     public static void configureUserSelection() throws Exception { configure(true); }
     private static void configure(boolean explicit) throws Exception {
-        JSONObject desired=config();String fingerprint=desired.toString();
+        JSONObject desired=config();
         JSONObject current=http("GET",base()+"/ec/state",null);
         if(!PROTOCOL.equals(current.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
+        if(current.optJSONObject("campaign")!=null||current.optBoolean("auto",false)){
+            cache(current);desired=config();
+        }
+        String fingerprint=desired.toString();
         if(configMatches(current.optJSONObject("config"),desired)){
             cache(current);prefs().edit().putString("ec_config_sent",fingerprint).apply();return;
         }
@@ -149,6 +158,7 @@ public final class EventClient {
         if(PROTOCOL.equals(refreshed.optString("protocol")))cache(refreshed);
     }
     public static JSONObject poll() throws Exception {
+        prefs().edit().putLong("state_last_attempt_ms",System.currentTimeMillis()).apply();
         if(prefs().getBoolean("ec_mode_pause_pending",false)){
             command("pause",new JSONObject());prefs().edit().putBoolean("ec_mode_pause_pending",false).apply();
         }
@@ -162,7 +172,7 @@ public final class EventClient {
         if(a==null)a=new JSONObject();if(d==null)d=new JSONObject();if(cfg==null)cfg=new JSONObject();if(rs==null)rs=new JSONObject();if(fc==null)fc=new JSONObject();
         long now=System.currentTimeMillis();boolean connected=!a.isNull("balance")&&a.has("balance")&&s.optDouble("account_age",999)<10;
         boolean latch=s.optBoolean("emergency",false)||p.getBoolean("v108_emergency_latched",false);
-        boolean auto=s.optBoolean("auto",false)&&!latch;
+        boolean auto=s.optBoolean("auto",false)&&!s.optBoolean("paused",true)&&!latch;
         String sig=d.optString("signal","WAIT"),symbol=cfg.optString("symbol","EUR/USD"),tf=cfg.optString("timeframe","M5");
         String phase=d.optString("phase","SEARCH"),path=d.optString("path","SEARCH");String why=d.optString("reason","Ждём MT5");
         JSONObject campaign=s.optJSONObject("campaign");
@@ -229,6 +239,15 @@ public final class EventClient {
             .putString("position_manager_status","Bridge EventCore · "+(campaign==null?"ожидание кампании":"сопровождение "+campaignSide+" · "+cfg.optString("mode")))
             .putString("bg_status",s.optString("execution",why));
         if(s.optBoolean("emergency",false))e.putBoolean("v108_emergency_latched",true);
+        // A running Bridge profile is authoritative even when another phone enabled it.
+        // Persist it before the service's needsConfigure() check, preventing a stale local
+        // mode from becoming a deferred profile change when the campaign finishes.
+        if(s.optJSONObject("campaign")!=null||s.optBoolean("auto",false)){
+            e.putInt("signal_mode_pos","SCALP".equalsIgnoreCase(cfg.optString("mode"))?1:0)
+                .putString("selected_symbol",symbol);
+            double riskPct=cfg.optDouble("risk_pct",.25);
+            e.putInt("risk_pos",riskPct>=1?2:riskPct>=.5?1:0);
+        }
         if(s.optBoolean("history_ok",false))e.putString("money_realized_snapshot","Сегодня: "+moneySummary(s.optJSONObject("today"))+"\nВсего: "+moneySummary(s.optJSONObject("all"))).putString("money_refresh_error","");
         else e.putString("money_refresh_error",s.optString("history_error","История не обновлена"));
         String historyKey=phase+"|"+sig+"|"+why;

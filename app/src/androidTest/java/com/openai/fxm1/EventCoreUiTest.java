@@ -228,18 +228,18 @@ public class EventCoreUiTest {
   assertEquals("NO EDGE must not draw a directional future path",0,directional);
   b[0].recycle();
  }
- @Test public void configureRepairsBridgeToComputeCoreDefaultsInsteadOfPhoneLegacyMode()throws Exception{
+ @Test public void configurePreservesSelectedScalpWhileUpgradingScenarioEngine()throws Exception{
   p.edit().putInt("signal_mode_pos",1).commit();
   EventClient.configure();
   JSONObject configured=EventClient.poll().getJSONObject("config");
-  assertEquals("NORMAL",configured.optString("mode"));
+  assertEquals("SCALP",configured.optString("mode"));
   assertEquals("SCENARIO_V2",configured.optString("engine_mode"));
   EventClient.http("POST",EventClient.base()+"/test/reset",new JSONObject());
   JSONObject reset=EventClient.poll().getJSONObject("config");
   assertEquals("NORMAL",reset.optString("mode"));
   EventClient.configure();
   JSONObject repaired=EventClient.poll().getJSONObject("config");
-  assertEquals("NORMAL",repaired.optString("mode"));
+  assertEquals("SCALP",repaired.optString("mode"));
   assertEquals("SCENARIO_V2",repaired.optString("engine_mode"));
  }
  @Test public void openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits()throws Exception{

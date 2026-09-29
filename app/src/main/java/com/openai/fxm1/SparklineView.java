@@ -35,9 +35,9 @@ public class SparklineView extends View {
     public void goLive(){viewport.follow();updateDescription();invalidate();}
     public void zoomHistory(double factor){viewport.zoom(factor);invalidate();}
     public void prependHistory(JSONArray older){viewport.merge(older);invalidate();}
-    public void setArchive(boolean value){archive=value;invalidate();}
+    public void setArchive(boolean value){archive=value;updateDescription();invalidate();}
     public JSONArray scenarioChoices(){JSONArray r=forecast.optJSONArray("scenarios");return r==null?new JSONArray():r;}
-    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;invalidate();}
+    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;updateDescription();invalidate();}
     private static String key(JSONObject s,int i){return s.optString("scenario_id",s.optString("name",""+i));}
     public JSONObject displayedForecast(){
         try{
@@ -52,7 +52,7 @@ public class SparklineView extends View {
             return f;
         }catch(Exception e){return new JSONObject();}
     }
-    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(forecast));}
+    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(displayedForecast()));}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p){
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
         setMarket(b,l,p,d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
@@ -92,7 +92,10 @@ public class SparklineView extends View {
     private static String priceText(double value){return String.format(Locale.US,"%.5f",value);}
     public static String mapDescription(JSONObject f){
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
+        if(f.optBoolean("history_only"))return "История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время условно.");
+        text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");
+        text.append(" Серый пунктир — подготовка до подтверждения входа. Цвет — условный путь к целям после подтверждения, не факт сделки. Цвет обозначает ветку, а не наклон отрезка. Старые ветки без этапов сохраняют исходный цвет.");
         if("TIED".equals(f.optString("selection_status")))text.append(" Равнозначные гипотезы — предпочтение не определено.");
         if(!hasScenarioMap(f))text.append(" WAIT — нет ясного сценария.");
         JSONObject entries=f.optJSONObject("entry_levels");
@@ -105,6 +108,7 @@ public class SparklineView extends View {
         if(scenarios!=null)for(int i=0;i<scenarios.length();i++){
             JSONObject v=scenarios.optJSONObject(i);if(v==null)continue;
             text.append(" ").append(ScenarioUi.role(v,i)).append(" ").append(v.optInt("side")>0?"BUY":v.optInt("side")<0?"SELL":"WAIT");
+            if(!v.optString("stage").isEmpty())text.append("; этап: ").append(ScenarioUi.stage(v.optString("stage")));
             double t1=v.optDouble("target1",v.optDouble("target",Double.NaN)),t2=v.optDouble("target2",Double.NaN);
             if(Double.isFinite(t1)&&t1>0)text.append(" T1 ").append(priceText(t1));
             if(Double.isFinite(t2)&&t2>0)text.append(" T2 ").append(priceText(t2));

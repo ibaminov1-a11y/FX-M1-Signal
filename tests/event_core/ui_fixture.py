@@ -81,7 +81,8 @@ def prime_impulse(side):
         return state
 
 @app.post('/test/reset')
-def fixture_reset():reset();return jsonify(ok=True)
+def fixture_reset():
+    reset();r53_commands.clear();return jsonify(ok=True)
 
 @app.post('/test/r3/impulse')
 def fixture_r3_impulse():
@@ -143,6 +144,38 @@ def r5_market():
         prime_r5_market(str(data.get('family','TRIANGLE')))
         engine.step()
         return jsonify(ok=True,forecast=engine.forecast)
+
+# Test-only transport audit and deterministic financial data; never loaded by the shipped Bridge.
+r53_commands=[]
+@app.before_request
+def audit_commands():
+    if request.path.startswith('/ec/command/'):
+        r53_commands.append(dict(command=request.path.rsplit('/',1)[-1],body=request.get_json(silent=True) or {}))
+
+@app.get('/test/r53-command-audit')
+def r53_command_audit():return jsonify(commands=r53_commands)
+
+@app.post('/test/r53-state')
+def r53_state():
+    from event_core.risk import Plan
+    data=request.get_json(silent=True) or {}
+    with engine.lock:
+        if 'bid' in data:broker.bid=float(data['bid']);broker.ask=broker.bid+.00001
+        if 'quote_age' in data:broker.quote_age=float(data['quote_age'])
+        if 'history_failure' in data:broker.history_failure=bool(data['history_failure'])
+        if data.get('completed_trade'):
+            p=Plan(1,'EURUSD',.01,broker.bid-.0003,broker.bid-.001,broker.bid-.0003,broker.bid-.001,.7,.7,.1,'fixture-money')
+            broker.send(p,'manual fixture closed')
+            position=broker._positions[-1];position['magic']=0;broker.deals[-1]['magic']=0
+            broker.close_position(position)
+        if data.get('manual_position') and not broker._positions:
+            p=Plan(1,'EURUSD',.01,broker.bid-.0001,broker.bid-.001,broker.bid-.0001,broker.bid-.001,.9,.9,.1,'fixture-manual')
+            broker.send(p,'manual fixture open')
+            broker._positions[-1]['magic']=0;broker.deals[-1]['magic']=0
+        if 'balance' in data:broker.balance=float(data['balance'])
+        engine.history_time=0;engine.last_market_attempt=-1
+        result=engine.step()
+        return jsonify(ok=True,state=result)
 
 # Use normal state endpoint and step actual engine periodically.
 if __name__=='__main__':

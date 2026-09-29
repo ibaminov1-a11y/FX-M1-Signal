@@ -59,7 +59,9 @@ public class MonitoringService extends Service {
         String state=emergency?"EMERGENCY":s.optBoolean("auto",false)&&!s.optBoolean("paused",true)?"AUTO ON":"AUTO OFF";
         String confidence="";
         if(fc!=null&&fc.optInt("side",0)!=0)confidence=" · "+(fc.optInt("side")>0?"BUY ":"SELL ")+"вес "+Math.round(fc.optDouble("confidence",0)*100);
-        String core=symbol+" · M5 · "+engine+" · "+signal+confidence;
+        String timeframe=cfg==null?"M5":cfg.optString("timeframe","M5");
+        String mode=cfg==null?EventClient.mode():cfg.optString("mode","NORMAL");
+        String core=symbol+" · "+timeframe+" · "+mode+" · "+engine+" · "+signal+confidence;
         String detail=prefs().getString("ec_message",s.optString("execution","Подключение к Bridge"));
         PendingIntent open=PendingIntent.getActivity(this,100,new Intent(this,MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification.BigTextStyle style=new Notification.BigTextStyle().bigText(core+"\n"+detail);
@@ -72,5 +74,5 @@ public class MonitoringService extends Service {
         catch(Exception e){prefs().edit().putString("ec_message","Уведомление: "+e.getMessage()).apply();}
     }
     @Override public IBinder onBind(Intent i){return null;}
-    @Override public void onDestroy(){running=false;handler.removeCallbacksAndMessages(null);io.shutdown();super.onDestroy();}
+    @Override public void onDestroy(){running=false;prefs().edit().putBoolean("bg_running",false).apply();handler.removeCallbacksAndMessages(null);io.shutdown();super.onDestroy();}
 }

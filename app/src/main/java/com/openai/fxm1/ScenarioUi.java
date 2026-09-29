@@ -44,10 +44,12 @@ public final class ScenarioUi {
         int direction=f.optInt("side");return direction==0?"WAIT · нет ясного сценария":"ОСНОВНОЙ "+(direction>0?"BUY":"SELL")+" · вес модели "+Math.round(f.optDouble("confidence")*100)+"/100";
     }
     public static String levels(JSONObject state){
-        JSONObject f=state.optJSONObject("forecast");if(f==null||f.optInt("map_version")<2)return "";
-        StringBuilder out=new StringBuilder();JSONArray rows=f.optJSONArray("scenarios");boolean v3=f.optInt("map_version")>=3;
-        if(!v3){JSONObject lv=f.optJSONObject("entry_levels");for(String side:new String[]{"BUY","SELL"}){
-            JSONObject l=lv==null?null:lv.optJSONObject(side);if(l!=null)out.append(side).append(side.equals("BUY")?" выше ":" ниже ").append(px(l.optDouble("trigger"))).append("\n");}}
+        JSONObject f=state.optJSONObject("forecast");boolean valid=f!=null&&f.optInt("map_version")>=2;
+        if(!valid&&state.optJSONObject("campaign")==null)return "";
+        StringBuilder out=new StringBuilder();JSONArray rows=valid?f.optJSONArray("scenarios"):null;boolean v3=valid&&f.optInt("map_version")>=3;
+        if(valid)out.append(f.optBoolean("archive")?"ГИПОТЕЗЫ ИЗ СНИМКА · НЕ LIVE":f.optBoolean("stale")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · ДАННЫЕ УСТАРЕЛИ":"ТЕКУЩИЕ ГИПОТЕЗЫ · LIVE");
+        if(valid&&!v3){JSONObject lv=f.optJSONObject("entry_levels");for(String side:new String[]{"BUY","SELL"}){
+            JSONObject l=lv==null?null:lv.optJSONObject(side);if(l!=null)out.append("\n").append(side).append(side.equals("BUY")?" выше ":" ниже ").append(px(l.optDouble("trigger")));}}
         if(rows!=null)for(int i=0;i<Math.min(v3?4:2,rows.length());i++){
             JSONObject r=rows.optJSONObject(i);if(r==null)continue;
             if(out.length()>0)out.append("\n\n");out.append(role(r,i)).append(" · ").append(side(r));
@@ -65,11 +67,43 @@ public final class ScenarioUi {
             if(v3&&r.optInt("side")!=0)out.append("\nЦель: ").append(source(r.optString("target1_source")));
         }
         String campaign=EventClient.campaignSummary(state);if(!campaign.isEmpty())out.append("\n\n").append(campaign);
+        appendEntryScenario(out,state.optJSONObject("campaign"));
         if("RECONCILING".equals(state.optString("campaign_state")))out.append("\n\nПозиций MT5 нет. Завершается сверка прежней кампании.");
         JSONObject cfg=state.optJSONObject("config"),next=state.optJSONObject("pending_config");
         if(cfg!=null)out.append("\n\nЛот в Bridge: ").append(cfg.optDouble("lot_cap")).append(" · ").append(cfg.optString("volume_mode","RISK_CAP"));
         if(next!=null)out.append("\nСледующая кампания: ").append(next.optDouble("lot_cap")).append(" lot (после сверки текущей)");
         return out.toString();
+    }
+    private static String recorded(JSONObject source,String key){
+        return source==null||source.isNull(key)?"":source.optString(key,"");
+    }
+    private static void appendEntryScenario(StringBuilder out,JSONObject campaign){
+        if(campaign==null)return;
+        JSONObject frozen=campaign.optJSONObject("forecast_at_entry");
+        String id=recorded(campaign,"scenario_id"),version=recorded(campaign,"scenario_version"),snapshot=recorded(campaign,"snapshot_id");
+        if(id.isEmpty())id=recorded(frozen,"entry_scenario_id");
+        if(version.isEmpty())version=recorded(frozen,"entry_scenario_version");
+        if(snapshot.isEmpty())snapshot=recorded(frozen,"snapshot_id");
+        if(out.length()>0)out.append("\n\n");
+        out.append("СЦЕНАРИЙ ВХОДА · СОХРАНЁННЫЙ")
+            .append("\nID: ").append(id.isEmpty()?"не записан":id)
+            .append("\nВерсия: ").append(version.isEmpty()?"не записана":version)
+            .append("\nСнимок: ").append(snapshot.isEmpty()?"не записан":snapshot);
+        JSONObject entry=null;JSONArray rows=frozen==null?null:frozen.optJSONArray("scenarios");
+        if(!id.isEmpty()&&rows!=null)for(int i=0;i<rows.length();i++){
+            JSONObject row=rows.optJSONObject(i);if(row==null||!id.equals(recorded(row,"scenario_id")))continue;
+            String rowVersion=recorded(row,"scenario_version");
+            if(!version.isEmpty()&&!rowVersion.isEmpty()&&!version.equals(rowVersion))continue;
+            entry=row;break;
+        }
+        if(entry==null){out.append("\nИсходная карта входа недоступна; текущие гипотезы её не заменяют.");return;}
+        out.append("\n").append(side(entry)).append(" · ").append(entry.optString("title",entry.optString("type")))
+            .append("\nЭтап при входе: ").append(stage(entry.optString("stage",entry.optString("status"))));
+        double t1=entry.optDouble("target1",entry.optDouble("target",Double.NaN)),t2=entry.optDouble("target2",Double.NaN);
+        if(Double.isFinite(t1)&&t1>0)out.append("\nT1 при входе: ").append(px(t1));
+        if(Double.isFinite(t2)&&t2>0)out.append(" · T2: ").append(px(t2));
+        double invalidation=entry.optDouble("invalidation",Double.NaN);
+        if(Double.isFinite(invalidation)&&invalidation>0)out.append("\nОтмена при входе: ").append(px(invalidation));
     }
     private static String source(String s){switch(s){case "HISTORICAL_LEVEL":case "CONFIRMED_STRUCTURE":return "исторический уровень";case "CHANNEL_BOUNDARY":return "граница / середина диапазона";case "POLE_PROJECTION":return "проекция измеренного импульса";default:return "геометрическая проекция, не обещание цены";}}
     public static String explanation(JSONObject state){
@@ -79,7 +113,9 @@ public final class ScenarioUi {
             return "Карта ожидает профиль SCENARIO_V2. Действующий профиль: "+(cfg==null?"неизвестен":cfg.optString("engine_mode"))+". Существующая кампания сверяется отдельно.";
         }
         return "Фигура и её границы строятся по уже доступной истории. Каждая ветка имеет собственные события подтверждения и отмены."
-            +"\nЦветная линия — условная последовательность, а не будущие свечи. Ретест не обязателен для прямого пробоя и обязателен для сценария ретеста."
+            +"\nСерый пунктир — подготовка до подтверждения входа. Цветная линия — условный путь к целям после подтверждения; цвет обозначает ветку, а не наклон каждого отрезка. Это не факт исполнения сделки."
+            +"\nТекущие гипотезы LIVE пересчитываются. Сценарий входа кампании показан отдельно по ID, версии и сохранённому снимку; этап «Наблюдение» текущей ветки не описывает уже выполненный вход."
+            +"\nРетест не обязателен для прямого пробоя и обязателен для сценария ретеста. Старые снимки без этапов сохраняют исходный цвет ветки."
             +"\nОценки не являются вероятностями и не складываются в 100. T2 показывается только при наличии основания."
             +"\nАрхив хранит исходные снимки. Просмотр истории и выбор ветки не меняют работу AUTO. REAL в этой сборке заблокирован.";
     }

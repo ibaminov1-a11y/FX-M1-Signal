@@ -79,7 +79,7 @@ final class ScenarioMapRenderer {
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
         JSONObject levels=valid&&!historical?f.optJSONObject("entry_levels"):null,active=historical?null:f.optJSONObject("active_scenario");
         int routeCount=routes==null?0:Math.min(2,routes.length());
-        top=Math.max(55,routeCount*16+24+(tied?14:0))*d;bottom=h-42*d;
+        top=Math.max(55,routeCount*16+24+(tied?14:0))*d;bottom=h-(historical?42:60)*d;
         split=historical?right:left+(right-left)*.44f;
         for(int i=0;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null){bound(b.optDouble("low"));bound(b.optDouble("high"));}}
         if(live!=null){bound(live.optDouble("low"));bound(live.optDouble("high"));}
@@ -173,8 +173,12 @@ final class ScenarioMapRenderer {
             text("LIVE",split-29*d,clippedY(current)-6*d,0xffeeeeff,9);
         }
         drawAnnotations();
-        text("Гипотезы: события, не готовые свечи и не время прихода",left,h-25*d,MUTED,8);
-        text("Оценка — не вероятность · свайп: история · нажми: полный экран",left,h-10*d,MUTED,8);
+        boolean legacy=false;
+        if(routes!=null)for(int i=0;i<routeCount;i++)legacy|=!hasPhaseMeaning(routes.optJSONObject(i));
+        line(left,h-44*d,left+17*d,h-44*d,MUTED,2,true);
+        text(legacy?"Старая ветка: этапы входа не размечены":"До подтверждения входа",left+23*d,h-41*d,MUTED,9);
+        text(legacy?"Цвет — условная ветка, не факт сделки":"Цвет — после подтверждения, не факт сделки",left,h-26*d,MUTED,9);
+        text("Оценка — не вероятность · свайп: история · нажми: крупнее",left,h-11*d,MUTED,8);
     }
     private double lineValue(JSONObject l,long t){return l.optDouble("price")+l.optDouble("slope")*(t-l.optDouble("t0"));}
     private void nearBound(double v,double lo,double hi,double range){if(v>=lo-1.2*range&&v<=hi+1.2*range)bound(v);}
@@ -183,15 +187,38 @@ final class ScenarioMapRenderer {
         line(x,y(b.optDouble("high")),x,y(b.optDouble("low")),col,.8f,false);
         p.setColor(col);c.drawRect(x-Math.max(.7f*d,half),Math.min(y(o),y(cl)),x+Math.max(.7f*d,half),Math.max(Math.min(y(o),y(cl))+d,Math.max(y(o),y(cl))),p);
     }
+    private static boolean hasPhaseMeaning(JSONObject r){
+        JSONArray pts=r==null?null:r.optJSONArray("path");if(pts==null)return false;
+        for(int i=1;i<pts.length();i++){
+            JSONObject q=pts.optJSONObject(i);if(q==null)continue;
+            if(!q.optString("phase").isEmpty()||!q.optString("anchor").isEmpty()
+                ||"T1".equals(q.optString("label"))||"T2".equals(q.optString("label")))return true;
+        }return false;
+    }
+    private static boolean preparation(JSONObject r,JSONObject destination){
+        String phase=destination.optString("phase");
+        if("PREPARATION".equals(phase)||"LIVE".equals(phase))return true;
+        if("TRADE".equals(phase))return false;
+        // Archived v3 paths identify targets by label/source anchor. Unlabelled v2 paths
+        // retain their original branch styling; we cannot invent a confirmation event.
+        if(!hasPhaseMeaning(r))return false;
+        String label=destination.optString("label"),anchor=destination.optString("anchor");
+        return !("T1".equals(label)||"T2".equals(label)||anchor.startsWith("TARGET"));
+    }
     private void route(JSONObject r,int index,double current){
         if(r==null||!Double.isFinite(current))return;JSONArray pts=r.optJSONArray("path");if(pts==null||pts.length()<2)return;
-        int color=routeColor(r,index);float span=right-7*d-split;
+        float span=right-7*d-split;
         float px=split,py=clippedY(current);
         for(int i=1;i<pts.length();i++){
             JSONObject q=pts.optJSONObject(i);if(q==null)continue;
+            boolean preparing=preparation(r,q);int color=preparing?MUTED:routeColor(r,index);
             float x=split+span*i/(pts.length()-1f),yy=clippedY(q.optDouble("price"));
-            line(px,py,x,yy,color,tied?2.1f:index==0?2.5f:1.8f,tied||index!=0);
-            if(i==pts.length()-1){double angle=Math.atan2(yy-py,x-px);float size=7*d;
+            line(px,py,x,yy,color,tied?2.1f:index==0?2.5f:1.8f,preparing||tied||index!=0);
+            if(preparing&&q.optString("anchor").contains("CONFIRM")){
+                p.setStyle(Paint.Style.STROKE);p.setColor(MUTED);p.setStrokeWidth(1.4f*d);
+                c.drawCircle(x,yy,3.5f*d,p);p.setStyle(Paint.Style.FILL);
+            }
+            if(i==pts.length()-1&&!preparing){double angle=Math.atan2(yy-py,x-px);float size=7*d;
                 line(x,yy,x-size*(float)Math.cos(angle-.55),yy-size*(float)Math.sin(angle-.55),color,2,false);
                 line(x,yy,x-size*(float)Math.cos(angle+.55),yy-size*(float)Math.sin(angle+.55),color,2,false);}
             String label=q.optString("label","");if(!label.isEmpty()){

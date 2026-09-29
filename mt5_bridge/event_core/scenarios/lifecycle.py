@@ -72,17 +72,21 @@ def create_scenarios(p,bars,a,current,now):
                        dict(price=activation+side*.12*a,anchor='MICRO_CONFIRM',label='Реакция?')]
         elif typ=='FALSE_BREAK_RETURN':
             points += [dict(price=activation+outside*.08*a,anchor='BREAK',label='Выход?'),
-                       dict(price=activation-outside*.10*a,anchor='RETURN',label='Возврат?')]
+                       dict(price=activation-outside*.10*a,anchor='RETURN',label='Возврат?'),
+                       dict(price=activation-outside*.14*a,anchor='MICRO_CONFIRM',label='Подтверждение?')]
         else:
             points.append(dict(price=activation,anchor='TRIGGER',label='Пробой?'))
             if typ=='BREAKOUT_RETEST':
                 points += [dict(price=activation+side*.12*a,anchor='BREAK',label='Выход?'),
                            dict(price=activation,anchor='TRIGGER_RETEST',label='Ретест?'),
                            dict(price=activation+side*.12*a,anchor='MICRO_CONFIRM',label='Подтверждение?')]
+        if typ in ('DIRECT_BREAKOUT','STRUCTURE_REVERSAL'):
+            points.append(dict(price=activation+side*.06*a,anchor='MICRO_CONFIRM',label='Продолжение?'))
         if t1 is not None:points.append(dict(price=t1,anchor=src1,label='T1'))
         if t2 is not None:points.append(dict(price=t2,anchor=src2,label='T2'))
         for i,point in enumerate(points):
-            point.update(step=i,minutes=15*i/max(1,len(points)-1),uncertainty=.12*a*math.sqrt(i),observed=i==0)
+            point.update(step=i,minutes=15*i/max(1,len(points)-1),uncertainty=.12*a*math.sqrt(i),observed=i==0,
+                phase='LIVE' if i==0 else 'TRADE' if point.get('label') in ('T1','T2') else 'PREPARATION')
         out.append(dict(scenario_id=ident,scenario_version=1,pattern_id=p['pattern_id'],family=family,
             title=FAMILY_TITLES[family]+': '+TITLES[typ],type=typ,side=side,trade_side=side,terminal_bias=side,
             outside_side=outside,created_at=now,available_at=max(now,p['available_at']),updated_at=now,
@@ -122,6 +126,9 @@ def _confirm(s,q,now,trigger,a):
     side=s['side'];distance=(q.bid-trigger)*side
     if not 0<distance<=.25*a:
         _event(s,'EXPIRED',q,now,'Цена вне зоны входа; не догоняем');return
+    target=s.get('target1')
+    if target is None or (target-(q.ask if side>0 else q.bid))*side<=0:
+        _event(s,'EXPIRED',q,now,'Исходная ближайшая цель уже пройдена; новый вход не обоснован');return
     s['status']='CONFIRMED';s['confirmed_at']=now;s['trigger']=trigger
     s['event_id']=s['scenario_id']+'|'+str(q.time_msc)
     s['entry_ready']=True;s['mark_at_confirmation']=q.bid if side>0 else q.ask
@@ -216,7 +223,7 @@ def remaining_path(s,current,now=None):
                 point['price']+=shift
                 if point.get('anchor')=='MICRO_CONFIRM' and s.get('micro_trigger'):
                     point['price']=s['micro_trigger']
-    if s['stage']=='RETURN_SEEN' and s.get('micro_trigger'):
+    if s['stage']=='RETURN_SEEN' and s.get('micro_trigger') and not any(p.get('anchor')=='MICRO_CONFIRM' for p in pts):
         pts.insert(-sum(1 for x in pts if x.get('label') in ('T1','T2')) or len(pts),
                    dict(price=s['micro_trigger'],anchor='MICRO_CONFIRM',label='Подтверждение?',observed=False))
     if s['status']=='CONFIRMED':pts=[p for p in pts if p.get('label') in ('T1','T2') and not (p.get('label')=='T1' and s.get('target1_reached'))]
@@ -228,7 +235,9 @@ def remaining_path(s,current,now=None):
         pts=pts[index+1:]
     else:pts=pts[1:]
     pts.insert(0,dict(price=current,anchor='LIVE',label='LIVE',uncertainty=0,observed=True))
-    for i,p in enumerate(pts):p.update(step=i,minutes=15*i/max(1,len(pts)-1))
+    for i,p in enumerate(pts):
+        p.update(step=i,minutes=15*i/max(1,len(pts)-1),
+            phase='LIVE' if i==0 else 'TRADE' if p.get('label') in ('T1','T2') else 'PREPARATION')
     return pts
 
 
