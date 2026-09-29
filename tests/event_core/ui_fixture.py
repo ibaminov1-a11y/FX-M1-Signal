@@ -201,6 +201,29 @@ def r54_future_time():
         state=engine.step()
         return jsonify(ok=True,state=state)
 
+@app.post('/test/r55-controls')
+def r55_controls():
+    global freeze_until
+    from event_core.compute_core import make_compute
+    data=request.get_json(silent=True) or {}
+    reset()
+    with engine.lock:
+        engine.config=Config(engine_mode='SCENARIO_V2',approved=True,fee_per_lot=0)
+        engine.compute=make_compute(engine.config)
+        engine._refresh(time.time())
+        if data.get('campaign'):
+            d=Decision('SELL','ENTRY_READY','active fixture','r55-campaign',-1,
+                1.1034,1.10301,1.1034,.0005,int(time.time()*1000))
+            engine._entry(d,time.time())
+            assert engine.campaign is not None
+        broker.quote_age=-10797.7 if data.get('quote_future') else 0
+        engine.auto=bool(data.get('auto'));engine.paused=not engine.auto
+        clear_market();engine.history_time=0
+        freeze_until=time.time()+300
+        engine.refresh_view()
+        engine.save();r53_commands.clear()
+        return jsonify(ok=True,state=engine.snapshot())
+
 @app.post('/test/r54-refresh')
 def r54_refresh_setup():
     global r54_refresh_config,freeze_until
