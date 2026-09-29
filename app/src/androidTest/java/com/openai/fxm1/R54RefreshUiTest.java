@@ -93,6 +93,9 @@ public class R54RefreshUiTest {
         assertTrue("Monitoring notification is visible",device.wait(Until.hasObject(By.pkg("com.android.systemui").textContains("FX M1")),5000));
         assertTrue(device.pressBack());
         await(()->{final boolean[] focused={false};ui(()->focused[0]=rule.getActivity().hasWindowFocus());return focused[0];},"App regains focus after closing notification shade");
+        // A non-focusable heads-up can remain pinned after the shade closes.
+        // Wait for that observed overlay itself, not merely for app focus.
+        assertTrue("Monitoring heads-up must clear the pull origin",device.wait(Until.gone(By.pkg("com.android.systemui").textContains("FX M1")),10000));
         assertTrue(device.wait(Until.hasObject(By.res(context.getPackageName(),"refreshStatusText")),5000));
     }
     @Before public void setup()throws Exception {
