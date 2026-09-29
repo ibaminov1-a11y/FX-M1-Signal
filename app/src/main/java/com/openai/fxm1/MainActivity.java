@@ -717,12 +717,13 @@ public class MainActivity extends Activity {
             autoTradingSwitch.setText(TradeSettings.autoTitle());
             if("REAL".equalsIgnoreCase(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
             if (autoStatusText != null) {
-                autoStatusText.setText(emergency ? "EMERGENCY · AUTO заблокирован" :
+                String autoStatus=emergency ? "EMERGENCY · AUTO заблокирован" :
                         autoSaved ? "AUTO включён · разрешена торговля · счёт "+accountType+"\n"+(bridgeState.optJSONObject("entry_gate")==null?"":bridgeState.optJSONObject("entry_gate").optString("reason")) :
-                        paused ? "AUTO выключен · PAUSE" : "AUTO выключен · "+accountType);
+                        paused ? "AUTO выключен · PAUSE" : "AUTO выключен · "+accountType;
                 JSONObject pendingProfile=bridgeState.optJSONObject("pending_config");
-                if(pendingProfile!=null)autoStatusText.append("\nПосле кампании: "+EventClient.profileLabel(pendingProfile));
-                if(EventClient.hasProfileDraft())autoStatusText.append("\nВыбор на телефоне ожидает подтверждения Bridge");
+                if(pendingProfile!=null)autoStatus+="\nПосле кампании: "+EventClient.profileLabel(pendingProfile);
+                if(EventClient.hasProfileDraft())autoStatus+="\nВыбор на телефоне ожидает подтверждения Bridge";
+                autoStatusText.setText(autoStatus);
                 autoStatusText.setTextColor(emergency ? C_RED : autoSaved ? C_GREEN : C_MUTED);
             }
             suppressAutoSwitch = false;

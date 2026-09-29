@@ -14,7 +14,7 @@ set +e
 bash tools/audit53_red_ui.sh
 red_rc=$?
 gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest,com.openai.fxm1.R55ControlsUiTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R55ControlsUiTest,com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest \
   > evidence/android-runtime.log 2>&1
 rc=$?
 adb logcat -d > evidence/android-logcat.txt
