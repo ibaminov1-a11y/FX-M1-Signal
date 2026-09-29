@@ -4,6 +4,8 @@ import android.content.*;
 import android.graphics.Point;
 import android.os.*;
 import android.view.View;
+import android.view.MotionEvent;
+import android.view.Window;
 import android.widget.*;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -13,6 +15,8 @@ import org.json.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.InvocationTargetException;
 import java.io.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -50,6 +54,34 @@ public class R54RefreshUiTest {
     int dp(int value){return Math.round(value*context.getResources().getDisplayMetrics().density);}
     void top()throws Exception{ui(()->((ScrollView)rule.getActivity().findViewById(R.id.rootLayout)).scrollTo(0,0));InstrumentationRegistry.getInstrumentation().waitForIdleSync();Thread.sleep(100);}
     void pull(){int[] p=origin();int x=device.getDisplayWidth()/2,y=p[1]+dp(76);assertTrue(device.swipe(x,y,x,y+dp(220),36));}
+    String gestureState(){
+        LiveScrollView root=rule.getActivity().findViewById(R.id.rootLayout);
+        StringBuilder value=new StringBuilder("scrollY=").append(root.getScrollY()).append(" enabled=").append(root.isEnabled())
+            .append(" shown=").append(root.isShown()).append(" focused=").append(rule.getActivity().hasWindowFocus());
+        for(String name:new String[]{"pullEligible","pulling","refreshing"})try{
+            Field field=LiveScrollView.class.getDeclaredField(name);field.setAccessible(true);value.append(' ').append(name).append('=').append(field.get(root));
+        }catch(Exception e){value.append(" reflection=").append(e.getClass().getSimpleName());}
+        return value.toString();
+    }
+    void tracedPull(String name)throws Exception {
+        final int[] received={0};
+        ui(()->{
+            Window window=rule.getActivity().getWindow();Window.Callback original=window.getCallback();
+            window.setCallback((Window.Callback)Proxy.newProxyInstance(Window.Callback.class.getClassLoader(),new Class[]{Window.Callback.class},(proxy,method,args)->{
+                MotionEvent event="dispatchTouchEvent".equals(method.getName())?(MotionEvent)args[0]:null;
+                if(event!=null){received[0]++;android.util.Log.i("R54GestureTrace",name+" BEFORE action="+event.getActionMasked()+" x="+event.getX()+" y="+event.getY()+" "+gestureState());}
+                try{
+                    Object result=method.invoke(original,args);
+                    if(event!=null)android.util.Log.i("R54GestureTrace",name+" AFTER action="+event.getActionMasked()+" "+gestureState());
+                    return result;
+                }catch(InvocationTargetException e){throw e.getCause();}
+            }));
+            android.util.Log.i("R54GestureTrace",name+" BEFORE SCREENSHOT "+gestureState());
+        });
+        shot(name+"-before");pull();
+        ui(()->android.util.Log.i("R54GestureTrace",name+" AFTER PULL ActivityTouchEvents="+received[0]+" "+gestureState()));
+        shot(name+"-after");
+    }
     void assertReadOnly(){assertEquals("A pull must never issue configure, pause, enable or position commands",0,audit().optJSONArray("commands").length());}
     void startMonitoring()throws Exception {
         if(Build.VERSION.SDK_INT>=33)shell("pm grant "+context.getPackageName()+" android.permission.POST_NOTIFICATIONS");
@@ -171,7 +203,7 @@ public class R54RefreshUiTest {
     }
 
     @Test public void slowRefreshDoesNotBlockMonitoringOrEmergencyAndCannotOverwriteNewState()throws Exception {
-        startMonitoring();fixture(new JSONObject().put("journal_delay_ms",2800));top();pull();
+        startMonitoring();fixture(new JSONObject().put("journal_delay_ms",2800));top();tracedPull("r54-monitor-journal");
         await(()->audit().optInt("refresh_requests")>=1,"Monitoring-mode pull must reach the forced refresh endpoint");
         await(()->audit().optInt("events_requests")==1,"Manual refresh reached the delayed journal");
         long previous=prefs.getLong("ec_received_elapsed",0),deadline=SystemClock.elapsedRealtime()+1500;
@@ -206,7 +238,7 @@ public class R54RefreshUiTest {
     }
 
     @Test public void oldManualFailureDoesNotDisconnectSuccessfulConcurrentPolling()throws Exception {
-        startMonitoring();fixture(new JSONObject().put("delay_ms",5000));top();pull();
+        startMonitoring();fixture(new JSONObject().put("delay_ms",5000));top();tracedPull("r54-monitor-timeout");
         await(()->audit().optInt("refresh_requests")>=1,"Monitoring-mode pull must reach the forced refresh endpoint");
         await(()->!loading()&&refreshStatus().contains("Не удалось"),"Slow forced read times out");
         assertTrue("A failed older manual read cannot invalidate newer successful monitoring polls",prefs.getBoolean("server_verified",false));
