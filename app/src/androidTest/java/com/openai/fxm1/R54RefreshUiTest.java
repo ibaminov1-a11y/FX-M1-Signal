@@ -31,6 +31,14 @@ public class R54RefreshUiTest {
         while(SystemClock.elapsedRealtime()<end){if(condition.getAsBoolean())return;Thread.sleep(80);}
         fail(label);
     }
+    void shell(String command)throws Exception {
+        try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
+            InputStream input=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] buffer=new byte[1024];while(input.read(buffer)!=-1){}}
+    }
+    void shot(String name)throws Exception {
+        shell("mkdir -p /sdcard/Download/ec1-qa");
+        shell("screencap -p /sdcard/Download/ec1-qa/"+name+".png");
+    }
     JSONObject audit(){try{return EventClient.http("GET",EventClient.base()+"/test/r54-refresh-audit",null);}
         catch(Exception e){throw new AssertionError(e);}}
     void fixture(JSONObject value)throws Exception{EventClient.http("POST",EventClient.base()+"/test/r54-refresh",value);}
@@ -44,14 +52,16 @@ public class R54RefreshUiTest {
     void pull(){int[] p=origin();int x=device.getDisplayWidth()/2,y=p[1]+dp(76);assertTrue(device.swipe(x,y,x,y+dp(220),36));}
     void assertReadOnly(){assertEquals("A pull must never issue configure, pause, enable or position commands",0,audit().optJSONArray("commands").length());}
     void startMonitoring()throws Exception {
-        if(Build.VERSION.SDK_INT>=33){
-            try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(
-                    "pm grant "+context.getPackageName()+" android.permission.POST_NOTIFICATIONS");
-                InputStream input=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] buffer=new byte[1024];while(input.read(buffer)!=-1){}}
-        }
+        if(Build.VERSION.SDK_INT>=33)shell("pm grant "+context.getPackageName()+" android.permission.POST_NOTIFICATIONS");
         ui(()->rule.getActivity().findViewById(R.id.analyzeButton).performClick());
         await(()->prefs.getBoolean("bg_running",false)&&prefs.getBoolean("server_verified",false),"Monitoring must start");
-        Thread.sleep(800);
+        // The foreground service's initial heads-up notification covers the pull origin.
+        // Open and close the real shade so the following gesture reaches the app.
+        assertTrue(device.openNotification());
+        assertTrue("Monitoring notification is visible",device.wait(Until.hasObject(By.pkg("com.android.systemui").textContains("FX M1")),5000));
+        assertTrue(device.pressBack());
+        await(()->{final boolean[] focused={false};ui(()->focused[0]=rule.getActivity().hasWindowFocus());return focused[0];},"App regains focus after closing notification shade");
+        assertTrue(device.wait(Until.hasObject(By.res(context.getPackageName(),"refreshStatusText")),5000));
     }
     @Before public void setup()throws Exception {
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -76,6 +86,7 @@ public class R54RefreshUiTest {
         await(()->audit().optInt("refresh_requests")==1,"Downward swipe from top must request a full Bridge refresh");
         await(()->text(R.id.accountText).contains("54321.00"),"Manual refresh must repaint the fresh account without starting monitoring");
         await(()->!loading()&&refreshStatus().contains("Обновлено"),"Refresh must finish with visible success");
+        shot("r54-refresh-success");
         assertTrue(text(R.id.positionsText),text(R.id.positionsText).contains("Открытые позиции: 1"));
         assertTrue("Both recent and full trade history must be read",audit().optInt("ledger_requests")>=oldLedger+2);
         assertTrue("Bridge event journal must be read",audit().optInt("events_requests")>oldJournal);
@@ -87,10 +98,20 @@ public class R54RefreshUiTest {
     }
 
     @Test public void repeatedPullsCoalesceWhileVisibleProgressIsRunning()throws Exception {
-        fixture(new JSONObject().put("account_balance",53210.0).put("delay_ms",2200));pull();
-        await(this::loading,"Refresh must immediately expose visible progress");pull();pull();
-        assertTrue("Loading must survive duplicate gestures",loading());
+        fixture(new JSONObject().put("account_balance",53210.0));
+        Field field=MainActivity.class.getDeclaredField("executor");field.setAccessible(true);
+        ExecutorService queue=(ExecutorService)field.get(rule.getActivity());
+        CountDownLatch entered=new CountDownLatch(1),release=new CountDownLatch(1);
+        queue.submit(()->{entered.countDown();try{release.await(22,TimeUnit.SECONDS);}catch(InterruptedException e){Thread.currentThread().interrupt();}});
+        assertTrue(entered.await(5,TimeUnit.SECONDS));
+        try{
+            pull();await(this::loading,"Refresh must immediately expose visible progress");shot("r54-refresh-loading");
+            pull();pull();
+            assertTrue("Loading must survive duplicate gestures while the request is pending",loading());
+            assertEquals("Held IO queue cannot complete the refresh during native gestures",0,audit().optInt("refresh_requests"));
+        }finally{release.countDown();}
         await(()->!loading()&&refreshStatus().contains("Обновлено"),"One request must complete and remove progress");
+        queue.submit(()->{}).get(5,TimeUnit.SECONDS);
         assertEquals("Repeated pulls during one request must coalesce",1,audit().optInt("refresh_requests"));assertReadOnly();
     }
 
@@ -151,6 +172,7 @@ public class R54RefreshUiTest {
 
     @Test public void slowRefreshDoesNotBlockMonitoringOrEmergencyAndCannotOverwriteNewState()throws Exception {
         startMonitoring();fixture(new JSONObject().put("journal_delay_ms",2800));top();pull();
+        await(()->audit().optInt("refresh_requests")>=1,"Monitoring-mode pull must reach the forced refresh endpoint");
         await(()->audit().optInt("events_requests")==1,"Manual refresh reached the delayed journal");
         long previous=prefs.getLong("ec_received_elapsed",0),deadline=SystemClock.elapsedRealtime()+1500;
         while(prefs.getLong("ec_received_elapsed",0)<=previous&&SystemClock.elapsedRealtime()<deadline)Thread.sleep(50);
@@ -185,6 +207,7 @@ public class R54RefreshUiTest {
 
     @Test public void oldManualFailureDoesNotDisconnectSuccessfulConcurrentPolling()throws Exception {
         startMonitoring();fixture(new JSONObject().put("delay_ms",5000));top();pull();
+        await(()->audit().optInt("refresh_requests")>=1,"Monitoring-mode pull must reach the forced refresh endpoint");
         await(()->!loading()&&refreshStatus().contains("Не удалось"),"Slow forced read times out");
         assertTrue("A failed older manual read cannot invalidate newer successful monitoring polls",prefs.getBoolean("server_verified",false));
         assertTrue(text(R.id.serverStatusText).contains("MT5: CONNECTED"));
