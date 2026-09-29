@@ -33,7 +33,17 @@ public class R56TimeframesUiTest {
         UiObject2 item=device.wait(Until.findObject(By.text(tf)),4000);assertNotNull("Selectable chart frame "+tf,item);item.click();
     }
     int commands()throws Exception{return EventClient.http("GET",EventClient.base()+"/test/r53-command-audit",null).getJSONArray("commands").length();}
-    void shot(String name)throws Exception{for(String cmd:new String[]{"mkdir -p /sdcard/Download/ec1-qa","screencap -p /sdcard/Download/ec1-qa/"+name+".png"})try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(cmd);InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] b=new byte[4096];while(in.read(b)!=-1){}}}
+    void shot(String name)throws Exception{InstrumentationRegistry.getInstrumentation().waitForIdleSync();Thread.sleep(250);for(String cmd:new String[]{"mkdir -p /sdcard/Download/ec1-qa","screencap -p /sdcard/Download/ec1-qa/"+name+".png"})try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(cmd);InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] b=new byte[4096];while(in.read(b)!=-1){}}}
+    void shotFrame(String timeframe)throws Exception{
+        ui(()->{ScrollView root=rule.getActivity().findViewById(R.id.rootLayout);Rect bounds=new Rect();chart().getDrawingRect(bounds);
+            root.offsetDescendantRectToMyCoords(chart(),bounds);
+            root.scrollTo(0,Math.max(0,bounds.top-Math.round(190*context.getResources().getDisplayMetrics().density)));});
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();Thread.sleep(250);
+        ui(()->{Button chooser=rule.getActivity().getWindow().getDecorView().findViewWithTag("scenario_timeframe");
+            assertEquals("Screenshot contains the requested chart frame",timeframe,chart().historyFrame());
+            assertTrue("Screenshot chooser matches its own graph",chooser.getText().toString().contains("ГРАФИК "+timeframe+" "));});
+        shot("r56-"+timeframe.toLowerCase()+"-independent");
+    }
     @Before public void start()throws Exception{
         context=InstrumentationRegistry.getInstrumentation().getTargetContext();device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());device.wakeUp();device.pressHome();
         context.stopService(new Intent(context,MonitoringService.class));Thread.sleep(250);
@@ -49,7 +59,7 @@ public class R56TimeframesUiTest {
         int before=commands();java.util.Set<String> ids=new java.util.HashSet<>();
         for(String tf:new String[]{"M1","M5","M15","M30","H1","H4","D1","W1","MN1"}){
             select(tf);await(()->tf.equals(frame())&&!scenario().isEmpty(),"Own forecast for "+tf);assertTrue("Independent scenario identity "+tf,ids.add(scenario()));
-            if(java.util.Arrays.asList("M1","M5","M15","M30","H1").contains(tf))shot("r56-"+tf.toLowerCase()+"-independent");
+            if(java.util.Arrays.asList("M1","M5","M15","M30","H1").contains(tf))shotFrame(tf);
         }
         assertEquals("M5",EventClient.state().getJSONObject("config").getString("timeframe"));assertEquals("M5",EventClient.config().getString("timeframe"));assertEquals(before,commands());
         ui(()->{TextView status=rule.getActivity().getWindow().getDecorView().findViewWithTag("scenario_timeframe_status");assertTrue(status.getText().toString(),status.getText().toString().contains("M5"));});

@@ -225,19 +225,30 @@ public class R54RefreshUiTest {
         assertTrue("An older manual snapshot cannot erase the newer emergency acknowledgement",EventClient.state().optBoolean("emergency",false));
     }
 
-    @Test public void changedCredentialsRejectOldRefreshWithoutInvalidatingNewSnapshot()throws Exception {
+    @Test public void changedSourceRejectsOldRefreshWithoutInvalidatingNewSnapshot()throws Exception {
+        // Keep the ledger audit specific to the interrupted full refresh; the
+        // new chart's state-only foreground reads remain active throughout.
+        Field money=MainActivity.class.getDeclaredField("lastMoneyRefreshMs");money.setAccessible(true);
+        ui(()->{try{money.setLong(rule.getActivity(),System.currentTimeMillis()+60000);}catch(Exception e){throw new AssertionError(e);}});
+        Field worker=MainActivity.class.getDeclaredField("executor");worker.setAccessible(true);
+        ((ExecutorService)worker.get(rule.getActivity())).submit(()->{}).get(8,TimeUnit.SECONDS);
         fixture(new JSONObject().put("delay_ms",1600).put("account_balance",54321.0));pull();
         await(()->audit().optInt("refresh_requests")==1,"Old-source read started");
-        JSONObject replacement=new JSONObject(EventClient.state().toString());replacement.getJSONObject("account").put("balance",61234.0);
-        prefs.edit().putString("ec_token","replacement-connection-token").commit();
-        EventClient.cache(replacement); // A newer connection has already delivered its own snapshot.
+        String previousSource=EventClient.base();
+        prefs.edit().putString("server_url","http://localhost:8765").commit();
         try{
+            // A real accepted new connection must remain usable for foreground reads.
+            // Supersede the old delayed fixture operation before changing broker data.
+            fixture(new JSONObject().put("marker","new-connection"));
+            EventClient.http("POST",EventClient.base()+"/test/r53-state",new JSONObject().put("balance",61234.0));
+            EventClient.poll();
+            assertEquals("New source delivered its actual account",61234.0,EventClient.state().getJSONObject("account").getDouble("balance"),.001);
             await(()->!loading()&&refreshStatus().contains("Не удалось"),"Changing connection cancels publication from the old source");
             assertEquals("Old connection cannot overwrite new connection data",61234.0,EventClient.state().getJSONObject("account").getDouble("balance"),.001);
             assertTrue("Old-source cancellation must not disconnect the newer source",prefs.getBoolean("server_verified",false));
             assertTrue(text(R.id.accountText).contains("61234.00"));
-        }finally{prefs.edit().putString("ec_token","ci-fixture-token-not-for-real-trading").commit();}
-        assertEquals("No follow-up request may mix in credentials from the new connection",0,audit().optInt("ledger_requests"));assertReadOnly();
+        }finally{prefs.edit().putString("server_url",previousSource).commit();}
+        assertEquals("No old-refresh follow-up may mix in the new connection",0,audit().optInt("ledger_requests"));assertReadOnly();
     }
 
     @Test public void oldManualFailureDoesNotDisconnectSuccessfulConcurrentPolling()throws Exception {

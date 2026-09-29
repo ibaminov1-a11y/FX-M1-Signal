@@ -238,7 +238,7 @@ public class R53ControlsUiTest {
         assertFalse(recovered.optBoolean("client_offline",false));
         assertFalse(recovered.getJSONObject("forecast").optBoolean("client_offline",false));
         assertEquals(recovered.getJSONObject("decision").optString("signal","WAIT"),text(R.id.signalText));
-        assertEquals(ScenarioUi.headline(recovered.getJSONObject("forecast")),text(R.id.confidenceText));
+        assertEquals("ВХОД M5 · "+ScenarioUi.headline(recovered.getJSONObject("forecast")),text(R.id.confidenceText));
         assertFalse(text(R.id.statusText).contains("НЕТ СВЯЗИ"));
         assertTrue(recovered.getBoolean("auto"));assertFalse(recovered.getBoolean("paused"));
     }
@@ -267,6 +267,8 @@ public class R53ControlsUiTest {
                 java.lang.reflect.Field field=MainActivity.class.getDeclaredField(name);field.setAccessible(true);
                 ((Handler)field.get(activity())).removeCallbacksAndMessages(null);
             }
+            Object viewer=activity().findViewById(R.id.sparklineView).getTag();
+            if(viewer!=null){java.lang.reflect.Method active=viewer.getClass().getDeclaredMethod("setActive",boolean.class);active.setAccessible(true);active.invoke(viewer,false);}
             java.lang.reflect.Field money=MainActivity.class.getDeclaredField("lastMoneyRefreshMs");money.setAccessible(true);
             money.setLong(activity(),System.currentTimeMillis()+60000);
             java.lang.reflect.Field worker=MainActivity.class.getDeclaredField("executor");worker.setAccessible(true);
@@ -282,7 +284,7 @@ public class R53ControlsUiTest {
         assertTrue(text(R.id.priceCompareText).contains("1.10456"));
         assertTrue(text(R.id.positionsText).contains("Открытые позиции: 1"));
         assertTrue(text(R.id.statusText).contains("EUR/USD · M5"));
-        assertEquals(ScenarioUi.headline(EventClient.state().optJSONObject("forecast")),text(R.id.confidenceText));
+        assertEquals("ВХОД M5 · "+ScenarioUi.headline(EventClient.state().optJSONObject("forecast")),text(R.id.confidenceText));
         assertTrue(text(R.id.levelsText).length()>10);
         assertEquals(prefs.getString("state_context",""),text(R.id.contextText));
         assertTrue(text(R.id.whyWaitText).contains(prefs.getString("state_why","")));
