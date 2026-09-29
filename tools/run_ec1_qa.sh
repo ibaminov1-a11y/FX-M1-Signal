@@ -9,8 +9,9 @@ for i in $(seq 1 30); do
   sleep 1
 done
 adb reverse tcp:8765 tcp:8765
-bash tools/audit53_red_ui.sh
 set +e
+bash tools/audit53_red_ui.sh
+red_rc=$?
 gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest \
   > evidence/android-runtime.log 2>&1
@@ -18,6 +19,7 @@ rc=$?
 adb logcat -d > evidence/android-logcat.txt
 adb pull /sdcard/Download/ec1-qa evidence/ui || true
 cat evidence/android-runtime.log
+if [ "$red_rc" -ne 0 ]; then exit "$red_rc"; fi
 if [ "$rc" -eq 0 ]; then
   python tools/audit53_report.py
   signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)

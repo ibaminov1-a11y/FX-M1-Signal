@@ -199,7 +199,8 @@ public class R53ControlsUiTest {
         String stored=prefs.getString("ec_state","");
         EventClient.offline(new IOException("r53 simulated phone disconnect"));sync();
         JSONObject cached=EventClient.state();
-        assertFalse("Cached forecast must not be labelled LIVE",ScenarioUi.levels(cached).contains("· LIVE"));
+        assertFalse("Cached forecast must not be labelled LIVE",SparklineView.mapDescription(cached.getJSONObject("forecast")).contains(" LIVE "));
+        assertFalse(ScenarioUi.levels(cached).contains("· LIVE"));
         assertTrue(cached.getBoolean("client_offline"));
         assertTrue(cached.getJSONObject("forecast").getBoolean("client_offline"));
         assertEquals("Presentation marker must not rewrite the cached Bridge response",stored,prefs.getString("ec_state",""));
