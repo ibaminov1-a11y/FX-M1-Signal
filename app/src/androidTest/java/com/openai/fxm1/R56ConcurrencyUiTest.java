@@ -51,11 +51,44 @@ public class R56ConcurrencyUiTest {
             assertTrue("A new real emergency must still latch",prefs.getBoolean("v108_emergency_latched",false));
         }finally{fixture("POST","/test/r56-read-release",new JSONObject());old.cancel(true);reads.shutdownNow();}
     }
+    @Test public void acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft()throws Exception{
+        EventClient.configure();
+        for(boolean explicit:new boolean[]{false,true}){
+            EventClient.command("emergency",new JSONObject());EventClient.poll();
+            JSONObject desired=EventClient.rememberProfileSelection("EUR/USD",1,0,0);
+            prefs.edit().putString("ec_config_sent","unacknowledged-selection").commit();
+            fixture("POST","/test/r56-read-hold",new JSONObject().put("hold",true));
+            ExecutorService reads=Executors.newSingleThreadExecutor();Future<?> old=reads.submit(()->{
+                if(explicit)EventClient.configureUserSelection(desired);else EventClient.configure();return null;
+            });
+            try{
+                await(()->{try{return fixture("GET","/test/r56-read-hold",null).optBoolean("captured");}catch(Exception e){throw new AssertionError(e);}},"Pre-reset configure snapshot is held in transport");
+                EventClient.command("reset",new JSONObject().put("confirmation","RESET_DEMO_FLAT"));
+                fixture("POST","/test/r56-read-release",new JSONObject());old.get(4,TimeUnit.SECONDS);
+                assertFalse("An older configure response cannot restore the cleared emergency latch",prefs.getBoolean("v108_emergency_latched",true));
+                assertTrue("Discarded configure snapshot cannot acknowledge the local draft",EventClient.hasProfileDraft());
+                assertEquals("Discarded configure snapshot cannot acknowledge the sent profile","unacknowledged-selection",prefs.getString("ec_config_sent",""));
+            }finally{fixture("POST","/test/r56-read-release",new JSONObject());old.cancel(true);reads.shutdownNow();}
+        }
+    }
     @Test public void rejectedResetPreservesEmergencyLatchAndPendingRetry()throws Exception{
         EventClient.command("emergency",new JSONObject());EventClient.poll();prefs.edit().putBoolean("ec_emergency_pending",true).commit();
         try{EventClient.command("reset",new JSONObject().put("confirmation","INVALID_RESET"));fail("Bridge must reject invalid reset confirmation");}
         catch(java.io.IOException expected){assertTrue(prefs.getBoolean("v108_emergency_latched",false));assertTrue(prefs.getBoolean("ec_emergency_pending",false));}
         assertTrue(EventClient.state().optBoolean("emergency",false));
+    }
+    @Test public void newerOrdinaryPollDoesNotDiscardAnExplicitProfileSelection()throws Exception{
+        EventClient.configure();JSONObject desired=EventClient.rememberProfileSelection("EUR/USD",4,0,0);
+        fixture("POST","/test/r56-read-hold",new JSONObject().put("hold",true));
+        ExecutorService reads=Executors.newSingleThreadExecutor();Future<?> old=reads.submit(()->{EventClient.configureUserSelection(desired);return null;});
+        try{
+            await(()->{try{return fixture("GET","/test/r56-read-hold",null).optBoolean("captured");}catch(Exception e){throw new AssertionError(e);}},"Initial configure snapshot is held in transport");
+            EventClient.poll();
+            fixture("POST","/test/r56-read-release",new JSONObject());old.get(4,TimeUnit.SECONDS);
+            JSONObject remote=fixture("GET","/ec/state",null);
+            assertEquals("A newer ordinary poll cannot discard an explicit profile selection",desired.optString("timeframe"),remote.getJSONObject("config").optString("timeframe"));
+            assertFalse("Accepted configure confirmation acknowledges the selected profile",EventClient.hasProfileDraft());
+        }finally{fixture("POST","/test/r56-read-release",new JSONObject());old.cancel(true);reads.shutdownNow();}
     }
     boolean serviceIsForeground(){
         ActivityManager manager=(ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);

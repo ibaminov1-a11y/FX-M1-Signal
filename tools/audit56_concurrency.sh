@@ -17,7 +17,7 @@ for name in EventClient MonitoringService; do
   git show "0d95ed8260989b2c82cf67edd7bf44fae6fc701a:app/src/main/java/com/openai/fxm1/$name.java" > "app/src/main/java/com/openai/fxm1/$name.java"
 done
 set +e
-gradle --no-daemon :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R56ConcurrencyUiTest#acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches,com.openai.fxm1.R56ConcurrencyUiTest#runningFlagIsPublishedOnlyAfterNativeForegroundPromotion' > evidence/concurrency/red.log 2>&1
+gradle --no-daemon :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R56ConcurrencyUiTest#acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches,com.openai.fxm1.R56ConcurrencyUiTest#acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft,com.openai.fxm1.R56ConcurrencyUiTest#runningFlagIsPublishedOnlyAfterNativeForegroundPromotion' > evidence/concurrency/red.log 2>&1
 set -e
 cp -r app/build/outputs/androidTest-results evidence/concurrency/red-results
 restore
@@ -28,12 +28,13 @@ cases=[]
 for p in Path('evidence/concurrency/red-results').rglob('TEST-*.xml'):
     cases.extend(ET.parse(p).getroot().iter('testcase'))
 expected={'acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches':'An older HTTP response cannot restore the cleared emergency latch',
+          'acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft':'An older configure response cannot restore the cleared emergency latch',
           'runningFlagIsPublishedOnlyAfterNativeForegroundPromotion':'bg_running is an acknowledgement of completed foreground promotion'}
-assert len(cases)==2,[(c.get('name'),c.find('failure') is not None) for c in cases]
+assert len(cases)==3,[(c.get('name'),c.find('failure') is not None) for c in cases]
 for c in cases:
     failure=c.find('failure');assert failure is not None,c.get('name')
     assert expected[c.get('name')] in (failure.get('message','')+' '+(failure.text or '')),ET.tostring(c)
-Path('evidence/concurrency/RED_CONFIRMED.txt').write_text('Both concurrency defects reproduced against 0d95ed8260989b2c82cf67edd7bf44fae6fc701a.\n')
+Path('evidence/concurrency/RED_CONFIRMED.txt').write_text('All three concurrency defects reproduced against 0d95ed8260989b2c82cf67edd7bf44fae6fc701a.\n')
 PY
 set +e
 gradle --no-daemon :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R56ConcurrencyUiTest,com.openai.fxm1.R53ControlsUiTest#emergencyNeedsDoubleTapAndSuccessfulSettingsResetClearsBothLatches,com.openai.fxm1.R53ControlsUiTest#destroyedMonitoringServiceClearsItsRunningIndicator' > evidence/concurrency/green.log 2>&1

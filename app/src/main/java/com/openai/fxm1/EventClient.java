@@ -17,7 +17,7 @@ public final class EventClient {
     private static Context app;
     // Only preference publication is locked; network reads never block service commands.
     private static final Object STATE_READ_LOCK=new Object();
-    private static long nextReadSequence,lastPublishedRead,lastAuxiliaryRead;
+    private static long nextReadSequence,lastPublishedRead,lastAuxiliaryRead,lastResetRead;
     static final class ReadRequest {
         final String source,token;
         long sequence;
@@ -141,7 +141,7 @@ public final class EventClient {
             // the emergency latch after it has been explicitly cleared.
             prefs().edit().putBoolean("v108_emergency_latched",false)
                 .putBoolean("ec_emergency_pending",false).commit();
-            lastPublishedRead=++nextReadSequence;
+            lastPublishedRead=lastResetRead=++nextReadSequence;
         }
         return result;
     }
@@ -205,30 +205,35 @@ public final class EventClient {
     public static void configureUserSelection(JSONObject desired) throws Exception { configure(true,new JSONObject(desired.toString())); }
     private static void configure(boolean explicit,JSONObject selection) throws Exception {
         JSONObject desired=explicit?selection:config();
-        JSONObject current=http("GET",base()+"/ec/state",null);
+        ReadRequest read=newReadRequest();startRead(read);
+        JSONObject current=readHttp(read,"/ec/state");
         if(!PROTOCOL.equals(current.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
         if(!explicit&&(hasProfileDraft()||current.optJSONObject("campaign")!=null||current.optJSONObject("pending_config")!=null||current.optBoolean("auto",false))){
-            cache(current);return;
+            publishSnapshot(read,current);return;
         }
-        String fingerprint=desired.toString();
+        synchronized(STATE_READ_LOCK){requireSameSource(read);if(read.sequence<lastResetRead)return;}
         JSONObject pending=current.optJSONObject("pending_config");
         if(configMatches(pending==null?current.optJSONObject("config"):pending,desired)){
-            finishProfileSelection(explicit,desired,current);return;
+            finishProfileSelection(read,explicit,desired,current,null);return;
         }
         JSONObject a=current.optJSONObject("account");
         if(a!=null&&!desired.optString("account_mode").equals(a.optString("type")))throw new IOException("Выбран "+desired.optString("account_mode")+", фактический MT5: "+a.optString("type")+". Новые входы остановлены; переключите счёт MT5 отдельно.");
         JSONObject result=command("configure",new JSONObject().put("config",desired).put("allow_deferred",true)
             .put("preserve_auto",explicit).put("accept_pending_profile",explicit));
-        prefs().edit().putString("ec_config_sent",fingerprint).putString("ec_message",result.optString("message")).apply();
-        JSONObject refreshed=http("GET",base()+"/ec/state",null);
-        if(PROTOCOL.equals(refreshed.optString("protocol")))finishProfileSelection(explicit,desired,refreshed);
+        requireSameSource(read);
+        ReadRequest confirmation=new ReadRequest(read.source,read.token,read.sequence);startRead(confirmation);
+        JSONObject refreshed=readHttp(confirmation,"/ec/state");
+        if(PROTOCOL.equals(refreshed.optString("protocol")))finishProfileSelection(confirmation,explicit,desired,refreshed,result.optString("message"));
     }
-    private static void finishProfileSelection(boolean explicit,JSONObject desired,JSONObject state) throws Exception {
+    private static void finishProfileSelection(ReadRequest read,boolean explicit,JSONObject desired,JSONObject state,String message) throws Exception {
         synchronized(STATE_READ_LOCK){
+            requireActiveRead();requireSameSource(read);if(read.sequence<lastPublishedRead)return;
             JSONObject draft=new JSONObject(prefs().getString("ec_profile_draft","{}"));
             JSONObject applied=state.optJSONObject("pending_config");if(applied==null)applied=state.optJSONObject("config");
             if(explicit&&configMatches(draft,desired)&&configMatches(applied,desired))prefs().edit().remove("ec_profile_draft").apply();
-            cache(state);prefs().edit().putString("ec_config_sent",desired.toString()).apply();
+            publishSnapshot(read,state);
+            SharedPreferences.Editor acknowledged=prefs().edit().putString("ec_config_sent",desired.toString());
+            if(message!=null)acknowledged.putString("ec_message",message);acknowledged.apply();
         }
     }
     public static String profileLabel(JSONObject config){
