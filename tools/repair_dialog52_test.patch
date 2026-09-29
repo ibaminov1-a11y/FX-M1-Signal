@@ -1,0 +1,13 @@
+diff --git a/app/src/androidTest/java/com/openai/fxm1/LiveLayoutUiTest.java b/app/src/androidTest/java/com/openai/fxm1/LiveLayoutUiTest.java
+index e7f5a56..068469a 100644
+--- a/app/src/androidTest/java/com/openai/fxm1/LiveLayoutUiTest.java
++++ b/app/src/androidTest/java/com/openai/fxm1/LiveLayoutUiTest.java
+@@ -80,3 +80,7 @@ public class LiveLayoutUiTest {
+         assertNotNull("Reading snapshot must not be replaced by incoming ticks",d.findObject(By.textContains("END OF FULL DETAILS")));
+-        shot("r52-full-details");d.pressBack();
++        UiObject2 close=d.findObject(By.res("android","button1"));
++        assertNotNull("Snapshot close button must remain on screen",close);
++        android.graphics.Rect button=close.getVisibleBounds();
++        assertTrue("Snapshot close button must not be pushed below the screen",button.height()>=32*context.getResources().getDisplayMetrics().density && button.top>=0 && button.bottom<=d.getDisplayHeight());
++        shot("r52-full-details");close.click();
+         ui(()->assertEquals("NEW LIVE DATA",((TextView)rule.getActivity().findViewById(R.id.levelsText)).getText().toString()));
