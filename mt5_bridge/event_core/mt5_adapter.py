@@ -125,6 +125,23 @@ class MT5Broker:
     def history_bars(self,symbol,tf,count=1200):
         return self.bars(symbol,tf,max(1,min(int(count),2000)))
 
+    def chart_snapshot(self,symbol,tf,count=1200):
+        """Raw MT5 display only. Never use these rows to validate a trading clock.
+
+        Position zero is the forming candle according to MT5. Read it together
+        with its predecessors, preserving their native IDs even if PC time is
+        wrong. The Engine keeps this view out of its analysis and SQLite cache.
+        """
+        timeframe=getattr(self.mt5,'TIMEFRAME_'+tf,None)
+        if timeframe is None:raise Blocked('Таймфрейм MT5 не поддерживается')
+        count=max(1,min(int(count),2000))
+        rows=self.mt5.copy_rates_from_pos(symbol,timeframe,0,count+1)
+        if rows is None or len(rows)==0:
+            raise Blocked('MT5 не вернул свечи для графика '+tf+': '+str(self.mt5.last_error()))
+        values=[Bar(int(x['time']),float(x['open']),float(x['high']),float(x['low']),float(x['close']),float(x['tick_volume'])) for x in rows]
+        values=sorted({b.time:b for b in values}.values(),key=lambda b:b.time)
+        return dict(bars=values[:-1][-count:],live_bar=values[-1])
+
     def current_bar(self,symbol,tf):
         """Return the currently forming MT5 bar without mixing it into closed history."""
         timeframe=getattr(self.mt5,'TIMEFRAME_'+tf,None)

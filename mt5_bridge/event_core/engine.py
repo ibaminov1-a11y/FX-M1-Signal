@@ -25,6 +25,7 @@ class Engine:
         self.loaded_legacy_scenarios=bool(saved.get('compute',{}).get('scenarios')) and self.history_model_version!=MARKET_CLOCK_VERSION
         self.history_migration={}
         self.quote_diagnostics={}
+        self.chart_market=None;self.last_chart_attempt=-1.
         self.real_armed=False
         # Ephemeral by design: never resurrect a reversal after Bridge restart.
         self.pending_reversal=None
@@ -336,6 +337,7 @@ class Engine:
             self.info=self.broker.symbol(self.config.symbol)
         except Exception as exc:
             self.market_errors=['Инструмент MT5 недоступен: '+str(exc)]
+            self.chart_market=None
             return
         symbol=self.info['name']
         try:
@@ -348,6 +350,7 @@ class Engine:
             self.quote_diagnostics=self.broker.quote_diagnostics(symbol)
         if not self.quote_ready:
             # A stale/first tick cannot establish a candle clock or contaminate SQLite.
+            self._refresh_chart_market(now)
             return
         self._prepare_market_history(now)
         if self.last_market_attempt<0 or now-self.last_market_attempt>=1:
@@ -400,6 +403,52 @@ class Engine:
             tf=TF_SECONDS[self.config.timeframe]
             if now-(self.bars[-1].time+tf)>tf*1.5:
                 self.market_errors.append('Закрытые свечи MT5 исторические; для входа нужны новые данные')
+        if self.market_errors:self._refresh_chart_market(now)
+        else:self.chart_market=None
+
+    def _refresh_chart_market(self,now):
+        """Keep display candles available while all execution gates stay closed."""
+        if not hasattr(self.broker,'chart_snapshot'):
+            self.chart_market=None;return
+        symbol=self.info.get('name',self.config.symbol)
+        identity=(self.market_scope(),symbol,self.config.timeframe)
+        previous=self.chart_market or {}
+        same=(previous.get('scope'),previous.get('symbol'),previous.get('timeframe'))==identity
+        if same and 0<=now-self.last_chart_attempt<1:return
+        self.last_chart_attempt=now
+        reason='; '.join(self.market_errors)
+        q=self.quote
+        bad_clock=q is not None and now-q.time_msc/1000 < -2
+        view=dict(scope=identity[0],symbol=symbol,timeframe=self.config.timeframe,
+            read_only=True,clock='MT5_RAW',status='UNVERIFIED_TIME' if bad_clock else 'UNVERIFIED',
+            reason=reason,received_at=now,bars=[],live_bar=None)
+        try:
+            raw=self.broker.chart_snapshot(symbol,self.config.timeframe,1200)
+            view['bars']=[asdict(b) for b in raw['bars']]
+            view['live_bar']=asdict(raw['live_bar']) if raw.get('live_bar') else None
+        except Exception as exc:
+            # Never borrow another instrument's candles or pretend a failed read succeeded.
+            view['reason']+='; График MT5 не обновлён: '+str(exc)
+        self.chart_market=view
+
+    def refresh_view(self):
+        """Force data reads for pull-to-refresh, without running order dispatch.
+
+        The autonomous worker owns signal transitions and execution. This path
+        neither resumes it nor turns a UI gesture into an extra trading cycle.
+        """
+        with self.lock:
+            now=self.clock();self.history_time=0.;self.last_market_attempt=-1.;self.last_chart_attempt=-1.
+            self._refresh(now)
+            self._refresh_market(now)
+            result=self.snapshot()
+            errors=list(self.market_errors)
+            if not self.history_ok:errors.append('История сделок не обновлена: '+self.history_error)
+            if self.market_errors:
+                result['decision']=Decision(phase='DATA_BLOCK',reason='; '.join(self.market_errors)).json()
+                result['forecast'].update(stale=True,available=False,reason='; '.join(self.market_errors))
+            result.update(refresh_time=now,refresh_errors=errors)
+            return result
 
     def _reversal_enabled(self):
         # This feature is a DEMO continuation, never an implicit permission for REAL.
@@ -988,6 +1037,7 @@ class Engine:
             return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,runtime_revision=REVISION,server_time=now,
                 market_history_generation=MARKET_CLOCK_VERSION,history_migration=self.history_migration,
                 quote_diagnostics=self.quote_diagnostics,
+                chart_market=self.chart_market,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
                 market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
                 risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),

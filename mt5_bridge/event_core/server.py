@@ -37,6 +37,8 @@ def create_app(engine,token):
     def state():
         with engine.lock:
             engine.heartbeat=engine.clock()
+            if request.args.get('refresh')=='1':
+                return jsonify(engine.refresh_view())
             return jsonify(snap())
 
     @app.get('/ec/history')
