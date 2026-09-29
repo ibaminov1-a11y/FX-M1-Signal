@@ -19,6 +19,16 @@ class Engine:
     def __init__(self,broker,store,clock=time.time):
         self.broker=broker;self.store=store;self.clock=clock;self.lock=threading.RLock()
         saved=store.load('engine',{})
+        self.broker_clock_identity=broker.clock_identity() if hasattr(broker,'clock_identity') else MARKET_CLOCK_VERSION
+        prior_clock=saved.get('broker_clock_identity',MARKET_CLOCK_VERSION)
+        if prior_clock!=self.broker_clock_identity:
+            if saved.get('campaign') or store.pending():
+                raise Blocked('Смена часов MT5 допустима только без сохранённой кампании и неизвестного исполнения')
+            broker.connect()
+            if broker.positions() or broker.orders():
+                raise Blocked('Смена часов MT5 допустима только без открытых позиций и заявок')
+            # Observation times are meaningful only within their original clock policy.
+            saved['compute']={};saved['strategy']={}
         self.config=Config(**saved.get('config',{})).validate()
         self.account_key=saved.get('account_key','')
         self.history_model_version=saved.get('history_model_version','UNVERIFIED')
@@ -72,6 +82,7 @@ class Engine:
             daily_latch=self.daily_latch,ack=self.ack,last_exit=self.last_exit,
             exit_pending=self.exit_pending,pending_config=self.pending_config,
             history_model_version=self.history_model_version,
+            broker_clock_identity=self.broker_clock_identity,
             strategy=self.strategy.state(),compute=self.compute.state()))
 
     def _consume_event(self,event_id):
@@ -79,11 +90,17 @@ class Engine:
         else:self.strategy.consume(event_id)
 
     def market_scope(self):
-        return (self.account_key or 'UNBOUND')+'|'+symbol_key(self.config.symbol)
+        scope=(self.account_key or 'UNBOUND')+'|'+symbol_key(self.config.symbol)
+        if self.broker_clock_identity!=MARKET_CLOCK_VERSION:
+            scope+='|'+self.broker_clock_identity
+        return scope
 
     def _evaluate_compute(self,now):
         extra={}
         if self.config.engine_mode=='SCENARIO_V2':
+            extra['clock_generation']=self.broker_clock_identity
+            extra['context']=self.context
+            extra['context_tf']=CONTEXT[self.config.timeframe]
             extra['campaign']=self.campaign if (self.auto and not self.paused and not self.emergency
                 and not self.recovery and not self.exit_pending and not self.pending_config
                 and self.config.dynamic_adds and self._owned()) else None
@@ -156,6 +173,12 @@ class Engine:
         a=self.broker.account();current_positions=self.broker.positions();current_orders=self.broker.orders()
         self.account=a;self.account_time=now;self.positions=current_positions;self.orders=current_orders
         if self.account_key and a['key']!=self.account_key:
+            # The account snapshot now identifies the newly selected MT5 account.
+            # Never publish the bound account's money/history under that identity.
+            # Keep campaign-specific reconciliation data for a return to its account.
+            self.deals=[];self.rows=[];self.history_ok=False;self.history_time=0.
+            self.history_error='Счёт MT5 изменён; история текущего счёта не подтверждена'
+            self.risk={'allowed':False,'blocks':['ACCOUNT_CHANGED'],'message':self.history_error}
             self.auto=False;self.paused=True;self.recovery=True;self.real_armed=False;self.save()
             raise Blocked('Счёт MT5 изменён; привяжите текущий счёт в настройках EventCore')
         if not self.account_key:self.account_key=a['key'];self.save()
@@ -357,10 +380,18 @@ class Engine:
         if self.last_market_attempt<0 or now-self.last_market_attempt>=1:
             self.last_market_attempt=now;self.bar_errors=[]
             layers=(('bars',self.config.timeframe),('context',CONTEXT[self.config.timeframe]))
-            if self.config.timeframe=='M5':
+            scenario=self.config.engine_mode=='SCENARIO_V2'
+            if scenario:
+                layers=(('bars',self.config.timeframe),('m1','M1'),('m15','M15'),('h1','H1'),
+                        ('context',CONTEXT[self.config.timeframe]))
+            elif self.config.timeframe=='M5':
                 layers=(('m1','M1'),('bars','M5'),('m15','M15'),('h1','H1'))
+            loaded={}
             for attr,tf in layers:
                 try:
+                    if tf in loaded:
+                        setattr(self,attr,loaded[tf])
+                        continue
                     history_key=(self.market_scope(),tf)
                     if history_key not in self._history_loaded and hasattr(self.broker,'history_bars'):
                         values=list(self.broker.history_bars(symbol,tf,1200))
@@ -369,7 +400,7 @@ class Engine:
                     if not values:
                         raise Blocked('MT5 вернул пустую историю '+tf)
                     validate_bar_history(values,tf,now)
-                    fingerprint=tuple((b.time,b.open,b.high,b.low,b.close,b.volume) for b in values)
+                    fingerprint=tuple((b.time,b.open,b.high,b.low,b.close,b.volume,b.clock_offset_seconds) for b in values)
                     if self._history_fingerprint.get(history_key)!=fingerprint:
                         self.store.save_bars(self.market_scope(),tf,values,now)
                         self._history_fingerprint[history_key]=fingerprint
@@ -377,19 +408,21 @@ class Engine:
                         values=[Bar(**row) for row in self.store.read_bars(self.market_scope(),tf,limit=1200)]
                     validate_bar_history(values,tf,now)
                     setattr(self,attr,values)
+                    loaded[tf]=values
                     self._history_loaded.add(history_key)
                 except Exception as exc:
                     self.bar_errors.append('История '+tf+' не обновлена: '+str(exc))
-            if self.config.timeframe=='M5':
-                self.context=self.m15
+            if scenario or self.config.timeframe=='M5':
+                if not scenario:self.context=self.m15
+                live_tf=self.config.timeframe
                 try:
-                    live=self.broker.current_bar(symbol,'M5')
+                    live=self.broker.current_bar(symbol,live_tf)
                     if live.time>now+LIVE_M5_CLOCK_SKEW_SEC:
-                        raise Blocked('MT5 вернул текущую M5 свечу из будущего')
+                        raise Blocked('MT5 вернул текущую '+live_tf+' свечу из будущего')
                     self.live_bar=live
                 except Exception as exc:
                     self.live_bar=None
-                    self.bar_errors.append('Текущая M5 свеча не обновлена: '+str(exc))
+                    self.bar_errors.append('Текущая '+live_tf+' свеча не обновлена: '+str(exc))
             else:
                 self.m1=[];self.m15=[];self.h1=[];self.live_bar=None
             if not self.bar_errors:
@@ -425,6 +458,8 @@ class Engine:
             reason=reason,received_at=now,bars=[],live_bar=None)
         try:
             raw=self.broker.chart_snapshot(symbol,self.config.timeframe,1200)
+            view['clock_identity']=raw.get('clock_identity',self.broker_clock_identity)
+            view['offset_minutes']=raw.get('offset_minutes',0)
             view['bars']=[asdict(b) for b in raw['bars']]
             view['live_bar']=asdict(raw['live_bar']) if raw.get('live_bar') else None
         except Exception as exc:
@@ -1038,7 +1073,7 @@ class Engine:
                     side=c['side'],entry=c['last_entry'],invalidation=c['invalidation'],requested_volume=c.get('requested_volume'))
             display_forecast['reversal_status']=copy.deepcopy(self.reversal_status)
             return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,runtime_revision=REVISION,server_time=now,
-                market_history_generation=MARKET_CLOCK_VERSION,history_migration=self.history_migration,
+                market_history_generation=self.broker_clock_identity,history_migration=self.history_migration,
                 quote_diagnostics=self.quote_diagnostics,
                 chart_market=self.chart_market,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,

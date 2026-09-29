@@ -154,7 +154,7 @@ public final class EventClient {
         String fee="REAL".equals(accountMode)?p.getString(feePrefKey(),"").trim():"0";
         double lot=TradeSettings.parseVolume(p.getString("ec_lot_cap","0.01"),null);
         return new JSONObject().put("symbol",p.getString("selected_symbol","EUR/USD"))
-            .put("timeframe","M5").put("mode",mode()).put("engine_mode","SCENARIO_V2").put("volume_mode","FIXED")
+            .put("timeframe",tf()).put("mode",mode()).put("engine_mode","SCENARIO_V2").put("volume_mode","FIXED")
             .put("account_mode",accountMode).put("risk_pct",risk)
             .put("optional_position_limit",0)
             .put("fee_per_lot",fee.isEmpty()?JSONObject.NULL:Double.parseDouble(fee.replace(',','.')))
@@ -179,33 +179,53 @@ public final class EventClient {
             if(remote.optBoolean(key)!=desired.optBoolean(key))return false;
         return true;
     }
-    public static boolean needsConfigure(JSONObject state) throws Exception {
-        if(state==null||state.optBoolean("emergency",false))return false;
-        JSONObject desired=config(),pending=state.optJSONObject("pending_config");
-        if(pending!=null&&configMatches(pending,desired))return false;
-        if(state.optJSONObject("campaign")==null&&(state.optBoolean("auto",false)||state.optBoolean("exit_pending",false)))return false;
-        return !configMatches(state.optJSONObject("config"),desired);
+    public static boolean hasProfileDraft(){return prefs().contains("ec_profile_draft");}
+    /** Called only from an actual selector change; a poll may never create this draft. */
+    public static JSONObject rememberProfileSelection(String symbol,int timeframe,int mode,int risk) throws Exception {
+        synchronized(STATE_READ_LOCK){
+            prefs().edit().putString("selected_symbol",symbol).putInt("entry_tf_pos",timeframe)
+                .putInt("signal_mode_pos",mode).putInt("risk_pos",risk).apply();
+            JSONObject desired=config();prefs().edit().putString("ec_profile_draft",desired.toString()).apply();return desired;
+        }
     }
-    public static void configure() throws Exception { configure(false); }
-    public static void configureUserSelection() throws Exception { configure(true); }
-    private static void configure(boolean explicit) throws Exception {
-        JSONObject desired=config();
+    public static boolean needsConfigure(JSONObject state) throws Exception {
+        if(state==null||state.optBoolean("emergency",false)||hasProfileDraft())return false;
+        if(state.optJSONObject("campaign")!=null||state.optJSONObject("pending_config")!=null||state.optBoolean("auto",false)||state.optBoolean("exit_pending",false))return false;
+        return !configMatches(state.optJSONObject("config"),config());
+    }
+    public static void configure() throws Exception { configure(false,null); }
+    public static void configureUserSelection() throws Exception { configureUserSelection(config()); }
+    public static void configureUserSelection(JSONObject desired) throws Exception { configure(true,new JSONObject(desired.toString())); }
+    private static void configure(boolean explicit,JSONObject selection) throws Exception {
+        JSONObject desired=explicit?selection:config();
         JSONObject current=http("GET",base()+"/ec/state",null);
         if(!PROTOCOL.equals(current.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
-        if(current.optJSONObject("campaign")!=null||current.optBoolean("auto",false)){
-            cache(current);desired=config();
+        if(!explicit&&(hasProfileDraft()||current.optJSONObject("campaign")!=null||current.optJSONObject("pending_config")!=null||current.optBoolean("auto",false))){
+            cache(current);return;
         }
         String fingerprint=desired.toString();
-        if(configMatches(current.optJSONObject("config"),desired)){
-            cache(current);prefs().edit().putString("ec_config_sent",fingerprint).apply();return;
+        JSONObject pending=current.optJSONObject("pending_config");
+        if(configMatches(pending==null?current.optJSONObject("config"):pending,desired)){
+            finishProfileSelection(explicit,desired,current);return;
         }
         JSONObject a=current.optJSONObject("account");
-        if(a!=null&&!accountMode().equals(a.optString("type")))throw new IOException("Выбран "+accountMode()+", фактический MT5: "+a.optString("type")+". Новые входы остановлены; переключите счёт MT5 отдельно.");
+        if(a!=null&&!desired.optString("account_mode").equals(a.optString("type")))throw new IOException("Выбран "+desired.optString("account_mode")+", фактический MT5: "+a.optString("type")+". Новые входы остановлены; переключите счёт MT5 отдельно.");
         JSONObject result=command("configure",new JSONObject().put("config",desired).put("allow_deferred",true)
             .put("preserve_auto",explicit).put("accept_pending_profile",explicit));
         prefs().edit().putString("ec_config_sent",fingerprint).putString("ec_message",result.optString("message")).apply();
         JSONObject refreshed=http("GET",base()+"/ec/state",null);
-        if(PROTOCOL.equals(refreshed.optString("protocol")))cache(refreshed);
+        if(PROTOCOL.equals(refreshed.optString("protocol")))finishProfileSelection(explicit,desired,refreshed);
+    }
+    private static void finishProfileSelection(boolean explicit,JSONObject desired,JSONObject state) throws Exception {
+        synchronized(STATE_READ_LOCK){
+            JSONObject draft=new JSONObject(prefs().getString("ec_profile_draft","{}"));
+            JSONObject applied=state.optJSONObject("pending_config");if(applied==null)applied=state.optJSONObject("config");
+            if(explicit&&configMatches(draft,desired)&&configMatches(applied,desired))prefs().edit().remove("ec_profile_draft").apply();
+            cache(state);prefs().edit().putString("ec_config_sent",desired.toString()).apply();
+        }
+    }
+    public static String profileLabel(JSONObject config){
+        return config==null?"—":config.optString("symbol")+" · "+config.optString("timeframe")+" · "+config.optString("mode");
     }
     public static JSONObject poll() throws Exception {
         prefs().edit().putLong("state_last_attempt_ms",System.currentTimeMillis()).apply();
@@ -241,17 +261,19 @@ public final class EventClient {
     public static JSONObject refreshAll() throws Exception {
         return refreshAll(newReadRequest());
     }
-    static JSONObject refreshAll(ReadRequest read) throws Exception {
+    static JSONObject refreshAll(ReadRequest read) throws Exception {return refreshSnapshot(read,true);}
+    public static JSONObject refreshFinancial() throws Exception {return refreshSnapshot(newReadRequest(),false);}
+    private static JSONObject refreshSnapshot(ReadRequest read,boolean full) throws Exception {
             startRead(read);
             prefs().edit().putLong("state_last_attempt_ms",System.currentTimeMillis()).apply();
-            JSONObject s=readHttp(read,"/ec/state?refresh=1");
+            JSONObject s=readHttp(read,full?"/ec/state?refresh=1":"/ec/state");
             long snapshotReceived=SystemClock.elapsedRealtime();
             if(!PROTOCOL.equals(s.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
             JSONArray errors=s.optJSONArray("refresh_errors");if(errors==null)errors=new JSONArray();
-            if(!s.has("refresh_time"))errors.put("Bridge не подтвердил полное обновление; обновите Bridge");
+            if(full&&!s.has("refresh_time"))errors.put("Bridge не подтвердил полное обновление; обновите Bridge");
             JSONObject recent=refreshPart(read,"/trade-ledger?days=30&limit=1000","История за 30 дней","trades",errors);
             JSONObject all=refreshPart(read,"/trade-ledger?days=3650&limit=1000","Полная история","trades",errors);
-            JSONObject journal=refreshPart(read,"/ec/journal?limit=100","Журнал Bridge","events",errors);
+            JSONObject journal=full?refreshPart(read,"/ec/journal?limit=100","Журнал Bridge","events",errors):null;
             requireActiveRead();
             s.put("account_age",s.optDouble("account_age",999)+(SystemClock.elapsedRealtime()-snapshotReceived)/1000.0);
             s.put("refresh_errors",errors);
@@ -263,8 +285,9 @@ public final class EventClient {
             if(!sameAccount){errors.put("Счёт MT5 изменился; повторите обновление");return s;}
             if(read.sequence<lastAuxiliaryRead)return s;
             double historyTime=current.optDouble("history_time",0);
-            boolean recentCurrent=recent!=null&&recent.optDouble("history_time",0)>=historyTime;
-            boolean allCurrent=all!=null&&all.optDouble("history_time",0)>=historyTime;
+            String accountKey=account.optString("key");
+            boolean recentCurrent=recent!=null&&recent.optDouble("history_time",0)>=historyTime&&(!recent.has("account_key")||accountKey.equals(recent.optString("account_key")));
+            boolean allCurrent=all!=null&&all.optDouble("history_time",0)>=historyTime&&(!all.has("account_key")||accountKey.equals(all.optString("account_key")));
             if((recent!=null&&!recentCurrent)||(all!=null&&!allCurrent))errors.put("История изменилась во время обновления; повторите свайп");
             String currency=prefs().getString("mt5_currency_snapshot","USD");
             SharedPreferences.Editor editor=prefs().edit();
@@ -328,6 +351,8 @@ public final class EventClient {
             .append("\nРешение и исполнение: данные MT5");
         if(campaign!=null)context.append("RECONCILING".equals(s.optString("campaign_state"))?
             "\nПозиций MT5 нет; сверяем завершение кампании: ":"\nОткрытая кампания: ").append(campaignSide);
+        JSONObject pendingProfile=s.optJSONObject("pending_config");
+        if(pendingProfile!=null)context.append("\nПосле кампании: ").append(profileLabel(pendingProfile));
         JSONObject gate=s.optJSONObject("entry_gate");
         if(gate!=null)context.append("\nНовые входы: ").append(gate.optString("reason"));
         JSONObject reversal=s.optJSONObject("reversal_status");
@@ -368,14 +393,24 @@ public final class EventClient {
             .putString("risk_snapshot",risk).putString("risk_detail_json",rs.toString()).putLong("smart_snapshot_ms",now)
             .putString("position_manager_status","Bridge EventCore · "+(campaign==null?"ожидание кампании":"сопровождение "+campaignSide+" · "+cfg.optString("mode")))
             .putString("bg_status",s.optString("execution",why));
+        if(!p.getString("mt5_account_key_snapshot","").equals(a.optString("key","")))
+            e.remove("trade_log_snapshot").remove("trade_log_full_snapshot").remove("stats_snapshot").remove("money_realized_snapshot");
         if(s.optBoolean("emergency",false))e.putBoolean("v108_emergency_latched",true);
-        // A running Bridge profile is authoritative even when another phone enabled it.
-        // Persist it before the service's needsConfigure() check, preventing a stale local
-        // mode from becoming a deferred profile change when the campaign finishes.
-        if(s.optJSONObject("campaign")!=null||s.optBoolean("auto",false)){
-            e.putInt("signal_mode_pos","SCALP".equalsIgnoreCase(cfg.optString("mode"))?1:0)
-                .putString("selected_symbol",symbol);
-            double riskPct=cfg.optDouble("risk_pct",.25);
+        // Explicit local choices survive in-flight reads. Otherwise show Bridge's next
+        // profile when queued, while state_* continues to describe the active campaign.
+        JSONObject choice=s.optJSONObject("pending_config");if(choice==null)choice=cfg;
+        boolean draftPending=hasProfileDraft();
+        if(draftPending&&configMatches(choice,new JSONObject(p.getString("ec_profile_draft","{}")))){
+            // A later read can confirm a command whose response was lost, or an
+            // explicit AUTO enable that accepted this profile. Never clear a newer choice.
+            e.remove("ec_profile_draft");draftPending=false;
+        }
+        if(!draftPending&&(s.optJSONObject("campaign")!=null||s.optJSONObject("pending_config")!=null||s.optBoolean("auto",false))){
+            e.putInt("signal_mode_pos","SCALP".equalsIgnoreCase(choice.optString("mode"))?1:0)
+                .putString("selected_symbol",choice.optString("symbol",symbol));
+            String[] frames={"M1","M5","M10","M15","H1","H4","D1","W1","MN1"};
+            for(int i=0;i<frames.length;i++)if(frames[i].equals(choice.optString("timeframe","M5")))e.putInt("entry_tf_pos",i);
+            double riskPct=choice.optDouble("risk_pct",.25);
             e.putInt("risk_pos",riskPct>=1?2:riskPct>=.5?1:0);
         }
         if(s.optBoolean("history_ok",false))e.putString("money_realized_snapshot","Сегодня: "+moneySummary(s.optJSONObject("today"))+"\nВсего: "+moneySummary(s.optJSONObject("all"))).putString("money_refresh_error","");

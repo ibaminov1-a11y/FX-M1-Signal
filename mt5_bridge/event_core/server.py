@@ -9,6 +9,7 @@ from .model import Blocked, TF_SECONDS
 from .mt5_adapter import MT5Broker, MAGIC
 from .store import Store, ProcessLock
 from .risk import summary
+from .clock_setup import load_clock_policy
 
 
 def create_app(engine,token):
@@ -49,7 +50,7 @@ def create_app(engine,token):
             before=request.args.get('before',type=int);limit=max(1,min(request.args.get('limit',1000,type=int),2000))
             ready=engine.store.market_clock_ready(engine.market_scope())
             rows=engine.store.read_bars(engine.market_scope(),tf,before,limit) if ready else []
-            return jsonify(ok=True,scope=engine.market_scope(),tf=tf,bars=rows,clock='UTC_NATIVE_R51',cache_verified=ready,
+            return jsonify(ok=True,scope=engine.market_scope(),tf=tf,bars=rows,clock=engine.broker_clock_identity,cache_verified=ready,
                 next_before=rows[0]['time'] if rows else None,has_more=len(rows)==limit,read_only=True)
 
     @app.get('/ec/scenarios')
@@ -111,7 +112,7 @@ def create_app(engine,token):
                     gross_pl=sum(d['profit'] for d in deals),commission=sum(d.get('commission',0)+d.get('fee',0) for d in deals),
                     swap=sum(d.get('swap',0) for d in deals),close_comment=outs[-1].get('comment','') if outs else ''))
             return jsonify(ok=True,trades=trades[offset:offset+limit],total=len(trades),summary=s['all'],today=s['today'],
-                           history_time=s['history_time'],timezone='UTC+5')
+                           history_time=s['history_time'],account_key=s['account'].get('key',''),timezone='UTC+5')
 
     @app.get('/risk-state')
     def risk():
@@ -180,7 +181,8 @@ def main():
         except OSError:pass
     token=tokenfile.read_text(encoding='utf-8').strip()
     if len(token)<32:raise SystemExit('Ключ Bridge повреждён. Не удаляйте базу состояния.')
-    store=Store(directory/'campaign.sqlite3');engine=Engine(MT5Broker(mt5,args.terminal),store)
+    policy=load_clock_policy(directory)
+    store=Store(directory/'campaign.sqlite3');engine=Engine(MT5Broker(mt5,args.terminal,**policy),store)
     def worker():
         while True:
             try:engine.step()

@@ -177,7 +177,7 @@ final class ScenarioMapRenderer {
         if(unverified){
             java.text.SimpleDateFormat format=new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US);format.setTimeZone(TimeZone.getTimeZone("UTC"));
             text(format.format(new Date(first*1000))+" — "+format.format(new Date((live==null?last:live.optLong("time"))*1000)),left,h-24*d,MUTED,9);
-            text("Время MT5 без коррекции · прогноз скрыт",left,h-9*d,MUTED,8);return;
+            text(ScenarioUi.chartClockLabel(f)+" · прогноз скрыт",left,h-9*d,MUTED,8);return;
         }
         if(historical){
             text(new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US).format(new Date(first*1000))+" — "+new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US).format(new Date(last*1000)),left,h-24*d,MUTED,9);

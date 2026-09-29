@@ -1,0 +1,15 @@
+Native Android API35 regression reproduction
+Commit c69380378c52eeeed27101de08d0d341401a8973 (R54 production + R55 tests)
+Run 36552940343, job 109355218874. All five cases failed on profile-control locks.
+2026-09-29T10:05:32.4037212Z Starting 5 tests on emulator-5554 - 15
+2026-09-29T10:05:32.4038584Z com.openai.fxm1.R55ControlsUiTest > armedAutoWithInvalidQuoteKeepsAllProfileSelectorsUsable[emulator-5554 - 15] [31mFAILED [0m
+2026-09-29T10:05:32.4039478Z 	java.lang.AssertionError: AUTO without campaign must not disable profile controls: 2130837568
+2026-09-29T10:05:32.4041714Z com.openai.fxm1.R55ControlsUiTest > refreshingWithArmedAutoDoesNotIssueCommandsOrEraseChoice[emulator-5554 - 15] [31mFAILED [0m
+2026-09-29T10:05:32.4042981Z 	java.lang.AssertionError: Profile selector must be usable
+2026-09-29T10:05:32.4044142Z com.openai.fxm1.R55ControlsUiTest > selectedEntryTimeframeReachesTheBridgeProfile[emulator-5554 - 15] [31mFAILED [0m
+2026-09-29T10:05:32.4044839Z 	java.lang.AssertionError: Profile selector must be usable
+2026-09-29T10:05:32.4047731Z com.openai.fxm1.R55ControlsUiTest > campaignKeepsActiveProfileAndShowsDeferredChoiceAcrossPolls[emulator-5554 - 15] [31mFAILED [0m
+2026-09-29T10:05:32.4049081Z 	java.lang.AssertionError: Profile selector must be usable
+2026-09-29T10:05:32.4050781Z com.openai.fxm1.R55ControlsUiTest > symbolAndModeChangesReachArmedBridgeWhilePhoneMonitoringIsStopped[emulator-5554 - 15] [31mFAILED [0m
+2026-09-29T10:05:32.4070649Z 	java.lang.AssertionError: Profile selector must be usable
+2026-09-29T10:05:32.4072888Z Finished 5 tests on emulator-5554 - 15

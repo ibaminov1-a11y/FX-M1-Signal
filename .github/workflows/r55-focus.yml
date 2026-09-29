@@ -1,0 +1,44 @@
+name: R5.5 profile regression checks
+on:
+  push:
+    branches: [feature/r55-focus]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: r55-focus-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash tools/audit55_focus_ui.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R55-FOCUS-${{ github.sha }}
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/

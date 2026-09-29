@@ -76,13 +76,13 @@ jobs:
           gradle --no-daemon --stacktrace :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee evidence/android-build.log
           test -s app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Verify R5.4 build identity before runtime
+      - name: Verify R5.5 build identity before runtime
         shell: bash
         run: |
           PYTHONPATH=mt5_bridge python - <<'PY'
           from event_core import VERSION, BUILD, PROTOCOL
           assert VERSION == '10.9-EC1', VERSION
-          assert BUILD == '10.9-EC1-R5.4', BUILD
+          assert BUILD == '10.9-EC1-R5.5', BUILD
           assert PROTOCOL == 'fxm1.event.v1', PROTOCOL
           print(VERSION, BUILD, PROTOCOL)
           PY

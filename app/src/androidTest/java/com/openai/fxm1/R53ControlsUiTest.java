@@ -100,7 +100,7 @@ public class R53ControlsUiTest {
         await(()->{final boolean[] replaced={false};ui(()->{MainActivity current=resumedActivity();replaced[0]=current!=null&&current!=previous[0];});return replaced[0];},"A new Activity must resume after recreation");
         ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertEquals("SCALP",mode.getSelectedItem().toString());
             Spinner tf=activity().findViewById(R.id.entryTimeframeSpinner);assertEquals("M5",tf.getSelectedItem().toString());
-            assertFalse("Scenario V2 only supports M5; unsupported frames must not be selectable",tf.isEnabled());});
+            assertTrue("Supported entry frames remain selectable",tf.isEnabled());});
         press(R.id.signalModeSpinner);click("NORMAL");
         await(()->"NORMAL".equals(EventClient.state().optJSONObject("config").optString("mode")),"Switching back must reconfigure Bridge");
     }
@@ -117,7 +117,7 @@ public class R53ControlsUiTest {
         assertTrue("Starting phone monitoring must preserve active Bridge AUTO",state().getBoolean("auto"));
         assertFalse(state().getBoolean("paused"));
         assertEquals("Active remote mode must become the saved phone mode",1,prefs.getInt("signal_mode_pos",-1));
-        ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertFalse(mode.isEnabled());assertEquals("SCALP",mode.getSelectedItem().toString());});
+        ui(()->{Spinner mode=activity().findViewById(R.id.signalModeSpinner);assertTrue(mode.isEnabled());assertEquals("SCALP",mode.getSelectedItem().toString());});
         EventClient.command("disable",new JSONObject());EventClient.poll();sync();
         assertFalse("Unlocking must not queue the phone's stale NORMAL profile",EventClient.needsConfigure(EventClient.state()));
         assertTrue(state().isNull("pending_config"));

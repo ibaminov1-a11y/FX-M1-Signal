@@ -13,7 +13,7 @@ restore() {
 trap restore EXIT
 # R5.4 tests use the new refresh API; this historical reproduction compiles
 # only tests compatible with the original build921, then restores every test.
-for test in app/src/androidTest/java/com/openai/fxm1/R54*Test.java; do
+for test in app/src/androidTest/java/com/openai/fxm1/R54*Test.java app/src/androidTest/java/com/openai/fxm1/R55*Test.java; do
   if [ -f "$test" ]; then mv "$test" "$new_tests/"; fi
 done
 for name in "${files[@]}"; do git show "1b2c4a02a912ec76c06954bab36bb68e558d2b96:app/src/main/java/com/openai/fxm1/$name.java" > "app/src/main/java/com/openai/fxm1/$name.java"; done
