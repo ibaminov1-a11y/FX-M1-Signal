@@ -70,6 +70,7 @@ public class R53ControlsUiTest {
         java.net.HttpURLConnection connection=(java.net.HttpURLConnection)new java.net.URL(source+"/ec/state").openConnection();
         connection.setConnectTimeout(2500);connection.setReadTimeout(3500);
         connection.setRequestProperty("Authorization","Bearer ci-fixture-token-not-for-real-trading");
+        connection.setRequestProperty("X-FXM1-Client","R51");
         try(InputStream input=connection.getInputStream();ByteArrayOutputStream bytes=new ByteArrayOutputStream()){
             byte[] buffer=new byte[4096];int count;while((count=input.read(buffer))!=-1)bytes.write(buffer,0,count);
             return new JSONObject(bytes.toString("UTF-8"));
