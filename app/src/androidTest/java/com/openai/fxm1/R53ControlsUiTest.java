@@ -64,6 +64,17 @@ public class R53ControlsUiTest {
         ui(()->{try{method.invoke(activity());}catch(Exception e){throw new AssertionError(e);}});
     }
     JSONObject state()throws Exception{return EventClient.http("GET",EventClient.base()+"/ec/state",null);}
+    // An independent observer verifies Bridge AUTO while the phone remains disconnected.
+    // This raw test read never publishes a snapshot into the phone's EventClient cache.
+    JSONObject independentState(String source)throws Exception {
+        java.net.HttpURLConnection connection=(java.net.HttpURLConnection)new java.net.URL(source+"/ec/state").openConnection();
+        connection.setConnectTimeout(2500);connection.setReadTimeout(3500);
+        connection.setRequestProperty("Authorization","Bearer ci-fixture-token-not-for-real-trading");
+        try(InputStream input=connection.getInputStream();ByteArrayOutputStream bytes=new ByteArrayOutputStream()){
+            byte[] buffer=new byte[4096];int count;while((count=input.read(buffer))!=-1)bytes.write(buffer,0,count);
+            return new JSONObject(bytes.toString("UTF-8"));
+        }finally{connection.disconnect();}
+    }
     void fixture(JSONObject data)throws Exception{EventClient.http("POST",EventClient.base()+"/test/r53-state",data);EventClient.poll();sync();}
     void scene(String family)throws Exception{EventClient.http("POST",EventClient.base()+"/test/r5-market",new JSONObject().put("family",family));EventClient.poll();sync();}
     @Before public void setup()throws Exception {
@@ -180,10 +191,15 @@ public class R53ControlsUiTest {
     }
 
     @Test public void offlineRefreshDisablesControlsAndRecoveryRefreshRestoresThem()throws Exception {
-        EventClient.offline(new IOException("r53 simulated phone disconnect"));sync();
+        String source=EventClient.base();
+        prefs.edit().putString("server_url","http://127.0.0.1:1").commit();
+        try{EventClient.poll();fail("Unreachable phone source must fail");}
+        catch(IOException expected){EventClient.offline(expected);}
+        sync();
         assertTrue(text(R.id.serverStatusText),text(R.id.serverStatusText).contains("OFFLINE"));
         assertTrue(text(R.id.autoStatusText).contains("Связь потеряна"));
         ui(()->assertFalse(((Switch)activity().findViewById(R.id.autoTradingSwitch)).isEnabled()));
+        prefs.edit().putString("server_url",source).commit();
         EventClient.poll();sync();
         assertTrue(text(R.id.serverStatusText).contains("MT5: CONNECTED"));
         ui(()->assertTrue(((Switch)activity().findViewById(R.id.autoTradingSwitch)).isEnabled()));
@@ -196,8 +212,11 @@ public class R53ControlsUiTest {
         fixture(new JSONObject()); // Configure clears the forecast until the next engine step.
         assertEquals(3,EventClient.state().getJSONObject("forecast").getInt("map_version"));
         assertTrue(state().getBoolean("auto"));
-        String stored=prefs.getString("ec_state","");
-        EventClient.offline(new IOException("r53 simulated phone disconnect"));sync();
+        String source=EventClient.base();
+        prefs.edit().putString("server_url","http://127.0.0.1:1").commit();
+        try{EventClient.poll();fail("Unreachable phone source must fail");}
+        catch(IOException expected){EventClient.offline(expected);}
+        String stored=prefs.getString("ec_state","");sync();
         JSONObject cached=EventClient.state();
         assertFalse("Cached forecast must not be labelled LIVE",SparklineView.mapDescription(cached.getJSONObject("forecast")).contains(" LIVE "));
         assertFalse(ScenarioUi.levels(cached).contains("· LIVE"));
@@ -205,13 +224,14 @@ public class R53ControlsUiTest {
         assertTrue(cached.getJSONObject("forecast").getBoolean("client_offline"));
         assertEquals("Presentation marker must not rewrite the cached Bridge response",stored,prefs.getString("ec_state",""));
         assertTrue(cached.getBoolean("auto"));assertTrue(prefs.getBoolean("auto_trading",false));
-        assertTrue("Phone disconnect must not disable independent Bridge AUTO",state().getBoolean("auto"));
+        assertTrue("Phone disconnect must not disable independent Bridge AUTO",independentState(source).getBoolean("auto"));
         assertEquals("КЭШ",text(R.id.signalText));
         assertTrue(text(R.id.statusText).contains("НЕТ СВЯЗИ"));
         assertTrue(text(R.id.confidenceText).contains("КЭШ"));
         assertTrue(text(R.id.signalAgeText).contains("Сохранённый сигнал"));
         assertTrue(text(R.id.componentScoresText).contains(ScenarioUi.explanation(cached)));
         assertFalse(text(R.id.componentScoresText).contains("Текущие гипотезы LIVE"));
+        prefs.edit().putString("server_url",source).commit();
         EventClient.poll();sync();
         JSONObject recovered=EventClient.state();
         assertFalse(recovered.optBoolean("client_offline",false));
