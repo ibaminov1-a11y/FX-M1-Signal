@@ -276,7 +276,7 @@ public class R53ControlsUiTest {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
         scene("TRIANGLE");
         fixture(new JSONObject().put("balance",12345.67).put("bid",1.10456).put("completed_trade",true).put("manual_position",true));
-        EventClient.refreshFinancial();sync();
+        EventClient.class.getDeclaredMethod("refreshFinancial").invoke(null);sync();
         await(()->text(R.id.statsText).contains("1")&&text(R.id.tradeHistoryText).contains("EURUSD"),"Actual ledger reaches statistics and trade history");
         assertTrue(text(R.id.accountText).contains("12345.67"));
         assertTrue(text(R.id.priceCompareText).contains("1.10456"));

@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
     private static final int C_ORANGE = Color.rgb(255, 159, 67);
 
     private volatile boolean uiClosed;
+    private String lastProjectedProfile="";
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
     private final Handler serviceUiHandler = new Handler(Looper.getMainLooper());
@@ -684,7 +685,13 @@ public class MainActivity extends Activity {
         if(maxPositionsSpinner!=null)maxPositionsSpinner.setEnabled(true);
         JSONObject chosen=authoritativeState.optJSONObject("pending_config");if(chosen==null)chosen=authoritativeCfg;
         boolean remoteProfile=authoritativeState.optJSONObject("campaign")!=null||authoritativeState.optJSONObject("pending_config")!=null||authoritativeState.optBoolean("auto",false);
-        if(remoteProfile&&!EventClient.hasProfileDraft()&&chosen!=null){
+        if(!remoteProfile)lastProjectedProfile="";
+        String projection=chosen==null?"":EventClient.base()+"|"+p.getString("mt5_account_key_snapshot","")+"|"
+            +EventClient.profileLabel(chosen)+"|"+chosen.optDouble("risk_pct",.25);
+        // Spinner selection callbacks run on the next layout. Reapplying the same
+        // remote profile here can erase a user's clicked selection before its callback.
+        if(remoteProfile&&!EventClient.hasProfileDraft()&&chosen!=null&&!projection.equals(lastProjectedProfile)){
+            lastProjectedProfile=projection;
             syncingScalpTimeframe=true;
             if(signalModeSpinner!=null)signalModeSpinner.setSelection("SCALP".equalsIgnoreCase(chosen.optString("mode","NORMAL"))?1:0);
             if(riskSpinner!=null)riskSpinner.setSelection(p.getInt("risk_pos",0));
