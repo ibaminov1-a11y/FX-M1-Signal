@@ -2,8 +2,20 @@
 set -euo pipefail
 mkdir -p evidence/r53-red
 files=(EventClient MainActivity MonitoringService ScenarioMapRenderer ScenarioUi SparklineView)
-restore() { for name in "${files[@]}"; do git restore --source=HEAD -- "app/src/main/java/com/openai/fxm1/$name.java"; done; }
+new_tests=$(mktemp -d)
+restore() {
+  for name in "${files[@]}"; do git restore --source=HEAD -- "app/src/main/java/com/openai/fxm1/$name.java"; done
+  for test in "$new_tests"/*.java; do
+    if [ -f "$test" ]; then mv "$test" app/src/androidTest/java/com/openai/fxm1/; fi
+  done
+  rmdir "$new_tests"
+}
 trap restore EXIT
+# R5.4 tests use the new refresh API; this historical reproduction compiles
+# only tests compatible with the original build921, then restores every test.
+for test in app/src/androidTest/java/com/openai/fxm1/R54*Test.java; do
+  if [ -f "$test" ]; then mv "$test" "$new_tests/"; fi
+done
 for name in "${files[@]}"; do git show "1b2c4a02a912ec76c06954bab36bb68e558d2b96:app/src/main/java/com/openai/fxm1/$name.java" > "app/src/main/java/com/openai/fxm1/$name.java"; done
 set +e
 gradle --no-daemon :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R53ControlsUiTest#scalpSelectionReachesBridgeAndSurvivesActivityRecreation,com.openai.fxm1.R53ScenarioDisplayUiTest#sellRisesInNeutralPreparationThenFallsInRed,com.openai.fxm1.R53ControlsUiTest#offlineCachedForecastIsExplicitAndRecoveryRestoresLive' > evidence/r53-red/android.log 2>&1

@@ -15,6 +15,42 @@ public final class EventClient {
     public static String pathName(String path){switch(path){case "SCENARIO_V2":return "Scenario Engine V2";case "COMPUTE":return "ComputeCore";case "FORECAST":return "LIVE Forecast";case "LIVE_BREAKOUT":return "Первичный LIVE-пробой";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
+    // Only preference publication is locked; network reads never block service commands.
+    private static final Object STATE_READ_LOCK=new Object();
+    private static long nextReadSequence,lastPublishedRead,lastAuxiliaryRead;
+    static final class ReadRequest {
+        final String source,token;
+        long sequence;
+        ReadRequest(String source,String token,long sequence){this.source=source;this.token=token;this.sequence=sequence;}
+    }
+    private static final class ReadFailure extends IOException {
+        final ReadRequest read;
+        final Exception original;
+        ReadFailure(ReadRequest read,Exception original){super(original.getMessage(),original);this.read=read;this.original=original;}
+    }
+    static ReadRequest newReadRequest(){
+        synchronized(STATE_READ_LOCK){return new ReadRequest(base(),prefs().getString("ec_token",""),lastPublishedRead);}
+    }
+    private static void requireSameSource(ReadRequest read) throws IOException {
+        if(!read.source.equals(base())||!read.token.equals(prefs().getString("ec_token","")))
+            throw new IOException("Подключение изменено; повторите обновление");
+    }
+    private static void startRead(ReadRequest read) throws Exception {
+        synchronized(STATE_READ_LOCK){requireActiveRead();requireSameSource(read);read.sequence=++nextReadSequence;}
+    }
+    private static boolean publishSnapshot(ReadRequest read,JSONObject snapshot) throws Exception {
+        synchronized(STATE_READ_LOCK){
+            requireActiveRead();requireSameSource(read);
+            if(read.sequence<lastPublishedRead)return false;
+            cacheSnapshot(snapshot);lastPublishedRead=read.sequence;return true;
+        }
+    }
+    static void offlineIfCurrent(ReadRequest read,Exception error){
+        synchronized(STATE_READ_LOCK){
+            if(read==null||read.sequence<lastPublishedRead||!read.source.equals(base())||!read.token.equals(prefs().getString("ec_token","")))return;
+            offlineSnapshot(error);lastPublishedRead=read.sequence;
+        }
+    }
     private EventClient() {}
     public static synchronized void init(Context context) {
         app=context.getApplicationContext();
@@ -65,12 +101,15 @@ public final class EventClient {
             "\nВыход: структура / защитный SL; фиксированный TP не используется";
     }
     public static JSONObject http(String method,String url,JSONObject data) throws Exception {
-        if(base().isEmpty())throw new IOException("Не задан адрес Bridge EventCore");
-        URL target=new URL(url);URL origin=new URL(base());
+        return http(method,url,data,base(),prefs().getString("ec_token",""));
+    }
+    private static JSONObject http(String method,String url,JSONObject data,String source,String token) throws Exception {
+        if(source.isEmpty())throw new IOException("Не задан адрес Bridge EventCore");
+        URL target=new URL(url);URL origin=new URL(source);
         if(!target.getHost().equals(origin.getHost())||target.getPort()!=origin.getPort())throw new IOException("Ключ не отправляется другому серверу");
         HttpURLConnection c=(HttpURLConnection)target.openConnection();
         c.setInstanceFollowRedirects(false);c.setConnectTimeout(2500);c.setReadTimeout(3500);c.setRequestMethod(method);
-        c.setRequestProperty("Authorization","Bearer "+prefs().getString("ec_token",""));
+        c.setRequestProperty("Authorization","Bearer "+token);
         c.setRequestProperty("Accept","application/json");
         c.setRequestProperty("X-FXM1-Client","R51");
         try {
@@ -173,12 +212,92 @@ public final class EventClient {
         if(prefs().getBoolean("ec_mode_pause_pending",false)){
             command("pause",new JSONObject());prefs().edit().putBoolean("ec_mode_pause_pending",false).apply();
         }
-        JSONObject s=http("GET",base()+"/ec/state",null);
-        if(!PROTOCOL.equals(s.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
-        cache(s);return s;
+        ReadRequest read=newReadRequest();
+        try{
+            startRead(read);JSONObject s=readHttp(read,"/ec/state");
+            if(!PROTOCOL.equals(s.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
+            return publishSnapshot(read,s)?s:state();
+        }catch(Exception e){throw new ReadFailure(read,e);}
+    }
+    private static void requireActiveRead() throws InterruptedIOException {
+        if(Thread.currentThread().isInterrupted())throw new InterruptedIOException("Обновление отменено");
+    }
+    private static JSONObject readHttp(ReadRequest read,String path) throws Exception {
+        requireActiveRead();requireSameSource(read);
+        JSONObject value=http("GET",read.source+path,null,read.source,read.token);
+        requireActiveRead();requireSameSource(read);return value;
+    }
+    private static JSONObject refreshPart(ReadRequest read,String path,String label,String required,JSONArray errors) throws Exception {
+        requireActiveRead();requireSameSource(read);
+        try{
+            JSONObject value=readHttp(read,path);
+            if(value.optJSONArray(required)==null)throw new IOException("Bridge не вернул данные");
+            return value;
+        }catch(Exception e){
+            requireActiveRead();requireSameSource(read);errors.put(label+": "+String.valueOf(e.getMessage()));return null;
+        }
+    }
+    /** Explicit read-only refresh. Unlike poll(), it never sends a pending PAUSE/configuration. */
+    public static JSONObject refreshAll() throws Exception {
+        return refreshAll(newReadRequest());
+    }
+    static JSONObject refreshAll(ReadRequest read) throws Exception {
+            startRead(read);
+            prefs().edit().putLong("state_last_attempt_ms",System.currentTimeMillis()).apply();
+            JSONObject s=readHttp(read,"/ec/state?refresh=1");
+            long snapshotReceived=SystemClock.elapsedRealtime();
+            if(!PROTOCOL.equals(s.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
+            JSONArray errors=s.optJSONArray("refresh_errors");if(errors==null)errors=new JSONArray();
+            if(!s.has("refresh_time"))errors.put("Bridge не подтвердил полное обновление; обновите Bridge");
+            JSONObject recent=refreshPart(read,"/trade-ledger?days=30&limit=1000","История за 30 дней","trades",errors);
+            JSONObject all=refreshPart(read,"/trade-ledger?days=3650&limit=1000","Полная история","trades",errors);
+            JSONObject journal=refreshPart(read,"/ec/journal?limit=100","Журнал Bridge","events",errors);
+            requireActiveRead();
+            s.put("account_age",s.optDouble("account_age",999)+(SystemClock.elapsedRealtime()-snapshotReceived)/1000.0);
+            s.put("refresh_errors",errors);
+            synchronized(STATE_READ_LOCK){
+            requireActiveRead();requireSameSource(read);
+            publishSnapshot(read,s);
+            JSONObject current=state(),account=current.optJSONObject("account"),readAccount=s.optJSONObject("account");
+            boolean sameAccount=account!=null&&readAccount!=null&&account.optString("key").equals(readAccount.optString("key"));
+            if(!sameAccount){errors.put("Счёт MT5 изменился; повторите обновление");return s;}
+            if(read.sequence<lastAuxiliaryRead)return s;
+            double historyTime=current.optDouble("history_time",0);
+            boolean recentCurrent=recent!=null&&recent.optDouble("history_time",0)>=historyTime;
+            boolean allCurrent=all!=null&&all.optDouble("history_time",0)>=historyTime;
+            if((recent!=null&&!recentCurrent)||(all!=null&&!allCurrent))errors.put("История изменилась во время обновления; повторите свайп");
+            String currency=prefs().getString("mt5_currency_snapshot","USD");
+            SharedPreferences.Editor editor=prefs().edit();
+            if(recentCurrent)editor.putString("stats_snapshot",FeatureEngine.formatLedgerStats(recent))
+                .putString("trade_log_snapshot",FeatureEngine.formatTradeLog(recent));
+            if(allCurrent)editor.putString("trade_log_full_snapshot",FeatureEngine.formatFullTradeHistory(all,currency))
+                .putString("money_realized_snapshot",FeatureEngine.formatRealizedMoneySummary(all,currency));
+            if(!recentCurrent||!allCurrent)editor.putString("money_refresh_error","История обновлена не полностью");
+            if(journal!=null)editor.putString("ec_journal_snapshot",formatJournal(journal.getJSONArray("events")));
+            requireActiveRead();requireSameSource(read);editor.apply();lastAuxiliaryRead=read.sequence;return s;
+            }
+    }
+    private static String formatJournal(JSONArray events){
+        if(events.length()==0)return "ЖУРНАЛ BRIDGE: пока пусто";
+        StringBuilder text=new StringBuilder("ЖУРНАЛ BRIDGE");
+        java.text.SimpleDateFormat format=new java.text.SimpleDateFormat("dd.MM HH:mm:ss",Locale.US);
+        for(int i=0;i<events.length();i++){
+            JSONObject event=events.optJSONObject(i);if(event==null)continue;
+            long time=(long)(event.optDouble("time",0)*1000);
+            text.append('\n').append(time>0?format.format(new Date(time)):"—").append(" · ").append(event.optString("kind","Событие"));
+            JSONObject body=event.optJSONObject("body");
+            if(body!=null){
+                String detail=body.optString("message",body.optString("reason",body.optString("status","")));
+                if(!detail.isEmpty())text.append(": ").append(detail);
+            }
+        }
+        return text.toString();
     }
     static String moneySummary(JSONObject o){if(o==null)return "—";return String.format(Locale.US,"+%.2f / −%.2f · ИТОГ %+.2f USD · %d сдел.",o.optDouble("profit"),Math.abs(o.optDouble("loss")),o.optDouble("net"),o.optInt("count"));}
     public static void cache(JSONObject s) throws Exception {
+        synchronized(STATE_READ_LOCK){cacheSnapshot(s);lastPublishedRead=++nextReadSequence;}
+    }
+    private static void cacheSnapshot(JSONObject s) throws Exception {
         SharedPreferences p=prefs();JSONObject a=s.optJSONObject("account"),d=s.optJSONObject("decision"),q=s.optJSONObject("quote"),cfg=s.optJSONObject("config"),rs=s.optJSONObject("risk"),fc=s.optJSONObject("forecast");
         if(a==null)a=new JSONObject();if(d==null)d=new JSONObject();if(cfg==null)cfg=new JSONObject();if(rs==null)rs=new JSONObject();if(fc==null)fc=new JSONObject();
         long now=System.currentTimeMillis();boolean connected=!a.isNull("balance")&&a.has("balance")&&s.optDouble("account_age",999)<10;
@@ -267,7 +386,11 @@ public final class EventClient {
         if(changed)FeatureEngine.appendSignalHistory(p,symbol,tf,sig,-1,phaseName(phase)+": "+why);
         ExecutionFeedback.record(p,symbol,tf,phase,s.optString("execution","—"));
     }
-    public static void offline(Exception error){prefs().edit().putBoolean("server_verified",false).putBoolean("mt5_connected_snapshot",false)
+    public static void offline(Exception error){
+        if(error instanceof ReadFailure){ReadFailure failure=(ReadFailure)error;offlineIfCurrent(failure.read,failure.original);return;}
+        offlineSnapshot(error);
+    }
+    private static void offlineSnapshot(Exception error){prefs().edit().putBoolean("server_verified",false).putBoolean("mt5_connected_snapshot",false)
         .putString("bg_status","Нет связи: "+error.getMessage()).putString("ec_message",String.valueOf(error.getMessage()))
         .putString("risk_snapshot","Нет свежей проверки риска").apply();}
 }

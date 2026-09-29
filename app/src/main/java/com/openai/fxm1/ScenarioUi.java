@@ -29,9 +29,24 @@ public final class ScenarioUi {
         case "TARGET_REACHED":return "Цель достигнута";default:return s;}}
     static String marketIdentity(JSONObject s){
         JSONObject cfg=s.optJSONObject("config");
-        return s.optString("market_scope",s.optString("snapshot_id",cfg==null?"live":cfg.optString("symbol")))+"|"
+        String identity=s.optString("market_scope",s.optString("snapshot_id",cfg==null?"live":cfg.optString("symbol")))+"|"
             +s.optString("market_history_generation","UNVERIFIED")+"|"+(cfg==null?s.optString("timeframe","M5"):cfg.optString("timeframe","M5"));
+        JSONObject raw=rawChart(s);
+        return raw==null?identity:identity+"|"+(cfg==null?"":cfg.optString("symbol"))+"|CHART|"+raw.optString("scope")+"|"
+            +raw.optString("symbol")+"|"+raw.optString("timeframe")+"|"+raw.optString("clock")+"|"+raw.optString("status");
     }
+    private static JSONObject rawChart(JSONObject s){
+        JSONObject raw=s.optJSONObject("chart_market");return raw!=null&&raw.optBoolean("read_only")?raw:null;
+    }
+    private static String symbolKey(String value){return value.replace("/","").trim().toUpperCase(Locale.ROOT);}
+    private static boolean sameChartMarket(JSONObject s,JSONObject raw){
+        JSONObject cfg=s.optJSONObject("config");
+        if(s.has("market_scope")&&!s.optString("market_scope").equals(raw.optString("scope")))return false;
+        return cfg==null||(symbolKey(cfg.optString("symbol")).equals(symbolKey(raw.optString("symbol")))
+            &&cfg.optString("timeframe","M5").equals(raw.optString("timeframe")));
+    }
+    static String rawChartLabel(JSONObject f){return "UNVERIFIED_TIME".equals(f.optString("chart_status"))
+        ?"Свечи MT5 · время не подтверждено":"Свечи MT5 · данные не подтверждены";}
     public static String headline(JSONObject f){
         if(f!=null&&f.optBoolean("client_offline"))return "ПОСЛЕДНЯЯ КАРТА · КЭШ · НЕТ СВЯЗИ С BRIDGE";
         if(f==null||f.optInt("map_version")<2)return "КАРТА: ожидаем профиль / данные Bridge";
@@ -137,14 +152,21 @@ public final class ScenarioUi {
     }
     private static View controls(Activity a,SparklineView chart,boolean archive){
         LinearLayout pinned=new LinearLayout(a);pinned.setOrientation(LinearLayout.HORIZONTAL);
-        button(a,pinned,archive?"К СНИМКУ":"LIVE",chart::goLive);
+        Button follow=button(a,pinned,archive?"К СНИМКУ":"LIVE",chart::goLive);follow.setTag("scenario_follow");
         HorizontalScrollView scroll=new HorizontalScrollView(a);LinearLayout row=new LinearLayout(a);row.setOrientation(LinearLayout.HORIZONTAL);scroll.addView(row);
         pinned.addView(scroll,new LinearLayout.LayoutParams(0,-2,1));
         button(a,row,"◀",()->chart.panHistory(12));button(a,row,"▶",()->chart.panHistory(-12));
         button(a,row,"−",()->chart.zoomHistory(.8));button(a,row,"+",()->chart.zoomHistory(1.25));
-        button(a,row,"ВЕТКИ",()->choose(a,chart));
-        if(!archive){button(a,row,"ЕЩЁ ИСТОРИЯ",()->older(a,chart));button(a,row,"АРХИВ ПРОГНОЗОВ",()->archiveList(a,null));}
+        Button branches=button(a,row,"ВЕТКИ",()->choose(a,chart));branches.setTag("scenario_branches");
+        if(!archive){Button history=button(a,row,"ЕЩЁ ИСТОРИЯ",()->older(a,chart));history.setTag("scenario_history");button(a,row,"АРХИВ ПРОГНОЗОВ",()->archiveList(a,null));}
         return pinned;
+    }
+    private static void updateControls(SparklineView chart){
+        if(!(chart.getParent() instanceof ViewGroup))return;ViewGroup parent=(ViewGroup)chart.getParent();
+        Button follow=parent.findViewWithTag("scenario_follow"),branches=parent.findViewWithTag("scenario_branches"),history=parent.findViewWithTag("scenario_history");
+        boolean raw=chart.isUnverifiedMarket();
+        if(follow!=null)follow.setText(raw?"К ПОСЛЕДНИМ":chart.displayedForecast().optBoolean("archive")?"К СНИМКУ":"LIVE");
+        if(branches!=null)branches.setEnabled(!raw);if(history!=null)history.setEnabled(!raw);
     }
     private static void choose(Activity a,SparklineView chart){
         JSONArray rows=chart.scenarioChoices();if(rows.length()==0){Toast.makeText(a,"Нет действующих сценариев",Toast.LENGTH_SHORT).show();return;}
@@ -162,9 +184,10 @@ public final class ScenarioUi {
                 JSONObject s=rows.optJSONObject(i);ids.add(s.optString("scenario_id",s.optString("name",""+i)));}chart.selectScenarios(ids);}).show();
     }
     private static void older(Activity a,SparklineView chart){
+        if(chart.isUnverifiedMarket())return;
         long before=chart.oldestTime();String scope=chart.marketIdentity();
         io.execute(()->{try{JSONObject r=EventClient.http("GET",EventClient.base()+"/ec/history?tf=M5&limit=1000&before="+before,null);
-            a.runOnUiThread(()->{if(!scope.equals(chart.marketIdentity())||!r.optBoolean("cache_verified",false)||!"UTC_NATIVE_R51".equals(r.optString("clock")))return;JSONArray rows=r.optJSONArray("bars");chart.prependHistory(rows);
+            a.runOnUiThread(()->{if(chart.isUnverifiedMarket()||!scope.equals(chart.marketIdentity())||!r.optBoolean("cache_verified",false)||!"UTC_NATIVE_R51".equals(r.optString("clock")))return;JSONArray rows=r.optJSONArray("bars");chart.prependHistory(rows);
                 Toast.makeText(a,rows==null||rows.length()==0?"Более ранних свечей в архиве Bridge нет":"Загружено свечей: "+rows.length(),Toast.LENGTH_LONG).show();});
         }catch(Exception e){a.runOnUiThread(()->error(a,e));}});
     }
@@ -186,15 +209,29 @@ public final class ScenarioUi {
         }catch(Exception e){a.runOnUiThread(()->error(a,e));}});
     }
     public static void enlarge(Activity a){open(a,null);}
-    private static void populate(SparklineView chart,JSONObject s){
+    public static void populate(SparklineView chart,JSONObject s){
         JSONObject d=s.optJSONObject("decision");chart.setMarketIdentity(marketIdentity(s));
-        chart.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
-            d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
+        JSONObject raw=rawChart(s);
+        if(raw!=null){
+            boolean matches=sameChartMarket(s,raw);JSONObject display=new JSONObject();
+            try{display.put("chart_read_only",true).put("chart_status",raw.optString("status"))
+                .put("chart_reason",matches?raw.optString("reason"):"Свечи не соответствуют выбранному инструменту, счёту или периоду; ожидаем данные MT5.")
+                .put("client_offline",s.optBoolean("client_offline"));}catch(JSONException ignored){}
+            chart.setMarket(matches?raw.optJSONArray("bars"):new JSONArray(),null,null,null,"CHART_ONLY",
+                matches?raw.optJSONObject("live_bar"):null,null,display);
+        }else chart.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
+                d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
+        updateControls(chart);
+    }
+    private static String chartTitle(JSONObject s){
+        JSONObject raw=rawChart(s);
+        if(raw!=null)return s.optBoolean("client_offline")?"СВЕЧИ MT5 · КЭШ · НЕТ СВЯЗИ":"СВЕЧИ MT5 · ТОЛЬКО ПРОСМОТР";
+        return s.optBoolean("client_offline")?"КАРТА · КЭШ · НЕТ СВЯЗИ":"СЦЕНАРИИ · LIVE / ИСТОРИЯ";
     }
     private static void open(Activity a,JSONObject snapshot){
         if(a.isFinishing())return;
         Dialog dialog=new Dialog(a);LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(12,12,12,12);box.setBackgroundColor(0xff141125);
-        TextView title=new TextView(a);title.setText(snapshot==null?"СЦЕНАРИИ · LIVE / ИСТОРИЯ":"ИСХОДНЫЙ ПРОГНОЗ · НЕ LIVE");title.setTextColor(0xffdddded);title.setTextSize(16);box.addView(title);
+        TextView title=new TextView(a);title.setText(snapshot==null?chartTitle(EventClient.state()):"ИСХОДНЫЙ ПРОГНОЗ · НЕ LIVE");title.setTextColor(0xffdddded);title.setTextSize(16);box.addView(title);
         SparklineView chart=new SparklineView(a);chart.setArchive(snapshot!=null);box.addView(chart,new LinearLayout.LayoutParams(-1,0,1));box.addView(controls(a,chart,snapshot!=null));
         Button close=new Button(a);close.setText("ЗАКРЫТЬ КАРТУ");box.addView(close);close.setOnClickListener(v->dialog.dismiss());
         dialog.setContentView(box);dialog.show();if(dialog.getWindow()!=null)dialog.getWindow().setLayout(-1,-1);
@@ -204,7 +241,7 @@ public final class ScenarioUi {
                 title.setText("АРХИВ ДО R5.1 · ВРЕМЯ СВЕЧЕЙ НЕ ПРОВЕРЕНО · НЕ LIVE");
             populate(chart,snapshot);return;
         }
-        Handler handler=new Handler(Looper.getMainLooper());Runnable update=new Runnable(){public void run(){if(!dialog.isShowing())return;populate(chart,EventClient.state());handler.postDelayed(this,1000);}};
+        Handler handler=new Handler(Looper.getMainLooper());Runnable update=new Runnable(){public void run(){if(!dialog.isShowing())return;JSONObject state=EventClient.state();title.setText(chartTitle(state));populate(chart,state);handler.postDelayed(this,1000);}};
         dialog.setOnDismissListener(d->handler.removeCallbacks(update));handler.post(update);
     }
 }

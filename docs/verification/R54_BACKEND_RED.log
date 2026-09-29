@@ -1,0 +1,59 @@
+test_adapter_returns_raw_history_and_raises_for_malformed_ohlc (test_r54_market.DisplayMarketTests.test_adapter_returns_raw_history_and_raises_for_malformed_ohlc) ... FAIL
+test_forced_refresh_reports_history_failure_and_auth_required (test_r54_market.DisplayMarketTests.test_forced_refresh_reports_history_failure_and_auth_required) ... FAIL
+test_forced_refresh_updates_financial_snapshot_without_order_or_campaign_command (test_r54_market.DisplayMarketTests.test_forced_refresh_updates_financial_snapshot_without_order_or_campaign_command) ... FAIL
+test_future_tick_shows_native_candles_without_analysis_cache_or_orders (test_r54_market.DisplayMarketTests.test_future_tick_shows_native_candles_without_analysis_cache_or_orders) ... FAIL
+test_preview_switches_symbol_and_never_reuses_failed_other_symbol (test_r54_market.DisplayMarketTests.test_preview_switches_symbol_and_never_reuses_failed_other_symbol) ... FAIL
+test_recovered_clock_removes_preview_and_never_merges_raw_future_bars (test_r54_market.DisplayMarketTests.test_recovered_clock_removes_preview_and_never_merges_raw_future_bars) ... FAIL
+
+======================================================================
+FAIL: test_adapter_returns_raw_history_and_raises_for_malformed_ohlc (test_r54_market.DisplayMarketTests.test_adapter_returns_raw_history_and_raises_for_malformed_ohlc)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r54_market.py", line 116, in test_adapter_returns_raw_history_and_raises_for_malformed_ohlc
+    self.assertTrue(hasattr(self.broker.native, 'chart_snapshot'), 'No independent candle display read')
+AssertionError: False is not true : No independent candle display read
+
+======================================================================
+FAIL: test_forced_refresh_reports_history_failure_and_auth_required (test_r54_market.DisplayMarketTests.test_forced_refresh_reports_history_failure_and_auth_required)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r54_market.py", line 111, in test_forced_refresh_reports_history_failure_and_auth_required
+    self.assertFalse(state['history_ok'], 'Forced refresh skipped new history failure')
+AssertionError: True is not false : Forced refresh skipped new history failure
+
+======================================================================
+FAIL: test_forced_refresh_updates_financial_snapshot_without_order_or_campaign_command (test_r54_market.DisplayMarketTests.test_forced_refresh_updates_financial_snapshot_without_order_or_campaign_command)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r54_market.py", line 97, in test_forced_refresh_updates_financial_snapshot_without_order_or_campaign_command
+    self.assertEqual(state['account']['balance'], 54321.0, 'Forced refresh returned old cache')
+AssertionError: 100000.0 != 54321.0 : Forced refresh returned old cache
+
+======================================================================
+FAIL: test_future_tick_shows_native_candles_without_analysis_cache_or_orders (test_r54_market.DisplayMarketTests.test_future_tick_shows_native_candles_without_analysis_cache_or_orders)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r54_market.py", line 52, in test_future_tick_shows_native_candles_without_analysis_cache_or_orders
+    self.assertGreater(len(chart.get('bars', [])), 1, 'Blocked clock erased the chart')
+AssertionError: 0 not greater than 1 : Blocked clock erased the chart
+
+======================================================================
+FAIL: test_preview_switches_symbol_and_never_reuses_failed_other_symbol (test_r54_market.DisplayMarketTests.test_preview_switches_symbol_and_never_reuses_failed_other_symbol)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r54_market.py", line 78, in test_preview_switches_symbol_and_never_reuses_failed_other_symbol
+    self.assertTrue(self.step().get('chart_market'))
+AssertionError: None is not true
+
+======================================================================
+FAIL: test_recovered_clock_removes_preview_and_never_merges_raw_future_bars (test_r54_market.DisplayMarketTests.test_recovered_clock_removes_preview_and_never_merges_raw_future_bars)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r54_market.py", line 68, in test_recovered_clock_removes_preview_and_never_merges_raw_future_bars
+    self.assertTrue(first.get('chart_market'), 'Missing blocked clock preview')
+AssertionError: None is not true : Missing blocked clock preview
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.299s
+
+FAILED (failures=6)

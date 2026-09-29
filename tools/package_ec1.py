@@ -19,13 +19,13 @@ for distribution in ('Flask','Werkzeug','Jinja2','MarkupSafe','itsdangerous','cl
         target=vendor/p;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target)
 shutil.copy2(root/'docs/EVENT_CORE_RU.md',package/'READ_ME_RU.md')
 shutil.copy2(root/'docs/INSTALL_EC1_RU.md',package/'INSTALL_RU.md')
-shutil.copy2(root/'docs/UPGRADE_R53.md',package/'START_HERE_R53_RU.md')
+shutil.copy2(root/'docs/UPGRADE_R54.md',package/'START_HERE_R54_RU.md')
 # Older design notes are historical, not installation instructions.
-shutil.copy2(root/'docs/UPGRADE_R53.md',package/'INSTALL_RU.md')
-shutil.copy2(root/'docs/UPGRADE_R53.md',package/'READ_ME_RU.md')
+shutil.copy2(root/'docs/UPGRADE_R54.md',package/'INSTALL_RU.md')
+shutil.copy2(root/'docs/UPGRADE_R54.md',package/'READ_ME_RU.md')
 commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 metadata={'commit':commit,'apk_sha256':hashlib.sha256((package/'FXM1_10_9_EVENT_CORE_DEMO.apk').read_bytes()).hexdigest(),
-          'status':'DEMO_RESEARCH_CANDIDATE','revision':'R5.3-scalp-continuation-controls','market_backtest':'not_run','physical_phone':'not_tested','real_trading':'disabled_in_adapter'}
+          'status':'DEMO_RESEARCH_CANDIDATE','revision':'R5.4-charts-pull-refresh','market_backtest':'not_run','physical_phone':'not_tested','real_trading':'disabled_in_adapter'}
 (package/'PROVENANCE.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
 with zipfile.ZipFile(dest/'FXM1_10_9_EVENT_CORE_PACKAGE.zip','w',zipfile.ZIP_DEFLATED) as z:
     for p in package.rglob('*'):
@@ -34,21 +34,22 @@ shutil.copy2(package/'FXM1_10_9_EVENT_CORE_DEMO.apk',dest/'FXM1_10_9_EVENT_CORE_
 subprocess.run(['git','archive','--format=zip','--output='+str(dest/'FXM1_EVENT_CORE_SOURCE.zip'),'HEAD'],cwd=root,check=True)
 
 # A single installation bundle also carries exact source and test evidence.
-full=dest/'FXM1_R5_3_FULL.zip'
+full=dest/'FXM1_R5_4_FULL.zip'
 with zipfile.ZipFile(full,'w',zipfile.ZIP_DEFLATED) as z:
     for p in package.rglob('*'):
         if p.is_file():z.write(p,p.relative_to(package))
-    z.write(dest/'FXM1_EVENT_CORE_SOURCE.zip','Sources/FXM1_R5_3_SOURCE.zip')
-    for name in ('COMMIT.txt','python-tests.log','android-runtime.log','RED.txt','RED_UI_CONFIRMED.txt','apk-signature.txt','package-check.txt','ANDROID_TESTS.json','R53_REPORT_RU.md'):
+    z.write(dest/'FXM1_EVENT_CORE_SOURCE.zip','Sources/FXM1_R5_4_SOURCE.zip')
+    for name in ('COMMIT.txt','python-tests.log','android-runtime.log','RED.txt','RED_UI_CONFIRMED.txt','apk-signature.txt','package-check.txt','ANDROID_TESTS.json','R54_REPORT_RU.md'):
         p=dest/name
         if p.exists():z.write(p,'Verification/'+name)
     for p in (dest/'r53-red').rglob('*.xml'):z.write(p,'Verification/'+str(p.relative_to(dest)))
-    for p in (root/'docs/verification').glob('R53_*_RED.log'):z.write(p,'Verification/'+p.name)
+    for pattern in ('R53_*_RED.log','R54_*'):
+        for p in (root/'docs/verification').glob(pattern):z.write(p,'Verification/'+p.name)
     for p in (root/'app/build/outputs/androidTest-results').rglob('TEST-*.xml'):z.write(p,'Verification/android-results/'+str(p.relative_to(root/'app/build/outputs/androidTest-results')))
     for p in (dest/'ui').rglob('*.png'):z.write(p,'Verification/'+str(p.relative_to(dest)))
 
 # A separate Bridge archive is identical to the Bridge in the combined installation bundle.
-with zipfile.ZipFile(dest/'FXM1_R5_3_BRIDGE.zip','w',zipfile.ZIP_DEFLATED) as z:
+with zipfile.ZipFile(dest/'FXM1_R5_4_BRIDGE.zip','w',zipfile.ZIP_DEFLATED) as z:
     for p in bridge.rglob('*'):
         if p.is_file(): z.write(p,p.relative_to(package))
     z.write(package/'INSTALL_RU.md','INSTALL_RU.md')

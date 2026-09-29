@@ -17,7 +17,7 @@ final class ScenarioMapRenderer {
     private boolean tied;
     private static final int GREEN=0xff42d67a,RED=0xffff4857,ALT=0xffffc857,MUTED=0xffaaa7bf;
     private static final int[] ALTS={ALT,0xff5bd6ff,0xffdd91ff};
-    private boolean historical,stale,clientOffline;
+    private boolean historical,stale,clientOffline,unverified;
     private ScenarioMapRenderer(Canvas c,int width,int height,float density){
         this.c=c;d=density;w=width;h=height;left=8*d;right=w-58*d;
     }
@@ -34,6 +34,18 @@ final class ScenarioMapRenderer {
         float available=w-x-4*d;
         if(p.measureText(s)>available){while(s.length()>1&&p.measureText(s+"…")>available)s=s.substring(0,s.length()-1);s+="…";}
         c.drawText(s,x,yy,p);
+    }
+    private void readOnlyHeading(JSONObject f){
+        text(ScenarioUi.rawChartLabel(f),left,18*d,0xffffb04d,10);
+        text(clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":"ТОЛЬКО ПРОСМОТР · ВХОД ЗАПРЕЩЁН",left,34*d,MUTED,9);
+        String remaining=f.optString("chart_reason").replace('\n',' ');p.setTextSize(9*d);
+        for(int i=0;i<3&&!remaining.isEmpty();i++){
+            int length=p.breakText(remaining,true,w-left-8*d,null);
+            if(length<=0)break;
+            if(length<remaining.length()&&i<2){int space=remaining.lastIndexOf(' ',length);if(space>0)length=space;}
+            String row=remaining.substring(0,length);remaining=remaining.substring(length).trim();
+            text(row+(i==2&&!remaining.isEmpty()?"…":""),left,(49+i*12)*d,MUTED,9);
+        }
     }
     private void line(float x1,float y1,float x2,float y2,int color,float width,boolean dash){
         p.setStyle(Paint.Style.STROKE);p.setColor(color);p.setStrokeWidth(width*d);
@@ -74,25 +86,30 @@ final class ScenarioMapRenderer {
     }
     private int routeColor(JSONObject s,int i){return stale?MUTED:i==0?(s.optInt("side")>0?GREEN:s.optInt("side")<0?RED:0xffbbbbcf):ALTS[(i-1)%3];}
     private void draw(JSONArray bars,JSONArray structure,JSONObject live,JSONArray liveStructure,JSONObject f,JSONArray positions){
-        boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2;
+        unverified=f.optBoolean("chart_read_only");
+        boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2&&!unverified;
         historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
-        JSONObject levels=valid&&!historical?f.optJSONObject("entry_levels"):null,active=historical?null:f.optJSONObject("active_scenario");
+        JSONObject levels=valid&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
         int routeCount=routes==null?0:Math.min(2,routes.length());
-        top=Math.max(55,routeCount*16+24+(tied?14:0))*d;bottom=h-(historical?42:60)*d;
-        split=historical?right:left+(right-left)*.44f;
+        top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:60)*d;
+        split=historical||unverified?right:left+(right-left)*.44f;
         for(int i=0;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null){bound(b.optDouble("low"));bound(b.optDouble("high"));}}
         if(live!=null){bound(live.optDouble("low"));bound(live.optDouble("high"));}
         double historyLow=low,historyHigh=high,historyRange=Math.max(1e-8,historyHigh-historyLow);
-        double current=historical?Double.NaN:f.optDouble("live_price",live==null?Double.NaN:live.optDouble("close"));bound(current);
+        double current=historical||unverified?Double.NaN:f.optDouble("live_price",live==null?Double.NaN:live.optDouble("close"));bound(current);
         if(levels!=null)for(String name:new String[]{"BUY","SELL"}){
             JSONObject l=levels.optJSONObject(name);if(l!=null){nearBound(l.optDouble("trigger"),historyLow,historyHigh,historyRange);nearBound(l.optDouble("invalidation"),historyLow,historyHigh,historyRange);}}
         if(active!=null){nearBound(active.optDouble("entry"),historyLow,historyHigh,historyRange);nearBound(active.optDouble("invalidation"),historyLow,historyHigh,historyRange);}
         if(routes!=null)for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);JSONArray path=r==null?null:r.optJSONArray("path");if(path==null)continue;
             for(int j=0;j<path.length();j++){JSONObject pt=path.optJSONObject(j);if(pt!=null)nearBound(pt.optDouble("price"),historyLow,historyHigh,historyRange);}}
-        if(!Double.isFinite(low)||!Double.isFinite(high)||high<=low||bottom<=top||right<=left)return;
+        if(unverified)readOnlyHeading(f);
+        if(!Double.isFinite(low)||!Double.isFinite(high)||high<=low||bottom<=top||right<=left){
+            if(unverified)text("Нет доступных свечей MT5",left,top+20*d,MUTED,11);return;
+        }
         double margin=(high-low)*.10;low-=margin;high+=margin;
+        if(!unverified){
         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
         else if(routeCount==0)text(valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
@@ -102,13 +119,14 @@ final class ScenarioMapRenderer {
             long score=Math.round(r.optDouble("quality_score",r.optDouble("model_weight",r.optDouble("probability"))*100));
             text(name+" · "+title+" · "+score+"/100",left,(16+16*i)*d,routeColor(r,i),9.5f);
         }
-        if(tied&&!historical)text("Равнозначные варианты · без предпочтения",left,(16+16*routeCount)*d,MUTED,8);
-        text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":"ИСТОРИЯ MT5"),left,top-7*d,stale?0xffffb04d:MUTED,8);
+        }
+        if(tied&&!historical&&!unverified)text("Равнозначные варианты · без предпочтения",left,(16+16*routeCount)*d,MUTED,8);
+        if(!unverified)text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":"ИСТОРИЯ MT5"),left,top-7*d,stale?0xffffb04d:MUTED,8);
         for(int i=0;i<5;i++){
             float yy=top+(bottom-top)*i/4;line(left,yy,right,yy,0xff312b43,.6f,false);
             text(price(high-(high-low)*i/4),right+4*d,yy+3*d,MUTED,8.5f);
         }
-        if(!historical)line(split,top,split,bottom,0xff756b89,.8f,true);
+        if(!historical&&!unverified)line(split,top,split,bottom,0xff756b89,.8f,true);
         int count=bars.length()+(live==null?0:1);float step=(split-left-8*d)/Math.max(1,count);
         HashMap<Long,Float> xs=new HashMap<>();
         long first=bars.optJSONObject(0).optLong("time"),last=bars.optJSONObject(bars.length()-1).optLong("time");
@@ -119,7 +137,7 @@ final class ScenarioMapRenderer {
         }
         if(live!=null){float xx=left+step*(count-.5f);xs.put(live.optLong("time"),xx);candle(live,xx,step*.30f);}
         float previousX=Float.NaN,previousY=0;
-        if(structure!=null)for(int i=0;i<structure.length();i++){
+        if(!unverified&&structure!=null)for(int i=0;i<structure.length();i++){
             JSONObject s=structure.optJSONObject(i);if(s==null)continue;Float xx=xs.get(s.optLong("time"));double v=s.optDouble("price");if(xx==null||v<low||v>high)continue;
             float yy=y(v);if(!Float.isNaN(previousX))line(previousX,previousY,xx,yy,0xff914dff,1f,false);
             p.setColor(0xff914dff);c.drawCircle(xx,yy,2.5f*d,p);
@@ -127,7 +145,7 @@ final class ScenarioMapRenderer {
         }
         // Provisional structure describes already observed current-bar extremes,
         // not future route nodes. Hide it when browsing old candles.
-        if(!historical&&live!=null&&liveStructure!=null){
+        if(!historical&&!unverified&&live!=null&&liveStructure!=null){
             float prevX=Float.NaN,prevY=0;
             for(int i=0;i<liveStructure.length();i++){
                 JSONObject s=liveStructure.optJSONObject(i);if(s==null)continue;
@@ -155,6 +173,11 @@ final class ScenarioMapRenderer {
                     line(xa,y(va),xb,y(vb),i==0?0xffe2dbff:0xff8d879f,1.25f,false);c.restoreToCount(saved);
                 }
             }
+        }
+        if(unverified){
+            java.text.SimpleDateFormat format=new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US);format.setTimeZone(TimeZone.getTimeZone("UTC"));
+            text(format.format(new Date(first*1000))+" — "+format.format(new Date((live==null?last:live.optLong("time"))*1000)),left,h-24*d,MUTED,9);
+            text("Время MT5 без коррекции · прогноз скрыт",left,h-9*d,MUTED,8);return;
         }
         if(historical){
             text(new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US).format(new Date(first*1000))+" — "+new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US).format(new Date(last*1000)),left,h-24*d,MUTED,9);

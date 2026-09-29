@@ -1,0 +1,14 @@
+test_profile_and_account_changes_clear_the_previous_chart_immediately (test_r54_market.DisplayMarketTests.test_profile_and_account_changes_clear_the_previous_chart_immediately) ... FAIL
+
+======================================================================
+FAIL: test_profile_and_account_changes_clear_the_previous_chart_immediately (test_r54_market.DisplayMarketTests.test_profile_and_account_changes_clear_the_previous_chart_immediately)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/2435d8025773/source/tests/event_core/test_r54_market.py", line 128, in test_profile_and_account_changes_clear_the_previous_chart_immediately
+    self.assertTrue(self.engine.snapshot().get('chart_market') is None, 'Previous profile preview must be cleared immediately')
+AssertionError: False is not true : Previous profile preview must be cleared immediately
+
+----------------------------------------------------------------------
+Ran 1 test in 0.121s
+
+FAILED (failures=1)

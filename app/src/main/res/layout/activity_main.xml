@@ -17,6 +17,11 @@
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="M1 / M5 / M15 / H1 / H4 / D1 / W1 / MN1   •   MT5 execution" android:textColor="#9892AE" android:textSize="11sp" />
 
+        <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <ProgressBar android:id="@+id/refreshProgress" style="?android:attr/progressBarStyleSmall" android:layout_width="24dp" android:layout_height="24dp" android:layout_marginRight="8dp" android:indeterminateTint="#914DFF" android:visibility="invisible" android:contentDescription="Обновление данных" />
+            <com.openai.fxm1.StableLiveTextView android:id="@+id/refreshStatusText" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:lines="2" android:text="Потяните вниз, чтобы обновить" android:textColor="#B0AAC7" android:textSize="12sp" android:accessibilityLiveRegion="polite" />
+        </LinearLayout>
+
         
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:baselineAligned="false" android:orientation="horizontal">
 

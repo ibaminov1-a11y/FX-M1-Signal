@@ -32,9 +32,10 @@ public class SparklineView extends View {
     public long historyRightTime(){return viewport.edge();}
     public long oldestTime(){return viewport.oldest();}
     public boolean isFollowingLive(){return viewport.live();}
+    public boolean isUnverifiedMarket(){return forecast.optBoolean("chart_read_only");}
     public void goLive(){viewport.follow();updateDescription();invalidate();}
     public void zoomHistory(double factor){viewport.zoom(factor);invalidate();}
-    public void prependHistory(JSONArray older){viewport.merge(older);invalidate();}
+    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
     public void setArchive(boolean value){archive=value;updateDescription();invalidate();}
     public JSONArray scenarioChoices(){JSONArray r=forecast.optJSONArray("scenarios");return r==null?new JSONArray():r;}
     public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;updateDescription();invalidate();}
@@ -60,6 +61,7 @@ public class SparklineView extends View {
     public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String path){setMarket(b,l,p,s,path,null,null,null);}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String path,JSONObject lb,JSONArray ls){setMarket(b,l,p,s,path,lb,ls,null);}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String path,JSONObject lb,JSONArray ls,JSONObject f){
+        if(f!=null&&f.optBoolean("chart_read_only")&&(b==null||b.length()==0))viewport.clear();
         viewport.merge(b);positions=p==null?new JSONArray():p;structure=s==null?new JSONArray():s;
         liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;updateDescription();invalidate();
     }
@@ -83,14 +85,17 @@ public class SparklineView extends View {
     }
     @Override public boolean performClick(){super.performClick();return true;}
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);JSONArray bars=viewport.window();
-        if(bars.length()<2){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
-        JSONObject f=displayedForecast();
+        super.onDraw(c);JSONArray bars=viewport.window();JSONObject f=displayedForecast(),forming=viewport.live()?liveBar:null;
+        if(isUnverifiedMarket()&&bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
+        if(bars.length()<2&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
         ScenarioMapRenderer.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density,bars,structure,
-            viewport.live()?liveBar:null,viewport.live()?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());
+            forming,viewport.live()?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());
     }
     private static String priceText(double value){return String.format(Locale.US,"%.5f",value);}
     public static String mapDescription(JSONObject f){
+        if(f!=null&&f.optBoolean("chart_read_only"))return ScenarioUi.rawChartLabel(f)+". "+f.optString("chart_reason")
+            +". Только просмотр. Время MT5 без коррекции; прогноз и уровни входа скрыты."
+            +(f.optBoolean("client_offline")?" КЭШ · НЕТ СВЯЗИ С BRIDGE. Телефон потерял связь; текущие данные неизвестны.":"");
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
         if(f.optBoolean("history_only"))return f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время условно.");
@@ -123,7 +128,7 @@ public class SparklineView extends View {
         return text.toString();
     }
     public static boolean shouldDrawProjection(JSONObject f){
-        if(f==null)return false;
+        if(f==null||f.optBoolean("chart_read_only"))return false;
         int side=f.optInt("side",0),candidate=f.optInt("candidate_side",0);
         return side!=0||candidate!=0;
     }

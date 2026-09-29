@@ -1,0 +1,17 @@
+{
+  "run_id": 36542622067,
+  "job_id": 109321387604,
+  "commit": "9a5fc92d75e892a668965888e8d17d3b107a8123",
+  "app_source": "R5.3 unmodified",
+  "failures": [
+    {
+      "name": "blockedClockRendersRealCandlesWithoutTradingPaths",
+      "failure": "java.lang.AssertionError: Raw chart must disclose its unverified clock: Карта сценариев. Веса модели — не вероятность успеха. Время условно. Текущие гипотезы LIVE. Серый пунктир — подготовка до подтверждения входа. Цвет — условный путь к целям после подтверждения, не факт сделки. Цвет обозначает ветку, а не наклон отрезка. Старые ветки без этапов сохраняют исходный цвет. SELL 1.09950; отмена NaN. MAIN SELL; этап: Подтверждён.  LIVE 1.10000. Активный SELL; отмена 1.10100."
+    },
+    {
+      "name": "downwardSwipeRefreshesWholeScreenWhileMonitoringIsStoppedWithoutCommands",
+      "failure": "java.lang.AssertionError: Downward swipe from top must request a full Bridge refresh"
+    }
+  ],
+  "collector_note": "CI collector originally read the XML message attribute; Android stores failure text. Downloaded XML validated using both fields."
+}

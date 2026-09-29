@@ -16,16 +16,23 @@ folder=tempfile.TemporaryDirectory();broker=FakeBroker(time.time);broker.balance
 store=Store(Path(folder.name)/'fixture.db');engine=Engine(broker,store)
 app=create_app(engine,'ci-fixture-token-not-for-real-trading')
 freeze_until=0.0
+normal_broker=broker
+r54_refresh_config={}
+r54_refresh_audit={'refresh_requests':0,'ledger_requests':0,'events_requests':0}
 
 def clear_market():
     engine.last_bars_at=0;engine.last_market_attempt=-1.
     engine.bars=[];engine.context=[];engine.m1=[];engine.m15=[];engine.h1=[];engine.live_bar=None
     engine.quote=None;engine.info={};engine.market_time=0.;engine.market_errors=[];engine.bar_errors=[]
     engine.quote_ready=False;engine.analysis_time=0.;engine.decision=Decision()
+    engine.chart_market=None;engine.last_chart_attempt=-1.
 
 def reset():
-    global freeze_until
+    global freeze_until,broker,r54_refresh_config
     with engine.lock:
+        broker=normal_broker;engine.broker=broker
+        r54_refresh_config={}
+        r54_refresh_audit.update(refresh_requests=0,ledger_requests=0,events_requests=0)
         freeze_until=0.0
         anchor=int(time.time())
         store.db.executescript('DELETE FROM commands; DELETE FROM intents; DELETE FROM campaigns; DELETE FROM state; DELETE FROM journal;');store.db.commit()
@@ -176,6 +183,55 @@ def r53_state():
         engine.history_time=0;engine.last_market_attempt=-1
         result=engine.step()
         return jsonify(ok=True,state=result)
+
+@app.post('/test/r54-future-time')
+def r54_future_time():
+    global broker,freeze_until
+    from test_r54_market import DisplayTerminalBroker
+    reset()
+    with engine.lock:
+        now=[time.time()]
+        broker=DisplayTerminalBroker(now);broker.terminal.tick=now[0]+10797.4
+        engine.broker=broker
+        engine.config=Config(engine_mode='SCENARIO_V2',approved=True,fee_per_lot=0)
+        from event_core.compute_core import make_compute
+        engine.compute=make_compute(engine.config)
+        clear_market();engine.history_time=0;engine.account_key=''
+        freeze_until=time.time()+120
+        state=engine.step()
+        return jsonify(ok=True,state=state)
+
+@app.post('/test/r54-refresh')
+def r54_refresh_setup():
+    global r54_refresh_config,freeze_until
+    with engine.lock:
+        r54_refresh_config=dict(request.get_json(silent=True) or {})
+        r54_refresh_audit.update(refresh_requests=0,ledger_requests=0,events_requests=0)
+        r53_commands.clear()
+        freeze_until=time.time()+120
+    return jsonify(ok=True)
+
+@app.get('/test/r54-refresh-audit')
+def r54_refresh_stats():
+    return jsonify(**r54_refresh_audit,commands=list(r53_commands))
+
+@app.before_request
+def r54_refresh_observer():
+    if request.path=='/trade-ledger':r54_refresh_audit['ledger_requests']+=1
+    if request.path=='/ec/journal':
+        r54_refresh_audit['events_requests']+=1
+        delay=max(0,min(float(r54_refresh_config.get('journal_delay_ms',0)),8000))/1000
+        if delay:time.sleep(delay)
+    if request.path=='/ec/state' and request.args.get('refresh')=='1':
+        # Capture by value; an old timed-out request must not consume a new fixture.
+        data=dict(r54_refresh_config)
+        r54_refresh_audit['refresh_requests']+=1
+        time.sleep(max(0,min(float(data.get('delay_ms',0)),8000))/1000)
+        if data.get('fail'):return jsonify(ok=False,message='fixture refresh unavailable'),503
+        with engine.lock:
+            if data==r54_refresh_config and 'account_balance' in data:broker.balance=float(data['account_balance'])
+            if data==r54_refresh_config and data.get('marker'):
+                store.event(str(data['marker']),{'message':str(data['marker'])},time.time())
 
 # Use normal state endpoint and step actual engine periodically.
 if __name__=='__main__':

@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MainActivity extends Activity {
 
@@ -47,7 +48,14 @@ public class MainActivity extends Activity {
     private TextView autoStatusText;
     private Spinner riskSpinner, maxPositionsSpinner, maxDriftSpinner;
     private View topCard, tfCard, modeCard, signalCard, tradingCard, metricsCard, riskCard, journalCard, marketStatusCard, positionsCard, smartCard, bottomNav;
-    private ScrollView rootLayout;
+    private LiveScrollView rootLayout;
+    private TextView refreshStatusText;
+    private ProgressBar refreshProgress;
+    private boolean manualRefreshInFlight;
+    private Future<?> refreshTask;
+    private EventClient.ReadRequest refreshRead;
+    private Runnable refreshTimeout;
+    private long refreshSerial;
 
 
     private static final int C_BG = Color.rgb(7, 8, 22);
@@ -188,6 +196,19 @@ public class MainActivity extends Activity {
         });
         qualityBarView = findViewById(R.id.qualityBarView);
         rootLayout = findViewById(R.id.rootLayout);
+        refreshStatusText = findViewById(R.id.refreshStatusText);
+        refreshProgress = findViewById(R.id.refreshProgress);
+        rootLayout.setRefreshListener(new LiveScrollView.RefreshListener(){
+            public void onPullProgress(float progress){
+                if(manualRefreshInFlight)return;
+                refreshStatusText.setText(progress>=1?"Отпустите, чтобы обновить":"Потяните вниз, чтобы обновить");
+                refreshStatusText.setTextColor(progress>=1?C_PURPLE:C_MUTED);
+            }
+            public void onPullCancelled(){
+                if(!manualRefreshInFlight){refreshStatusText.setText("Потяните вниз, чтобы обновить");refreshStatusText.setTextColor(C_MUTED);}
+            }
+            public void onRefresh(){refreshAllData();}
+        });
 
         topCard = findViewById(R.id.topCard);
         tfCard = findViewById(R.id.tfCard);
@@ -724,11 +745,8 @@ public class MainActivity extends Activity {
 
     private void restoreSparklineFromPrefs(String signal) {
         if(sparklineView==null)return;
-        JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
-        sparklineView.setMarketIdentity(ScenarioUi.marketIdentity(s));
-        sparklineView.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
-                d==null?null:d.optJSONArray("structure"),d==null?"SEARCH":d.optString("path","SEARCH"),
-                s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
+        JSONObject s=EventClient.state();
+        ScenarioUi.populate(sparklineView,s);
         sparklineView.setSignal(signal);
     }
 
@@ -765,6 +783,61 @@ public class MainActivity extends Activity {
         try { executor.execute(task); }
         catch (java.util.concurrent.RejectedExecutionException e) {
             if (!uiClosed && !isDestroyed()) throw e;
+        }
+    }
+
+    private void refreshAllData(){
+        if(uiClosed||isFinishing()||isDestroyed()||manualRefreshInFlight)return;
+        manualRefreshInFlight=true;
+        final long request=++refreshSerial;
+        final EventClient.ReadRequest read=EventClient.newReadRequest();refreshRead=read;
+        rootLayout.setRefreshing(true);
+        refreshProgress.setVisibility(View.VISIBLE);
+        refreshStatusText.setText("Обновляем все данные…");refreshStatusText.setTextColor(C_PURPLE);
+        refreshTimeout=()->{
+            if(request!=refreshSerial||!manualRefreshInFlight)return;
+            if(refreshTask!=null)refreshTask.cancel(true);
+            finishManualRefresh(request,null,new IOException("Истекло время ожидания Bridge"));
+        };
+        serviceUiHandler.postDelayed(refreshTimeout,15000L);
+        try{
+            // Share the queue with legacy money reads so an older result cannot overtake this refresh.
+            refreshTask=executor.submit(()->{
+                try{
+                    JSONObject snapshot=EventClient.refreshAll(read);
+                    deliverUi(()->finishManualRefresh(request,snapshot,null));
+                }catch(Exception e){deliverUi(()->finishManualRefresh(request,null,e));}
+            });
+        }catch(java.util.concurrent.RejectedExecutionException e){finishManualRefresh(request,null,e);}
+    }
+
+    private void finishManualRefresh(long request,JSONObject snapshot,Exception error){
+        if(request!=refreshSerial||uiClosed||isFinishing()||isDestroyed())return;
+        ++refreshSerial;manualRefreshInFlight=false;refreshTask=null;
+        if(refreshTimeout!=null)serviceUiHandler.removeCallbacks(refreshTimeout);
+        refreshTimeout=null;
+        rootLayout.setRefreshing(false);refreshProgress.setVisibility(View.INVISIBLE);
+        if(error!=null)EventClient.offlineIfCurrent(refreshRead,error);
+        refreshRead=null;
+        lastMoneyRefreshMs=System.currentTimeMillis();
+        syncUiFromBackgroundService();
+        if(error!=null){
+            refreshStatusText.setText("Не удалось обновить: "+safeMessage(error));refreshStatusText.setTextColor(C_RED);
+            return;
+        }
+        JSONArray errors=snapshot==null?null:snapshot.optJSONArray("refresh_errors");
+        StringBuilder warnings=new StringBuilder();
+        if(errors!=null)for(int i=0;i<errors.length();i++){
+            if(warnings.length()>0)warnings.append("; ");warnings.append(errors.optString(i));
+        }
+        if(!EventClient.prefs().getBoolean("server_verified",false)){
+            if(warnings.length()>0)warnings.append("; ");warnings.append("Нет свежих данных счёта MT5");
+        }
+        if(warnings.length()>0){
+            refreshStatusText.setText("Частично обновлено: "+warnings);refreshStatusText.setTextColor(C_YELLOW);
+        }else{
+            refreshStatusText.setText("Обновлено · "+new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date()));
+            refreshStatusText.setTextColor(C_GREEN);
         }
     }
 
@@ -940,7 +1013,8 @@ public class MainActivity extends Activity {
         String sig = p.getString("signal_history", "");
         String trades = p.getString("trade_log_snapshot", tradeHistoryText == null ? "" : tradeHistoryText.getText().toString());
         String stats = p.getString("stats_snapshot", "");
-        String text = "СОБЫТИЯ ПРИЛОЖЕНИЯ\n" + (full.trim().isEmpty()?"Пока пусто":full) +
+        String text = p.getString("ec_journal_snapshot","ЖУРНАЛ BRIDGE: пока не обновлён") +
+                "\n\nСОБЫТИЯ ПРИЛОЖЕНИЯ\n" + (full.trim().isEmpty()?"Пока пусто":full) +
                 "\n\nИСТОРИЯ СИГНАЛОВ\n" + (sig.trim().isEmpty()?"Пока пусто":sig) +
                 "\n\nСТАТИСТИКА 30 ДНЕЙ\n" + (stats.trim().isEmpty()?"Пока пусто":stats) +
                 "\n\nСДЕЛКИ MT5 · ДО 200 СОБЫТИЙ\n" + (trades.trim().isEmpty()?"Пока пусто":trades);
@@ -1148,7 +1222,7 @@ public class MainActivity extends Activity {
 
     private void refreshStatsAndPositions() {
         final String base = serverBaseFromPrefs();
-        if (base.isEmpty() || moneyRefreshInFlight) return;
+        if (base.isEmpty() || moneyRefreshInFlight || manualRefreshInFlight) return;
         moneyRefreshInFlight = true;
         submitTask(() -> {
             try {
@@ -1406,7 +1480,12 @@ public class MainActivity extends Activity {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         updateMarketStatusUi();
         restoreTradingSnapshotFromPrefs();
-        if (p.getBoolean("server_verified", false)) {
+        String bridgeJournal=p.getString("ec_journal_snapshot","");
+        if(!bridgeJournal.isEmpty()){
+            String localJournal=p.getString("full_journal","");
+            journalText.setText(bridgeJournal+(localJournal.isEmpty()?"":"\n\nСОБЫТИЯ ПРИЛОЖЕНИЯ\n"+localJournal));
+        }
+        if (p.getBoolean("server_verified", false) && !manualRefreshInFlight) {
             long nowMoney = System.currentTimeMillis();
             if (nowMoney - lastMoneyRefreshMs >= 5000L) {
                 lastMoneyRefreshMs = nowMoney;
@@ -2545,6 +2624,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         uiClosed = true;
+        ++refreshSerial;
+        if(refreshTask!=null)refreshTask.cancel(true);
+        if(rootLayout!=null){rootLayout.setRefreshListener(null);rootLayout.setRefreshing(false);}
         monitorHandler.removeCallbacksAndMessages(null);
         serviceUiHandler.removeCallbacksAndMessages(null);
 
