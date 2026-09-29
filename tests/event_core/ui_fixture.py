@@ -124,10 +124,10 @@ def prime_r5_market(family='TRIANGLE'):
     if family=='HEAD_SHOULDERS':raw=shaped([1.102,1.100,1.104,1.100,1.102])
     delta=anchor-int(NOW)
     broker.bar_data=[replace(b,time=b.time+delta) for b in raw]
-    broker.ctx_data=[replace(b,time=now-(len(raw)-i)*900) for i,b in enumerate(raw)]
-    broker.h1_data=[replace(b,time=now-(len(raw)-i)*3600) for i,b in enumerate(raw)]
+    broker.ctx_data=[replace(b,time=now//900*900-(len(raw)-i)*900) for i,b in enumerate(raw)]
+    broker.h1_data=[replace(b,time=now//3600*3600-(len(raw)-i)*3600) for i,b in enumerate(raw)]
     price=(min(b.low for b in raw[-12:])+max(b.high for b in raw[-12:]))/2
-    broker.m1_data=[Bar(now-(20-i)*60,price,price+.00003,price-.00003,price) for i in range(20)]
+    broker.m1_data=[Bar(now//60*60-(20-i)*60,price,price+.00003,price-.00003,price) for i in range(20)]
     broker.live_bar_data=Bar(anchor,price,price+.00004,price-.00004,price)
     broker.bid=price;broker.ask=price+.00001;broker.quote_age=0
     clear_market()

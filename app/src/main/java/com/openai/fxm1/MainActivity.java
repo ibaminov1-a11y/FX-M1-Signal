@@ -62,6 +62,7 @@ public class MainActivity extends Activity {
     private static final int C_YELLOW = Color.rgb(255, 193, 61);
     private static final int C_ORANGE = Color.rgb(255, 159, 67);
 
+    private volatile boolean uiClosed;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
     private final Handler serviceUiHandler = new Handler(Looper.getMainLooper());
@@ -69,6 +70,7 @@ public class MainActivity extends Activity {
     private final Runnable serviceUiRunnable = new Runnable() {
         @Override
         public void run() {
+            if (uiClosed || isFinishing() || isDestroyed()) return;
             syncUiFromBackgroundService();
             serviceUiHandler.postDelayed(this, 1000L);
         }
@@ -179,6 +181,11 @@ public class MainActivity extends Activity {
         sparklineView = findViewById(R.id.sparklineView);
         sparklineView.setOnClickListener(v -> ScenarioUi.enlarge(this));
         ScenarioUi.attachControls(this,sparklineView);
+        findViewById(R.id.liveDetailsButton).setOnClickListener(v -> {
+            String snapshot = confidenceText.getText()+"\n\n"+levelsText.getText()+"\n\n"+contextText.getText()
+                +"\n\n"+whyWaitText.getText()+"\n\n"+componentScoresText.getText();
+            StableLiveTextView.showSnapshot(this, "ПОЛНЫЕ ДАННЫЕ СИГНАЛА", snapshot);
+        });
         qualityBarView = findViewById(R.id.qualityBarView);
         rootLayout = findViewById(R.id.rootLayout);
 
@@ -362,7 +369,7 @@ public class MainActivity extends Activity {
                 .setMessage(realMode?
                     "REAL-счёт. Пилотный лимит жёстко ограничен: ≤0.25% риска и ≤0.01 lot на ступень. Комиссия берётся из сохранённого профиля счёта/инструмента или истории MT5. REAL ARM действует только до перезапуска Bridge.":
                     "Источник — MT5. DEMO-комиссия считается 0 автоматически. Первый вход — только по модели/триггеру, добавления только в плюс и в пределах общего риска.")
-                .setNegativeButton("Отмена",null).setPositiveButton(realMode?"ПОДТВЕРДИТЬ REAL":"Подтвердить DEMO",(d,w)->executor.execute(()->{
+                .setNegativeButton("Отмена",null).setPositiveButton(realMode?"ПОДТВЕРДИТЬ REAL":"Подтвердить DEMO",(d,w)->submitTask(()->{
                     try{
                         EventClient.configure();
                         JSONObject current=EventClient.poll(),cfg=current.optJSONObject("config");
@@ -372,8 +379,8 @@ public class MainActivity extends Activity {
                             EventClient.command("arm_real",new JSONObject().put("confirmation","ARM_REAL_LIVE"));
                         JSONObject out=EventClient.command("enable",new JSONObject().put("confirmation",realMode?"ENABLE_REAL":"ENABLE_DEMO"));
                         EventClient.poll();
-                        runOnUiThread(()->{addJournal(out.optString("message"));startUnifiedMonitoringService();});
-                    }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("AUTO не включён").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
+                        deliverUi(()->{addJournal(out.optString("message"));startUnifiedMonitoringService();});
+                    }catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setTitle("AUTO не включён").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
                 })).show();
         });
 
@@ -456,6 +463,7 @@ public class MainActivity extends Activity {
         stylePrimaryButton(saveKeyButton);
         stylePrimaryButton(analyzeButton);
         styleOutlineButton(serverCheckButton, C_PURPLE);
+        styleOutlineButton(findViewById(R.id.liveDetailsButton), C_PURPLE);
         styleOutlineButton(closeAllButton, C_PURPLE);
         styleOutlineButton(emergencyStopButton, C_RED);
         styleOutlineButton(smartFeaturesButton, C_PURPLE);
@@ -702,14 +710,14 @@ public class MainActivity extends Activity {
     }
 
     private void onLotChanged(){
-        executor.execute(()->{try{EventClient.configureUserSelection();EventClient.poll();runOnUiThread(()->{restoreTradingSnapshotFromPrefs();Toast.makeText(this,"Лот сохранён: "+EventClient.prefs().getString("ec_lot_cap",""),Toast.LENGTH_SHORT).show();});}
-            catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Лот сохранён на телефоне").setMessage("Bridge пока не применил выбранный объём: "+safeMessage(e)).setPositiveButton("OK",null).show());}});
+        submitTask(()->{try{EventClient.configureUserSelection();EventClient.poll();deliverUi(()->{restoreTradingSnapshotFromPrefs();Toast.makeText(this,"Лот сохранён: "+EventClient.prefs().getString("ec_lot_cap",""),Toast.LENGTH_SHORT).show();});}
+            catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setTitle("Лот сохранён на телефоне").setMessage("Bridge пока не применил выбранный объём: "+safeMessage(e)).setPositiveButton("OK",null).show());}});
     }
 
     private void restoreSparklineFromPrefs(String signal) {
         if(sparklineView==null)return;
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
-        sparklineView.setMarketIdentity(s.optString("market_scope",s.optJSONObject("config")==null?"":s.optJSONObject("config").optString("symbol")));
+        sparklineView.setMarketIdentity(ScenarioUi.marketIdentity(s));
         sparklineView.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
                 d==null?null:d.optJSONArray("structure"),d==null?"SEARCH":d.optString("path","SEARCH"),
                 s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
@@ -738,7 +746,22 @@ public class MainActivity extends Activity {
         return u;
     }
 
+    private void deliverUi(Runnable action) {
+        runOnUiThread(() -> {
+            if (!uiClosed && !isFinishing() && !isDestroyed()) action.run();
+        });
+    }
+
+    private void submitTask(Runnable task) {
+        if (uiClosed || isFinishing() || isDestroyed()) return;
+        try { executor.execute(task); }
+        catch (java.util.concurrent.RejectedExecutionException e) {
+            if (!uiClosed && !isDestroyed()) throw e;
+        }
+    }
+
     private void checkServer() {
+        if (uiClosed || isFinishing() || isDestroyed()) return;
         final String base = normalizeServerUrl(serverUrlInput.getText().toString());
         if (base.isEmpty()) {
             Toast.makeText(this, "Адрес сервера пока пуст", Toast.LENGTH_SHORT).show();
@@ -753,7 +776,7 @@ public class MainActivity extends Activity {
         serverStatusText.setText("SERVER: CHECKING…   •   MT5: …");
         serverStatusText.setTextColor(C_YELLOW);
 
-        executor.execute(() -> {
+        submitTask(() -> {
             try {
                 JSONObject root = httpJson("GET", base + "/health", null);
                 boolean serverOk = root.optBoolean("ok", false);
@@ -772,7 +795,7 @@ public class MainActivity extends Activity {
                 if(serverOk&&mt5Ok){try{brokerSymbols=httpJson("GET",base+"/symbols",null).optJSONArray("symbols");}catch(Exception ignored){}}
                 final JSONArray finalBrokerSymbols=brokerSymbols;
 
-                runOnUiThread(() -> {
+                deliverUi(() -> {
                     serverCheckButton.setEnabled(true);
                     serverConnected = serverOk;
                     mt5Connected = mt5Ok;
@@ -834,7 +857,7 @@ public class MainActivity extends Activity {
                     }
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> {
+                deliverUi(() -> {
                     serverCheckButton.setEnabled(true);
                     getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("server_verified", false).apply();
                     setServerEditMode(true);
@@ -1048,18 +1071,18 @@ public class MainActivity extends Activity {
         Button adopt=new Button(this);adopt.setText("ПРИВЯЗАТЬ ТЕКУЩИЙ СЧЁТ MT5");styleOutlineButton(adopt,C_PURPLE);box.addView(adopt);
         adopt.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Привязать текущий MT5 счёт?")
             .setMessage("Только без открытой кампании EventCore. AUTO будет выключен.")
-            .setNegativeButton("Отмена",null).setPositiveButton("Привязать",(d,w)->executor.execute(()->{
-                try{EventClient.command("adopt_account",new JSONObject().put("confirmation","ADOPT_MT5_ACCOUNT"));EventClient.poll();runOnUiThread(this::checkServer);}
-                catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
+            .setNegativeButton("Отмена",null).setPositiveButton("Привязать",(d,w)->submitTask(()->{
+                try{EventClient.command("adopt_account",new JSONObject().put("confirmation","ADOPT_MT5_ACCOUNT"));EventClient.poll();deliverUi(this::checkServer);}
+                catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
             })).show());
 
         Button reset=new Button(this);reset.setText("СНЯТЬ БЛОКИРОВКУ ПОСЛЕ СВЕРКИ");styleOutlineButton(reset,C_PURPLE);box.addView(reset);
-        reset.setOnClickListener(v->executor.execute(()->{
+        reset.setOnClickListener(v->submitTask(()->{
             try{
                 String mode=EventClient.state().optJSONObject("account")==null?actual:EventClient.state().optJSONObject("account").optString("type",actual);
                 EventClient.command("reset",new JSONObject().put("confirmation","REAL".equals(mode)?"RESET_REAL_FLAT":"RESET_DEMO_FLAT"));
-                EventClient.poll();runOnUiThread(this::checkServer);
-            }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
+                EventClient.poll();deliverUi(this::checkServer);
+            }catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
         }));
 
         new AlertDialog.Builder(this).setTitle("Умные функции").setView(box).setNegativeButton("ОТМЕНА",null)
@@ -1071,15 +1094,15 @@ public class MainActivity extends Activity {
                     .putFloat("max_spread_pips",3f).putInt("cooldown_minutes",0)
                     .putBoolean("ec_dynamic_adds",true).putBoolean("session_filter_enabled",false).apply();
                 autoTradingSwitch.setText(TradeSettings.autoTitle());
-                if(modeChanged)executor.execute(()->{try{EventClient.poll();runOnUiThread(this::restoreTradingSnapshotFromPrefs);}catch(Exception e){runOnUiThread(()->autoStatusText.setText("Смена режима: ожидается подтверждение PAUSE от Bridge"));}});
+                if(modeChanged)submitTask(()->{try{EventClient.poll();deliverUi(this::restoreTradingSnapshotFromPrefs);}catch(Exception e){deliverUi(()->autoStatusText.setText("Смена режима: ожидается подтверждение PAUSE от Bridge"));}});
                 if(!wanted.equals(actual)){
                     new AlertDialog.Builder(this).setTitle("Режим сохранён")
                         .setMessage("В приложении выбран "+wanted+", а в MT5 сейчас "+actual+". Переключите счёт в MT5, затем нажмите «Привязать текущий счёт MT5».")
                         .setPositiveButton("OK",null).show();
                     return;
                 }
-                executor.execute(()->{try{EventClient.configure();EventClient.poll();runOnUiThread(this::checkServer);}
-                    catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
+                submitTask(()->{try{EventClient.configure();EventClient.poll();deliverUi(this::checkServer);}
+                    catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
             }).show();
     }
 
@@ -1118,7 +1141,7 @@ public class MainActivity extends Activity {
         final String base = serverBaseFromPrefs();
         if (base.isEmpty() || moneyRefreshInFlight) return;
         moneyRefreshInFlight = true;
-        executor.execute(() -> {
+        submitTask(() -> {
             try {
                 JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
                 JSONObject ledger30 = FeatureEngine.httpJson("GET", base + "/trade-ledger?days=30&limit=1000", null);
@@ -1141,7 +1164,7 @@ public class MainActivity extends Activity {
                         .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
                         .apply();
 
-                runOnUiThread(() -> {
+                deliverUi(() -> {
                     if (statsText != null) statsText.setText("СТАТИСТИКА\n" + stText);
                     if (tradeHistoryText != null) tradeHistoryText.setText(logText);
                     renderPositionsMoneyCard(openCount, floating, currency);
@@ -1154,7 +1177,7 @@ public class MainActivity extends Activity {
                     }
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> {
+                deliverUi(() -> {
                     String cachedStats = getSharedPreferences("fxm1", MODE_PRIVATE).getString("stats_snapshot", "");
                     String cachedLog = getSharedPreferences("fxm1", MODE_PRIVATE).getString("trade_log_snapshot", "");
                     if (statsText != null && !cachedStats.trim().isEmpty()) statsText.setText("СТАТИСТИКА\n" + cachedStats);
@@ -1195,7 +1218,7 @@ public class MainActivity extends Activity {
             return;
         }
 
-        executor.execute(() -> {
+        submitTask(() -> {
             try {
                 JSONObject pos = FeatureEngine.httpJson("GET", base + "/positions", null);
                 JSONObject ledger = FeatureEngine.httpJson("GET", base + "/trade-ledger?days=3650&limit=1000", null);
@@ -1207,12 +1230,12 @@ public class MainActivity extends Activity {
                         .putString("trade_log_full_snapshot", history)
                         .putString("trade_log_snapshot", FeatureEngine.formatTradeLog(ledger))
                         .apply();
-                runOnUiThread(() -> {
+                deliverUi(() -> {
                     renderPositionsMoneyCard(pos.optInt("count", 0), pos.optDouble("floating_pl", 0.0), currency);
                     showMoneyHistoryDialogText(summary, history);
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> showMoneyHistoryDialogText(
+                deliverUi(() -> showMoneyHistoryDialogText(
                         cachedSummary + "\n\nBridge: " + safeMessage(e), cachedHistory));
             }
         });
@@ -1263,15 +1286,15 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "Сначала подключите MT5", Toast.LENGTH_SHORT).show();
             return;
         }
-        executor.execute(() -> {
+        submitTask(() -> {
             try {
                 JSONObject root = FeatureEngine.httpJson("GET", base + "/positions", null);
                 JSONArray arr = root.optJSONArray("positions");
-                if (arr == null || arr.length()==0) { runOnUiThread(() -> Toast.makeText(this,"Открытых позиций нет",Toast.LENGTH_SHORT).show()); return; }
+                if (arr == null || arr.length()==0) { deliverUi(() -> Toast.makeText(this,"Открытых позиций нет",Toast.LENGTH_SHORT).show()); return; }
                 final ArrayList<JSONObject> items=new ArrayList<>(); final ArrayList<String> labels=new ArrayList<>();
                 for(int i=0;i<arr.length();i++){ JSONObject o=arr.optJSONObject(i); if(o==null)continue; items.add(o); labels.add("#"+o.optLong("ticket")+" · "+o.optString("symbol")+" · "+o.optString("side")+" · P/L "+String.format(Locale.US,"%+.2f",o.optDouble("profit",0))); }
-                runOnUiThread(() -> new AlertDialog.Builder(this).setTitle("Позиции MT5").setItems(labels.toArray(new String[0]), (d,which) -> showPositionActions(base,items.get(which))).setNegativeButton("ЗАКРЫТЬ",null).show());
-            } catch(Exception e){ runOnUiThread(() -> Toast.makeText(this,"Позиции: "+safeMessage(e),Toast.LENGTH_LONG).show()); }
+                deliverUi(() -> new AlertDialog.Builder(this).setTitle("Позиции MT5").setItems(labels.toArray(new String[0]), (d,which) -> showPositionActions(base,items.get(which))).setNegativeButton("ЗАКРЫТЬ",null).show());
+            } catch(Exception e){ deliverUi(() -> Toast.makeText(this,"Позиции: "+safeMessage(e),Toast.LENGTH_LONG).show()); }
         });
     }
 
@@ -1698,49 +1721,32 @@ public class MainActivity extends Activity {
     }
 
     private void syncBrokerSymbols(JSONArray values) {
-        if(values==null||values.length()==0)return;
-        String selected=getSharedPreferences("fxm1",MODE_PRIVATE).getString("selected_symbol","EUR/USD");
-        ArrayList<String> fresh=new ArrayList<>();
-        for(int i=0;i<values.length()&&fresh.size()<1000;i++){
-            String v=values.optString(i,"").trim();
-            if(!v.isEmpty()&&!fresh.contains(v))fresh.add(v);
-        }
-        if(fresh.isEmpty())return;
-        String custom=getSharedPreferences("fxm1",MODE_PRIVATE).getString("custom_symbols","");
-        for(String x:custom.split("\\|")){String v=x.trim();if(!v.isEmpty()&&!fresh.contains(v))fresh.add(v);}
-        if(!fresh.contains(selected)&&!selected.startsWith("＋"))fresh.add(0,selected);
-        StringBuilder cache=new StringBuilder();
-        for(String x:fresh){if(cache.length()>0)cache.append('|');cache.append(x);}
-        getSharedPreferences("fxm1",MODE_PRIVATE).edit().putString("mt5_symbols_cache",cache.toString()).apply();
-        symbolItems.clear();symbolItems.addAll(fresh);symbolItems.add("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
-        symbolAdapter=darkSpinnerAdapter(symbolItems.toArray(new String[0]));symbolSpinner.setAdapter(symbolAdapter);
-        int pos=symbolItems.indexOf(selected);symbolSpinner.setSelection(pos>=0?pos:0);
+        // A broker catalogue is metadata, never the user's chosen watchlist.
+        getSharedPreferences("fxm1",MODE_PRIVATE).edit().remove("mt5_symbols_cache").apply();
     }
 
     private void loadSyncedMt5Symbols() {
-        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
-        String raw = p.getString("mt5_symbols_cache", "");
-        if (raw == null || raw.trim().isEmpty()) return;
-        ArrayList<String> cached = new ArrayList<>();
-        for (String x : raw.split("\\|")) {
-            String v = x.trim();
-            if (!v.isEmpty() && !cached.contains(v)) cached.add(v);
-            if (cached.size() >= 500) break;
-        }
-        if (!cached.isEmpty()) {
-            symbolItems.clear();
-            symbolItems.addAll(cached);
-        }
+        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);
+        String raw=p.getString("mt5_symbols_cache","");
+        SharedPreferences.Editor e=p.edit().remove("mt5_symbols_cache");
+        if(!raw.isEmpty()&&!p.contains("legacy_broker_catalogue"))e.putString("legacy_broker_catalogue",raw);
+        e.apply();
+        // Keep the existing base list; loadCustomSymbols preserves the selected exact name.
     }
 
     private void loadCustomSymbols() {
-        SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
-        String raw = p.getString("custom_symbols", "");
-        if (raw == null || raw.trim().isEmpty()) return;
-        for (String x : raw.split("\\|")) {
-            String v = x.trim();
-            if (!v.isEmpty() && !symbolItems.contains(v)) symbolItems.add(v);
+        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);
+        String raw=p.getString("custom_symbols","");
+        String[] custom=raw.split("\\|");
+        if(custom.length>60){
+            // Older builds could copy the entire broker catalogue into this preference.
+            // Preserve it for recovery; do not silently replace the current instrument.
+            p.edit().putString("legacy_custom_symbols",raw).putString("custom_symbols","").apply();
+        }else for(String name:custom){
+            String v=name.trim();if(!v.isEmpty()&&!v.startsWith("＋")&&!symbolItems.contains(v))symbolItems.add(v);
         }
+        String selected=p.getString("selected_symbol","EUR/USD").trim();
+        if(!selected.isEmpty()&&!selected.startsWith("＋")&&!symbolItems.contains(selected))symbolItems.add(selected);
     }
 
     private void showAddSymbolDialog() {
@@ -1753,7 +1759,7 @@ public class MainActivity extends Activity {
                 .setMessage("Введите точное имя инструмента MT5, включая суффикс брокера при наличии.")
                 .setView(input)
                 .setPositiveButton("ДОБАВИТЬ", (d, w) -> {
-                    String v = input.getText().toString().trim().toUpperCase(Locale.US);
+                    String v = input.getText().toString().trim();
                     if (!v.isEmpty()) {
                         int addPos = symbolItems.indexOf("＋ ДОБАВИТЬ ИНСТРУМЕНТ");
                         if (!symbolItems.contains(v)) symbolItems.add(Math.max(0, addPos), v);
@@ -1849,20 +1855,20 @@ public class MainActivity extends Activity {
         final String base = normalizeServerUrl(serverUrlInput.getText().toString());
         if (base.isEmpty()) return;
 
-        executor.execute(() -> {
+        submitTask(() -> {
             try {
                 String url = base + "/quote?symbol=" + URLEncoder.encode(FeatureEngine.analysisSymbol(symbol), "UTF-8");
                 JSONObject root = httpJson("GET", url, null);
                 double bid = root.optDouble("bid", Double.NaN);
                 double ask = root.optDouble("ask", Double.NaN);
 
-                runOnUiThread(() -> {
+                deliverUi(() -> {
                     lastMt5Bid = bid;
                     lastMt5Ask = ask;
                     updatePriceComparison();
                 });
             } catch (Exception ignored) {
-                runOnUiThread(() -> {
+                deliverUi(() -> {
                     lastMt5Bid = Double.NaN;
                     lastMt5Ask = Double.NaN;
                     updatePriceComparison();
@@ -2516,8 +2522,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        monitorHandler.removeCallbacks(monitorRunnable);
-        serviceUiHandler.removeCallbacks(serviceUiRunnable);
+        uiClosed = true;
+        monitorHandler.removeCallbacksAndMessages(null);
+        serviceUiHandler.removeCallbacksAndMessages(null);
 
         executor.shutdownNow();
         super.onDestroy();
@@ -2615,9 +2622,9 @@ public class MainActivity extends Activity {
     }
     private void eventCommand(String cmd,JSONObject data){
         final JSONObject envelope;try{envelope=EventClient.envelope(data);}catch(Exception e){addJournal(safeMessage(e));return;}
-        executor.execute(()->{try{JSONObject r=EventClient.http("POST",EventClient.base()+"/ec/command/"+cmd,envelope);
+        submitTask(()->{try{JSONObject r=EventClient.http("POST",EventClient.base()+"/ec/command/"+cmd,envelope);
             if("reset".equals(cmd))getSharedPreferences("fxm1",MODE_PRIVATE).edit().putBoolean("v108_emergency_latched",false).putBoolean("ec_emergency_pending",false).apply();
-            EventClient.poll();runOnUiThread(()->{addJournal(r.optString("message"));restoreTradingSnapshotFromPrefs();});
-        }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("EventCore").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
+            EventClient.poll();deliverUi(()->{addJournal(r.optString("message"));restoreTradingSnapshotFromPrefs();});
+        }catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setTitle("EventCore").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
     }
 }

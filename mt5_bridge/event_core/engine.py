@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import asdict, fields, replace
 import copy, hashlib, math, threading, time
-from .model import Bar, Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure
+from .model import Bar, Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure, validate_bar_history
 from .strategy import Strategy
 from .compute_core import ComputeCore, make_compute
 from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key
@@ -11,6 +11,7 @@ CONTEXT={'M1':'M5','M5':'M15','M10':'H1','M15':'H1','H1':'H4','H4':'D1','D1':'W1
 # Broker/server candle clocks can cross the M5 boundary slightly before the PC clock.
 # The forming M5 stays isolated from confirmed-pivot history; larger future jumps remain blocked.
 LIVE_M5_CLOCK_SKEW_SEC=60
+MARKET_CLOCK_VERSION='UTC_NATIVE_R51'
 
 
 class Engine:
@@ -20,6 +21,10 @@ class Engine:
         saved=store.load('engine',{})
         self.config=Config(**saved.get('config',{})).validate()
         self.account_key=saved.get('account_key','')
+        self.history_model_version=saved.get('history_model_version','UNVERIFIED')
+        self.loaded_legacy_scenarios=bool(saved.get('compute',{}).get('scenarios')) and self.history_model_version!=MARKET_CLOCK_VERSION
+        self.history_migration={}
+        self.quote_diagnostics={}
         self.real_armed=False
         # Ephemeral by design: never resurrect a reversal after Bridge restart.
         self.pending_reversal=None
@@ -65,6 +70,7 @@ class Engine:
             campaign=self.campaign,emergency=self.emergency,recovery=self.recovery,
             daily_latch=self.daily_latch,ack=self.ack,last_exit=self.last_exit,
             exit_pending=self.exit_pending,pending_config=self.pending_config,
+            history_model_version=self.history_model_version,
             strategy=self.strategy.state(),compute=self.compute.state()))
 
     def _consume_event(self,event_id):
@@ -298,6 +304,23 @@ class Engine:
             setup.seen_safe_side=False
             setup.armed_msc=max(setup.armed_msc,int(now*1000))
 
+    def _prepare_market_history(self,now):
+        result=self.store.ensure_market_clock(self.market_scope(),MARKET_CLOCK_VERSION,now)
+        if result['changed'] or self.loaded_legacy_scenarios:
+            self.history_migration=result
+            self._history_loaded.clear();self._history_fingerprint.clear();self.last_market_attempt=-1.
+            self.bars=[];self.m1=[];self.m15=[];self.h1=[];self.context=[];self.live_bar=None
+            # Do not change any live campaign, stop, monetary record or intent.
+            if result['quarantined'] or self.loaded_legacy_scenarios:
+                self._cancel_reversal('Обновление непроверенной рыночной истории',now)
+                self.strategy.clear()
+                consumed=self.compute.state().get('consumed',[])
+                self.compute=make_compute(self.config,{'consumed':consumed})
+                self.forecast={};self.decision=Decision()
+            self.history_model_version=MARKET_CLOCK_VERSION;self.loaded_legacy_scenarios=False
+            self.store.event('MARKET_CACHE_MIGRATION',dict(scope=self.market_scope(),**result),now)
+            self.save()
+
     def _refresh_market(self,now):
         self.market_errors=[];self.quote_ready=False
         try:
@@ -312,6 +335,12 @@ class Engine:
             self.quote_ready=True
         except Exception as exc:
             self.market_errors.append('Нет пригодной свежей котировки: '+str(exc))
+        if hasattr(self.broker,'quote_diagnostics'):
+            self.quote_diagnostics=self.broker.quote_diagnostics(symbol)
+        if not self.quote_ready:
+            # A stale/first tick cannot establish a candle clock or contaminate SQLite.
+            return
+        self._prepare_market_history(now)
         if self.last_market_attempt<0 or now-self.last_market_attempt>=1:
             self.last_market_attempt=now;self.bar_errors=[]
             layers=(('bars',self.config.timeframe),('context',CONTEXT[self.config.timeframe]))
@@ -322,21 +351,20 @@ class Engine:
                     history_key=(self.market_scope(),tf)
                     if history_key not in self._history_loaded and hasattr(self.broker,'history_bars'):
                         values=list(self.broker.history_bars(symbol,tf,1200))
-                        self._history_loaded.add(history_key)
                     else:
                         values=list(self.broker.bars(symbol,tf))
                     if not values:
                         raise Blocked('MT5 вернул пустую историю '+tf)
-                    ordered(values)
-                    if tf!='MN1' and values[-1].time+TF_SECONDS[tf]>now+1.0:
-                        raise Blocked('MT5 вернул незакрытую свечу '+tf)
+                    validate_bar_history(values,tf,now)
                     fingerprint=tuple((b.time,b.open,b.high,b.low,b.close,b.volume) for b in values)
                     if self._history_fingerprint.get(history_key)!=fingerprint:
                         self.store.save_bars(self.market_scope(),tf,values,now)
                         self._history_fingerprint[history_key]=fingerprint
                     if self.config.engine_mode=='SCENARIO_V2':
                         values=[Bar(**row) for row in self.store.read_bars(self.market_scope(),tf,limit=1200)]
+                    validate_bar_history(values,tf,now)
                     setattr(self,attr,values)
+                    self._history_loaded.add(history_key)
                 except Exception as exc:
                     self.bar_errors.append('История '+tf+' не обновлена: '+str(exc))
             if self.config.timeframe=='M5':
@@ -948,6 +976,8 @@ class Engine:
                     side=c['side'],entry=c['last_entry'],invalidation=c['invalidation'],requested_volume=c.get('requested_volume'))
             display_forecast['reversal_status']=copy.deepcopy(self.reversal_status)
             return copy.deepcopy(dict(protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,runtime_revision=REVISION,server_time=now,
+                market_history_generation=MARKET_CLOCK_VERSION,history_migration=self.history_migration,
+                quote_diagnostics=self.quote_diagnostics,
                 analysis_time=self.analysis_time,account=self.account,account_age=now-self.account_time,config=asdict(self.config),auto=self.auto,paused=self.paused,
                 market_time=self.market_time,market_errors=list(self.market_errors),quote_fresh=self.quote_ready and q is not None and -2<=now-q.time_msc/1000<=10,
                 risk_scope='MT5_ACCOUNT',foreign_positions=sum(p.get('magic')!=MAGIC for p in self.positions),

@@ -11,7 +11,10 @@ final class ScenarioMapRenderer {
     private final float d,w,h,left,right;
     private float split,top,bottom;
     private double low=Double.POSITIVE_INFINITY,high=Double.NEGATIVE_INFINITY;
-    private final ArrayList<Float> labelRows=new ArrayList<>();
+    private final ArrayList<Annotation> annotations=new ArrayList<>();
+    private static final class Annotation {String text;float x,y;int color,priority;
+        Annotation(String text,float x,float y,int color,int priority){this.text=text;this.x=x;this.y=y;this.color=color;this.priority=priority;}}
+    private boolean tied;
     private static final int GREEN=0xff42d67a,RED=0xffff4857,ALT=0xffffc857,MUTED=0xffaaa7bf;
     private static final int[] ALTS={ALT,0xff5bd6ff,0xffdd91ff};
     private boolean historical,stale;
@@ -37,28 +40,46 @@ final class ScenarioMapRenderer {
         p.setPathEffect(dash?new DashPathEffect(new float[]{5*d,4*d},0):null);
         c.drawLine(x1,y1,x2,y2,p);p.setPathEffect(null);p.setStyle(Paint.Style.FILL);
     }
+    private void annotate(String label,float x,float yy,int color,int priority){
+        if(!label.isEmpty())annotations.add(new Annotation(label,x,yy,color,priority));
+    }
+    private void drawAnnotations(){
+        RectF bounds=new RectF(split+3*d,top+3*d,right-2*d,bottom-3*d);
+        ArrayList<RectF> placed=new ArrayList<>();annotations.sort(Comparator.comparingInt(v->v.priority));
+        for(Annotation a:annotations){
+            p.setTextSize(8*d);String label=a.text;
+            while(label.length()>1&&p.measureText(label)+4*d>bounds.width())label=label.substring(0,label.length()-2)+"…";
+            float width=p.measureText(label)+4*d;
+            RectF box=ChartLabelPlacer.place(placed,bounds,a.x,a.y-9*d,width,11*d);
+            if(box==null)continue;placed.add(box);
+            p.setStyle(Paint.Style.FILL);p.setColor(0xf5141125);c.drawRoundRect(box,2*d,2*d,p);
+            text(label,box.left+2*d,box.top+8*d,a.color,8);
+        }
+    }
     private void level(double v,String label,int color){
         if(!Double.isFinite(v)||v<=0||v<low||v>high)return;
         float yy=y(v);line(left,yy,right,yy,color,.7f,true);
-        if(label.isEmpty())return;
-        float labelY=yy-4*d;
-        for(int n=0;n<12;n++){
-            boolean clear=true;for(float used:labelRows)if(Math.abs(labelY-used)<11*d){clear=false;break;}
-            if(clear)break;labelY+=11*d;
+        int priority=label.startsWith("Активный")?0:label.startsWith("BUY")||label.startsWith("SELL")?1:label.startsWith("Отмена")?2:4;
+        annotate(label,split+3*d,yy-4*d,color,priority);
+    }
+    private float timeX(JSONArray bars,long t,float step){
+        for(int i=0;i<bars.length();i++){
+            long cur=bars.optJSONObject(i).optLong("time");
+            if(cur==t)return left+step*(i+.5f);
+            if(cur>t){if(i==0)return left+step*.5f;
+                long prev=bars.optJSONObject(i-1).optLong("time");
+                return left+step*(i-.5f+(t-prev)/(float)(cur-prev));}
         }
-        labelY=Math.max(top+10*d,Math.min(bottom-4*d,labelY));labelRows.add(labelY);
-        p.setTextSize(8*d);float tw=p.measureText(label);
-        p.setColor(0xf0141125);c.drawRect(split+3*d,labelY-9*d,Math.min(right,split+9*d+tw),labelY+2*d,p);
-        text(label,split+5*d,labelY,color,8);
+        return split-3*d;
     }
     private int routeColor(JSONObject s,int i){return stale?MUTED:i==0?(s.optInt("side")>0?GREEN:s.optInt("side")<0?RED:0xffbbbbcf):ALTS[(i-1)%3];}
     private void draw(JSONArray bars,JSONArray structure,JSONObject live,JSONArray liveStructure,JSONObject f,JSONArray positions){
         boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2;
-        historical=f.optBoolean("history_only");stale=f.optBoolean("stale");
+        historical=f.optBoolean("history_only");stale=f.optBoolean("stale");tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
         JSONObject levels=valid&&!historical?f.optJSONObject("entry_levels"):null,active=historical?null:f.optJSONObject("active_scenario");
-        int routeCount=routes==null?0:Math.min(4,routes.length());
-        top=Math.max(55,routeCount*16+24)*d;bottom=h-42*d;
+        int routeCount=routes==null?0:Math.min(2,routes.length());
+        top=Math.max(55,routeCount*16+24+(tied?14:0))*d;bottom=h-42*d;
         split=historical?right:left+(right-left)*.44f;
         for(int i=0;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null){bound(b.optDouble("low"));bound(b.optDouble("high"));}}
         if(live!=null){bound(live.optDouble("low"));bound(live.optDouble("high"));}
@@ -76,11 +97,12 @@ final class ScenarioMapRenderer {
         else if(routeCount==0)text(valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
-            String name=i==0?"MAIN":"ALT"+i;
+            String name=ScenarioUi.role(r,i);
             String title=v3?r.optString("title",r.optString("type")):((i==0?"ОСНОВНОЙ ":"АЛЬТЕРНАТИВА ")+(r.optInt("side")>0?"BUY":"SELL"));
             long score=Math.round(r.optDouble("quality_score",r.optDouble("model_weight",r.optDouble("probability"))*100));
             text(name+" · "+title+" · "+score+"/100",left,(16+16*i)*d,routeColor(r,i),9.5f);
         }
+        if(tied&&!historical)text("Равнозначные варианты · без предпочтения",left,(16+16*routeCount)*d,MUTED,8);
         text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":"ИСТОРИЯ MT5"),left,top-7*d,stale?0xffffb04d:MUTED,8);
         for(int i=0;i<5;i++){
             float yy=top+(bottom-top)*i/4;line(left,yy,right,yy,0xff312b43,.6f,false);
@@ -126,8 +148,8 @@ final class ScenarioMapRenderer {
                 JSONObject s=routes.optJSONObject(i),pat=s==null?null:s.optJSONObject("pattern");if(pat==null||!drawn.add(pat.optString("pattern_id")))continue;
                 for(String kind:new String[]{"upper","lower"}){
                     JSONObject line=pat.optJSONObject(kind);if(line==null)continue;
-                    long ta=Math.max(first,pat.optLong("started_at",first));long tb=last+interval;
-                    float xa=left+step*((ta-first)/(float)interval+.5f),xb=split-3*d;
+                    long ta=Math.max(first,pat.optLong("started_at",first));long tb=f.optLong("boundary_asof",last+interval);
+                    float xa=timeX(bars,ta,step),xb=split-3*d;
                     double va=lineValue(line,ta),vb=lineValue(line,tb);
                     int saved=c.save();c.clipRect(left,top,split,bottom);
                     line(xa,y(va),xb,y(vb),i==0?0xffe2dbff:0xff8d879f,1.25f,false);c.restoreToCount(saved);
@@ -150,6 +172,7 @@ final class ScenarioMapRenderer {
             p.setColor(0xffeeeeff);c.drawCircle(split,clippedY(current),3*d,p);
             text("LIVE",split-29*d,clippedY(current)-6*d,0xffeeeeff,9);
         }
+        drawAnnotations();
         text("Гипотезы: события, не готовые свечи и не время прихода",left,h-25*d,MUTED,8);
         text("Оценка — не вероятность · свайп: история · нажми: полный экран",left,h-10*d,MUTED,8);
     }
@@ -167,7 +190,7 @@ final class ScenarioMapRenderer {
         for(int i=1;i<pts.length();i++){
             JSONObject q=pts.optJSONObject(i);if(q==null)continue;
             float x=split+span*i/(pts.length()-1f),yy=clippedY(q.optDouble("price"));
-            line(px,py,x,yy,color,index==0?2.5f:1.8f,index!=0);
+            line(px,py,x,yy,color,tied?2.1f:index==0?2.5f:1.8f,tied||index!=0);
             if(i==pts.length()-1){double angle=Math.atan2(yy-py,x-px);float size=7*d;
                 line(x,yy,x-size*(float)Math.cos(angle-.55),yy-size*(float)Math.sin(angle-.55),color,2,false);
                 line(x,yy,x-size*(float)Math.cos(angle+.55),yy-size*(float)Math.sin(angle+.55),color,2,false);}
@@ -175,7 +198,7 @@ final class ScenarioMapRenderer {
                 if(q.optDouble("price")<low||q.optDouble("price")>high)label+=" "+price(q.optDouble("price"));
                 if(label.length()>23)label=label.substring(0,22)+"…";
                 p.setTextSize(8*d);float tw=p.measureText(label);
-                text(label,Math.max(split+3*d,Math.min(x-tw/2,right-tw)),Math.max(top+10*d,Math.min(bottom-3*d,yy+(index==0?-8*d:12*d))),color,8);
+                annotate(label,Math.max(split+3*d,Math.min(x-tw/2,right-tw)),yy+(index==0?-8*d:12*d),color,label.startsWith("T")?2:3);
             }px=x;py=yy;
         }
     }

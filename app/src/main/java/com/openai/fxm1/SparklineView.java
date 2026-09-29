@@ -43,7 +43,7 @@ public class SparklineView extends View {
         try{
             JSONObject f=new JSONObject(forecast.toString());JSONArray all=scenarioChoices(),out=new JSONArray();
             for(int i=0;i<all.length();i++){JSONObject s=all.optJSONObject(i);if(s==null)continue;
-                if(customSelection?selected.contains(key(s,i)):i<2)out.put(s);
+                if(out.length()<2&&(customSelection?selected.contains(key(s,i)):i<2))out.put(s);
             }
             // A new structural identity does not inherit an unrelated old selection.
             if(customSelection&&out.length()==0&&all.length()>0){customSelection=false;for(int i=0;i<Math.min(2,all.length());i++)out.put(all.get(i));}
@@ -65,19 +65,19 @@ public class SparklineView extends View {
     }
     @Override public boolean onTouchEvent(MotionEvent e){
         scale.onTouchEvent(e);
-        if(e.getPointerCount()>1){getParent().requestDisallowInterceptTouchEvent(true);panning=true;return true;}
+        if(e.getPointerCount()>1){if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);panning=true;return true;}
         switch(e.getActionMasked()){
             case MotionEvent.ACTION_DOWN: downX=lastX=e.getX();downY=e.getY();panning=false;return true;
             case MotionEvent.ACTION_MOVE:
                 float dx=e.getX()-downX,dy=e.getY()-downY;
-                if(!panning&&Math.abs(dx)>16&&Math.abs(dx)>Math.abs(dy)){panning=true;getParent().requestDisallowInterceptTouchEvent(true);}
+                if(!panning&&Math.abs(dx)>16&&Math.abs(dx)>Math.abs(dy)){panning=true;if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);}
                 if(panning&&!scale.isInProgress()){
                     float unit=Math.max(3,getWidth()*.45f/viewport.visible());int n=(int)((e.getX()-lastX)/unit);
                     if(n!=0){panHistory(n);lastX=e.getX();}
                 }return true;
             case MotionEvent.ACTION_UP:
                 if(!panning&&Math.abs(e.getY()-downY)<16)performClick();
-                getParent().requestDisallowInterceptTouchEvent(false);return true;
+                if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(false);return true;
             case MotionEvent.ACTION_CANCEL: panning=false;return true;
         }return true;
     }
@@ -93,6 +93,7 @@ public class SparklineView extends View {
     public static String mapDescription(JSONObject f){
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время условно.");
+        if("TIED".equals(f.optString("selection_status")))text.append(" Равнозначные гипотезы — предпочтение не определено.");
         if(!hasScenarioMap(f))text.append(" WAIT — нет ясного сценария.");
         JSONObject entries=f.optJSONObject("entry_levels");
         if(entries!=null)for(String side:new String[]{"BUY","SELL"}){
@@ -103,10 +104,11 @@ public class SparklineView extends View {
         JSONArray scenarios=f.optJSONArray("scenarios");
         if(scenarios!=null)for(int i=0;i<scenarios.length();i++){
             JSONObject v=scenarios.optJSONObject(i);if(v==null)continue;
-            text.append(" ").append(v.optInt("side")>0?"BUY":"SELL").append(" цель ")
-                .append(priceText(v.optDouble("target"))).append(" ").append(v.optString("target_source")).append(".")
-                .append(" T1 ").append(priceText(v.optDouble("target1",v.optDouble("target"))))
-                .append(" T2 ").append(priceText(v.optDouble("target2",v.optDouble("target"))));
+            text.append(" ").append(ScenarioUi.role(v,i)).append(" ").append(v.optInt("side")>0?"BUY":v.optInt("side")<0?"SELL":"WAIT");
+            double t1=v.optDouble("target1",v.optDouble("target",Double.NaN)),t2=v.optDouble("target2",Double.NaN);
+            if(Double.isFinite(t1)&&t1>0)text.append(" T1 ").append(priceText(t1));
+            if(Double.isFinite(t2)&&t2>0)text.append(" T2 ").append(priceText(t2));
+            text.append(". ").append(v.optString("next_event", ""));
         }
         text.append(" LIVE ").append(priceText(f.optDouble("live_price"))).append(".");
         JSONObject active=f.optJSONObject("active_scenario"),reversal=f.optJSONObject("reversal_status");

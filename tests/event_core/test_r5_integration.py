@@ -60,7 +60,7 @@ class V2IntegrationTests(unittest.TestCase):
         self.assertEqual(self.b._positions[0]['volume'],.1)
     def test_history_endpoint_is_read_only_and_paginated(self):
         self.tick();app=create_app(self.e,'x'*40).test_client()
-        headers={'Authorization':'Bearer '+'x'*40,'X-FXM1-Client':'R5'}
+        headers={'Authorization':'Bearer '+'x'*40,'X-FXM1-Client':'R51'}
         r=app.get('/ec/history?tf=M5&limit=20',headers=headers)
         self.assertEqual(r.status_code,200)
         rows=r.get_json()['bars'];self.assertEqual(len(rows),20)

@@ -10,12 +10,12 @@ import hashlib
 import json
 from ..model import Config, Decision, atr, ordered, pivots, direction, swing_labels, TF_SECONDS
 from .structure import detect_patterns, value, FAMILIES
-from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT
+from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
 
 
 class ScenarioCore:
     MAX_CHASE_ATR=.25
-    VERSION='SCENARIO_V2.1'
+    VERSION='SCENARIO_V2.2'
     def __init__(self,config:Config,saved=None):
         self.config=config;saved=saved or {}
         self.scenarios=copy.deepcopy(saved.get('scenarios',{}))
@@ -60,7 +60,8 @@ class ScenarioCore:
             parts=dict(geometry=s['geometry_score'],context=alignment,event=progress.get(s['stage'],0),freshness=freshness)
             score=35*parts['geometry']+25*parts['context']+25*parts['event']+15*parts['freshness']
             s['score_components']=parts;s['quality_score']=round(score,2);s['model_weight']=round(score/100,4)
-        rows.sort(key=lambda s:(s['quality_score'],s['created_at'],s['scenario_id']),reverse=True)
+        # Keep ordering deterministic for display, but never claim a primary on a score tie.
+        rows.sort(key=lambda s:(-s['quality_score'],-s['created_at'],s['type'],s['side'],s['scenario_id']))
         unique=[]
         for s in rows:
             # Same event family and same price zone is one explanation, not extra votes.
@@ -100,20 +101,29 @@ class ScenarioCore:
         self.previous_quote=q
         active=[s for s in self.scenarios.values() if s['status'] not in TERMINAL]
         selected,ranked=self._rank(active,m15,h1,now,q,a)
+        tied=len(selected)>1 and int(selected[0]['quality_score']+.5)==int(selected[1]['quality_score']+.5)
+        selection_status='TIED' if tied else 'PREFERRED' if selected else 'NONE'
+        price_time=q.time_msc/1000.0
         routes=[]
         for i,s in enumerate(selected):
-            item=copy.deepcopy(s);item['name']='PRIMARY' if i==0 else 'ALT'+str(i)
-            item['path']=remaining_path(s,q.bid);item['activation']=value(s['boundary'],now)
-            item['next_event']=NEXT.get(s['stage'],s['reason']);routes.append(item)
+            item=copy.deepcopy(s);item['name']=('OPTION'+str(i+1)) if tied else ('PRIMARY' if i==0 else 'ALT'+str(i))
+            item['path']=remaining_path(s,q.bid,price_time);item['activation']=value(s['boundary'],price_time)
+            requirement=next_requirement(s,q.bid,price_time,a)
+            item['required_event']=requirement['code'];item['event_level']=requirement['level']
+            item['next_event']=requirement['text'];item['initial_activation']=s.get('initial_activation',s['activation'])
+            item['boundary_asof']=price_time;routes.append(item)
         recent=bars[-24:]
         support=min(b.low for b in recent);resistance=max(b.high for b in recent)
         if routes:
-            p=routes[0]['pattern'];support=value(p['lower'],now);resistance=value(p['upper'],now)
+            p=routes[0]['pattern'];support=value(p['lower'],price_time);resistance=value(p['upper'],price_time)
         entries=dict(BUY=dict(trigger=resistance+.04*a,invalidation=support-.10*a),
                      SELL=dict(trigger=support-.04*a,invalidation=resistance+.10*a))
         sigdata=[q.time_msc,q.bid,q.ask,frame,[(s['scenario_id'],s['status'],s['stage']) for s in selected]]
         snapshot=hashlib.sha256(json.dumps(sigdata,sort_keys=True).encode()).hexdigest()[:24]
-        forecast=dict(map_version=3,available=True,engine=self.VERSION,side=routes[0]['side'] if routes else 0,
+        forecast=dict(map_version=3,available=True,engine=self.VERSION,side=routes[0]['side'] if routes and not tied else 0,
+            selection_status=selection_status,selection_reason='Равнозначные гипотезы — предпочтение не определено' if tied else '',
+            primary_scenario_id=routes[0]['scenario_id'] if routes and not tied else None,
+            history_clock='UTC_NATIVE_R51',boundary_asof=price_time,
             confidence=routes[0]['model_weight'] if routes else 0.,live_price=q.bid,data_asof=q.time_msc/1000,
             snapshot_id=snapshot,support=support,resistance=resistance,entry_levels=entries,
             scenarios=routes,selection=[s['scenario_id'] for s in selected],candidate_count=len(ranked),
@@ -146,5 +156,5 @@ class ScenarioCore:
             return Decision('BUY' if side>0 else 'SELL','ENTRY_READY',s['title']+' — события подтверждены',
                 s['event_id'],side,stop,trigger,stop,a,q.time_msc,levels,path='SCENARIO_V2',
                 structure=swing_labels(bars),forecast=forecast,entry_class='CONFIRMED')
-        reason=(routes[0]['title']+'; '+routes[0]['next_event']) if routes else forecast['reason']
+        reason=(('Равнозначные гипотезы; ' if tied else '')+routes[0]['title']+'; '+routes[0]['next_event']) if routes else forecast['reason']
         return Decision(reason=reason,atr=a,path='SCENARIO_V2',structure=swing_labels(bars),forecast=forecast)

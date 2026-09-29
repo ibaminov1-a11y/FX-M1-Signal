@@ -61,7 +61,7 @@ public final class EventClient {
         c.setInstanceFollowRedirects(false);c.setConnectTimeout(2500);c.setReadTimeout(3500);c.setRequestMethod(method);
         c.setRequestProperty("Authorization","Bearer "+prefs().getString("ec_token",""));
         c.setRequestProperty("Accept","application/json");
-        c.setRequestProperty("X-FXM1-Client","R5");
+        c.setRequestProperty("X-FXM1-Client","R51");
         try {
             if(data!=null){c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json; charset=UTF-8");try(OutputStream o=c.getOutputStream()){o.write(data.toString().getBytes(StandardCharsets.UTF_8));}}
             int code=c.getResponseCode();InputStream in=code<400?c.getInputStream():c.getErrorStream();

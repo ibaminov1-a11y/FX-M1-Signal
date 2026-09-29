@@ -23,11 +23,17 @@ def _targets(p,bars,side,activation,a,rotation=False):
     if rotation:
         opposite=value(p['upper' if side>0 else 'lower'],bars[-1].time+300)
         near=(activation+opposite)/2
-        return near,opposite,'CHANNEL_BOUNDARY','CHANNEL_BOUNDARY'
+        distinct=abs(opposite-near)>=.15*a
+        return near,opposite if distinct else None,'CHANNEL_BOUNDARY','CHANNEL_BOUNDARY' if distinct else None
     points=causal_points(bars,p['timeframe'])
     eligible=sorted({x['price'] for x in points if x['kind']==('H' if side>0 else 'L')
                      and (x['price']-activation)*side>.25*a},reverse=side<0)
-    if eligible:return eligible[0],eligible[1] if len(eligible)>1 else None,'HISTORICAL_LEVEL','HISTORICAL_LEVEL' if len(eligible)>1 else None
+    # Neighboring pivots are one target zone, not separate T1/T2 achievements.
+    # 0.15 ATR is a versioned research tolerance, not a calibrated probability.
+    zones=[]
+    for price in eligible:
+        if not zones or abs(price-zones[-1])>=.15*a:zones.append(price)
+    if zones:return zones[0],zones[1] if len(zones)>1 else None,'HISTORICAL_LEVEL','HISTORICAL_LEVEL' if len(zones)>1 else None
     pole=p['measurements'].get('pole')
     height=pole['height'] if pole and pole['side']==side else p['measurements']['width']
     return activation+side*height,None,'POLE_PROJECTION' if pole and pole['side']==side else 'PATTERN_MEASURED_MOVE',None
@@ -86,6 +92,7 @@ def create_scenarios(p,bars,a,current,now):
             path=points,pattern=copy.deepcopy(p),observed_events=[],geometry_score=p['quality'],
             quality_score=0.,model_weight=0.,calibrated_probability=None,entry_ready=False,
             event_id='',trigger=0.,sent=False,mfe=0.,mae=0.,confirmation_policy='OBSERVED_EVENT_AND_MICRO',
+            initial_activation=activation,path_clock='LIVE_BOUNDARY_WITH_FROZEN_TARGETS',
             next_event=NEXT['WATCHING'],reason='Структура распознана; условия входа ещё не выполнены'))
     return out
 
@@ -127,7 +134,7 @@ def advance(s,q,prev,now,a,m1):
     if now>s['expires_at']:
         _event(s,'EXPIRED',q,now,'Срок исходной гипотезы истёк');return
     side=s['side'];outside=s['outside_side'];typ=s['type'];stage=s['stage']
-    boundary=value(s['boundary'],now)
+    boundary=value(s['boundary'],q.time_msc/1000.0)
     if s['status']=='CONFIRMED':
         mark=q.bid if side>0 else q.ask;origin=s['mark_at_confirmation']
         s['mfe']=max(s['mfe'],(mark-origin)*side);s['mae']=min(s['mae'],(mark-origin)*side)
@@ -146,7 +153,7 @@ def advance(s,q,prev,now,a,m1):
         return
     if typ=='COMPRESSION_WAIT':
         p=s['pattern']
-        if q.bid>value(p['upper'],now)+.1*a or q.bid<value(p['lower'],now)-.1*a:
+        if q.bid>value(p['upper'],q.time_msc/1000.0)+.1*a or q.bid<value(p['lower'],q.time_msc/1000.0)-.1*a:
             _event(s,'FAILED',q,now,'Сжатие завершилось выходом; проверяется отдельная ветка')
         return
     if typ!='FALSE_BREAK_RETURN' and (q.bid-s['invalidation'])*side<=0:
@@ -196,10 +203,22 @@ def advance(s,q,prev,now,a,m1):
             _confirm(s,q,now,s['micro_trigger'],a)
 
 
-def remaining_path(s,current):
+def remaining_path(s,current,now=None):
     """Only unresolved conditional events remain to the right of LIVE."""
     if s['status'] in TERMINAL or s['type']=='COMPRESSION_WAIT':return []
     pts=copy.deepcopy(s['path'])
+    # Only the display's still-unobserved boundary-derived nodes follow the line.
+    # Frozen targets and the stored original path never move.
+    if now is not None:
+        shift=value(s['boundary'],now)-s.get('initial_activation',s['activation'])
+        for point in pts:
+            if point.get('anchor') in ('TRIGGER','BREAK','TRIGGER_RETEST','TOUCH','RETURN','MICRO_CONFIRM'):
+                point['price']+=shift
+                if point.get('anchor')=='MICRO_CONFIRM' and s.get('micro_trigger'):
+                    point['price']=s['micro_trigger']
+    if s['stage']=='RETURN_SEEN' and s.get('micro_trigger'):
+        pts.insert(-sum(1 for x in pts if x.get('label') in ('T1','T2')) or len(pts),
+                   dict(price=s['micro_trigger'],anchor='MICRO_CONFIRM',label='Подтверждение?',observed=False))
     if s['status']=='CONFIRMED':pts=[p for p in pts if p.get('label') in ('T1','T2') and not (p.get('label')=='T1' and s.get('target1_reached'))]
     elif s['stage'] in ('RETEST_SEEN','TOUCH_SEEN','RETURN_SEEN'):
         index=next((i for i,p in enumerate(pts) if p['anchor'] in ('TRIGGER_RETEST','TOUCH','RETURN')),0)
@@ -211,3 +230,41 @@ def remaining_path(s,current):
     pts.insert(0,dict(price=current,anchor='LIVE',label='LIVE',uncertainty=0,observed=True))
     for i,p in enumerate(pts):p.update(step=i,minutes=15*i/max(1,len(pts)-1))
     return pts
+
+
+def next_requirement(s,current,now,a=None):
+    """Exact unmet event. A future hypothesis is never described as an observed fact."""
+    a=s['pattern']['atr'] if a is None else a
+    stage=s['stage'];typ=s['type'];side=s['side'];outside=s['outside_side']
+    boundary=value(s['boundary'],now);price=f'{boundary:.5f}'
+    direction='вверх' if side>0 else 'вниз'
+    if stage in TERMINAL:return dict(code=stage,text=s['reason'],level=None)
+    if stage=='CONFIRMED':
+        text='Заявка по этому событию уже обработана' if s.get('sent') else 'Вход подтверждён; проверяются котировка, риск, маржа и исполнение'
+        return dict(code='EXECUTION_GUARDS',text=text,level=s.get('trigger'))
+    if typ=='COMPRESSION_WAIT':
+        lower=value(s['pattern']['lower'],now);upper=value(s['pattern']['upper'],now)
+        return dict(code='RANGE_EXIT',text=f'Нет выхода из сжатия {lower:.5f} — {upper:.5f}; сделка не разрешена',level=boundary)
+    if stage=='WATCHING':
+        if typ=='FALSE_BREAK_RETURN':
+            text=f'Сначала нужен наблюдаемый выход {"вверх" if outside>0 else "вниз"} через {price}; затем возврат внутрь и подтверждение'
+            code='FALSE_BREAK_FIRST_EXIT'
+        elif typ in ('RANGE_ROTATION','CHANNEL_REJECTION','PULLBACK_RESUME'):
+            text=f'Ждём подход против направления сделки к зоне {price}; затем реакцию и новый микропробой {direction}'
+            code='TOUCH_ZONE'
+        else:
+            text=f'Ждём новый пробой {direction} уровня {price}'
+            if (current-boundary)*side>0:text+= '; цена уже за уровнем, первый пропущенный пробой не восстанавливается задним числом'
+            if typ=='BREAKOUT_RETEST':text+='; после выхода обязателен ретест'
+            code='FRESH_BREAK'
+        return dict(code=code,text=text,level=boundary)
+    if stage=='BREAK_SEEN':
+        if typ=='FALSE_BREAK_RETURN':
+            level=boundary-outside*.08*a
+            return dict(code='RETURN_INSIDE',text=f'Выход наблюдался; ждём возврат внутрь за {level:.5f}, затем подтверждение отказа',level=level)
+        if typ=='BREAKOUT_RETEST':
+            return dict(code='RETEST_BOUNDARY',text=f'Выход наблюдался; ждём возврат к зоне {price}, затем новый микропробой',level=boundary)
+        return dict(code='BREAK_CONTINUATION',text=f'Выход через {price} наблюдался; ждём следующий направленный тик {direction} без возврата за границу',level=boundary)
+    trigger=s.get('micro_trigger',boundary)
+    label={'RETEST_SEEN':'Ретест наблюдался','RETURN_SEEN':'Возврат внутрь наблюдался','TOUCH_SEEN':'Зона проверена'}.get(stage,stage)
+    return dict(code='MICRO_CROSS',text=f'{label}; ждём новый микропробой {direction} {trigger:.5f}',level=trigger)

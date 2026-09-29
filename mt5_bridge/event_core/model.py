@@ -37,6 +37,7 @@ class Quote:
     time_msc: int
     bid: float
     ask: float
+    feed_confirmed: bool = True  # Transport observation, not a rewritten timestamp.
 
     def validate(self, now: float, max_age=10.0):
         number(self.bid, 'Bid', positive=True)
@@ -44,8 +45,12 @@ class Quote:
         if self.ask < self.bid or self.time_msc <= 0:
             raise Blocked('Некорректная котировка MT5')
         age = now - self.time_msc / 1000
-        if age > max_age or age < -2:
-            raise Blocked('Котировка MT5 устарела или часы расходятся')
+        if age > max_age:
+            raise Blocked(f'Котировка MT5 устарела на {age:.1f} с; ждём свежий тик')
+        if age < -2:
+            raise Blocked(f'Котировка MT5 из будущего на {-age:.1f} с; проверьте часы Windows и терминала')
+        if not self.feed_confirmed:
+            raise Blocked('Нужно новое наблюдение свежего тика MT5 после подключения/разрыва')
         return self
 
     @property
@@ -318,3 +323,16 @@ def live_structure(bars: list[Bar], live_bar: Bar | None):
 
 def context_direction(bars: list[Bar]):
     return direction(pivots(bars))
+
+
+def validate_bar_history(bars,tf,now):
+    ordered(bars)
+    if not bars:return
+    span=TF_SECONDS[tf]
+    if tf!='MN1' and bars[-1].time+span>now+1.0:
+        raise Blocked('Незакрытая/будущая свеча в истории '+tf)
+    if tf in ('M1','M5','M10','M15','H1','H4'):
+        for left,right in zip(bars,bars[1:]):
+            delta=right.time-left.time
+            if delta<span or delta%span!=0:
+                raise Blocked('Нарушен временной интервал свечей '+tf+'; анализ заблокирован')

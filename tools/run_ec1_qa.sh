@@ -11,13 +11,19 @@ done
 adb reverse tcp:8765 tcp:8765
 set +e
 gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest \
   > evidence/android-runtime.log 2>&1
 rc=$?
 adb logcat -d > evidence/android-logcat.txt
 adb pull /sdcard/Download/ec1-qa evidence/ui || true
 cat evidence/android-runtime.log
 if [ "$rc" -eq 0 ]; then
+  test -s evidence/ui/ec1-qa/r52-layout-short.png || exit 1
+  test -s evidence/ui/ec1-qa/r52-layout-long.png || exit 1
+  test -s evidence/ui/ec1-qa/r52-full-details.png || exit 1
+  test -s evidence/ui/ec1-qa/r52-live-history-stable.png || exit 1
+  test -s evidence/ui/ec1-qa/r51-instruments.png || exit 1
+  test -s evidence/ui/ec1-qa/r51-fullscreen-map.png || exit 1
   test -s evidence/ui/ec1-qa/scenario-wait.png || exit 1
   test -s evidence/ui/ec1-qa/scenario-active-reversal.png || exit 1
   test -s evidence/ui/ec1-qa/r5-fullscreen-scenarios.png || exit 1

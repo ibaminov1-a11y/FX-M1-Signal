@@ -16,9 +16,8 @@ class MT5Broker:
     magic=MAGIC
     def __init__(self,mt5,terminal_path=None):
         self.mt5=mt5;self.terminal_path=terminal_path;self.initialized=False
-        # Per-symbol MT5 clock normalization. Some terminals expose broker/server
-        # timestamps offset from the Windows clock. Quotes and candle timestamps must
-        # enter EventCore in the same wall-clock domain.
+        # Raw tick/bar timestamps are UTC identities. Never infer a timezone
+        # or candle offset from the age/arrival time of a cached tick.
         self._tick_seen={}
 
     def connect(self):
@@ -58,51 +57,47 @@ class MT5Broker:
                     filling_mode=int(info.filling_mode),trade_exemode=int(info.trade_exemode))
 
     def symbols(self,limit=1000):
+        # Compatibility endpoint, not a replacement for the user's watchlist.
+        # Scan the whole broker catalogue BEFORE filtering; never truncate at A... .
         rows=required(self.mt5.symbols_get(),'список инструментов')
         disabled=getattr(self.mt5,'SYMBOL_TRADE_MODE_DISABLED',0)
-        names=[]
-        for row in rows:
-            try:
-                if int(getattr(row,'trade_mode',disabled))==disabled:continue
-                name=str(getattr(row,'name','')).strip()
-                if name:names.append(name)
-            except Exception:continue
-        return sorted(dict.fromkeys(names))[:max(1,min(int(limit),2000))]
+        preferred=('EURUSD','GBPUSD','USDJPY','USDCHF','AUDUSD','USDCAD','NZDUSD',
+            'EURJPY','GBPJPY','EURGBP','EURCHF','AUDJPY','CADJPY','CHFJPY',
+            'GBPCHF','EURAUD','GBPAUD','AUDNZD','NZDJPY','XAUUSD')
+        names={str(getattr(row,'name','')).strip() for row in rows
+               if int(getattr(row,'trade_mode',disabled))!=disabled}
+        out=[]
+        for base in preferred:
+            exact=sorted(n for n in names if n.replace('/','').upper()==base)
+            out.extend(exact)
+        return out[:max(1,min(int(limit),len(preferred)*2))]
 
     def quote(self,symbol):
         t=required(self.mt5.symbol_info_tick(symbol),'котировку')
-        raw=int(t.time_msc)
-        bid=float(t.bid);ask=float(t.ask)
-        mono=time.monotonic();wall=time.time()
-        offset=raw/1000.0-wall
-        state=self._tick_seen.get(symbol)
-        if state is None or raw < state['raw']:
-            # First observation (or a terminal clock reset) is not enough to prove liveness,
-            # but it does establish the raw MT5 -> Windows clock offset for candle data.
-            self._tick_seen[symbol]={'raw':raw,'mono':mono,'confirmed':False,'offset':offset}
-            normalized=wall-3600.0
-        elif raw > state['raw']:
-            # Receiving a tick later must not move every historical candle timestamp.
-            # Keep one mapping while the clock domain is stable. A material clock
-            # jump resets observation instead of manufacturing a price crossing.
-            jump=abs(offset-state['offset'])>10.0
-            stable_offset=offset if jump else state['offset']
-            state={'raw':raw,'mono':mono,'confirmed':not jump,'offset':stable_offset}
-            self._tick_seen[symbol]=state
-            normalized=wall-3600.0 if jump else wall
-        elif state.get('confirmed'):
-            age=max(0.0,mono-state['mono'])
-            normalized=wall-age
-        else:
-            normalized=wall-3600.0
-        return Quote(int(normalized*1000),bid,ask)
+        raw=int(t.time_msc);bid=float(t.bid);ask=float(t.ask)
+        mono=time.monotonic();wall=time.time();previous=self._tick_seen.get(symbol)
+        age=wall-raw/1000.0
+        fresh=-2.0<=age<=10.0
+        confirmed=False
+        if previous is not None and fresh and previous['fresh']:
+            if raw>previous['raw'] and 0<=mono-previous['changed_mono']<=10.0:
+                confirmed=True
+            elif raw==previous['raw'] and (bid,ask)==previous['prices']:
+                confirmed=previous['confirmed'] and 0<=mono-previous['changed_mono']<=10.0
+        changed=previous is None or raw!=previous['raw'] or (bid,ask)!=previous['prices']
+        self._tick_seen[symbol]=dict(raw=raw,prices=(bid,ask),fresh=fresh,confirmed=confirmed,
+            changed_mono=mono if changed else previous['changed_mono'],received_at=wall)
+        return Quote(raw,bid,ask,feed_confirmed=confirmed)
 
     def _bar_time(self,symbol,raw_seconds):
-        """Map raw MT5 candle time into the same Windows clock domain as Quote."""
-        state=self._tick_seen.get(symbol)
-        if not state or 'offset' not in state:
-            return int(raw_seconds)
-        return int(round(float(raw_seconds)-float(state['offset'])))
+        """Preserve native MT5 UTC opening time, independent of quote/PC clocks."""
+        return int(raw_seconds)
+
+    def quote_diagnostics(self,symbol):
+        s=self._tick_seen.get(symbol)
+        if s is None:return dict(clock='UTC_NATIVE',feed_confirmed=False)
+        return dict(clock='UTC_NATIVE',tick_time_msc=s['raw'],received_at=s['received_at'],
+                    age_at_receive_sec=s['received_at']-s['raw']/1000.0,feed_confirmed=s['confirmed'])
 
     def bars(self,symbol,tf,count=240):
         timeframe=getattr(self.mt5,'TIMEFRAME_'+tf,None)
@@ -116,8 +111,7 @@ class MT5Broker:
         if rows is None:
             raise Blocked('MT5 не вернул историю '+tf+': '+str(self.mt5.last_error()))
         values=[Bar(self._bar_time(symbol,x['time']),float(x['open']),float(x['high']),float(x['low']),float(x['close']),float(x['tick_volume'])) for x in rows]
-        # Normalize order and de-duplicate by opening timestamp. The strategy sees only
-        # bars that are certainly closed according to the local observation clock.
+        # Keep native opening timestamps; only certainly closed bars enter strategy data.
         values=list({b.time:b for b in values}.values())
         values.sort(key=lambda b:b.time)
         if tf!='MN1':

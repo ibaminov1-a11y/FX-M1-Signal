@@ -36,10 +36,9 @@ class _OffsetMT5:
 
 
 class MT5MarketClockTests(unittest.TestCase):
-    def test_closed_bar_filter_uses_same_normalized_clock_as_quote(self):
-        # Screenshot shape: Windows is 17:23:17 while the MT5 server is already
-        # 17:25:17. Ticks are normalized to Windows time, so candles must be
-        # normalized by the same observed +120 s server offset before closure checks.
+    def test_closed_bar_filter_preserves_native_utc_clock(self):
+        # A 120-second discrepancy must not rewrite every historical candle ID.
+        # Only candles certainly closed on native UTC time can enter analysis.
         local_now = BASE + 197.0
         server_now = local_now + 120.0
         mt5 = _OffsetMT5(server_now)
@@ -48,10 +47,10 @@ class MT5MarketClockTests(unittest.TestCase):
              patch('event_core.mt5_adapter.time.monotonic', return_value=10.0):
             broker.quote('EURUSD')
             bars = broker.bars('EURUSD', 'M5')
-        # Raw closed MT5 bar is BASE; normalized wall-clock opening time is BASE-120.
-        self.assertEqual(bars[-1].time, BASE - 120)
+        # BASE is not certainly closed at local BASE+197; BASE-300 is closed.
+        self.assertEqual(bars[-1].time, BASE - 300)
 
-    def test_current_bar_uses_same_normalized_clock_as_quote(self):
+    def test_current_bar_keeps_native_identity_even_when_the_clock_is_wrong(self):
         local_now = BASE + 197.0
         server_now = local_now + 120.0
         mt5 = _OffsetMT5(server_now)
@@ -60,10 +59,10 @@ class MT5MarketClockTests(unittest.TestCase):
              patch('event_core.mt5_adapter.time.monotonic', return_value=10.0):
             broker.quote('EURUSD')
             live = broker.current_bar('EURUSD', 'M5')
-        # Raw server candle opens at BASE+300 (103 s "future" versus Windows),
-        # but on the normalized quote clock it opened at BASE+180, 17 s ago.
-        self.assertEqual(live.time, BASE + 180)
-        self.assertLessEqual(live.time, local_now)
+        # The adapter does not conceal the future timestamp. Engine's guard
+        # rejects it; making it appear 120 seconds older would corrupt the cache.
+        self.assertEqual(live.time, BASE + 300)
+        self.assertGreater(live.time, local_now)
 
 
 if __name__ == '__main__':

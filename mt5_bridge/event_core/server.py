@@ -17,9 +17,9 @@ def create_app(engine,token):
     def auth():
         if not hmac.compare_digest(request.headers.get('Authorization',''),'Bearer '+token):
             return jsonify(ok=False,message='Введите ключ EventCore из окна Bridge. Старый Twelve Data key не подходит.'),401
-        if (engine.config.engine_mode=='SCENARIO_V2' and request.headers.get('X-FXM1-Client')!='R5'
+        if (engine.config.engine_mode=='SCENARIO_V2' and request.headers.get('X-FXM1-Client')!='R51'
                 and (request.path=='/ec/state' or request.path in ('/ec/command/configure','/ec/command/enable','/ec/command/play'))):
-            return jsonify(ok=False,message='Для Scenario V2 обновите APK до R5. Аварийное закрытие и пауза доступны.'),426
+            return jsonify(ok=False,message='Для Scenario V2 обновите APK и Bridge до R5.1. Аварийное закрытие и пауза доступны.'),426
         if request.method!='GET' and not request.is_json:
             return jsonify(ok=False,message='Требуется JSON-команда'),415
 
@@ -45,8 +45,9 @@ def create_app(engine,token):
             tf=request.args.get('tf',engine.config.timeframe)
             if tf not in TF_SECONDS:raise Blocked('Неизвестный таймфрейм истории')
             before=request.args.get('before',type=int);limit=max(1,min(request.args.get('limit',1000,type=int),2000))
-            rows=engine.store.read_bars(engine.market_scope(),tf,before,limit)
-            return jsonify(ok=True,scope=engine.market_scope(),tf=tf,bars=rows,
+            ready=engine.store.market_clock_ready(engine.market_scope())
+            rows=engine.store.read_bars(engine.market_scope(),tf,before,limit) if ready else []
+            return jsonify(ok=True,scope=engine.market_scope(),tf=tf,bars=rows,clock='UTC_NATIVE_R51',cache_verified=ready,
                 next_before=rows[0]['time'] if rows else None,has_more=len(rows)==limit,read_only=True)
 
     @app.get('/ec/scenarios')

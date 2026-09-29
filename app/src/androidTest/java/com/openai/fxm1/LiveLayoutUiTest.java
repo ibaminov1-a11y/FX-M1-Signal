@@ -81,4 +81,41 @@ public class LiveLayoutUiTest {
         shot("r52-full-details");d.pressBack();
         ui(()->assertEquals("NEW LIVE DATA",((TextView)rule.getActivity().findViewById(R.id.levelsText)).getText().toString()));
     }
+    @Test public void lateServerCallbackAfterDestroyIsIgnored()throws Exception {
+        MainActivity old=rule.getActivity();
+        rule.finishActivity();settle();
+        String before=EventClient.prefs().getString("server_url","");
+        Method check=MainActivity.class.getDeclaredMethod("checkServer");check.setAccessible(true);
+        ui(()->{try {check.invoke(old);}catch(Exception e){throw new AssertionError("Late callback must not submit to a closed executor",e);}});
+        assertEquals(before,EventClient.prefs().getString("server_url",""));
+        final boolean[] delivered={false};
+        Method deliver=MainActivity.class.getDeclaredMethod("deliverUi",Runnable.class);deliver.setAccessible(true);
+        ui(()->{try {deliver.invoke(old,(Runnable)()->delivered[0]=true);}catch(Exception e){throw new AssertionError(e);}});
+        settle();assertFalse("Closed Activity must not receive late dialog or text callbacks",delivered[0]);
+    }
+
+    @Test public void cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored()throws Exception {
+        EventClient.http("POST",EventClient.base()+"/test/r5-market",new JSONObject().put("family","TRIANGLE"));
+        JSONObject state=EventClient.poll();
+        EventClient.prefs().edit().putBoolean("server_verified",false).putString("ec_lot_cap","0.37").commit();
+        Method sync=MainActivity.class.getDeclaredMethod("syncUiFromBackgroundService");sync.setAccessible(true);
+        ui(()->{try {sync.invoke(rule.getActivity());}catch(Exception e){throw new AssertionError(e);}});settle();
+        final long[] edge={0};
+        ui(()->{SparklineView chart=rule.getActivity().findViewById(R.id.sparklineView);chart.panHistory(8);edge[0]=chart.historyRightTime();
+            ((ScrollView)rule.getActivity().findViewById(R.id.rootLayout)).scrollTo(0,1000);});settle();
+        int[] before=geometry();
+        for(int i=0;i<8;i++) {
+            String reason=i%2==0?longText():"Ждём свежий микропробой "+i;
+            JSONObject next=new JSONObject(state.toString());
+            next.getJSONObject("decision").put("signal","WAIT").put("reason",reason);
+            EventClient.cache(next);
+            ui(()->{try {sync.invoke(rule.getActivity());}catch(Exception e){throw new AssertionError(e);}});settle();
+            assertArrayEquals("Actual cache-to-UI refresh must preserve page geometry",before,geometry());
+            ui(()->{SparklineView chart=rule.getActivity().findViewById(R.id.sparklineView);
+                assertEquals(edge[0],chart.historyRightTime());assertFalse(chart.isFollowingLive());
+                assertTrue(((TextView)rule.getActivity().findViewById(R.id.whyWaitText)).getText().toString().contains(reason));});
+            assertEquals("0.37",EventClient.prefs().getString("ec_lot_cap",""));
+        }
+        shot("r52-live-history-stable");
+    }
 }

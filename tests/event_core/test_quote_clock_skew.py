@@ -18,7 +18,7 @@ class _MT5:
 
 
 class QuoteClockSkewTests(unittest.TestCase):
-    def test_progressing_tick_is_fresh_even_when_mt5_clock_is_offset(self):
+    def test_progressing_future_tick_requires_clock_repair_not_an_inferred_offset(self):
         mt5=_MT5(); broker=MT5Broker(mt5)
         with patch('event_core.mt5_adapter.time.time', side_effect=[1000.0,1000.2,1011.5]), \
              patch('event_core.mt5_adapter.time.monotonic', side_effect=[10.0,10.2,21.5]):
@@ -28,7 +28,9 @@ class QuoteClockSkewTests(unittest.TestCase):
 
             mt5.time_msc += 200
             second=broker.quote('EURUSD')
-            second.validate(1000.2)
+            # R5.1: an advancing but future timestamp is not proof of a correct clock.
+            with self.assertRaises(Blocked):
+                second.validate(1000.2)
 
             stale=broker.quote('EURUSD')
             with self.assertRaises(Blocked):

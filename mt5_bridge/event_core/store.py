@@ -19,6 +19,9 @@ class Store:
           CREATE TABLE IF NOT EXISTS campaigns(id TEXT PRIMARY KEY,body TEXT);
           CREATE TABLE IF NOT EXISTS market_bars(scope TEXT, tf TEXT, t INTEGER, first_seen REAL, body TEXT,
             PRIMARY KEY(scope,tf,t));
+          CREATE TABLE IF NOT EXISTS market_bars_quarantine(scope TEXT, tf TEXT, t INTEGER,
+            first_seen REAL, body TEXT, quarantined_at REAL, clock_version TEXT);
+          CREATE TABLE IF NOT EXISTS market_clock(scope TEXT PRIMARY KEY, version TEXT NOT NULL);
           CREATE TABLE IF NOT EXISTS scenario_snapshots(scope TEXT, id TEXT, t REAL, body TEXT,
             PRIMARY KEY(scope,id));
           CREATE INDEX IF NOT EXISTS scenario_time ON scenario_snapshots(scope,t);
@@ -66,6 +69,22 @@ class Store:
     def campaign(self,key,body):
         with self.db:
             self.db.execute('INSERT OR REPLACE INTO campaigns VALUES (?,?)',(key,json.dumps(body,ensure_ascii=False,allow_nan=False)))
+
+    def ensure_market_clock(self,scope,version,now):
+        """One atomic cache migration. Money, intents, settings and snapshots stay intact."""
+        with self.db:
+            row=self.db.execute('SELECT version FROM market_clock WHERE scope=?',(scope,)).fetchone()
+            if row and row[0]==version:return dict(changed=False,quarantined=0,version=version)
+            count=self.db.execute('SELECT COUNT(*) FROM market_bars WHERE scope=?',(scope,)).fetchone()[0]
+            self.db.execute('INSERT INTO market_bars_quarantine SELECT scope,tf,t,first_seen,body,?,? FROM market_bars WHERE scope=?',
+                            (float(now),row[0] if row else 'R5_UNVERIFIED',scope))
+            self.db.execute('DELETE FROM market_bars WHERE scope=?',(scope,))
+            self.db.execute('INSERT OR REPLACE INTO market_clock VALUES (?,?)',(scope,version))
+        return dict(changed=True,quarantined=count,version=version)
+
+    def market_clock_ready(self,scope,version='UTC_NATIVE_R51'):
+        row=self.db.execute('SELECT version FROM market_clock WHERE scope=?',(scope,)).fetchone()
+        return bool(row and row[0]==version)
 
     def save_bars(self,scope,tf,bars,now):
         rows=[(scope,tf,int(b.time),float(now),json.dumps(asdict(b),allow_nan=False)) for b in bars]
