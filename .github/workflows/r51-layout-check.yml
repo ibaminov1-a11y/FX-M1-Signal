@@ -1,0 +1,72 @@
+name: R5.1 layout regression reproduction
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r51-layout-check.yml', 'app/src/androidTest/java/com/openai/fxm1/LiveLayoutUiTest.java']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: r51-layout-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Export exact unmodified R5.1 candidate for investigation
+        run: |
+          python tools/repair_data51_apply.py
+          mkdir -p evidence
+          git diff --cached --binary > evidence/R51.patch
+          git write-tree > evidence/TREE.txt
+          git rev-parse HEAD > evidence/BASE.txt
+          git archive --format=zip "$(cat evidence/TREE.txt)" -o evidence/R51_SOURCE.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: R51-CANDIDATE-SOURCE
+          path: evidence/
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/repair_data51_apply.py
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+      - run: |
+          test -s "$HOME/.fxm1-signing/ec1-demo.jks"
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: bash tools/layout_red.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R51-LAYOUT-RED
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/
