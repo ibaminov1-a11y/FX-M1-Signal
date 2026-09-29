@@ -183,8 +183,6 @@ public class MainActivity extends Activity {
         marketStatusText = findViewById(R.id.marketStatusText);
         marketSessionText = findViewById(R.id.marketSessionText);
         smartStatusText = findViewById(R.id.smartStatusText);
-        smartStatusText.setMaxLines(Integer.MAX_VALUE);
-        smartStatusText.setEllipsize(null);
         statsText = findViewById(R.id.statsText);
         signalHistoryText = findViewById(R.id.signalHistoryText);
         tradeHistoryText = findViewById(R.id.tradeHistoryText);

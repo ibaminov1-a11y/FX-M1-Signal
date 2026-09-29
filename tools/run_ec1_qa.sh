@@ -9,9 +9,7 @@ for i in $(seq 1 30); do
   sleep 1
 done
 adb reverse tcp:8765 tcp:8765
-gradle --no-daemon :app:connectedDebugAndroidTest \
-  '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.LiveLayoutUiTest#cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored' \
-  > evidence/layout-targeted.log 2>&1 || { cat evidence/layout-targeted.log; exit 1; }
+# LiveLayoutUiTest remains in the full suite below; avoid running the same case twice.
 set +e
 bash tools/audit53_red_ui.sh
 red_rc=$?

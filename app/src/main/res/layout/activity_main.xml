@@ -151,7 +151,7 @@
         </LinearLayout>
 
         <LinearLayout android:id="@+id/smartCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="vertical" android:padding="13dp">
-            <TextView android:id="@+id/smartTitleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="УМНЫЕ ФУНКЦИИ" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/smartTitleText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="УМНЫЕ ФУНКЦИИ · нажмите статус для подробностей" android:textColor="#A66BFF" android:textSize="15sp" android:textStyle="bold" />
             <com.openai.fxm1.StableLiveTextView android:id="@+id/smartStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Risk Manager · BE · Trailing · Partial · Spread · Cooldown" android:textColor="#B8B2CB" android:textSize="11sp" android:lineSpacingExtra="2dp" android:lines="4" android:ellipsize="end" />
             <Button android:id="@+id/smartFeaturesButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="8dp" android:text="НАСТРОИТЬ" android:textSize="10sp" android:textStyle="bold" />
             <com.openai.fxm1.StableLiveTextView android:id="@+id/statsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="СТАТИСТИКА: подключите MT5 Bridge" android:textColor="#F7F4FF" android:textSize="11sp" android:lineSpacingExtra="2dp" android:lines="6" android:ellipsize="end" />

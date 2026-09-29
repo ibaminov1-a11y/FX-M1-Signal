@@ -159,4 +159,21 @@ public class R55ControlsUiTest {
         assertFalse("Matching accepted pending profile releases the newer draft",EventClient.hasProfileDraft());
     }
 
+    @Test public void smartStatusDetailsShowFullCurrentBridgeStateWithoutResizingPreview()throws Exception {
+        prime(false);
+        final int[] height={0};
+        ui(()->{TextView status=activity().findViewById(R.id.smartStatusText);height[0]=status.getHeight();
+            assertTrue(((TextView)activity().findViewById(R.id.smartTitleText)).getText().toString().contains("нажмите"));status.performClick();});
+        UiObject2 details=device.wait(Until.findObject(By.textStartsWith("Снимок на момент открытия")),5000);
+        assertNotNull("Full smart status opens in a reading dialog",details);
+        assertTrue(details.getText(),details.getText().contains("AUTO DEMO включён")&&details.getText().contains("REAL-исполнение заблокировано"));
+        device.findObject(By.text("ЗАКРЫТЬ")).click();
+        EventClient.command("disable",new JSONObject());EventClient.poll();sync();
+        ui(()->activity().findViewById(R.id.smartStatusText).performClick());
+        details=device.wait(Until.findObject(By.textStartsWith("Снимок на момент открытия")),5000);
+        assertNotNull(details);assertTrue(details.getText(),details.getText().contains("PAUSE: новые входы"));
+        ui(()->assertEquals("Live preview keeps fixed geometry",height[0],activity().findViewById(R.id.smartStatusText).getHeight()));
+        device.findObject(By.text("ЗАКРЫТЬ")).click();
+    }
+
 }
