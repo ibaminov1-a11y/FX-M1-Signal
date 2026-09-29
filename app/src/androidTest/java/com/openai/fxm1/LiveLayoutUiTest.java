@@ -114,7 +114,8 @@ public class LiveLayoutUiTest {
             next.getJSONObject("decision").put("signal","WAIT").put("reason",reason);
             EventClient.cache(next);
             ui(()->{try {sync.invoke(rule.getActivity());}catch(Exception e){throw new AssertionError(e);}});settle();
-            assertArrayEquals("Actual cache-to-UI refresh must preserve page geometry",before,geometry());
+            int[] after=geometry();
+            assertArrayEquals("Actual cache-to-UI refresh must preserve page geometry: "+Arrays.toString(before)+" -> "+Arrays.toString(after),before,after);
             ui(()->{SparklineView chart=rule.getActivity().findViewById(R.id.sparklineView);
                 assertEquals(edge[0],chart.historyRightTime());assertFalse(chart.isFollowingLive());
                 assertTrue(((TextView)rule.getActivity().findViewById(R.id.whyWaitText)).getText().toString().contains(reason));});

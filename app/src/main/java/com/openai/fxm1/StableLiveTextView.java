@@ -30,6 +30,13 @@ public final class StableLiveTextView extends TextView {
     @Override public void setText(CharSequence text, BufferType type) {
         // Incoming ticks often repeat an identical value. Do not remeasure it each second.
         if (initialized && TextUtils.equals(getText(), text)) return;
+        if(initialized){
+            android.view.ViewParent parent=getParent();
+            while(parent!=null){
+                if(parent instanceof LiveScrollView){((LiveScrollView)parent).beginLiveUpdate();break;}
+                parent=parent.getParent();
+            }
+        }
         super.setText(text, type);
     }
 

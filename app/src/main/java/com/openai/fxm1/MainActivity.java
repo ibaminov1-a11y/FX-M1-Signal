@@ -1402,6 +1402,7 @@ public class MainActivity extends Activity {
     }
 
     private void syncUiFromBackgroundService() {
+        ((LiveScrollView)findViewById(R.id.rootLayout)).beginLiveUpdate();
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         updateMarketStatusUi();
         restoreTradingSnapshotFromPrefs();
