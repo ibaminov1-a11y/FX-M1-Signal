@@ -128,7 +128,7 @@ class ScalpMicro:
         upper=max(self.peak,self.trough);lower=min(self.peak,self.trough)
         pattern=dict(pattern_id=ident,family='MICRO_STRUCTURE',variant='PULLBACK',symbol=symbol,timeframe='M1',
                      anchors=[],upper=dict(boundary,price=upper),lower=dict(boundary,price=lower),
-                     formed_at=self.started,available_at=self.started,quality=1.,atr=a,
+                     started_at=self.started,formed_at=self.started,available_at=self.started,quality=1.,atr=a,
                      measurements=dict(width=upper-lower,duration=now-self.started,pole=None))
         return dict(scenario_id=ident,scenario_version=1,parent_scenario_id=source.get('scenario_id') if source else None,
             type='PULLBACK_RESUME',family='MICRO_STRUCTURE',title='SCALP M1: локальный откат и микропробой',

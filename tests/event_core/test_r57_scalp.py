@@ -180,6 +180,8 @@ class FastScalpTests(unittest.TestCase):
         self.assertAlmostEqual(route['event_level'],1.10630)
         self.assertTrue(route['micro'])
         self.assertFalse(route['entry_ready'])
+        self.assertEqual(route['pattern'].get('started_at'),BASE+1,
+                         'Micro boundaries must begin at their observed start, not at historical chart origin')
 
     def test_terminal_blocked_confirmation_rearms_for_a_new_observed_sequence(self):
         for terminal,delta in (('TARGET_REACHED',.00065),('FAILED',.00015)):
