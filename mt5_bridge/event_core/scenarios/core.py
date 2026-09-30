@@ -11,6 +11,7 @@ import json
 from ..model import Config, Decision, atr, ordered, pivots, direction, swing_labels, TF_SECONDS, bar_close_time
 from .structure import detect_patterns, value, FAMILIES
 from .continuation import Continuation
+from .scalp import ScalpMicro
 from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
 
 
@@ -24,6 +25,7 @@ class ScenarioCore:
         self.previous_quote=None;self.frame=None;self.snapshots={};self.archive_key=None
         self.pending_snapshots=[];self.events=[];self.last_forecast={}
         self.continuation=Continuation()
+        self.micro=ScalpMicro()
         # Observation evidence is not an executable order after process restart.
         for s in self.scenarios.values():
             s['entry_ready']=False
@@ -37,6 +39,7 @@ class ScenarioCore:
     def suspend(self):
         self.previous_quote=None
         self.continuation.reset()
+        self.micro.reset()
         for s in self.scenarios.values():
             s['entry_ready']=False
             if s['status'] not in TERMINAL and not s.get('sent') and s['stage']!='WATCHING':
@@ -102,14 +105,20 @@ class ScenarioCore:
                     status=s['status'],stage=s['stage'],reason=s['reason'],time=now))
         self.previous_quote=q
         source=self.scenarios.get(campaign.get('scenario_id')) if campaign else None
-        addition=self.continuation.observe(campaign,source,q,now,a,self.config.mode)
+        fast=self.config.mode=='SCALP' and self.config.timeframe=='M1'
+        addition=(self.micro.observe(self.config.symbol,context or [],m15,q,now,a,campaign,source,campaign_side,self.config.dynamic_adds)
+                  if fast else self.continuation.observe(campaign,source,q,now,a,self.config.mode))
         if addition:
             self.scenarios[addition['scenario_id']]=addition;self.known.add(addition['scenario_id'])
             self.events.append(dict(scenario_id=addition['scenario_id'],type=addition['type'],side=addition['side'],
                 status='CONFIRMED',stage='CONFIRMED',reason=addition['reason'],time=now))
         active=[s for s in self.scenarios.values() if s['status'] not in TERMINAL]
+        preview=self.micro.preview() if fast else None
+        if preview and not any(s['scenario_id']==preview['scenario_id'] for s in active):active.append(preview)
         selected,ranked=self._rank(active,m15,h1,now,q,a,context=None if self.config.timeframe=='M5' else context)
+        if preview:selected=[preview]+[s for s in selected if s['scenario_id']!=preview['scenario_id']][:3]
         tied=len(selected)>1 and int(selected[0]['quality_score']+.5)==int(selected[1]['quality_score']+.5)
+        if preview:tied=False
         selection_status='TIED' if tied else 'PREFERRED' if selected else 'NONE'
         price_time=q.time_msc/1000.0
         routes=[]
@@ -142,6 +151,9 @@ class ScenarioCore:
                 immutable_snapshots=True,live_and_history=True,wave_module=False),
             score_version='35G+25C+25E+15R-v1',regime=routes[0]['family'] if routes else 'NO_CLEAR_SCENARIO',
             reason=routes[0]['reason'] if routes else 'Нет ясной подтверждённой геометрии — только уровни и WAIT')
+        if fast:
+            forecast['execution_setup']=self.micro.status()
+            forecast['addition']=self.micro.status() if campaign else None
         archive_key=(frame,tuple(sorted((s['scenario_id'],s['status'],s['stage']) for s in self.scenarios.values())))
         if archive_key!=self.archive_key:
             frozen=dict(snapshot_id=snapshot,forecast=copy.deepcopy(forecast),bars=[b.__dict__.copy() for b in bars[-120:]],
@@ -155,6 +167,9 @@ class ScenarioCore:
             closed=sorted((s for s in self.scenarios.values() if s['status'] in TERMINAL),key=lambda x:x['created_at'])
             for s in closed[:len(self.scenarios)-192]:self.scenarios.pop(s['scenario_id'],None)
         ready=[s for s in ranked if s['entry_ready'] and s['event_id'] not in self.consumed]
+        if fast:
+            ready=[s for s in self.scenarios.values() if s.get('micro') and s['entry_ready']
+                   and s['event_id'] not in self.consumed and preview is s and self.micro.stage=='CONFIRMED']
         for s in ready:
             side=s['side'];trigger=s['trigger'];stop=s['invalidation']
             if (q.bid-trigger)*side<=0 or abs(q.bid-trigger)>.25*a:continue
@@ -168,4 +183,5 @@ class ScenarioCore:
                 structure=swing_labels(bars),forecast=forecast,entry_class='CONFIRMED')
         reason=(('Равнозначные гипотезы; ' if tied else '')+routes[0]['title']+'; '+routes[0]['next_event']) if routes else forecast['reason']
         if campaign:reason=self.continuation.reason+'; '+reason
+        if fast:reason=self.micro.reason
         return Decision(reason=reason,atr=a,path='SCENARIO_V2',structure=swing_labels(bars),forecast=forecast)

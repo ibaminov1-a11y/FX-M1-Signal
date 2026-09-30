@@ -63,11 +63,48 @@ public final class ScenarioUi {
         }
         int direction=f.optInt("side");return direction==0?"WAIT · нет ясного сценария":"ОСНОВНОЙ "+(direction>0?"BUY":"SELL")+" · вес модели "+Math.round(f.optDouble("confidence")*100)+"/100";
     }
+    /** Execution belongs to the active trade profile, never the independent chart viewer. */
+    public static String executionRequirement(JSONObject state){
+        if(state==null)return "";
+        JSONObject cfg=state.optJSONObject("config"),f=state.optJSONObject("forecast");
+        if(cfg==null||f==null||!"SCALP".equals(cfg.optString("mode"))||!"M1".equals(cfg.optString("timeframe")))return "";
+        if(f.has("timeframe")&&!"M1".equals(f.optString("timeframe")))return "";
+        JSONObject setup=f.optJSONObject("execution_setup");
+        if(setup==null||!"SCALP_MICRO_V1".equals(setup.optString("engine"))||!"M1".equals(setup.optString("timeframe")))return "";
+        boolean offline=state.optBoolean("client_offline")||f.optBoolean("client_offline");
+        boolean stale=f.optBoolean("stale")||(state.has("quote_fresh")&&!state.optBoolean("quote_fresh"));
+        String stage;
+        switch(setup.optString("stage")){
+            case "WAIT_CONTEXT":stage="Ожидание контекста";break;
+            case "PROGRESS":stage="Ожидание движения в плюс";break;
+            case "PULLBACK":stage="Откат наблюдался · ожидание возобновления и микропробоя";break;
+            case "MICRO":stage="Ожидание micro-trigger";break;
+            case "CONFIRMED":stage=offline||stale||f.optBoolean("archive")?
+                "Сохранённое подтверждение · текущий вход не подтверждён":"Сигнал подтверждён · исполнение проверяет Bridge";break;
+            case "BLOCKED":stage="Вход заблокирован";break;
+            default:return "";
+        }
+        StringBuilder out=new StringBuilder();
+        if(offline)out.append("КЭШ · НЕТ СВЯЗИ С BRIDGE\n");
+        else if(f.optBoolean("archive"))out.append("СОХРАНЁННЫЙ СНИМОК · НЕ LIVE\n");
+        else if(stale)out.append("ДАННЫЕ УСТАРЕЛИ · вход запрещён\n");
+        out.append("БЫСТРЫЙ SCALP · ТОРГОВЛЯ M1");
+        if(setup.optBoolean("addition"))out.append(" · ДОБАВЛЕНИЕ");
+        out.append("\n").append(stage);
+        String reason=setup.optString("reason","").trim();if(!reason.isEmpty())out.append("\n").append(reason);
+        double trigger=setup.optDouble("trigger",Double.NaN),invalidation=setup.optDouble("invalidation",Double.NaN);
+        int side=setup.optInt("side");
+        if(Double.isFinite(trigger)&&trigger>0&&side!=0)out.append("\nУровень проверки ").append(side>0?"BUY: выше ":"SELL: ниже ").append(px(trigger));
+        if(Double.isFinite(invalidation)&&invalidation>0)out.append("\nОтмена: ").append(px(invalidation));
+        return out.toString();
+    }
     public static String levels(JSONObject state){
         JSONObject f=state.optJSONObject("forecast");boolean valid=f!=null&&f.optInt("map_version")>=2;
-        if(!valid&&state.optJSONObject("campaign")==null)return "";
-        StringBuilder out=new StringBuilder();JSONArray rows=valid?f.optJSONArray("scenarios"):null;boolean v3=valid&&f.optInt("map_version")>=3;
-        if(state.optBoolean("client_offline"))out.append("КЭШ · НЕТ СВЯЗИ С BRIDGE\nПоказаны последние полученные данные; текущее состояние кампании неизвестно.\n");
+        String requirement=executionRequirement(state);
+        if(!valid&&state.optJSONObject("campaign")==null)return requirement;
+        StringBuilder out=new StringBuilder(requirement);JSONArray rows=valid?f.optJSONArray("scenarios"):null;boolean v3=valid&&f.optInt("map_version")>=3;
+        if(!requirement.isEmpty())out.append("\n\n");
+        if(requirement.isEmpty()&&state.optBoolean("client_offline"))out.append("КЭШ · НЕТ СВЯЗИ С BRIDGE\nПоказаны последние полученные данные; текущее состояние кампании неизвестно.\n");
         if(valid)out.append(f.optBoolean("archive")?"ГИПОТЕЗЫ ИЗ СНИМКА · НЕ LIVE":f.optBoolean("client_offline")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · КЭШ":f.optBoolean("stale")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · ДАННЫЕ УСТАРЕЛИ":"ТЕКУЩИЕ ГИПОТЕЗЫ · LIVE");
         if(valid&&!v3){JSONObject lv=f.optJSONObject("entry_levels");for(String side:new String[]{"BUY","SELL"}){
             JSONObject l=lv==null?null:lv.optJSONObject(side);if(l!=null)out.append("\n").append(side).append(side.equals("BUY")?" выше ":" ниже ").append(px(l.optDouble("trigger")));}}

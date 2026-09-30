@@ -253,6 +253,8 @@ def next_requirement(s,current,now,a=None):
     if stage=='CONFIRMED':
         text='Заявка по этому событию уже обработана' if s.get('sent') else 'Вход подтверждён; проверяются котировка, риск, маржа и исполнение'
         return dict(code='EXECUTION_GUARDS',text=text,level=s.get('trigger'))
+    if s.get('micro'):
+        return dict(code='MICRO_BREAK',text=f'SCALP M1: откат наблюдался; ждём новый микропробой {direction} {price}',level=boundary)
     if typ=='COMPRESSION_WAIT':
         lower=value(s['pattern']['lower'],now);upper=value(s['pattern']['upper'],now)
         return dict(code='RANGE_EXIT',text=f'Нет выхода из сжатия {lower:.5f} — {upper:.5f}; сделка не разрешена',level=boundary)

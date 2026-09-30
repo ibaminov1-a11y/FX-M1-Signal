@@ -329,14 +329,55 @@ public final class EventClient {
         for(int i=0;i<events.length();i++){
             JSONObject event=events.optJSONObject(i);if(event==null)continue;
             long time=(long)(event.optDouble("time",0)*1000);
-            text.append('\n').append(time>0?format.format(new Date(time)):"—").append(" · ").append(event.optString("kind","Событие"));
+            String kind=journalText(event,"kind",40);
+            text.append('\n').append(time>0?format.format(new Date(time)):"—").append(" · ").append(kind.isEmpty()?"Событие":kind);
             JSONObject body=event.optJSONObject("body");
             if(body!=null){
-                String detail=body.optString("message",body.optString("reason",body.optString("status","")));
+                String detail=journalDetail(kind,body);
                 if(!detail.isEmpty())text.append(": ").append(detail);
             }
         }
         return text.toString();
+    }
+    // Journal payloads can contain transport/account metadata. Only named scalar
+    // presentation fields are allowed; never stringify arbitrary JSON objects.
+    private static String journalText(JSONObject source,String key,int limit){
+        Object value=source==null?null:source.opt(key);if(!(value instanceof String))return "";
+        String text=((String)value).replaceAll("[\\p{Cntrl}\\s]+"," ").trim();
+        String token=app==null?"":prefs().getString("ec_token","");
+        if(!token.isEmpty())text=text.replace(token,"[скрыто]");
+        text=text.replaceAll("(?i)\\bBearer\\s+[^\\s,;]+","Bearer [скрыто]")
+            .replaceAll("(?i)\\b(token|authorization|api[_ -]?key|secret|password)\\s*[:=]\\s*[^\\s,;]+","$1=[скрыто]");
+        return text.length()>limit?text.substring(0,limit-1)+"…":text;
+    }
+    private static String journalReason(JSONObject body){
+        for(String key:new String[]{"message","reason","status"}){String value=journalText(body,key,240);if(!value.isEmpty())return value;}
+        return "";
+    }
+    private static String journalDetail(String kind,JSONObject body){
+        StringJoiner detail=new StringJoiner(" · ");
+        JSONObject decision=body.optJSONObject("decision"),result=body.optJSONObject("result"),config=body.optJSONObject("config");
+        JSONObject forecast=decision==null?null:decision.optJSONObject("forecast");
+        if(config==null&&result!=null)config=result.optJSONObject("config");
+        if("ANALYSIS".equals(kind)&&decision!=null){
+            for(String key:new String[]{"signal","phase"}){String value=journalText(decision,key,32);if(!value.isEmpty())detail.add(value);}
+        }else if("COMMAND".equals(kind)){
+            String command=journalText(body,"command",40);if(!command.isEmpty())detail.add(command);
+            if(result!=null){
+                if(result.has("ok"))detail.add(result.optBoolean("ok")?"OK":"ОТКЛОНЕНО");
+                if(result.has("auto"))detail.add(result.optBoolean("auto")?"AUTO ON":"AUTO OFF");
+                if(result.optBoolean("paused"))detail.add("PAUSE");
+            }
+        }
+        if("ANALYSIS".equals(kind)||"COMMAND".equals(kind)){
+            String mode=journalText(body,"mode",12);if(mode.isEmpty())mode=journalText(config,"mode",12);
+            String frame=journalText(body,"timeframe",12);if(frame.isEmpty())frame=journalText(config,"timeframe",12);
+            if(frame.isEmpty())frame=journalText(forecast,"timeframe",12);
+            if(!mode.isEmpty()||!frame.isEmpty())detail.add(mode+(mode.isEmpty()||frame.isEmpty()?"":" / ")+frame);
+        }
+        String reason="ANALYSIS".equals(kind)?journalReason(decision):"COMMAND".equals(kind)?journalReason(result):"";
+        if(reason.isEmpty())reason=journalReason(body);if(!reason.isEmpty())detail.add(reason);
+        return detail.toString();
     }
     static String moneySummary(JSONObject o){if(o==null)return "—";return String.format(Locale.US,"+%.2f / −%.2f · ИТОГ %+.2f USD · %d сдел.",o.optDouble("profit"),Math.abs(o.optDouble("loss")),o.optDouble("net"),o.optInt("count"));}
     public static void cache(JSONObject s) throws Exception {

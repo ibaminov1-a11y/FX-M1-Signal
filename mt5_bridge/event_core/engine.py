@@ -104,7 +104,8 @@ class Engine:
             extra['context_tf']=CONTEXT[self.config.timeframe]
             extra['campaign']=self.campaign if (self.auto and not self.paused and not self.emergency
                 and not self.recovery and not self.exit_pending and not self.pending_config
-                and self.config.dynamic_adds and self._owned()) else None
+                and (self.config.dynamic_adds or (self.config.mode=='SCALP' and self.config.timeframe=='M1'))
+                and self._owned()) else None
         return self.compute.evaluate(self.bars,self.m1,self.m15,self.h1,self.live_bar,self.quote,now,
             self.campaign['side'] if self.campaign else 0,**extra)
 

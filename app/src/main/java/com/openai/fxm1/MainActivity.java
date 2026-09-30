@@ -1157,7 +1157,7 @@ public class MainActivity extends Activity {
         String target=p.getString("target_trade_mode","DEMO").toUpperCase(Locale.US);
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(18),dp(12),dp(18),dp(12));
 
-        TextView engineInfo=smartLabel("ДВИЖОК: SCENARIO V2\nФигуры → отдельные гипотезы → наблюдаемые события → проверка входа.\nЛот, таймфрейм и режим выбираются на главном экране. NORMAL и SCALP меняют условия сопровождения.\nAUTO разрешает Bridge самостоятельно открывать и сопровождать сделки на выбранном счёте при подтверждённом сигнале. DEMO/REAL — тип счёта, отдельный от AUTO.\nREAL-исполнение в этой сборке заблокировано.");
+        TextView engineInfo=smartLabel("ДВИЖОК: SCENARIO V2\nФигуры → отдельные гипотезы → наблюдаемые события → проверка входа.\nЛот, таймфрейм и режим выбираются на главном экране. NORMAL и SCALP меняют условия сопровождения.\nБЫСТРЫЙ SCALP: выберите SCALP + торговый период M1. Контекст → откат → micro-trigger; добавление требует движения в плюс и нового отката. Период просмотра графика не меняет торговый период. NORMAL и остальные периоды сохраняют прежнюю модель.\nAUTO разрешает Bridge самостоятельно открывать и сопровождать сделки на выбранном счёте при подтверждённом сигнале. DEMO/REAL — тип счёта, отдельный от AUTO.\nREAL-исполнение в этой сборке заблокировано.");
         box.addView(engineInfo);
 
         Switch realSwitch=smartSwitch("РЕАЛЬНЫЙ СЧЁТ", "REAL".equals(target));box.addView(realSwitch);
@@ -1559,7 +1559,9 @@ public class MainActivity extends Activity {
         if(!scenarioLevels.isEmpty())levelsText.setText(scenarioLevels);
         else if(offline)levelsText.setText("КЭШ · последняя полученная информация\n"+levelsText.getText());
         contextText.setText(offline?"КЭШ · нет связи с Bridge\n"+context:context);
-        if (whyWaitText != null) whyWaitText.setText((offline?"СОХРАНЁННЫЙ СИГНАЛ: ":"WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
+        String executionRequirement=ScenarioUi.executionRequirement(currentState);
+        if (whyWaitText != null) whyWaitText.setText((executionRequirement.isEmpty()?"":executionRequirement+"\n")
+            +(offline?"СОХРАНЁННЫЙ СИГНАЛ: ":"WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
         if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));
         refreshSmartUi();
 

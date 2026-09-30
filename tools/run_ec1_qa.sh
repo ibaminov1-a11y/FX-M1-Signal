@@ -8,30 +8,36 @@ for i in $(seq 1 30); do
   if curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null; then break; fi
   sleep 1
 done
+curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null
 adb reverse tcp:8765 tcp:8765
 # LiveLayoutUiTest remains in the full suite below; avoid running the same case twice.
-# Reproduce this change's native defects before verifying the full current suite.
+# Reproduce R5.7 native defects against the valid R5.6 source baseline.
+# Historical R5.6 RED proof is retained in its own script; all its GREEN tests remain below.
 set +e
-bash tools/audit56_red_ui.sh
+bash tools/audit57_red_ui.sh
 red_rc=$?
+# Keep RED results separate and require freshly executed GREEN XML.
+rm -rf app/build/outputs/androidTest-results
 gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R56ConcurrencyUiTest,com.openai.fxm1.R56TimeframesUiTest,com.openai.fxm1.R56ChartSemanticsTest,com.openai.fxm1.R55ControlsUiTest,com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R57ScalpUiTest,com.openai.fxm1.R56ConcurrencyUiTest,com.openai.fxm1.R56TimeframesUiTest,com.openai.fxm1.R56ChartSemanticsTest,com.openai.fxm1.R55ControlsUiTest,com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest \
   > evidence/android-runtime.log 2>&1
 rc=$?
+set -e
 adb logcat -d > evidence/android-logcat.txt
 adb pull /sdcard/Download/ec1-qa evidence/ui || true
 cat evidence/android-runtime.log
 if [ "$red_rc" -ne 0 ]; then exit "$red_rc"; fi
 if [ "$rc" -eq 0 ]; then
-  python tools/audit56_report.py
+  python tools/audit57_report.py
   signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
   "$signer" verify --print-certs app/build/outputs/apk/debug/app-debug.apk > evidence/apk-signature.txt
   grep -q '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885' evidence/apk-signature.txt
   python - <<'CHECK'
 from pathlib import Path
-assert 'versionCode 925' in Path('app/build.gradle').read_text()
-Path('evidence/package-check.txt').write_text('versionCode 925; original EC1 signing identity verified; exact commit recorded in COMMIT.txt\n')
+assert 'versionCode 926' in Path('app/build.gradle').read_text()
+Path('evidence/package-check.txt').write_text('versionCode 926; original EC1 signing identity verified; exact commit recorded in COMMIT.txt\n')
 CHECK
+  test -s evidence/ui/ec1-qa/r57-scalp-m1-requirement.png || exit 1
   test -s evidence/ui/ec1-qa/r52-layout-short.png || exit 1
   test -s evidence/ui/ec1-qa/r52-layout-long.png || exit 1
   test -s evidence/ui/ec1-qa/r52-full-details.png || exit 1
