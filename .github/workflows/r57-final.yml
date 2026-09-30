@@ -2,17 +2,13 @@ name: R5.7 exact-source signed release gate
 on:
   push:
     branches: [feature/r4-compute-rebuild]
-    paths:
-      - '.github/workflows/r57-final.yml'
-      - 'app/build.gradle'
-      - 'mt5_bridge/event_core/__init__.py'
   workflow_dispatch:
 permissions:
   contents: read
   actions: read
 concurrency:
   group: r57-final-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   verify-package:
     runs-on: ubuntu-latest
