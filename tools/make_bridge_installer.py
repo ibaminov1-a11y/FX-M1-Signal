@@ -10,8 +10,13 @@ def build_installer(bridge,out,build):
     for node in ast.parse((bridge/'event_core/__init__.py').read_text(encoding='utf-8')).body:
         if isinstance(node,ast.Assign):
             for target in node.targets:
-                if isinstance(target,ast.Name) and target.id=='BUILD':declared['BUILD']=ast.literal_eval(node.value)
+                if isinstance(target,ast.Name) and target.id in ('VERSION','BUILD','PROTOCOL','REVISION'):
+                    declared[target.id]=ast.literal_eval(node.value)
     if declared.get('BUILD')!=build:raise ValueError('Bridge build does not match requested build')
+    for name,value in (('VERSION','10.9-EC1'),('PROTOCOL','fxm1.event.v1')):
+        if declared.get(name)!=value:raise ValueError('Bridge '+name+' compatibility contract is missing or invalid')
+    if not isinstance(declared.get('REVISION'),str) or not declared['REVISION'].strip():
+        raise ValueError('Bridge REVISION is missing')
     release=match.group(1)
     installer_name=Path(out).name
     if not re.fullmatch(r'[A-Za-z0-9_.-]+',installer_name):raise ValueError('Invalid installer filename')
@@ -22,7 +27,7 @@ def build_installer(bridge,out,build):
     with zipfile.ZipFile(buffer,'w',zipfile.ZIP_DEFLATED) as archive:
         for name,data in files.items():archive.writestr(name,data)
     program='''from pathlib import Path
-import base64,hashlib,io,os,shutil,sys,tempfile,zipfile
+import base64,hashlib,io,os,shutil,subprocess,sys,tempfile,zipfile
 from datetime import datetime
 root=Path.cwd()
 if not (root/'bridge_v10_0.py').is_file() or not (root/'event_core/server.py').is_file():
@@ -35,29 +40,32 @@ if set(archive.namelist())!=set(expected) or archive.testzip() is not None:
 for name,digest in expected.items():
     if hashlib.sha256(archive.read(name)).hexdigest()!=digest:raise RuntimeError('Package checksum mismatch')
     if name.endswith('.py'):compile(archive.read(name),name,'exec')
-backup=root/('bridge_program_backup_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f'))
-backup.mkdir()
+def verify_imports(folder):
+    probe="import sys; sys.path.insert(0,sys.argv[1]); from event_core import VERSION,BUILD,PROTOCOL,REVISION; assert (VERSION,BUILD,PROTOCOL)==('10.9-EC1',sys.argv[2],'fxm1.event.v1'); assert REVISION; from event_core.server import main; assert callable(main); import bridge_v10_0; assert bridge_v10_0.main is main"
+    subprocess.run([sys.executable,'-B','-c',probe,str(folder),EXPECTED_BUILD],cwd=folder,check=True)
 core=root/'event_core'
 with tempfile.TemporaryDirectory(prefix='bridge_program_staging_',dir=str(root)) as tmp:
     staged=Path(tmp);archive.extractall(staged)
+    verify_imports(staged)
+    backup=root/('bridge_program_backup_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f'))
+    backup.mkdir()
     for name in ('bridge_v10_0.py','START_BRIDGE_V10_0.bat'):
         if (root/name).exists():shutil.copy2(root/name,backup/name)
     os.replace(core,backup/'event_core')
     try:
         os.replace(staged/'event_core',core)
         for name in ('bridge_v10_0.py','START_BRIDGE_V10_0.bat'):os.replace(staged/name,root/name)
+        for name,digest in expected.items():
+            if hashlib.sha256((root/name).read_bytes()).hexdigest()!=digest:raise RuntimeError('Installed checksum mismatch: '+name)
+        verify_imports(root)
     except BaseException:
         if core.exists():shutil.rmtree(core)
         os.replace(backup/'event_core',core)
         for name in ('bridge_v10_0.py','START_BRIDGE_V10_0.bat'):
             if (backup/name).exists():shutil.copy2(backup/name,root/name)
         raise
-for name,digest in expected.items():
-    if hashlib.sha256((root/name).read_bytes()).hexdigest()!=digest:raise RuntimeError('Installed checksum mismatch: '+name)
-sys.path.insert(0,str(root))
-from event_core import BUILD
-assert BUILD==EXPECTED_BUILD
-print('OK:',BUILD,'installed.',len(expected),'program files verified.')
+print('OK:',EXPECTED_BUILD,'installed.',len(expected),'program files verified.')
+print('SERVER_IMPORT_OK: server and launcher loaded successfully.')
 print('Backup:',backup)
 print('event_state, broker-clock.json and .venv were preserved.')
 print('No trading commands were sent. Run START_BRIDGE_V10_0.bat next.')

@@ -9,9 +9,9 @@ class InstallerTests(unittest.TestCase):
             root=Path(directory);bridge=root/'new';working=root/'working'
             for folder in (bridge/'event_core/scenarios',working/'event_core',working/'event_state',working/'.venv'):
                 folder.mkdir(parents=True)
-            files={'event_core/__init__.py':"BUILD='10.9-EC1-R5.6'\n",
-                   'event_core/server.py':'value=56\n','event_core/scenarios/__init__.py':'',
-                   'bridge_v10_0.py':'from event_core.server import value\n',
+            files={'event_core/__init__.py':"VERSION='10.9-EC1'\nBUILD='10.9-EC1-R5.6'\nPROTOCOL='fxm1.event.v1'\nREVISION='R5.6-independent-timeframes'\n",
+                   'event_core/server.py':'from . import VERSION, PROTOCOL, BUILD, REVISION\ndef main(): pass\n','event_core/scenarios/__init__.py':'',
+                   'bridge_v10_0.py':'from event_core.server import main\n',
                    'START_BRIDGE_V10_0.bat':'@echo off\r\n'}
             for name,data in files.items():(bridge/name).write_text(data)
             (working/'event_core/server.py').write_text('old=55\n')

@@ -1,0 +1,35 @@
+name: R5.7 Windows repair verification
+on:
+  push:
+    branches: [fix/r57-bridge-repair]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-repair:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - name: Preserve exact released source bytes
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install server import dependency
+        run: python -m pip install Flask==3.1.2
+      - name: Installer rejection and preservation tests
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = 'mt5_bridge;tests/event_core'
+          python -m unittest test_r57_installer -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run actual CMD and reproduce then repair reported startup error
+        run: python tools/check_r57_windows_repair.py
+      - name: Keep executed installer and Windows evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-R57-WINDOWS-REPAIR-${{ github.sha }}
+          path: evidence/windows-repair/
+          if-no-files-found: error

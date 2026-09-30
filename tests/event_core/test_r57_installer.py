@@ -19,11 +19,11 @@ class R57InstallerTests(unittest.TestCase):
         bridge = root / 'new'
         (bridge / 'event_core/scenarios').mkdir(parents=True)
         files = {
-            'event_core/__init__.py': "BUILD='10.9-EC1-R5.7'\n",
-            'event_core/server.py': 'value=57\n',
+            'event_core/__init__.py': "VERSION='10.9-EC1'\nBUILD='10.9-EC1-R5.7'\nPROTOCOL='fxm1.event.v1'\nREVISION='R5.7-fast-scalp'\n",
+            'event_core/server.py': 'from . import VERSION, PROTOCOL, BUILD, REVISION\nvalue=57\ndef main(): pass\n',
             'event_core/scenarios/__init__.py': '',
             'event_core/scenarios/scalp.py': 'engine="SCALP_MICRO_V1"\n',
-            'bridge_v10_0.py': 'from event_core.server import value\n',
+            'bridge_v10_0.py': 'from event_core.server import main\n',
             'START_BRIDGE_V10_0.bat': '@echo off\r\n',
         }
         for name, data in files.items():
@@ -42,6 +42,36 @@ class R57InstallerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'build'):
                 installer.build_installer(bridge, output, '10.9-EC1-R5.6')
             self.assertFalse(output.exists())
+
+    def test_missing_version_is_rejected_before_installer_is_written(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bridge, _ = self.make_bridge(root)
+            (bridge / 'event_core/__init__.py').write_text("BUILD='10.9-EC1-R5.7'\n")
+            output = root / 'REPAIR_BRIDGE_R57.cmd'
+            with self.assertRaisesRegex(ValueError, 'VERSION'):
+                installer.build_installer(bridge, output, '10.9-EC1-R5.7')
+            self.assertFalse(output.exists())
+
+    def test_server_import_failure_does_not_replace_existing_program(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bridge, _ = self.make_bridge(root)
+            (bridge / 'event_core/server.py').write_text('from . import MISSING_RUNTIME_SYMBOL\n')
+            working = root / 'working'
+            (working / 'event_core').mkdir(parents=True)
+            originals = {'event_core/__init__.py': 'old=56\n',
+                         'event_core/server.py': 'old_server=56\n',
+                         'bridge_v10_0.py': 'old_launcher=56\n'}
+            for name, data in originals.items():
+                (working / name).write_text(data)
+            output = root / 'REPAIR_BRIDGE_R57.cmd'
+            installer.build_installer(bridge, output, '10.9-EC1-R5.7')
+            result = subprocess.run([sys.executable, '-c', self.program(output)], cwd=working, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0, 'Installer must not report success for an unimportable server')
+            self.assertIn('MISSING_RUNTIME_SYMBOL', result.stderr)
+            for name, data in originals.items():
+                self.assertEqual((working / name).read_text(), data)
 
     def test_current_release_diagnostic_names_the_delivered_installer(self):
         with tempfile.TemporaryDirectory() as directory:
