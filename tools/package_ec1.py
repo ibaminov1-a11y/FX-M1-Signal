@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import importlib.metadata as md
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,16 @@ CERTIFICATE = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
 
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def verify_certificate_report(report):
+    lines=[line.strip() for line in report.splitlines() if 'certificate SHA-256 digest:' in line]
+    if not lines:
+        raise ValueError('APK original signing identity was not verified')
+    for line in lines:
+        match=re.fullmatch(r'(?:Signer #[1-9]\d*|V[1-4] Signer):? certificate SHA-256 digest: ([0-9a-fA-F]{64})',line)
+        if match is None or match.group(1).lower()!=CERTIFICATE:
+            raise ValueError('APK original signing identity was not verified')
 
 
 def add_tree(archive, directory, prefix=''):
@@ -36,8 +47,7 @@ def main():
     if (DEST / 'COMMIT.txt').read_text().strip() != commit:
         raise ValueError('Test evidence source does not match packaged source')
     signature = (DEST / 'apk-signature.txt').read_text()
-    if 'Signer #1 certificate SHA-256 digest: ' + CERTIFICATE not in signature:
-        raise ValueError('APK original signing identity was not verified')
+    verify_certificate_report(signature)
     audit_report()
 
     # Clear only generated staging so stale release modules cannot survive repackaging.
@@ -101,7 +111,7 @@ def main():
     with zipfile.ZipFile(full, 'w', zipfile.ZIP_DEFLATED) as archive:
         add_tree(archive, package)
         archive.write(source_zip, 'Sources/FXM1_R5_7_SOURCE.zip')
-        for name in ('COMMIT.txt', 'python-tests.log', 'android-build.log', 'android-runtime.log',
+        for name in ('COMMIT.txt', 'python-tests.log', 'android-build.log', 'android-runtime.log', 'native-fixes.log',
                      'R56_RED_UI_CONFIRMED.txt', 'R57_RED_UI_CONFIRMED.txt', 'R57_RED_PYTHON.log',
                      'R57_RED_PYTHON.json', 'apk-signature.txt',
                      'signing-certificate-sha256.txt', 'package-check.txt', 'ANDROID_TESTS.json',

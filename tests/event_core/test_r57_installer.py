@@ -134,3 +134,26 @@ class R57AuditReportTests(unittest.TestCase):
             self.evidence(root)
             with self.assertRaisesRegex(ValueError, 'Missing Android'):
                 self.audit().read_results(root, required_classes=('R56TimeframesUiTest',))
+
+
+class R57CertificateReportTests(unittest.TestCase):
+    def verifier(self):
+        spec=importlib.util.spec_from_file_location('package_ec1_cert_test',ROOT/'tools/package_ec1.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        verify=getattr(module,'verify_certificate_report',None)
+        self.assertTrue(callable(verify),'Packaging must validate certificate digests across actual apksigner report formats')
+        return verify
+
+    def test_actual_v2_report_keeps_original_certificate_validation(self):
+        self.verifier()('V2 Signer: certificate DN: CN=FXM1 EC1 DEMO\nV2 Signer: certificate SHA-256 digest: 3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885\n')
+
+    def test_legacy_report_is_still_accepted(self):
+        self.verifier()('Signer #1 certificate SHA-256 digest: 3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885\n')
+
+    def test_missing_wrong_or_additional_unknown_certificate_is_rejected(self):
+        verify=self.verifier()
+        good='V2 Signer: certificate SHA-256 digest: 3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885\n'
+        bad='Signer #2 certificate SHA-256 digest: '+('0'*64)+'\n'
+        for report in ('',bad,good+bad,good+'Unknown certificate SHA-256 digest: '+('0'*64)+'\n'):
+            with self.subTest(report=report),self.assertRaisesRegex(ValueError,'signing identity'):
+                verify(report)
