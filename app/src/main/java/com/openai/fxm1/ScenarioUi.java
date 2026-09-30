@@ -128,9 +128,13 @@ public final class ScenarioUi {
         appendEntryScenario(out,state.optJSONObject("campaign"));
         if("RECONCILING".equals(state.optString("campaign_state")))out.append("\n\nПозиций MT5 нет. Завершается сверка прежней кампании.");
         JSONObject cfg=state.optJSONObject("config"),next=state.optJSONObject("pending_config");
-        if(cfg!=null)out.append("\n\nЛот в Bridge: ").append(cfg.optDouble("lot_cap")).append(" · ").append(cfg.optString("volume_mode","RISK_CAP"));
-        if(next!=null)out.append("\nСледующая кампания: ").append(next.optDouble("lot_cap")).append(" lot (после сверки текущей)");
+        if(cfg!=null)out.append("\n\nЛот в Bridge: ").append(lot(cfg)).append(" · ").append(cfg.optString("volume_mode","RISK_CAP"));
+        if(next!=null)out.append("\nСледующая кампания: ").append(lot(next)).append(" lot (после сверки текущей)");
         return out.toString();
+    }
+    private static String lot(JSONObject config){
+        double value=config.optDouble("lot_cap",Double.NaN);
+        return Double.isFinite(value)&&value>0?Double.toString(value):"—";
     }
     private static String recorded(JSONObject source,String key){
         return source==null||source.isNull(key)?"":source.optString(key,"");

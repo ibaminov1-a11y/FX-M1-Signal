@@ -163,12 +163,23 @@ public class R54RefreshUiTest {
     }
 
     @Test public void failedAndTimedOutRefreshesClearProgressAndRecoveryShowsFreshSuccess()throws Exception {
+        // This case checks an unsuperseded failure. R56's foreground chart now
+        // reads /ec/state even with monitoring off; a newer successful read must
+        // legitimately keep server_verified=true (covered by the concurrent case).
+        // Stop that reader and drain pre-existing money work before the outage.
+        Field money=MainActivity.class.getDeclaredField("lastMoneyRefreshMs");money.setAccessible(true);
+        ui(()->{ScenarioUi.setActive(rule.getActivity(),false);
+            try{money.setLong(rule.getActivity(),System.currentTimeMillis()+60000);}catch(Exception e){throw new AssertionError(e);}});
+        Field worker=MainActivity.class.getDeclaredField("executor");worker.setAccessible(true);
+        ((ExecutorService)worker.get(rule.getActivity())).submit(()->{}).get(8,TimeUnit.SECONDS);
+        EventClient.poll();assertTrue("Fresh baseline before the isolated outage",prefs.getBoolean("server_verified",false));
         fixture(new JSONObject().put("fail",true));pull();
         await(()->!loading()&&refreshStatus().contains("Не удалось"),"HTTP failure must show an error and stop loading");
         assertFalse("A failed request cannot confirm cached data as fresh",prefs.getBoolean("server_verified",true));
         fixture(new JSONObject().put("fail",false).put("delay_ms",5000));top();pull();
         await(this::loading,"Timeout path starts visible progress");
         await(()->!loading()&&refreshStatus().contains("Не удалось"),"Transport timeout must always clear progress");
+        assertFalse("A timed-out request cannot confirm cached data as fresh",prefs.getBoolean("server_verified",true));
         fixture(new JSONObject().put("delay_ms",0).put("account_balance",52109.0));top();pull();
         await(()->!loading()&&refreshStatus().contains("Обновлено")&&text(R.id.accountText).contains("52109.00"),"Next pull must recover and show only fresh success");assertReadOnly();
     }

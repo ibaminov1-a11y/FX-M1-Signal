@@ -16,6 +16,17 @@ adb reverse tcp:8765 tcp:8765
 set +e
 bash tools/audit57_red_ui.sh
 red_rc=$?
+# Fail fast on the three concrete first-run native findings before the full suite.
+rm -rf app/build/outputs/androidTest-results
+gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
+  '-Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R57ScalpUiTest#nullLevelsBlockedAddsAndCachedRequirementsStayTruthful,com.openai.fxm1.EventCoreUiTest#legacyUiActualBalanceAndModesArePreserved,com.openai.fxm1.R54RefreshUiTest#failedAndTimedOutRefreshesClearProgressAndRecoveryShowsFreshSuccess' \
+  > evidence/native-fixes.log 2>&1
+fixes_rc=$?
+if [ "$fixes_rc" -ne 0 ]; then
+  cat evidence/native-fixes.log
+  adb logcat -d > evidence/android-logcat.txt
+  exit "$fixes_rc"
+fi
 # Keep RED results separate and require freshly executed GREEN XML.
 rm -rf app/build/outputs/androidTest-results
 gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest \
