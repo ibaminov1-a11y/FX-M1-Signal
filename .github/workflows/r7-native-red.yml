@@ -1,0 +1,63 @@
+name: R7 native RED contracts
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r7-native-red.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-red:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Set original signing identity
+        run: |
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+          mkdir -p evidence
+      - name: Real API35 expected assertion failures
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R7ReleaseUiTest > evidence/native-red.log 2>&1; test $? -ne 0
+      - name: Verify two actual assertion failures rather than compilation errors
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as E
+          tests=[]
+          for p in Path('app/build/outputs/androidTest-results').rglob('*.xml'):
+              tests.extend(E.parse(p).getroot().iter('testcase'))
+          cases=[t for t in tests if t.attrib.get('classname','').endswith('R7ReleaseUiTest')]
+          assert len(cases)==2,[(t.attrib) for t in tests]
+          assert all(t.find('failure') is not None and t.find('error') is None for t in cases)
+          print('R7_NATIVE_RED_CONFIRMED',[(t.attrib['name']) for t in cases])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R7-NATIVE-RED-${{ github.sha }}
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/
