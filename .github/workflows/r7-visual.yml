@@ -1,0 +1,87 @@
+name: R7 native chart visual audit
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r7-visual.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  RELEASE_SOURCE: 6b3dea3eb775516729475787dea348565eac055f
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 6b3dea3eb775516729475787dea348565eac055f
+          persist-credentials: false
+      - name: Correct only the screenshot-export test harness
+        run: |
+          mkdir -p evidence
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/androidTest/java/com/openai/fxm1/R7ReleaseUiTest.java')
+          s=p.read_text()
+          old='            androidx.test.uiautomator.UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).executeShellCommand("mkdir -p /sdcard/Download/ec1-qa; cp "+output.getAbsolutePath()+" /sdcard/Download/ec1-qa/r7-wait-price-forecast.png");'
+          new='''            androidx.test.uiautomator.UiDevice device=androidx.test.uiautomator.UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+                      device.executeShellCommand("mkdir -p /sdcard/Download/ec1-qa");
+                      device.executeShellCommand("cp "+output.getAbsolutePath()+" /sdcard/Download/ec1-qa/r7-price-forecast-verified.png");
+                      String fileType=device.executeShellCommand("stat -c %F /sdcard/Download/ec1-qa/r7-price-forecast-verified.png");
+                      assertTrue("Screenshot export is not a regular file: "+fileType,fileType.contains("regular file"));'''
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new))
+          PY
+          git diff --exit-code HEAD -- app/src/main app/build.gradle build.gradle settings.gradle mt5_bridge tools
+          git diff -- app/src/androidTest > evidence/CAPTURE_HARNESS_ONLY.patch
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - run: |
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: |
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R7ReleaseUiTest > evidence/visual-native.log 2>&1
+            adb pull /sdcard/Download/ec1-qa/r7-price-forecast-verified.png evidence/
+      - name: Require actual PNG and unchanged production bytes
+        run: |
+          git diff --exit-code HEAD -- app/src/main app/build.gradle build.gradle settings.gradle mt5_bridge tools
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          import xml.etree.ElementTree as E
+          p=Path('evidence/r7-price-forecast-verified.png');b=p.read_bytes()
+          assert p.is_file() and b[:8]==bytes([137,80,78,71,13,10,26,10]) and len(b)>1000
+          cases=[]
+          for p in Path('app/build/outputs/androidTest-results').rglob('*.xml'):
+              cases.extend(E.parse(p).getroot().iter('testcase'))
+          assert len(cases)==4
+          assert all(t.find('failure') is None and t.find('error') is None and t.find('skipped') is None for t in cases)
+          apk=Path('app/build/outputs/apk/debug/app-debug.apk').read_bytes()
+          Path('evidence/VISUAL_RESULT.json').write_text(json.dumps(dict(release_source_commit=os.environ['RELEASE_SOURCE'],production_diff_clean=True,test_export_adjusted=True,tests=4,failures=0,png_sha256=hashlib.sha256(b).hexdigest(),apk_sha256=hashlib.sha256(apk).hexdigest()),indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R7-VISUAL-AUDIT-6b3dea3
+          path: evidence/
+          if-no-files-found: error
