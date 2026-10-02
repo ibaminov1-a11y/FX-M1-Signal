@@ -119,6 +119,42 @@ def rollback(target,backup=None):
   return saved
  finally:lock.close()
 
+def windows_wrapper(rollback=False):
+ flag=' --rollback' if rollback else ''
+ # Exactly these bytes are packaged and executed in the native Windows gate.
+ script=r'''@echo off
+setlocal
+set "PYTHONUTF8=1"
+cd /d "%~dp0"
+set "R7_PY="
+set "R7_EXTRA="
+if not "%~1"=="" if exist "%~1\.venv\Scripts\python.exe" set "R7_PY=%~1\.venv\Scripts\python.exe"
+if not defined R7_PY if exist "%USERPROFILE%\OneDrive\Documents\GitHub\FX-M1-Signal\mt5_bridge\.venv\Scripts\python.exe" set "R7_PY=%USERPROFILE%\OneDrive\Documents\GitHub\FX-M1-Signal\mt5_bridge\.venv\Scripts\python.exe"
+if not defined R7_PY if exist "%~dp0Bridge\.venv\Scripts\python.exe" set "R7_PY=%~dp0Bridge\.venv\Scripts\python.exe"
+if defined R7_PY goto run
+python -c "import sys; assert sys.version_info >= (3,10)" >nul 2>nul
+if not errorlevel 1 (
+ set "R7_PY=python"
+ goto run
+)
+py -3 -c "import sys; assert sys.version_info >= (3,10)" >nul 2>nul
+if not errorlevel 1 (
+ set "R7_PY=py"
+ set "R7_EXTRA=-3"
+ goto run
+)
+echo Python 3.10 or newer was not found. Use the existing Bridge Python environment.
+if not "%R7_NO_PAUSE%"=="1" pause
+exit /b 1
+:run
+"%R7_PY%" %R7_EXTRA% "%~dp0update_bridge.py"@FLAG@ %*
+set "R7_EXIT=%ERRORLEVEL%"
+if not "%R7_EXIT%"=="0" echo Update failed. Original data must NOT be deleted.
+if not "%R7_NO_PAUSE%"=="1" pause
+exit /b %R7_EXIT%
+'''
+ return script.replace('@FLAG@',flag).replace('\n','\r\n').encode('ascii')
+
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('target',nargs='?');parser.add_argument('--yes',action='store_true');parser.add_argument('--rollback',action='store_true');args=parser.parse_args()
  package=Path(__file__).resolve().parent

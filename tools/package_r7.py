@@ -33,9 +33,9 @@ def main():
  manifest={p.relative_to(bridge).as_posix():digest(p) for p in sorted(bridge.rglob('*')) if p.is_file()}
  (package/'BRIDGE_MANIFEST.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
  shutil.copy2(ROOT/'tools/r7_updater.py',package/'update_bridge.py')
- for name,flag in (('INSTALL_R7.cmd',''),('ROLLBACK_R7.cmd',' --rollback')):
-  cmd='@echo off\nsetlocal\nset "PYTHONUTF8=1"\ncd /d "%~dp0"\npython "%~dp0update_bridge.py"'+flag+' %*\nif errorlevel 1 (\n echo Update failed. Original data must NOT be deleted.\n pause\n exit /b 1\n)\npause\n'
-  (package/name).write_bytes(cmd.replace('\n','\r\n').encode('ascii'))
+ from r7_updater import windows_wrapper
+ for name,back in (('INSTALL_R7.cmd',False),('ROLLBACK_R7.cmd',True)):
+  (package/name).write_bytes(windows_wrapper(back))
  apk=package/'FXM1_R7_DEMO.apk';shutil.copy2(ROOT/'app/build/outputs/apk/debug/app-debug.apk',apk)
  shutil.copy2(ROOT/'docs/UPGRADE_R7.md',package/'START_HERE_RU.md')
  source=package/'Sources/FXM1_R7_SOURCE.zip';source.parent.mkdir()

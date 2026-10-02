@@ -53,3 +53,12 @@ class InstallerTests(unittest.TestCase):
   try:
    before=self.snapshot();apply_update(self.src,self.dst,self.manifest);self.assertEqual(before,self.snapshot())
   finally:db.close()
+
+ def test_windows_wrapper_is_shared_by_packaging_and_native_gate(self):
+  from r7_updater import windows_wrapper
+  normal=windows_wrapper();back=windows_wrapper(rollback=True)
+  self.assertIsInstance(normal,bytes)
+  self.assertIn(b'R7_NO_PAUSE',normal)
+  self.assertIn(b'.venv\\Scripts\\python.exe',normal)
+  self.assertIn(b'--rollback',back)
+  self.assertNotIn(b'--rollback',normal)
