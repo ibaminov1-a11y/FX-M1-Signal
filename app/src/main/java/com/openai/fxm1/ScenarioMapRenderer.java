@@ -91,6 +91,7 @@ final class ScenarioMapRenderer {
         historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
         JSONObject levels=valid&&!v3&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
+        JSONObject priceForecast=PriceForecastPlot.visible(f);
         int routeCount=routes==null?0:Math.min(2,routes.length());
         top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:60)*d;
         split=historical||unverified?right:left+(right-left)*.44f;
@@ -104,6 +105,12 @@ final class ScenarioMapRenderer {
         if(routes!=null)for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);JSONArray path=r==null?null:r.optJSONArray("path");if(path==null)continue;
             for(int j=0;j<path.length();j++){JSONObject pt=path.optJSONObject(j);if(pt!=null)nearBound(pt.optDouble("price"),historyLow,historyHigh,historyRange);}}
+        if(priceForecast!=null){
+            bound(priceForecast.optDouble("origin"));
+            JSONArray projection=priceForecast.optJSONArray("projection");
+            for(int i=0;i<projection.length();i++){JSONObject point=projection.optJSONObject(i);
+                bound(point.optDouble("low"));bound(point.optDouble("high"));}
+        }
         if(unverified)readOnlyHeading(f);
         if(!Double.isFinite(low)||!Double.isFinite(high)||high<=low||bottom<=top||right<=left){
             if(unverified)text("Нет доступных свечей MT5",left,top+20*d,MUTED,11);return;
@@ -111,7 +118,7 @@ final class ScenarioMapRenderer {
         double margin=(high-low)*.10;low-=margin;high+=margin;
         if(!unverified){
         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
-        else if(routeCount==0)text(valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
+        else if(routeCount==0)text(priceForecast!=null?"ЦЕНОВОЙ ПРОГНОЗ · вход отдельно":valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
             String name=ScenarioUi.role(r,i);
@@ -199,12 +206,18 @@ final class ScenarioMapRenderer {
         }
         if(routeCount>0){JSONObject r=routes.optJSONObject(0);level(r.optDouble("invalidation"),"Отмена "+(r.optInt("side")>0?"BUY ":"SELL ")+price(r.optDouble("invalidation")),0xffa996b6);}
         if(active!=null)level(active.optDouble("invalidation"),"Активный "+(active.optInt("side")>0?"BUY":"SELL")+": отмена",0xffffb04d);
-        for(int i=routeCount-1;i>=0;i--)route(routes.optJSONObject(i),i,current);
+        if(priceForecast!=null)PriceForecastPlot.draw(c,f,priceForecast,new RectF(split,top,right,bottom),low,high,d);
+        else for(int i=routeCount-1;i>=0;i--)route(routes.optJSONObject(i),i,current);
         if(Double.isFinite(current)){
             p.setColor(0xffeeeeff);c.drawCircle(split,clippedY(current),3*d,p);
             text(clientOffline?"КЭШ":"LIVE",split-29*d,clippedY(current)-6*d,0xffeeeeff,9);
         }
         drawAnnotations();
+        if(priceForecast!=null){
+            text(stale?"Сохранённый прогноз · связь/данные устарели":"Синий: ценовой прогноз · полоса исторических примеров",left,h-26*d,MUTED,8);
+            text("Не гарантия · условные пути: кнопка «Сценарии»",left,h-11*d,MUTED,8);
+            return;
+        }
         boolean legacy=false;
         if(routes!=null)for(int i=0;i<routeCount;i++)legacy|=!hasPhaseMeaning(routes.optJSONObject(i));
         line(left,h-44*d,left+17*d,h-44*d,MUTED,2,true);

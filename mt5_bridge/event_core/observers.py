@@ -92,9 +92,13 @@ class ForecastObservers:
                 m15=self._bars(engine,'M15',now) if tf=='M5' else []
                 h1=self._bars(engine,'H1',now) if tf=='M5' else []
                 decision=core.evaluate(bars,self._bars(engine,'M1',now),m15,h1,live,engine.quote,now,context=context,
-                    context_tf=CONTEXT[tf],clock_generation=engine.broker_clock_identity)
+                    context_tf=CONTEXT[tf],clock_generation=engine.broker_clock_identity,market_scope=engine.market_scope())
                 if not decision.forecast.get('available'):
                     raise Blocked(decision.reason)
+                price_forecast=decision.forecast.get('price_forecast',{})
+                if price_forecast.get('available'):
+                    engine.store.save_price_forecast(price_forecast)
+                    engine.store.settle_price_forecasts(price_forecast['scope'],engine.quote,now)
                 view.update(available=True,reason=decision.reason,decision=decision.json(),
                     forecast=copy.deepcopy(decision.forecast),analysis_time=now,market_time=now,
                     context_time=context[-1].time,quote=asdict(engine.quote),market_errors=[])

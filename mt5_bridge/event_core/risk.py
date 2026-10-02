@@ -47,6 +47,30 @@ def day_start(now):
     return t.replace(hour=0,minute=0,second=0,microsecond=0).timestamp()
 
 
+def exit_evidence(deals):
+    """Preserve every broker exit fill, including mixed partial-close reasons.
+
+    This is observational metadata only. Never replace Engine's first exit intent,
+    estimate a cause from the stop price, or change monetary reconciliation.
+    """
+    exits=[];codes=[];labels=[]
+    for d in sorted(deals,key=lambda x:(x.get('time_msc',0),x.get('ticket',0))):
+        if d.get('type') not in (0,1) or d.get('entry') not in (1,3):continue
+        code=d.get('reason_code') or 'UNKNOWN'
+        reason=d.get('reason')
+        label=d.get('reason_label') or ('Причина не получена от MT5' if reason is None
+                                         else 'Неизвестный код MT5: '+str(reason))
+        row={k:d.get(k) for k in ('ticket','position_id','entry','time_msc','raw_time_msc',
+                                'volume','price','profit','commission','swap','fee','comment')}
+        row.update(reason=reason,reason_code=code,reason_label=label,
+                   reason_source=d.get('reason_source','MISSING' if reason is None else 'MT5_DEAL_REASON'))
+        exits.append(row)
+        if code not in codes:codes.append(code)
+        if label not in labels:labels.append(label)
+    return dict(source='MT5_HISTORY',complete=bool(exits) and all(x['reason'] is not None for x in exits),
+                reason_codes=codes,text='; '.join(labels) if labels else 'Нет закрывающих сделок MT5',deals=exits)
+
+
 def ledger(deals, open_positions=()):
     """Group by position, include opening expenses; never count partial exits as new trades."""
     groups={}
@@ -57,13 +81,14 @@ def ledger(deals, open_positions=()):
         if not key:
             continue
         g=groups.setdefault(key,dict(position_id=key,net=0.,opened=0.,closed=0.,time=0,
-            time_msc=0,last_ticket=0,open_time=0,side='',symbol=d['symbol'],magic=d.get('magic',0)))
+            time_msc=0,last_ticket=0,open_time=0,side='',symbol=d['symbol'],magic=d.get('magic',0),exit_deals=[]))
         g['net']+=money(d)
         if d['entry']==0:
             g['opened']+=d['volume']
             if not g['open_time']:
                 g['open_time']=d['time_msc']/1000;g['side']='BUY' if d['type']==0 else 'SELL'
         elif d['entry'] in (1,3):
+            g['exit_deals'].append(d)
             g['closed']+=d['volume'];g['time']=d['time_msc']/1000
             g['time_msc']=d['time_msc'];g['last_ticket']=d['ticket']
         else:
@@ -74,6 +99,7 @@ def ledger(deals, open_positions=()):
         if key not in live and g['closed']>0 and g['opened']<=0:
             raise Blocked('Неполная история: отсутствует открытие закрытой позиции')
         if key not in live and g['opened']>0 and g['closed']>=g['opened']-1e-8:
+            g['broker_exit']=exit_evidence(g.pop('exit_deals'))
             g['volume']=g['opened'];rows.append(g)
     return sorted(rows,key=lambda x:(x['time_msc'],x['last_ticket']))
 

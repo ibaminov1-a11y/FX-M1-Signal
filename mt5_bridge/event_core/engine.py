@@ -4,7 +4,7 @@ import copy, hashlib, math, threading, time
 from .model import Bar, Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure, validate_bar_history
 from .strategy import Strategy
 from .compute_core import ComputeCore, make_compute
-from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key
+from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key, exit_evidence
 from .mt5_adapter import MAGIC
 from .observers import ForecastObservers, CONTEXT, PUBLIC_TIMEFRAMES
 
@@ -100,6 +100,7 @@ class Engine:
         extra={}
         if self.config.engine_mode=='SCENARIO_V2':
             extra['clock_generation']=self.broker_clock_identity
+            extra['market_scope']=self.market_scope()
             extra['context']=self.context
             extra['context_tf']=CONTEXT[self.config.timeframe]
             extra['campaign']=self.campaign if (self.auto and not self.paused and not self.emergency
@@ -111,6 +112,10 @@ class Engine:
 
     def _archive_scenarios(self,now):
         if self.config.engine_mode!='SCENARIO_V2':return
+        price_forecast=self.forecast.get('price_forecast',{})
+        if price_forecast.get('available'):
+            self.store.save_price_forecast(price_forecast)
+            self.store.settle_price_forecasts(price_forecast['scope'],self.quote,now)
         for snapshot in self.compute.pending_snapshots:
             self.store.save_scenario_snapshot(self.market_scope(),snapshot,now)
         self.compute.pending_snapshots.clear()
@@ -291,6 +296,8 @@ class Engine:
                 self.campaign['end']=self.clock()
                 self.campaign['net']=sum(d['profit']+d.get('swap',0)+d.get('commission',0)+d.get('fee',0)
                     for d in self.deals if d.get('position_id') in ids)
+                self.campaign['broker_exit']=exit_evidence(d for d in self.deals if d.get('position_id') in ids)
+                self.campaign['broker_exit_recorded_at']=self.clock()
                 self.store.campaign(self.campaign['id'],self.campaign)
                 self.store.event('CAMPAIGN_CLOSED',self.campaign,self.clock())
                 self.campaign=None;self.last_exit=self.clock();self.exit_pending=False

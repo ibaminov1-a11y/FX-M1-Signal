@@ -18,6 +18,15 @@ def value(line, when):
     return line['price']+line['slope']*(when-line['t0'])
 
 
+def live_geometry_valid(p, when):
+    """Historical anchors do not guarantee usable extrapolated boundaries now."""
+    try:
+        lower=value(p['lower'],when);upper=value(p['upper'],when)
+        return math.isfinite(lower) and math.isfinite(upper) and 0 < lower < upper
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return False
+
+
 def causal_points(bars,tf='M5'):
     offsets={b.time:b.clock_offset_seconds for b in bars}
     raw=pivots(bars,2)
@@ -154,7 +163,7 @@ def _reversals(pts,a,symbol,tf):
     return result
 
 
-def detect_patterns(bars,symbol='EUR/USD',tf='M5'):
+def detect_patterns(bars,symbol='EUR/USD',tf='M5',*,require_live_geometry=False):
     if len(bars)<24:return []
     ordered(bars);a=atr(bars);pts=causal_points(bars,tf)
     if len(pts)<3:return []
@@ -162,5 +171,10 @@ def detect_patterns(bars,symbol='EUR/USD',tf='M5'):
     patterns=_lanes(bars,pts,a,symbol,tf)+_reversals(pts,a,symbol,tf)
     # Detection at bar close only. Old shapes are not fresh trading invitations.
     patterns=[p for p in patterns if now-p['available_at']<=TF_SECONDS[tf]*8]
-    for p in patterns:p['clock_offset_seconds']=bars[-1].clock_offset_seconds
+    for p in patterns:
+        p['clock_offset_seconds']=bars[-1].clock_offset_seconds
+        p['measurements']['width_now']=value(p['upper'],now)-value(p['lower'],now)
+        p['measurements']['width_asof']=now
+    if require_live_geometry:
+        patterns=[p for p in patterns if live_geometry_valid(p,now)]
     return sorted(patterns,key=lambda p:(p['available_at'],p['quality']),reverse=True)[:8]

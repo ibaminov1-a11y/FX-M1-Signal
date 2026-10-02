@@ -25,8 +25,58 @@ class Store:
           CREATE TABLE IF NOT EXISTS scenario_snapshots(scope TEXT, id TEXT, t REAL, body TEXT,
             PRIMARY KEY(scope,id));
           CREATE INDEX IF NOT EXISTS scenario_time ON scenario_snapshots(scope,t);
+          CREATE TABLE IF NOT EXISTS price_forecasts(scope TEXT, id TEXT, t REAL, body TEXT,
+            PRIMARY KEY(scope,id));
+          CREATE INDEX IF NOT EXISTS price_forecast_time ON price_forecasts(scope,t);
+          CREATE TABLE IF NOT EXISTS price_forecast_outcomes(scope TEXT, id TEXT, minutes INTEGER,
+            target_time REAL, origin REAL, center REAL, low REAL, high REAL,
+            status TEXT NOT NULL, observed_at REAL, actual REAL,
+            PRIMARY KEY(scope,id,minutes));
+          CREATE INDEX IF NOT EXISTS price_outcome_due ON price_forecast_outcomes(scope,status,target_time);
         ''')
         self.db.commit()
+
+    def save_price_forecast(self, forecast):
+        """Insert a frozen estimate once; reject attempts to rewrite its contents."""
+        if not forecast.get('available'):return
+        body=json.dumps(forecast,sort_keys=True,ensure_ascii=False,allow_nan=False)
+        scope,key=forecast['scope'],forecast['snapshot_id']
+        with self.db:
+            prior=self.db.execute('SELECT body FROM price_forecasts WHERE scope=? AND id=?',(scope,key)).fetchone()
+            if prior and prior[0]!=body:raise ValueError('Исходный прогноз нельзя перезаписать')
+            self.db.execute('INSERT OR IGNORE INTO price_forecasts VALUES (?,?,?,?)',
+                            (scope,key,forecast['issued_at'],body))
+            for point in forecast['projection']:
+                self.db.execute('INSERT OR IGNORE INTO price_forecast_outcomes VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+                    (scope,key,point['minutes'],point['time'],forecast['origin'],point['center'],
+                     point['low'],point['high'],'PENDING',None,None))
+
+    def settle_price_forecasts(self,scope,quote,now):
+        """First actual fresh quote within ten seconds, else mark the outcome missing.
+
+        Never replace an old outcome with a newer, more favorable observation.
+        Missing outcomes stay in statistics rather than disappearing from the denominator.
+        """
+        quote.validate(now)
+        observed=quote.time_msc/1000
+        with self.db:
+            self.db.execute("UPDATE price_forecast_outcomes SET status='MISSING' WHERE scope=? AND status='PENDING' AND target_time<?",
+                            (scope,observed-10))
+            self.db.execute("UPDATE price_forecast_outcomes SET status='OBSERVED',observed_at=?,actual=? WHERE scope=? AND status='PENDING' AND target_time<=?",
+                            (observed,quote.bid,scope,observed))
+
+    def price_forecasts(self,scope,limit=100):
+        return [json.loads(r[0]) for r in self.db.execute(
+            'SELECT body FROM price_forecasts WHERE scope=? ORDER BY t DESC LIMIT ?',
+            (scope,max(1,min(1000,int(limit)))))]
+
+    def price_forecast_report(self,scope):
+        counts=dict(self.db.execute('SELECT status,COUNT(*) FROM price_forecast_outcomes WHERE scope=? GROUP BY status',(scope,)))
+        rows=self.db.execute("SELECT minutes,COUNT(*),AVG(ABS(actual-center)),AVG(ABS(actual-origin)),AVG(CASE WHEN actual>=low AND actual<=high THEN 1.0 ELSE 0.0 END),AVG(high-low) FROM price_forecast_outcomes WHERE scope=? AND status='OBSERVED' GROUP BY minutes ORDER BY minutes",(scope,))
+        return dict(scope=scope,evaluated=counts.get('OBSERVED',0),missing=counts.get('MISSING',0),
+                    pending=counts.get('PENDING',0),calibrated=False,
+                    horizons=[dict(minutes=r[0],count=r[1],mae=r[2],baseline_mae=r[3],
+                                   empirical_coverage=r[4],mean_band_width=r[5]) for r in rows])
 
     def load(self,key,default=None):
         row=self.db.execute('SELECT value FROM state WHERE k=?',(key,)).fetchone()

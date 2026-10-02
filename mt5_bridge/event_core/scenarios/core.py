@@ -9,9 +9,10 @@ import copy
 import hashlib
 import json
 from ..model import Config, Decision, atr, ordered, pivots, direction, swing_labels, TF_SECONDS, bar_close_time
-from .structure import detect_patterns, value, FAMILIES
+from .structure import detect_patterns, value, FAMILIES, live_geometry_valid
 from .continuation import Continuation
 from .scalp import ScalpMicro
+from ..price_forecast import PriceForecaster
 from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
 
 
@@ -26,6 +27,7 @@ class ScenarioCore:
         self.pending_snapshots=[];self.events=[];self.last_forecast={}
         self.continuation=Continuation()
         self.micro=ScalpMicro()
+        self.price_forecaster=PriceForecaster()
         # Observation evidence is not an executable order after process restart.
         for s in self.scenarios.values():
             s['entry_ready']=False
@@ -79,14 +81,16 @@ class ScenarioCore:
             selected.append(s)
             if len(selected)==4:break
         return selected,unique
-    def evaluate(self,bars,m1,m15,h1,live_bar,q,now,campaign_side=0,campaign=None,context=None,context_tf=None,clock_generation='UTC_NATIVE_R51'):
+    def evaluate(self,bars,m1,m15,h1,live_bar,q,now,campaign_side=0,campaign=None,context=None,context_tf=None,clock_generation='UTC_NATIVE_R51',market_scope=''):
         q.validate(now);ordered(bars)
         if self.config.timeframe not in TF_SECONDS or len(bars)<24 or len(m1)<2 or live_bar is None:
             return Decision(phase='DATA_BLOCK',reason=f'Scenario V2: ожидаем закрытые M1/{self.config.timeframe} и LIVE',path='SCENARIO_V2')
         if bar_close_time(bars[-1].time,self.config.timeframe,bars[-1].clock_offset_seconds)>now+1:raise ValueError('Будущая незакрытая свеча в Scenario V2')
         a=atr(bars);frame=(bars[-1].time,bars[-1].high,bars[-1].low,bars[-1].close)
+        normal=self.config.mode=='NORMAL'
         if frame!=self.frame:
-            for p in detect_patterns(bars,self.config.symbol,self.config.timeframe):
+            for p in detect_patterns(bars,self.config.symbol,self.config.timeframe,require_live_geometry=normal):
+                if normal and not live_geometry_valid(p,q.time_msc/1000.0):continue
                 for s in create_scenarios(p,bars,a,q.bid,now):
                     key=s['scenario_id']
                     if key not in self.known:
@@ -99,10 +103,10 @@ class ScenarioCore:
             self.suspend();prev=None
         for s in self.scenarios.values():
             before=(s['status'],s['stage'])
-            advance(s,q,prev,now,a,m1)
+            advance(s,q,prev,now,a,m1,validate_geometry=normal)
             if before!=(s['status'],s['stage']):
                 self.events.append(dict(scenario_id=s['scenario_id'],type=s['type'],side=s['side'],
-                    status=s['status'],stage=s['stage'],reason=s['reason'],time=now))
+                    status=s['status'],stage=s['stage'],reason=s['reason'],time=now,retirement_code=s.get('retirement_code','')))
         self.previous_quote=q
         source=self.scenarios.get(campaign.get('scenario_id')) if campaign else None
         fast=self.config.mode=='SCALP' and self.config.timeframe=='M1'
@@ -116,6 +120,12 @@ class ScenarioCore:
         preview=self.micro.preview() if fast else None
         if preview and not any(s['scenario_id']==preview['scenario_id'] for s in active):active.append(preview)
         selected,ranked=self._rank(active,m15,h1,now,q,a,context=None if self.config.timeframe=='M5' else context)
+        if normal:
+            # Keep execution candidates ranked independently of presentation (HF1).
+            # A sent trade or its micro-add can outlive its historical trendlines;
+            # show the frozen active trade plan, not an inverted old figure.
+            visible=[s for s in active if live_geometry_valid(s['pattern'],q.time_msc/1000.0)]
+            selected,_=self._rank(visible,m15,h1,now,q,a,context=None if self.config.timeframe=='M5' else context)
         if preview:selected=[preview]+[s for s in selected if s['scenario_id']!=preview['scenario_id']][:3]
         tied=len(selected)>1 and int(selected[0]['quality_score']+.5)==int(selected[1]['quality_score']+.5)
         if preview:tied=False
@@ -151,6 +161,9 @@ class ScenarioCore:
                 immutable_snapshots=True,live_and_history=True,wave_module=False),
             score_version='35G+25C+25E+15R-v1',regime=routes[0]['family'] if routes else 'NO_CLEAR_SCENARIO',
             reason=routes[0]['reason'] if routes else 'Нет ясной подтверждённой геометрии — только уровни и WAIT')
+        forecast['price_forecast']=self.price_forecaster.update(bars,q,now,
+            symbol=self.config.symbol,timeframe=self.config.timeframe,mode=self.config.mode,
+            scope=market_scope or clock_generation)
         if fast:
             forecast['execution_setup']=self.micro.status()
             forecast['addition']=self.micro.status() if campaign else None
@@ -166,7 +179,11 @@ class ScenarioCore:
         if len(self.scenarios)>192:
             closed=sorted((s for s in self.scenarios.values() if s['status'] in TERMINAL),key=lambda x:x['created_at'])
             for s in closed[:len(self.scenarios)-192]:self.scenarios.pop(s['scenario_id'],None)
-        ready=[s for s in ranked if s['entry_ready'] and s['event_id'] not in self.consumed]
+        # Display deduplication must not hide a confirmed NORMAL entry behind
+        # a higher-ranked waiting/used hypothesis. _rank sorted active in place;
+        # keep that order and leave both SCALP paths and execution guards intact.
+        execution_pool=active if self.config.mode=='NORMAL' else ranked
+        ready=[s for s in execution_pool if s['entry_ready'] and s['event_id'] not in self.consumed]
         if fast:
             ready=[s for s in self.scenarios.values() if s.get('micro') and s['entry_ready']
                    and s['event_id'] not in self.consumed and preview is s and self.micro.stage=='CONFIRMED']

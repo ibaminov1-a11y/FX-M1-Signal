@@ -54,6 +54,8 @@ public class R7ReleaseUiTest {
             assertTrue(description[0],description[0].contains("5 мин"));assertTrue(description[0],description[0].contains("60 мин"));
             int blue=0;for(int y=0;y<660;y++)for(int x=540;x<1080;x++)if(image[0].getPixel(x,y)==0xff62b6ff)blue++;
             assertTrue("Future path must actually be drawn on Android Canvas",blue>30);
+            java.io.File output=new java.io.File(context.getExternalFilesDir(null),"r7-wait-price-forecast.png");
+            try(java.io.FileOutputStream stream=new java.io.FileOutputStream(output)){image[0].compress(Bitmap.CompressFormat.PNG,100,stream);}
         }finally{image[0].recycle();}
     }
     @Test public void commandEnvelopeCapturesProfileBeforeViewChanges()throws Exception{
@@ -65,5 +67,19 @@ public class R7ReleaseUiTest {
         EventClient.cache(new JSONObject(s.toString()).put("profile_id","profile-B"));
         assertEquals("profile-A",envelope.optString("profile_id"));
         assertFalse("Creating a command must not imply AUTO consent",envelope.has("confirmation"));
+    }
+    @Test public void wrongFrameHistoryAndExpiredForecastAreNotDrawn()throws Exception{
+        JSONObject f=forecast();assertNotNull(PriceForecastPlot.visible(f));
+        assertNull(PriceForecastPlot.visible(new JSONObject(f.toString()).put("timeframe","M15")));
+        assertNull(PriceForecastPlot.visible(new JSONObject(f.toString()).put("history_only",true)));
+        assertNull(PriceForecastPlot.visible(new JSONObject(f.toString()).put("data_asof",T+3601)));
+        assertNull(PriceForecastPlot.visible(new JSONObject(f.toString()).put("chart_read_only",true)));
+        assertNull(PriceForecastPlot.visible(new JSONObject(f.toString()).put("show_price_forecast",false)));
+    }
+    @Test public void explicitProfileIsNotReplacedAndMissingProfileFailsClosed()throws Exception{
+        EventClient.init(context);EventClient.cache(new JSONObject().put("profile_id","B").put("capabilities",new JSONObject().put("profile_registry",true)));
+        assertEquals("A",EventClient.envelope(new JSONObject().put("profile_id","A")).getString("profile_id"));
+        EventClient.cache(new JSONObject().put("capabilities",new JSONObject().put("profile_registry",true)));
+        try{EventClient.envelope(new JSONObject());fail("Missing profile accepted");}catch(java.io.IOException expected){}
     }
 }

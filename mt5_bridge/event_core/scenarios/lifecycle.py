@@ -2,7 +2,7 @@
 from __future__ import annotations
 import copy
 import math
-from .structure import value, causal_points
+from .structure import value, causal_points, live_geometry_valid
 from ..model import TF_SECONDS, bar_close_time
 
 TERMINAL={'FAILED','EXPIRED','TARGET_REACHED'}
@@ -137,13 +137,29 @@ def _confirm(s,q,now,trigger,a):
     _event(s,'CONFIRMED',q,now,'Наблюдаемые события подтвердили вход; проверяется исполнение')
 
 
-def advance(s,q,prev,now,a,m1):
+def advance(s,q,prev,now,a,m1,*,validate_geometry=False):
     s['entry_ready']=False
     if s['status'] in TERMINAL:return
     if now>s['expires_at']:
         _event(s,'EXPIRED',q,now,'Срок исходной гипотезы истёк');return
     side=s['side'];outside=s['outside_side'];typ=s['type'];stage=s['stage']
     boundary=value(s['boundary'],q.time_msc/1000.0)
+    # NORMAL only. An executed campaign keeps its frozen stop/targets: retirement
+    # of old chart geometry must never silently alter a live trade or its adds.
+    if validate_geometry and not s.get('sent') and not s.get('addition'):
+        code=reason=''
+        if not live_geometry_valid(s['pattern'],q.time_msc/1000.0):
+            code='GEOMETRY_CROSSED'
+            reason='Границы фигуры пересеклись или стали некорректными; ищем новую структуру'
+        elif typ in ('DIRECT_BREAKOUT','STRUCTURE_REVERSAL','BREAKOUT_RETEST'):
+            required=s.get('micro_trigger',boundary) if stage=='RETEST_SEEN' else boundary
+            if side and (required-s['invalidation'])*side<=0:
+                code='PREPARATION_UNREACHABLE'
+                reason='Ожидаемый уровень требует нарушить отмену сценария; ищем новую структуру'
+        if code:
+            s['retirement_code']=code
+            _event(s,'EXPIRED',q,now,reason)
+            return
     if s['status']=='CONFIRMED':
         mark=q.bid if side>0 else q.ask;origin=s['mark_at_confirmation']
         s['mfe']=max(s['mfe'],(mark-origin)*side);s['mae']=min(s['mae'],(mark-origin)*side)

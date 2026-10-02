@@ -127,6 +127,14 @@ public final class EventClient {
         SharedPreferences p=prefs();long seq=p.getLong("ec_sequence",0)+1;
         if(!p.edit().putLong("ec_sequence",seq).commit())throw new IOException("Нельзя сохранить порядок команд");
         JSONObject b=body==null?new JSONObject():new JSONObject(body.toString());
+        synchronized(STATE_READ_LOCK){
+            JSONObject snapshot=state(),caps=snapshot.optJSONObject("capabilities");
+            if(caps!=null&&caps.optBoolean("profile_registry")&&!b.has("profile_id")){
+                String id=snapshot.optString("profile_id","");
+                if(id.isEmpty())throw new IOException("Профиль команды не определён; обновите состояние Bridge");
+                b.put("profile_id",id);
+            }
+        }
         return b.put("client_id",p.getString("ec_client_id","")).put("sequence",seq).put("command_id",UUID.randomUUID().toString());
     }
     public static JSONObject command(String cmd,JSONObject body) throws Exception{

@@ -224,7 +224,29 @@ class MT5Broker:
 
     def _history_rows(self,rows):
         fields=('ticket','entry','type','position_id','time_msc','volume','profit','commission','swap','fee','magic','symbol','comment','price')
-        values=[{k:(getattr(d,k,0) if k not in ('symbol','comment') else str(getattr(d,k,''))) for k in fields} for d in rows]
+        # Use the terminal's actual enumeration constants. An absent reason is
+        # unknown, never reason=0 (CLIENT), and never inferred from P/L/comment.
+        labels={
+            'CLIENT':'Заявка из настольного терминала', 'MOBILE':'Заявка из мобильного терминала',
+            'WEB':'Заявка из веб-терминала', 'EXPERT':'Заявка программы / советника',
+            'SL':'SL — Stop Loss', 'TP':'TP — Take Profit', 'SO':'Stop Out',
+            'ROLLOVER':'Rollover', 'VMARGIN':'Вариационная маржа',
+            'SPLIT':'Сплит инструмента', 'CORPORATE_ACTION':'Корпоративное действие'}
+        names={getattr(self.mt5,'DEAL_REASON_'+name):('DEAL_REASON_'+name,label)
+               for name,label in labels.items() if hasattr(self.mt5,'DEAL_REASON_'+name)}
+        values=[]
+        for d in rows:
+            value={k:(getattr(d,k,0) if k not in ('symbol','comment') else str(getattr(d,k,''))) for k in fields}
+            raw=getattr(d,'reason',None)
+            try:
+                reason=int(raw) if raw is not None and not isinstance(raw,bool) else None
+                if reason is not None and reason!=raw:reason=None
+            except (ValueError,TypeError,OverflowError):reason=None
+            code,label=names.get(reason,('UNKNOWN',
+                'Причина не получена от MT5' if reason is None else 'Неизвестный код MT5: '+str(reason)))
+            value.update(reason=reason,reason_code=code,reason_label=label,
+                         reason_source='MT5_DEAL_REASON' if reason is not None else 'MISSING')
+            values.append(value)
         for value in values:
             value['raw_time_msc']=int(value['time_msc'])
             value['time_msc']=value['raw_time_msc']-self.clock_offset_minutes*60000

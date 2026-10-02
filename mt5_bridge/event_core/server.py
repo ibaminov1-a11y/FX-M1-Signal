@@ -46,6 +46,18 @@ def create_app(engine,token):
     def forecast():
         return jsonify(engine.forecast_snapshot(request.args.get('tf',engine.config.timeframe)))
 
+    @app.get('/ec/price-forecasts')
+    def price_forecasts():
+        # Read-only: a GET neither recalculates forecasts nor executes the engine.
+        with engine.lock:
+            tf=request.args.get('tf',engine.config.timeframe)
+            view=engine.forecast_snapshot(tf)
+            price=view.get('forecast',{}).get('price_forecast',{})
+            scope=price.get('scope','')
+            return jsonify(ok=True,available=bool(scope),timeframe=tf,
+                snapshots=engine.store.price_forecasts(scope,request.args.get('limit',100,type=int)) if scope else [],
+                report=engine.store.price_forecast_report(scope) if scope else {},read_only=True)
+
     @app.get('/ec/history')
     def chart_history():
         with engine.lock:
@@ -110,11 +122,19 @@ def create_app(engine,token):
                 ins=[d for d in deals if d['entry']==0];outs=[d for d in deals if d['entry'] in (1,3)]
                 entry=sum(d.get('price',0)*d['volume'] for d in ins)/r['opened']
                 exit=sum(d.get('price',0)*d['volume'] for d in outs)/r['closed']
+                detail=r.get('broker_exit',{})
+                last_exit=max(outs,key=lambda d:(d['time_msc'],d['ticket'])) if outs else {}
+                raw_comment=last_exit.get('comment','')
+                # R5.7 already displays close_comment in detailed money/history.
+                # Preserve the unmodified broker comment alongside the readable evidence.
+                close_text='MT5: '+detail.get('text','Причина не получена от MT5')
+                if raw_comment:close_text+='; комментарий: '+raw_comment
                 trades.append(dict(position_id=r['position_id'],symbol=r['symbol'],side=r['side'],volume=r['volume'],
                     entry_time=int(r['open_time']),exit_time=int(r['time']),entry_price=entry,exit_price=exit,
                     duration_sec=int(r['time']-r['open_time']),net_pl=r['net'],
                     gross_pl=sum(d['profit'] for d in deals),commission=sum(d.get('commission',0)+d.get('fee',0) for d in deals),
-                    swap=sum(d.get('swap',0) for d in deals),close_comment=outs[-1].get('comment','') if outs else ''))
+                    swap=sum(d.get('swap',0) for d in deals),close_comment=close_text,
+                    broker_close_comment=raw_comment,broker_exit=detail))
             return jsonify(ok=True,trades=trades[offset:offset+limit],total=len(trades),summary=s['all'],today=s['today'],
                            history_time=s['history_time'],account_key=s['account'].get('key',''),timezone='UTC+5')
 

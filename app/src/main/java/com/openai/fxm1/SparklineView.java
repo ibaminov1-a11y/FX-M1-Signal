@@ -17,7 +17,7 @@ public class SparklineView extends View {
     public String historyFrame(){return historyFrame;}
     public String historyClock(){return historyClock;}
     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
-    private boolean customSelection=false,archive=false,panning=false;
+    private boolean customSelection=false,archive=false,panning=false,showPriceForecast=true;
     private float downX,downY,lastX;
     private ScaleGestureDetector scale;
     public SparklineView(Context c){super(c);init(c);}
@@ -41,8 +41,9 @@ public class SparklineView extends View {
     public void zoomHistory(double factor){viewport.zoom(factor);invalidate();}
     public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
     public void setArchive(boolean value){archive=value;updateDescription();invalidate();}
+    public void showPriceForecast(boolean value){showPriceForecast=value;updateDescription();invalidate();}
     public JSONArray scenarioChoices(){JSONArray r=forecast.optJSONArray("scenarios");return r==null?new JSONArray():r;}
-    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;updateDescription();invalidate();}
+    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;showPriceForecast=false;updateDescription();invalidate();}
     private static String key(JSONObject s,int i){return s.optString("scenario_id",s.optString("name",""+i));}
     public JSONObject displayedForecast(){
         try{
@@ -52,7 +53,7 @@ public class SparklineView extends View {
             }
             // A new structural identity does not inherit an unrelated old selection.
             if(customSelection&&out.length()==0&&all.length()>0){customSelection=false;for(int i=0;i<Math.min(2,all.length());i++)out.put(all.get(i));}
-            f.put("scenarios",out).put("history_only",!viewport.live()).put("archive",archive);
+            f.put("scenarios",out).put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",showPriceForecast);
             if(!viewport.live())f.put("scenarios",new JSONArray());
             return f;
         }catch(Exception e){return new JSONObject();}
@@ -102,7 +103,8 @@ public class SparklineView extends View {
             +(f.optBoolean("client_offline")?" КЭШ · НЕТ СВЯЗИ С BRIDGE. Телефон потерял связь; текущие данные неизвестны.":"");
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
         if(f.optBoolean("history_only"))return f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
-        StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время условно.");
+        StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время этапов условно.");
+        text.append(PriceForecastPlot.description(f));
         text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("client_offline")?" КЭШ: телефон потерял связь с Bridge. Последние полученные гипотезы; AUTO может продолжать работу самостоятельно.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");
         text.append(" Серый пунктир — подготовка до подтверждения входа. Цвет — условный путь к целям после подтверждения, не факт сделки. Цвет обозначает ветку, а не наклон отрезка. Старые ветки без этапов сохраняют исходный цвет.");
         if("TIED".equals(f.optString("selection_status")))text.append(" Равнозначные гипотезы — предпочтение не определено.");
