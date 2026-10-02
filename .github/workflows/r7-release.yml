@@ -2,7 +2,7 @@ name: R7 exact-source DEMO release
 on:
   push:
     branches: [feature/r4-compute-rebuild]
-    paths: ['tools/r7_release_part*', '.github/workflows/r7-release.yml']
+    paths: ['tools/r7_finalize.b64', '.github/workflows/r7-release.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,25 +24,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if test -f tools/r7_release_part0; then
-            python - <<'PY'
+          if test -f tools/r7_finalize.b64; then
+            python - <<'PYCODE'
           from pathlib import Path
           import base64, hashlib, subprocess, lzma
-          data=lzma.decompress(base64.b64decode(''.join(Path(f'tools/r7_release_part{i}').read_text(encoding='ascii') for i in range(4)),validate=True))
-          assert hashlib.sha256(data).hexdigest() == 'b9ec96b7fa82d9324871c9f90741022435849ab262b38dbc2e6c688f3a1258f5'
-          subprocess.run(['git','apply','--exclude=.github/workflows/*','--check','-'],input=data,check=True)
-          subprocess.run(['git','apply','--exclude=.github/workflows/*','-'],input=data,check=True)
-          extra=lzma.decompress(base64.b64decode(Path('tools/r7_review_delta.b64').read_text(),validate=True))
-          assert hashlib.sha256(extra).hexdigest() == '5be04e27b6de8336b759584850590b45f410d171beeb228bcb41707c3f53cec4'
-          subprocess.run(['git','apply','--check','-'],input=extra,check=True)
-          subprocess.run(['git','apply','-'],input=extra,check=True)
-          PY
-            git rm tools/r7_release_part0 tools/r7_release_part1 tools/r7_release_part2 tools/r7_release_part3
-            git rm tools/r7_review_delta.b64
+          data=lzma.decompress(base64.b64decode(Path('tools/r7_finalize.b64').read_text(),validate=True))
+          assert hashlib.sha256(data).hexdigest() == '7e91731da4f5ac586db732f7f3ffa369aa6f7d161300df5ed3db8906b7715623'
+          subprocess.run(['git','apply','--check','-'],input=data,check=True)
+          subprocess.run(['git','apply','-'],input=data,check=True)
+          PYCODE
+            git rm tools/r7_finalize.b64
             git add -A
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m '[R7] Native-frame NORMAL/SCALP, isolated profiles and unified program updater'
+            git commit -m '[R7] Verify and distribute the same Windows wrapper; handle spaced paths and existing Python'
             test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
             git push origin HEAD:"$GITHUB_REF"
           fi
