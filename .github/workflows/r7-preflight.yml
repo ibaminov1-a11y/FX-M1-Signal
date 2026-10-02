@@ -1,0 +1,49 @@
+name: R7 build prerequisites
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r7-preflight.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signing-and-sdk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Verify original signing identity and Android tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_HOME"
+          test -d "$ANDROID_HOME/platforms/android-35"
+          gradle --version
+          adb version
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/r7-cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/r7-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo 'R7 original certificate and Android SDK available on server'
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Native CMD and SQLite available
+        shell: cmd
+        run: |
+          ver
+          python -c "import sqlite3,sys;print(sys.version);print(sqlite3.sqlite_version)"
