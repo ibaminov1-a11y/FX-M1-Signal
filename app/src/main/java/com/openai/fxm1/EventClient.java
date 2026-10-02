@@ -20,8 +20,10 @@ public final class EventClient {
     private static long nextReadSequence,lastPublishedRead,lastAuxiliaryRead,lastResetRead;
     static final class ReadRequest {
         final String source,token;
+        String profileId;
+        boolean profileTransition=false;
         long sequence;
-        ReadRequest(String source,String token,long sequence){this.source=source;this.token=token;this.sequence=sequence;}
+        ReadRequest(String source,String token,long sequence){this.source=source;this.token=token;this.sequence=sequence;this.profileId=state().optString("profile_id","");}
     }
     private static final class ReadFailure extends IOException {
         final ReadRequest read;
@@ -41,13 +43,13 @@ public final class EventClient {
     private static boolean publishSnapshot(ReadRequest read,JSONObject snapshot) throws Exception {
         synchronized(STATE_READ_LOCK){
             requireActiveRead();requireSameSource(read);
-            if(read.sequence<lastPublishedRead)return false;
+            if(read.sequence<lastPublishedRead||(!read.profileTransition&&!read.profileId.equals(state().optString("profile_id",""))))return false;
             cacheSnapshot(snapshot);lastPublishedRead=read.sequence;return true;
         }
     }
     static void offlineIfCurrent(ReadRequest read,Exception error){
         synchronized(STATE_READ_LOCK){
-            if(read==null||read.sequence<lastPublishedRead||!read.source.equals(base())||!read.token.equals(prefs().getString("ec_token","")))return;
+            if(read==null||!read.profileId.equals(state().optString("profile_id",""))||read.sequence<lastPublishedRead||!read.source.equals(base())||!read.token.equals(prefs().getString("ec_token","")))return;
             offlineSnapshot(error);lastPublishedRead=read.sequence;
         }
     }
@@ -197,9 +199,25 @@ public final class EventClient {
     /** Called only from an actual selector change; a poll may never create this draft. */
     public static JSONObject rememberProfileSelection(String symbol,int timeframe,int mode,int risk) throws Exception {
         synchronized(STATE_READ_LOCK){
+            JSONObject saved=null,snapshot=state();
+            String current=snapshot.optJSONObject("config")==null?"":snapshot.optJSONObject("config").optString("symbol");
+            if(!symbol.replace("/","").equalsIgnoreCase(current.replace("/",""))){
+                JSONArray profiles=snapshot.optJSONArray("profiles");
+                if(profiles!=null)for(int i=0;i<profiles.length();i++){
+                    JSONObject item=profiles.optJSONObject(i),cfg=item==null?null:item.optJSONObject("config");
+                    if(cfg!=null&&symbol.replace("/","").equalsIgnoreCase(cfg.optString("symbol").replace("/","")))saved=cfg;
+                }
+            }
             SharedPreferences.Editor choice=prefs().edit().putString("selected_symbol",symbol)
                 .putInt("signal_mode_pos",mode).putInt("risk_pos",risk);
-            Timeframes.select(choice,timeframe);choice.apply();
+            Timeframes.select(choice,timeframe);
+            if(saved!=null){
+                Timeframes.project(choice,saved.optString("timeframe","M5"));
+                choice.putInt("signal_mode_pos","SCALP".equals(saved.optString("mode"))?1:0)
+                    .putInt("risk_pos",saved.optDouble("risk_pct",.25)>=1?2:saved.optDouble("risk_pct",.25)>=.5?1:0)
+                    .putString("ec_lot_cap",String.valueOf(saved.optDouble("lot_cap",.01)));
+            }
+            choice.apply();
             JSONObject desired=config();prefs().edit().putString("ec_profile_draft",desired.toString()).apply();return desired;
         }
     }
@@ -227,9 +245,11 @@ public final class EventClient {
         JSONObject a=current.optJSONObject("account");
         if(a!=null&&!desired.optString("account_mode").equals(a.optString("type")))throw new IOException("Выбран "+desired.optString("account_mode")+", фактический MT5: "+a.optString("type")+". Новые входы остановлены; переключите счёт MT5 отдельно.");
         JSONObject result=command("configure",new JSONObject().put("config",desired).put("allow_deferred",true)
-            .put("preserve_auto",explicit).put("accept_pending_profile",explicit));
+            .put("preserve_auto",explicit).put("accept_pending_profile",explicit).put("profile_id",read.profileId));
         requireSameSource(read);
-        ReadRequest confirmation=new ReadRequest(read.source,read.token,read.sequence);startRead(confirmation);
+        ReadRequest confirmation=new ReadRequest(read.source,read.token,read.sequence);
+        confirmation.profileId=result.optString("profile_id",read.profileId);confirmation.profileTransition=explicit;
+        startRead(confirmation);
         JSONObject refreshed=readHttp(confirmation,"/ec/state");
         if(PROTOCOL.equals(refreshed.optString("protocol")))finishProfileSelection(confirmation,explicit,desired,refreshed,result.optString("message"));
     }
@@ -264,7 +284,9 @@ public final class EventClient {
     }
     private static JSONObject readHttp(ReadRequest read,String path) throws Exception {
         requireActiveRead();requireSameSource(read);
-        JSONObject value=http("GET",read.source+path,null,read.source,read.token);
+        String scoped=path;
+        if(!read.profileId.isEmpty())scoped+=(path.contains("?")?"&":"?")+"profile_id="+java.net.URLEncoder.encode(read.profileId,"UTF-8");
+        JSONObject value=http("GET",read.source+scoped,null,read.source,read.token);
         requireActiveRead();requireSameSource(read);return value;
     }
     /** Foreground view refresh: deliberately excludes poll()'s pending command path. */
@@ -420,6 +442,7 @@ public final class EventClient {
             .append("\nЭтап: ").append(phaseName(phase)).append("\nПуть: ").append(pathName(path)).append("\n").append(why)
             .append("\n").append(forecastText)
             .append("\nРешение и исполнение: данные MT5");
+        if(s.has("account_risk_budget"))context.append("\nОбщий бюджет риска счёта: ").append(String.format(Locale.US,"%.2f USD",s.optDouble("account_risk_budget")));
         if(campaign!=null)context.append("RECONCILING".equals(s.optString("campaign_state"))?
             "\nПозиций MT5 нет; сверяем завершение кампании: ":"\nОткрытая кампания: ").append(campaignSide);
         JSONObject pendingProfile=s.optJSONObject("pending_config");

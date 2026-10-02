@@ -97,6 +97,7 @@ class Config:
     timeframe: str = 'M5'
     mode: str = 'NORMAL'
     engine_mode: str = 'LEGACY'
+    runtime_model: str = 'COMPAT'  # Explicitly R7 in the production profile registry.
     account_mode: str = 'DEMO'
     risk_pct: float = .25
     daily_loss_pct: float = 3.0
@@ -138,6 +139,8 @@ class Config:
     approved: bool = False
 
     def validate(self):
+        if self.runtime_model not in ('COMPAT','R7'):
+            raise Blocked('Неизвестная версия торговой логики')
         if self.mode not in PROFILES or self.timeframe not in TF_SECONDS:
             raise Blocked('Неизвестный режим или таймфрейм')
         if self.engine_mode not in ('LEGACY','COMPUTE_V1','SCENARIO_V2'):

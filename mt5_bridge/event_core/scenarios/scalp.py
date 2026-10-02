@@ -4,13 +4,18 @@ Thresholds are research assumptions in M1 ATR units, not fitted probabilities.
 Only fresh quotes can establish the advance, pullback and subsequent crossing.
 """
 import hashlib
-from ..model import PROFILES, bar_close_time, direction, pivots
+from ..model import PROFILES, bar_close_time, direction, pivots, atr, TF_SECONDS
 
 
 class ScalpMicro:
     ENGINE='SCALP_MICRO_V1'
 
-    def __init__(self):
+    def __init__(self,config=None):
+        self.adaptive=bool(config and config.runtime_model=='R7')
+        self.timeframe=config.timeframe if self.adaptive else 'M1'
+        self.mode=config.mode if self.adaptive else 'SCALP'
+        self.lifetime=max(240, min(86400, TF_SECONDS[self.timeframe]*(4 if self.mode=='SCALP' else 12))) if self.adaptive else 240
+        self.work=[]
         self.reset()
 
     def reset(self,reason='SCALP M1: ждём согласованный контекст M5/M15'):
@@ -19,12 +24,22 @@ class ScalpMicro:
         self.reason=reason;self.current=None;self.addition=False
 
     def status(self):
-        return dict(engine=self.ENGINE,timeframe='M1',stage=self.stage,side=self.side,
+        return dict(engine=self.ENGINE,timeframe=self.timeframe,mode=self.mode,stage=self.stage,side=self.side,
                     trigger=self.peak if self.stage in ('PULLBACK','MICRO','CONFIRMED') else None,
                     invalidation=self.current.get('invalidation') if self.current else None,
-                    reason=self.reason,addition=self.addition)
+                    reason=self.reason.replace('SCALP M1',self.mode+' '+self.timeframe),addition=self.addition)
 
     def _context(self,m5,m15,now):
+        if self.adaptive:
+            # Here m5 is the SELECTED working frame, not a hard-coded M5 series.
+            self.work=list(m5)
+            if len(m5)<24:return 0
+            age=now-bar_close_time(m5[-1].time,self.timeframe,m5[-1].clock_offset_seconds)
+            if not -1<=age<=TF_SECONDS[self.timeframe]*1.5:return 0
+            structural=direction(pivots(m5))
+            if structural:return structural
+            move=m5[-1].close-m5[-8].close
+            return 1 if move>.35*atr(m5) else -1 if move<-.35*atr(m5) else 0
         signs=[]
         for rows,tf in ((m5,'M5'),(m15,'M15')):
             if len(rows)<24:return 0
@@ -76,7 +91,7 @@ class ScalpMicro:
         if q.time_msc<=prev.time_msc:
             if q.time_msc<prev.time_msc:self.reset('SCALP M1: время котировки вернулось назад')
             return None
-        if q.time_msc-prev.time_msc>10000 or now-self.started>240:
+        if q.time_msc-prev.time_msc>10000 or now-self.started>self.lifetime:
             self._begin(q,now,key,side,campaign['last_entry'] if campaign else q.bid,addition)
             return None
         self.previous=q
@@ -84,7 +99,7 @@ class ScalpMicro:
         if (q.bid-self.origin)*side<=0:
             self._begin(q,now,key,side,campaign['last_entry'] if campaign else q.bid,addition)
             return None
-        p=PROFILES['SCALP']
+        p=PROFILES[self.mode]
         if self.stage=='PROGRESS':
             if (q.bid-self.peak)*side>0:self.peak=q.bid;self.peak_msc=q.time_msc
             if (self.peak-self.origin)*side>=p.add_step_atr*a and (self.peak-q.bid)*side>=p.pullback_atr*a:
@@ -115,6 +130,13 @@ class ScalpMicro:
 
     def _scenario(self,symbol,q,now,a,source):
         side=self.side;stop=self.trough-side*.10*a
+        if self.adaptive:
+            # Stop beyond observed pullback, with an explicit spread/ATR floor.
+            pad=max(.10*a,2*q.spread)
+            stop=self.trough-side*pad
+            if self.mode=='NORMAL' and self.work:
+                structural=min(b.low for b in self.work[-3:])-.05*a if side>0 else max(b.high for b in self.work[-3:])+.05*a
+                stop=min(stop,structural) if side>0 else max(stop,structural)
         boundary=dict(price=self.peak,t0=self.peak_msc/1000,slope=0.)
         # Fixed measurable extension of the observed local impulse, not a price/time forecast.
         target=self.peak+side*max(abs(self.peak-self.origin),2*abs(self.peak-stop))
@@ -124,16 +146,16 @@ class ScalpMicro:
             targets=[(x,k) for x,k in targets if x is not None and (x-(q.ask if side>0 else q.bid))*side>.10*a]
             target,target_kind=targets[0] if targets else (source['target'],source.get('target_source'))
         identity=hashlib.sha256(repr((self.key,self.started,self.peak_msc)).encode()).hexdigest()[:24]
-        ident='SCALP_M1|'+identity
+        ident=(self.mode+'_'+self.timeframe if self.adaptive else 'SCALP_M1')+'|'+identity
         upper=max(self.peak,self.trough);lower=min(self.peak,self.trough)
-        pattern=dict(pattern_id=ident,family='MICRO_STRUCTURE',variant='PULLBACK',symbol=symbol,timeframe='M1',
+        pattern=dict(pattern_id=ident,family='MICRO_STRUCTURE',variant='PULLBACK',symbol=symbol,timeframe=self.timeframe,
                      anchors=[],upper=dict(boundary,price=upper),lower=dict(boundary,price=lower),
                      started_at=self.started,formed_at=self.started,available_at=self.started,quality=1.,atr=a,
                      measurements=dict(width=upper-lower,duration=now-self.started,pole=None))
         return dict(scenario_id=ident,scenario_version=1,parent_scenario_id=source.get('scenario_id') if source else None,
-            type='PULLBACK_RESUME',family='MICRO_STRUCTURE',title='SCALP M1: локальный откат и микропробой',
+            type='PULLBACK_RESUME',family='MICRO_STRUCTURE',title=self.mode+' '+self.timeframe+': локальный откат и микропробой',
             side=side,outside_side=side,status='WATCHING',stage=self.stage,created_at=self.started,updated_at=now,
-            expires_at=min(self.started+240,source['expires_at']) if source else self.started+240,
+            expires_at=min(self.started+self.lifetime,source['expires_at']) if source else self.started+self.lifetime,
             activation=self.peak,initial_activation=self.peak,trigger=self.peak,boundary=boundary,
             invalidation=stop,target1=target,target2=None,target=target,target1_source=target_kind,
             target2_source=None,target_source=target_kind,target1_reached=False,pattern=pattern,

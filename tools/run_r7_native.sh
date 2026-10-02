@@ -15,11 +15,11 @@ gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest -Pandroid.testIns
 r7=$?
 set -e
 cp -r app/build/outputs/androidTest-results evidence/r7-focused-results
-adb pull /sdcard/Android/data/com.openai.fxm1.ec1/files/r7-wait-price-forecast.png evidence/ui/ || true
+adb pull /sdcard/Download/ec1-qa/r7-wait-price-forecast.png evidence/ui/
 if [ "$r7" -ne 0 ]; then cat evidence/r7-native.log; adb logcat -d > evidence/android-logcat.txt; exit "$r7"; fi
 rm -rf app/build/outputs/androidTest-results
 set +e
-gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R7ReleaseUiTest,com.openai.fxm1.R57ScalpUiTest,com.openai.fxm1.R56ConcurrencyUiTest,com.openai.fxm1.R56TimeframesUiTest,com.openai.fxm1.R56ChartSemanticsTest,com.openai.fxm1.R55ControlsUiTest,com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest > evidence/android-runtime.log 2>&1
+gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R7ProfileReadUiTest,com.openai.fxm1.R7ReleaseUiTest,com.openai.fxm1.R57ScalpUiTest,com.openai.fxm1.R56ConcurrencyUiTest,com.openai.fxm1.R56TimeframesUiTest,com.openai.fxm1.R56ChartSemanticsTest,com.openai.fxm1.R55ControlsUiTest,com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R54ChartUiTest > evidence/android-runtime.log 2>&1
 rc=$?
 set -e
 adb logcat -d > evidence/android-logcat.txt

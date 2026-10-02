@@ -18,6 +18,9 @@ def create_app(engine,token):
     def auth():
         if not hmac.compare_digest(request.headers.get('Authorization',''),'Bearer '+token):
             return jsonify(ok=False,message='Введите ключ EventCore из окна Bridge. Старый Twelve Data key не подходит.'),401
+        if hasattr(engine,'select_request'):
+            body=request.get_json(silent=True) if request.method!='GET' else {}
+            engine.select_request(request.args.get('profile_id') or (body or {}).get('profile_id'))
         if (engine.config.engine_mode=='SCENARIO_V2' and request.headers.get('X-FXM1-Client')!='R51'
                 and (request.path=='/ec/state' or request.path in ('/ec/command/configure','/ec/command/enable','/ec/command/play'))):
             return jsonify(ok=False,message='Для Scenario V2 обновите APK и Bridge до R5.1. Аварийное закрытие и пауза доступны.'),426
@@ -206,13 +209,15 @@ def main():
     token=tokenfile.read_text(encoding='utf-8').strip()
     if len(token)<32:raise SystemExit('Ключ Bridge повреждён. Не удаляйте базу состояния.')
     policy=load_clock_policy(directory)
-    store=Store(directory/'campaign.sqlite3');engine=Engine(MT5Broker(mt5,args.terminal,**policy),store)
+    from .portfolio import Portfolio
+    store=Store(directory/'campaign.sqlite3');engine=Portfolio(MT5Broker(mt5,args.terminal,**policy),store)
     def worker():
         while True:
             try:engine.step()
             except Exception:
                 with engine.lock:
-                    engine.auto=False;engine.paused=True;engine.recovery=True;engine.save()
+                    for runtime in engine.engines.values():
+                        runtime.auto=False;runtime.paused=True;runtime.recovery=True;runtime.save()
                 logging.exception('Runtime error; new entries inhibited')
             time.sleep(.5)
     threading.Thread(target=worker,name='event-core',daemon=True).start()

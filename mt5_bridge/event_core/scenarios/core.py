@@ -26,7 +26,7 @@ class ScenarioCore:
         self.previous_quote=None;self.frame=None;self.snapshots={};self.archive_key=None
         self.pending_snapshots=[];self.events=[];self.last_forecast={}
         self.continuation=Continuation()
-        self.micro=ScalpMicro()
+        self.micro=ScalpMicro(config)
         self.price_forecaster=PriceForecaster()
         # Observation evidence is not an executable order after process restart.
         for s in self.scenarios.values():
@@ -109,8 +109,9 @@ class ScenarioCore:
                     status=s['status'],stage=s['stage'],reason=s['reason'],time=now,retirement_code=s.get('retirement_code','')))
         self.previous_quote=q
         source=self.scenarios.get(campaign.get('scenario_id')) if campaign else None
-        fast=self.config.mode=='SCALP' and self.config.timeframe=='M1'
-        addition=(self.micro.observe(self.config.symbol,context or [],m15,q,now,a,campaign,source,campaign_side,self.config.dynamic_adds)
+        r7=self.config.runtime_model=='R7'
+        fast=r7 or (self.config.mode=='SCALP' and self.config.timeframe=='M1')
+        addition=(self.micro.observe(self.config.symbol,bars if r7 else context or [],context if r7 else m15,q,now,a,campaign,source,campaign_side,self.config.dynamic_adds)
                   if fast else self.continuation.observe(campaign,source,q,now,a,self.config.mode))
         if addition:
             self.scenarios[addition['scenario_id']]=addition;self.known.add(addition['scenario_id'])
@@ -184,7 +185,7 @@ class ScenarioCore:
         # keep that order and leave both SCALP paths and execution guards intact.
         execution_pool=active if self.config.mode=='NORMAL' else ranked
         ready=[s for s in execution_pool if s['entry_ready'] and s['event_id'] not in self.consumed]
-        if fast:
+        if fast and (not r7 or self.config.mode=='SCALP'):
             ready=[s for s in self.scenarios.values() if s.get('micro') and s['entry_ready']
                    and s['event_id'] not in self.consumed and preview is s and self.micro.stage=='CONFIRMED']
         for s in ready:
@@ -200,5 +201,5 @@ class ScenarioCore:
                 structure=swing_labels(bars),forecast=forecast,entry_class='CONFIRMED')
         reason=(('Равнозначные гипотезы; ' if tied else '')+routes[0]['title']+'; '+routes[0]['next_event']) if routes else forecast['reason']
         if campaign:reason=self.continuation.reason+'; '+reason
-        if fast:reason=self.micro.reason
+        if fast:reason=self.micro.reason.replace('SCALP M1',self.config.mode+' '+self.config.timeframe)
         return Decision(reason=reason,atr=a,path='SCENARIO_V2',structure=swing_labels(bars),forecast=forecast)

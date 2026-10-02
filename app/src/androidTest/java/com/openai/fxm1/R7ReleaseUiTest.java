@@ -56,6 +56,7 @@ public class R7ReleaseUiTest {
             assertTrue("Future path must actually be drawn on Android Canvas",blue>30);
             java.io.File output=new java.io.File(context.getExternalFilesDir(null),"r7-wait-price-forecast.png");
             try(java.io.FileOutputStream stream=new java.io.FileOutputStream(output)){image[0].compress(Bitmap.CompressFormat.PNG,100,stream);}
+            androidx.test.uiautomator.UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).executeShellCommand("mkdir -p /sdcard/Download/ec1-qa; cp "+output.getAbsolutePath()+" /sdcard/Download/ec1-qa/r7-wait-price-forecast.png");
         }finally{image[0].recycle();}
     }
     @Test public void commandEnvelopeCapturesProfileBeforeViewChanges()throws Exception{

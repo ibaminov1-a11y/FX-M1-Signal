@@ -105,7 +105,7 @@ class Engine:
             extra['context_tf']=CONTEXT[self.config.timeframe]
             extra['campaign']=self.campaign if (self.auto and not self.paused and not self.emergency
                 and not self.recovery and not self.exit_pending and not self.pending_config
-                and (self.config.dynamic_adds or (self.config.mode=='SCALP' and self.config.timeframe=='M1'))
+                and (self.config.dynamic_adds or self.config.runtime_model=='R7' or (self.config.mode=='SCALP' and self.config.timeframe=='M1'))
                 and self._owned()) else None
         return self.compute.evaluate(self.bars,self.m1,self.m15,self.h1,self.live_bar,self.quote,now,
             self.campaign['side'] if self.campaign else 0,**extra)
@@ -849,6 +849,7 @@ class Engine:
                 raise Blocked('Исполнимая цена уже за ближайшей целью сценария; вход отменён')
         exec_cfg=self._execution_config()
         p=plan_order(self.broker,exec_cfg,account,self.info,q,d,self._owned(),self.campaign,now)
+        if hasattr(self.broker,'preflight'):self.broker.preflight(p,exec_cfg)
         # Broker preflight calls may block. Recheck wall-clock freshness/expiry,
         # not merely the timestamp captured at the beginning of this engine step.
         send_now=self.clock()
