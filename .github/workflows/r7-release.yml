@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: r7-final-${{ github.ref }}
+  group: r7-final-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 jobs:
   source:
