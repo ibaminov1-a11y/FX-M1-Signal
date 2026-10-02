@@ -1,0 +1,172 @@
+name: R7 exact-source DEMO release
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['tools/r7_release_part*', '.github/workflows/r7-release.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: r7-final-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      sha: ${{ steps.pin.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f tools/r7_release_part0; then
+            python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, subprocess, lzma
+          data=lzma.decompress(base64.b64decode(''.join(Path(f'tools/r7_release_part{i}').read_text(encoding='ascii') for i in range(4)),validate=True))
+          assert hashlib.sha256(data).hexdigest() == 'b9ec96b7fa82d9324871c9f90741022435849ab262b38dbc2e6c688f3a1258f5'
+          subprocess.run(['git','apply','--check','-'],input=data,check=True)
+          subprocess.run(['git','apply','-'],input=data,check=True)
+          PY
+            git rm tools/r7_release_part0 tools/r7_release_part1 tools/r7_release_part2 tools/r7_release_part3
+            git add -A
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m '[R7] Native-frame NORMAL/SCALP, isolated profiles and unified program updater'
+            test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+            git push origin HEAD:"$GITHUB_REF"
+          fi
+          test -z "$(git status --porcelain)"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  android:
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire Python regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+          python -m compileall -q mt5_bridge/event_core tests/event_core tools/r7_updater.py tools/package_r7.py
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Check original signing certificate
+        run: |
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/r7-cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/r7-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - name: Full real Android API35 regression and screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_r7_native.sh
+      - name: Capture exact tested binary
+        run: |
+          git diff --exit-code HEAD
+          mkdir -p artifacts/android
+          cp -r evidence artifacts/android/
+          cp app/build/outputs/apk/debug/app-debug.apk artifacts/android/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R7-VERIFY-ANDROID-${{ needs.source.outputs.sha }}
+          path: artifacts/
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: R7-FAILED-ANDROID-${{ needs.source.outputs.sha }}
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/
+  windows:
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Native Windows program update, locks, WAL, rollback and installed launcher
+        run: python tools/windows_r7_gate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R7-VERIFY-WINDOWS-${{ needs.source.outputs.sha }}
+          path: artifacts/
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: R7-FAILED-WINDOWS-${{ needs.source.outputs.sha }}
+          path: evidence/
+  package:
+    needs: [source, android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: R7-VERIFY-*
+          merge-multiple: true
+          path: artifacts
+      - name: Build one complete verified DEMO package
+        run: |
+          mkdir -p evidence app/build/outputs/apk/debug
+          cp -r artifacts/android/evidence/. evidence/
+          cp -r artifacts/windows/evidence/. evidence/
+          cp artifacts/android/app-debug.apk app/build/outputs/apk/debug/
+          python tools/package_r7.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-R7-FULL-${{ needs.source.outputs.sha }}
+          path: |
+            evidence/FXM1_R7_FULL.zip
+            evidence/R7_PACKAGE_SHA256.txt
+          if-no-files-found: error
