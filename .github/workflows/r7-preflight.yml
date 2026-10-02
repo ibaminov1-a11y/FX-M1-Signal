@@ -31,7 +31,7 @@ jobs:
           test -d "$ANDROID_HOME"
           test -d "$ANDROID_HOME/platforms/android-35"
           gradle --version
-          adb version
+          "$ANDROID_HOME/platform-tools/adb" version
           keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/r7-cert.der"
           test "$(sha256sum "$RUNNER_TEMP/r7-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
           echo 'R7 original certificate and Android SDK available on server'
