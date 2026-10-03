@@ -107,13 +107,13 @@ public class R7ReleaseUiTest {
             assertFalse("Empty hypothesis section must not be rendered: "+levels,levels.contains("ТЕКУЩИЕ ГИПОТЕЗЫ"));
         }
     }
-    @Test public void signalDetailsUseContentHeightInsteadOfReservedBlankLines()throws Exception{
+    @Test public void signalDetailsUseCompactStableHeights()throws Exception{
         final View[] root={null};
         InstrumentationRegistry.getInstrumentation().runOnMainSync(()->root[0]=LayoutInflater.from(context).inflate(R.layout.activity_main,null,false));
         TextView levels=root[0].findViewById(R.id.levelsText),why=root[0].findViewById(R.id.whyWaitText),ctx=root[0].findViewById(R.id.contextText);
-        assertTrue("levelsText still reserves blank lines",levels.getMinLines()<=1);
-        assertTrue("levelsText must allow concise detail expansion",levels.getMaxLines()>=18);
-        assertTrue("whyWaitText still reserves blank lines",why.getMinLines()<=1);
-        assertTrue("contextText still reserves blank lines",ctx.getMinLines()<=1);
+        assertEquals("Entry plan must be compact but stable",5,levels.getMinLines());
+        assertEquals(5,levels.getMaxLines());
+        assertEquals(5,why.getMinLines());assertEquals(5,why.getMaxLines());
+        assertEquals(3,ctx.getMinLines());assertEquals(3,ctx.getMaxLines());
     }
 }
