@@ -36,7 +36,7 @@ for p in Path('app/build/outputs/androidTest-results').rglob('*.xml'):
 assert cases, 'No executed Android tests'
 assert all(t.find('failure') is None and t.find('error') is None and t.find('skipped') is None for t in cases)
 r7=[t for t in cases if t.attrib.get('classname','').endswith('R7ReleaseUiTest')]
-assert len(r7)==4, len(r7)
+assert len(r7)==6, len(r7)
 Path('evidence/ANDROID_RESULT.json').write_text(json.dumps({'tests':len(cases),'r7_tests':len(r7),'failures':0},indent=2))
 print('R7_NATIVE_GREEN',len(cases),len(r7))
 PY
