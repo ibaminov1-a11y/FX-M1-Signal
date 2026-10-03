@@ -1,4 +1,4 @@
-name: R7 exact-source DEMO release
+name: R7.1 exact-source DEMO release
 on:
   push:
     branches: [feature/r4-compute-rebuild]
@@ -165,8 +165,8 @@ jobs:
           python tools/package_r7.py
       - uses: actions/upload-artifact@v4
         with:
-          name: FXM1-R7-FULL-${{ needs.source.outputs.sha }}
+          name: FXM1-R7.1-FULL-${{ needs.source.outputs.sha }}
           path: |
-            evidence/FXM1_R7_FULL.zip
+            evidence/FXM1_R7_1_FULL.zip
             evidence/R7_PACKAGE_SHA256.txt
           if-no-files-found: error
