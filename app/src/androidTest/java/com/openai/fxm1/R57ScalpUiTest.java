@@ -87,7 +87,7 @@ public class R57ScalpUiTest {
         String text=ScenarioUi.levels(state("MICRO"));
         assertTrue("Execution requirement must precede observer hypotheses: "+text,text.startsWith("БЫСТРЫЙ SCALP · ТОРГОВЛЯ M1"));
         for(String required:new String[]{"micro-trigger","BUY","1.10123","1.10054"})assertTrue(text,text.contains(required));
-        assertTrue(text,text.indexOf("micro-trigger")<text.indexOf("ГИПОТЕЗЫ"));
+        assertFalse("Empty observer hypotheses must not reserve a section: "+text,text.contains("ГИПОТЕЗЫ"));
     }
     @Test public void executionRequirementDoesNotLeakIntoNormalOtherFramesOrPendingProfile()throws Exception{
         for(String[] profile:new String[][]{{"NORMAL","M1"},{"NORMAL","M5"},{"SCALP","M5"}}){
