@@ -21,7 +21,9 @@ class R72SimpleRuntimeContractTests(unittest.TestCase):
 
     def test_release_package_does_not_ship_runtime_vendor_tree(self):
         src=(ROOT/'tools/package_r7.py').read_text(encoding='utf-8')
-        self.assertNotIn("bridge/'_vendor'",src)
+        self.assertNotIn("vendor=bridge/'_vendor'",src)
+        self.assertNotIn("dst=vendor/",src)
+        self.assertIn("runtime_vendor=False",src)
         self.assertIn("package/'Dependencies'",src)
 
 if __name__=='__main__':unittest.main()
