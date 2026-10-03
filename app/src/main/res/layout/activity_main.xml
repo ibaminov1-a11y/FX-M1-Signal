@@ -91,13 +91,13 @@
 
             <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="11dp" android:layout_marginBottom="11dp" android:background="#342B51" />
 
-            <com.openai.fxm1.StableLiveTextView android:id="@+id/levelsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Entry: —&#10;SL: —&#10;TP1: —&#10;TP2: —" android:textColor="#F7F4FF" android:textSize="15sp" android:lineSpacingExtra="4dp" android:lines="8" android:ellipsize="end" />
+            <com.openai.fxm1.StableLiveTextView android:id="@+id/levelsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ПЛАН ВХОДА: ожидаем анализ" android:textColor="#F7F4FF" android:textSize="15sp" android:lineSpacingExtra="4dp" android:maxLines="18" android:ellipsize="end" />
 
-            <com.openai.fxm1.StableLiveTextView android:id="@+id/contextText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="11dp" android:text="Контекст появится после анализа." android:textColor="#B8B2CB" android:textSize="12sp" android:lineSpacingExtra="2dp" android:lines="3" android:ellipsize="end" />
+            <com.openai.fxm1.StableLiveTextView android:id="@+id/contextText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="11dp" android:text="Контекст появится после анализа." android:textColor="#B8B2CB" android:textSize="12sp" android:lineSpacingExtra="2dp" android:maxLines="8" android:ellipsize="end" />
 
-            <com.openai.fxm1.StableLiveTextView android:id="@+id/whyWaitText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="#181329" android:padding="9dp" android:text="ПОЧЕМУ WAIT: анализ ещё не выполнен" android:textColor="#FFB35C" android:textSize="11sp" android:lineSpacingExtra="2dp" android:lines="5" android:ellipsize="end" />
+            <com.openai.fxm1.StableLiveTextView android:id="@+id/whyWaitText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="#181329" android:padding="9dp" android:text="ПОЧЕМУ WAIT: анализ ещё не выполнен" android:textColor="#FFB35C" android:textSize="11sp" android:lineSpacingExtra="2dp" android:maxLines="12" android:ellipsize="end" />
 
-            <com.openai.fxm1.StableLiveTextView android:id="@+id/componentScoresText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:background="#17142A" android:padding="9dp" android:text="КОМПОНЕНТЫ КАЧЕСТВА: —" android:textColor="#B47AFF" android:textSize="11sp" android:lineSpacingExtra="2dp" android:lines="4" android:ellipsize="end" />
+            <com.openai.fxm1.StableLiveTextView android:id="@+id/componentScoresText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:background="#17142A" android:padding="9dp" android:text="ПРАВИЛА СЦЕНАРИЯ: —" android:textColor="#B47AFF" android:textSize="11sp" android:lineSpacingExtra="2dp" android:maxLines="10" android:ellipsize="end" />
             <Button android:id="@+id/liveDetailsButton" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:text="ПОЛНЫЕ ДАННЫЕ СИГНАЛА" android:textSize="12sp" />
         </LinearLayout>
 
