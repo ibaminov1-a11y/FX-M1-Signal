@@ -8,17 +8,15 @@ class LiveLayoutResourceTests(unittest.TestCase):
         root=Path(__file__).resolve().parents[2]
         tree=ET.parse(root/'app/src/main/res/layout/activity_main.xml')
         a='{http://schemas.android.com/apk/res/android}'
-        dynamic={'levelsText','contextText','whyWaitText','componentScoresText'}
-        fixed={'statusText','marketStatusText','marketSessionText','confidenceText','signalAgeText',
-            'autoStatusText','accountText','positionsText','priceCompareText','smartStatusText','statsText',
-            'signalHistoryText','tradeHistoryText','serverStatusText','journalText'}
+        fields={'statusText','marketStatusText','marketSessionText','confidenceText','signalAgeText',
+            'levelsText','contextText','whyWaitText','componentScoresText','autoStatusText','accountText',
+            'positionsText','priceCompareText','smartStatusText','statsText','signalHistoryText',
+            'tradeHistoryText','serverStatusText','journalText'}
         found={el.get(a+'id','').split('/')[-1]:el for el in tree.iter()}
-        for name in sorted(fixed):
+        for name in sorted(fields):
             with self.subTest(field=name):
-                el=found[name];self.assertEqual(el.tag,'com.openai.fxm1.StableLiveTextView')
-                self.assertGreater(int(el.get(a+'lines','0')),0);self.assertEqual(el.get(a+'ellipsize'),'end')
-        for name in sorted(dynamic):
-            with self.subTest(dynamic_field=name):
-                el=found[name];self.assertEqual(el.tag,'com.openai.fxm1.StableLiveTextView')
-                self.assertIsNone(el.get(a+'lines'));self.assertGreater(int(el.get(a+'maxLines','0')),0)
+                el=found[name]
+                self.assertEqual(el.tag,'com.openai.fxm1.StableLiveTextView')
+                self.assertGreater(int(el.get(a+'lines','0')),0)
                 self.assertEqual(el.get(a+'ellipsize'),'end')
+        self.assertEqual(found['levelsText'].get(a+'lines'),'5')
