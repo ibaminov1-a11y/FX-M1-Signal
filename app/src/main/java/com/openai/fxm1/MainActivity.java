@@ -1956,7 +1956,7 @@ public class MainActivity extends Activity {
         String bid=q==null?"—":fmt(q.optDouble("bid",Double.NaN));String ask=q==null?"—":fmt(q.optDouble("ask",Double.NaN));
         priceCompareText.setText("MT5 Bid/Ask: "+bid+" / "+ask+"\nИсточник анализа и исполнения: MT5"+
             "\nБаза расчёта риска (отдельно от баланса): "+(rs==null?"—":money(rs.optDouble("base",Double.NaN),"USD"))+
-            "\nПлановый риск всей кампании: "+(rs==null?"—":money(rs.optDouble("campaign_budget",Double.NaN),"USD")));
+            "\nЛимит риска кампании при текущей настройке: "+(rs==null?"—":money(rs.optDouble("campaign_budget",Double.NaN),"USD")));
     }
 
     private Analysis analyzeAdaptive(String symbol,
