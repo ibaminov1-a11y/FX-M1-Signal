@@ -8,8 +8,8 @@ android {
         applicationId "com.openai.fxm1.ec1"
         minSdk 26
         targetSdk 35
-        versionCode 929
-        versionName "10.9-EC1-R7.1"
+        versionCode 930
+        versionName "10.9-EC1-R7.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
