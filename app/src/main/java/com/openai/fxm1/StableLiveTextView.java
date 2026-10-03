@@ -19,8 +19,15 @@ public final class StableLiveTextView extends TextView {
     public StableLiveTextView(Context context, AttributeSet attrs) { this(context, attrs, android.R.attr.textViewStyle); }
     public StableLiveTextView(Context context, AttributeSet attrs, int style) {
         super(context, attrs, style);
+        boolean fixedLines = attrs != null && attrs.getAttributeValue(
+            "http://schemas.android.com/apk/res/android", "lines") != null;
         int lines = getMaxLines();
-        setLines(lines > 0 && lines < 100 ? lines : 3);
+        if (fixedLines) {
+            setLines(lines > 0 && lines < 100 ? lines : 3);
+        } else {
+            if (lines <= 0 || lines >= 100) setMaxLines(3);
+            setMinLines(1);
+        }
         setEllipsize(TextUtils.TruncateAt.END);
         setTooltipText("Нажмите, чтобы прочитать полный текст");
         setOnClickListener(v -> showSnapshot(getContext(), "ПОДРОБНОСТИ · СНИМОК", getText()));
