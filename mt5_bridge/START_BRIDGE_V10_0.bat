@@ -6,13 +6,12 @@ set "PY="
 if exist ".venv\Scripts\python.exe" set "PY=.venv\Scripts\python.exe"
 if not defined PY if exist "..\mt5_bridge\.venv\Scripts\python.exe" set "PY=..\mt5_bridge\.venv\Scripts\python.exe"
 if not defined PY set "PY=python"
-"%PY%" -c "import MetaTrader5, bridge_v10_0; print('BRIDGE DEPS OK')" >nul 2>nul
+echo Checking Bridge Python environment...
+"%PY%" -c "import flask,MetaTrader5,colorama,event_core; assert hasattr(colorama,'AnsiToWin32'); assert hasattr(event_core,'VERSION'); print('BRIDGE DEPS OK',event_core.BUILD)"
 if errorlevel 1 (
-  echo Required Python packages are missing for this interpreter.
-  echo Run this ONCE in this folder, using the same Python:
-  echo "%PY%" -m pip install -r requirements_event.txt
-  echo If packages are already installed, run this diagnostic:
-  echo "%PY%" -c "import flask, MetaTrader5; print('FLASK/MT5 OK')"
+  echo.
+  echo Bridge environment check failed. The real Python error is shown above.
+  echo Run INSTALL_R7_2.cmd from the full R7.2 package to restore program files and Colorama.
   pause
   exit /b 1
 )
