@@ -39,13 +39,14 @@ class InstallerTests(unittest.TestCase):
  def test_failure_mid_update_restores_program(self):
   from unittest.mock import patch
   import r7_updater
-  real=r7_updater.os.replace;count=[0]
+  real=r7_updater._copy_item;count=[0]
+  source=str(self.src.resolve())
   def fail_once(a,b):
-   if 'staged' in str(a):
+   if str(Path(a).resolve()).startswith(source):
     count[0]+=1
     if count[0]==2:raise OSError('injected disk failure')
    return real(a,b)
-  with patch.object(r7_updater.os,'replace',side_effect=fail_once):
+  with patch.object(r7_updater,'_copy_item',side_effect=fail_once):
    with self.assertRaises(OSError):apply_update(self.src,self.dst,self.manifest)
   self.assertEqual((self.dst/'event_core/server.py').read_text(),'# old server\n')
  def test_database_probe_closes_handles_and_leaves_wal_unchanged(self):
