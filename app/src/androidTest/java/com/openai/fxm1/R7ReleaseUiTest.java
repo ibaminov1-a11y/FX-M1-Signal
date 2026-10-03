@@ -3,6 +3,9 @@ package com.openai.fxm1;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.TextView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.json.JSONArray;
@@ -40,6 +43,15 @@ public class R7ReleaseUiTest {
                 .put("low",price-.00004).put("high",price+.00005));
         }
         return bars;
+    }
+    static JSONObject entryState(String mode,String tf,String stage)throws Exception{
+        JSONObject setup=new JSONObject().put("engine","SCALP_MICRO_V1").put("mode",mode).put("timeframe",tf)
+            .put("stage",stage).put("side",stage.equals("WAIT_CONTEXT")?0:1).put("trigger",stage.equals("WAIT_CONTEXT")?JSONObject.NULL:1.10123)
+            .put("invalidation",1.09987).put("reason",mode+" "+tf+": ждём новое движение и локальный откат").put("addition",false);
+        JSONObject f=new JSONObject().put("map_version",3).put("runtime_model","R7").put("available",true).put("side",0)
+            .put("timeframe",tf).put("data_asof",T+1).put("selection_status","NONE").put("scenarios",new JSONArray()).put("execution_setup",setup);
+        return new JSONObject().put("config",new JSONObject().put("symbol","EUR/USD").put("timeframe",tf).put("mode",mode).put("lot_cap",.01).put("volume_mode","FIXED"))
+            .put("forecast",f).put("quote_fresh",true).put("positions",new JSONArray());
     }
     @Test public void priceForecastIsVisibleWhileEntryWaits()throws Exception{
         final JSONObject f=forecast();final JSONArray history=bars();final String[] description={null};final Bitmap[] image={null};
@@ -82,5 +94,26 @@ public class R7ReleaseUiTest {
         assertEquals("A",EventClient.envelope(new JSONObject().put("profile_id","A")).getString("profile_id"));
         EventClient.cache(new JSONObject().put("capabilities",new JSONObject().put("profile_registry",true)));
         try{EventClient.envelope(new JSONObject());fail("Missing profile accepted");}catch(java.io.IOException expected){}
+    }
+    @Test public void entryPlanIsVisibleForNormalAndScalpAcrossWorkingFrames()throws Exception{
+        String[] frames={"M1","M5","M15","M30","H1","H4","D1","W1","MN1"};
+        for(String mode:new String[]{"NORMAL","SCALP"})for(String tf:frames){
+            JSONObject state=entryState(mode,tf,"WAIT_CONTEXT"),f=state.getJSONObject("forecast");
+            String requirement=ScenarioUi.executionRequirement(state),headline=ScenarioUi.headline(f),levels=ScenarioUi.levels(state);
+            assertFalse(mode+" "+tf+" entry plan missing",requirement.isEmpty());
+            assertTrue(requirement,requirement.contains(mode)&&requirement.contains(tf)&&requirement.contains("Уровень подтверждения: ещё не сформирован"));
+            assertFalse(headline,headline.contains("нет ясной структуры"));
+            assertTrue(headline,headline.contains(mode)&&headline.contains(tf));
+            assertFalse("Empty hypothesis section must not be rendered: "+levels,levels.contains("ТЕКУЩИЕ ГИПОТЕЗЫ"));
+        }
+    }
+    @Test public void signalDetailsUseContentHeightInsteadOfReservedBlankLines()throws Exception{
+        final View[] root={null};
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(()->root[0]=LayoutInflater.from(context).inflate(R.layout.activity_main,null,false));
+        TextView levels=root[0].findViewById(R.id.levelsText),why=root[0].findViewById(R.id.whyWaitText),ctx=root[0].findViewById(R.id.contextText);
+        assertTrue("levelsText still reserves blank lines",levels.getMinLines()<=1);
+        assertTrue("levelsText must allow concise detail expansion",levels.getMaxLines()>=18);
+        assertTrue("whyWaitText still reserves blank lines",why.getMinLines()<=1);
+        assertTrue("contextText still reserves blank lines",ctx.getMinLines()<=1);
     }
 }
