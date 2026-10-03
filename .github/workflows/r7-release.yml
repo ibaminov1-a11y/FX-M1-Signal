@@ -2,7 +2,6 @@ name: R7.1 exact-source DEMO release
 on:
   push:
     branches: [feature/r4-compute-rebuild]
-    paths: ['tools/r7_finalize.b64', '.github/workflows/r7-release.yml']
   workflow_dispatch:
 permissions:
   contents: read
