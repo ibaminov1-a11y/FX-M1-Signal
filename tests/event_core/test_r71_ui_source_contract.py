@@ -15,13 +15,12 @@ class R71UiSourceContractTests(unittest.TestCase):
         self.assertIn('boolean hasRows=rows!=null&&rows.length()>0', src)
         self.assertIn('if(valid&&hasRows)', src)
 
-    def test_signal_text_views_do_not_reserve_blank_fixed_lines(self):
+    def test_entry_plan_uses_compact_fixed_live_height(self):
         xml=(ROOT/'app/src/main/res/layout/activity_main.xml').read_text(encoding='utf-8')
-        for view_id in ('levelsText','contextText','whyWaitText','componentScoresText'):
-            line=next(x for x in xml.splitlines() if f'@+id/{view_id}' in x)
-            self.assertNotIn('android:lines=', line, view_id)
         levels=next(x for x in xml.splitlines() if '@+id/levelsText' in x)
-        self.assertIn('android:maxLines="18"', levels)
+        self.assertIn('android:lines="5"', levels)
+        self.assertNotIn('android:lines="8"', levels)
+        self.assertIn('ПЛАН ВХОДА: ожидаем анализ', levels)
 
     def test_risk_budget_label_is_a_limit_not_a_planned_loss(self):
         src=(ROOT/'app/src/main/java/com/openai/fxm1/MainActivity.java').read_text(encoding='utf-8')
