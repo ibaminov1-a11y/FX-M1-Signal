@@ -51,6 +51,15 @@ public final class ScenarioUi {
         int offset=f.optInt("chart_offset_minutes",0);
         return offset==0?"Время MT5 без коррекции":"Время UTC · коррекция MT5 "+String.format(Locale.US,"%+d",offset)+" мин";
     }
+    private static String entryStage(String value){switch(value){
+        case "WAIT_CONTEXT":return "Ждём новое движение и локальный откат";
+        case "PROGRESS":return "Импульс наблюдается · ждём локальный откат";
+        case "PULLBACK":return "Откат наблюдался · ждём возобновление и локальный пробой";
+        case "MICRO":return "Возобновление наблюдается · ждём локальный пробой";
+        case "CONFIRMED":return "Вход подтверждён · Bridge проверяет исполнение";
+        case "BLOCKED":return "Вход заблокирован";
+        default:return "";
+    }}
     public static String headline(JSONObject f){
         if(f!=null&&f.optBoolean("client_offline"))return "ПОСЛЕДНЯЯ КАРТА · КЭШ · НЕТ СВЯЗИ С BRIDGE";
         if(f==null||f.optInt("map_version")<2)return "КАРТА: ожидаем профиль / данные Bridge";
@@ -59,7 +68,14 @@ public final class ScenarioUi {
         JSONArray rows=f.optJSONArray("scenarios");
         if(f.optInt("map_version")>=3){
             JSONObject s=rows==null?null:rows.optJSONObject(0);
-            return s==null?"WAIT · нет ясной структуры":s.optString("title")+" · "+side(s)+" · оценка "+Math.round(s.optDouble("quality_score"))+"/100 — не вероятность";
+            if(s!=null)return s.optString("title")+" · "+side(s)+" · оценка "+Math.round(s.optDouble("quality_score"))+"/100 — не вероятность";
+            JSONObject setup=f.optJSONObject("execution_setup");
+            if(setup!=null){
+                String mode=setup.optString("mode","NORMAL").toUpperCase(Locale.ROOT),tf=setup.optString("timeframe",f.optString("timeframe","M5"));
+                String stage=entryStage(setup.optString("stage"));
+                return "WAIT · "+mode+" "+tf+(stage.isEmpty()?" · план входа формируется":" · "+stage);
+            }
+            return "WAIT · план входа ещё не сформирован";
         }
         int direction=f.optInt("side");return direction==0?"WAIT · нет ясного сценария":"ОСНОВНОЙ "+(direction>0?"BUY":"SELL")+" · вес модели "+Math.round(f.optDouble("confidence")*100)+"/100";
     }
@@ -67,34 +83,31 @@ public final class ScenarioUi {
     public static String executionRequirement(JSONObject state){
         if(state==null)return "";
         JSONObject cfg=state.optJSONObject("config"),f=state.optJSONObject("forecast");
-        if(cfg==null||f==null||!"SCALP".equals(cfg.optString("mode"))||!"M1".equals(cfg.optString("timeframe")))return "";
-        if(f.has("timeframe")&&!"M1".equals(f.optString("timeframe")))return "";
+        if(cfg==null||f==null)return "";
+        String mode=cfg.optString("mode","NORMAL").toUpperCase(Locale.ROOT),tf=cfg.optString("timeframe","M5");
+        if(f.has("timeframe")&&!tf.equals(f.optString("timeframe")))return "";
         JSONObject setup=f.optJSONObject("execution_setup");
-        if(setup==null||!"SCALP_MICRO_V1".equals(setup.optString("engine"))||!"M1".equals(setup.optString("timeframe")))return "";
+        if(setup==null||!"SCALP_MICRO_V1".equals(setup.optString("engine")))return "";
+        if(setup.has("timeframe")&&!tf.equals(setup.optString("timeframe")))return "";
+        if(setup.has("mode")&&!mode.equalsIgnoreCase(setup.optString("mode")))return "";
         boolean offline=state.optBoolean("client_offline")||f.optBoolean("client_offline");
         boolean stale=f.optBoolean("stale")||(state.has("quote_fresh")&&!state.optBoolean("quote_fresh"));
-        String stage;
-        switch(setup.optString("stage")){
-            case "WAIT_CONTEXT":stage="Ожидание контекста";break;
-            case "PROGRESS":stage="Ожидание движения в плюс";break;
-            case "PULLBACK":stage="Откат наблюдался · ожидание возобновления и микропробоя";break;
-            case "MICRO":stage="Ожидание micro-trigger";break;
-            case "CONFIRMED":stage=offline||stale||f.optBoolean("archive")?
-                "Сохранённое подтверждение · текущий вход не подтверждён":"Сигнал подтверждён · исполнение проверяет Bridge";break;
-            case "BLOCKED":stage="Вход заблокирован";break;
-            default:return "";
-        }
+        String stage=entryStage(setup.optString("stage"));if(stage.isEmpty())return "";
+        if("CONFIRMED".equals(setup.optString("stage"))&&(offline||stale||f.optBoolean("archive")))stage="Сохранённое подтверждение · текущий вход не подтверждён";
         StringBuilder out=new StringBuilder();
         if(offline)out.append("КЭШ · НЕТ СВЯЗИ С BRIDGE\n");
         else if(f.optBoolean("archive"))out.append("СОХРАНЁННЫЙ СНИМОК · НЕ LIVE\n");
         else if(stale)out.append("ДАННЫЕ УСТАРЕЛИ · вход запрещён\n");
-        out.append("БЫСТРЫЙ SCALP · ТОРГОВЛЯ M1");
+        if("SCALP".equals(mode)&&"M1".equals(tf))out.append("БЫСТРЫЙ SCALP · ТОРГОВЛЯ M1");
+        else out.append("ПЛАН ВХОДА · ").append(mode).append(" · ").append(tf);
         if(setup.optBoolean("addition"))out.append(" · ДОБАВЛЕНИЕ");
         out.append("\n").append(stage);
-        String reason=setup.optString("reason","").trim();if(!reason.isEmpty())out.append("\n").append(reason);
+        String reason=setup.optString("reason","").trim();
+        if(!reason.isEmpty()&&!reason.toLowerCase(Locale.ROOT).contains(stage.toLowerCase(Locale.ROOT)))out.append("\nСостояние: ").append(reason);
         double trigger=setup.optDouble("trigger",Double.NaN),invalidation=setup.optDouble("invalidation",Double.NaN);
         int side=setup.optInt("side");
-        if(Double.isFinite(trigger)&&trigger>0&&side!=0)out.append("\nУровень проверки ").append(side>0?"BUY: выше ":"SELL: ниже ").append(px(trigger));
+        if(Double.isFinite(trigger)&&trigger>0&&side!=0)out.append("\nПодтверждение ").append(side>0?"BUY: выше ":"SELL: ниже ").append(px(trigger));
+        else out.append("\nУровень подтверждения: ещё не сформирован");
         if(Double.isFinite(invalidation)&&invalidation>0)out.append("\nОтмена: ").append(px(invalidation));
         return out.toString();
     }
@@ -103,12 +116,14 @@ public final class ScenarioUi {
         String requirement=executionRequirement(state);
         if(!valid&&state.optJSONObject("campaign")==null)return requirement;
         StringBuilder out=new StringBuilder(requirement);JSONArray rows=valid?f.optJSONArray("scenarios"):null;boolean v3=valid&&f.optInt("map_version")>=3;
-        if(!requirement.isEmpty())out.append("\n\n");
+        boolean hasRows=rows!=null&&rows.length()>0;
+        if(!requirement.isEmpty()&&hasRows)out.append("\n\n");
         if(requirement.isEmpty()&&state.optBoolean("client_offline"))out.append("КЭШ · НЕТ СВЯЗИ С BRIDGE\nПоказаны последние полученные данные; текущее состояние кампании неизвестно.\n");
-        if(valid)out.append(f.optBoolean("archive")?"ГИПОТЕЗЫ ИЗ СНИМКА · НЕ LIVE":f.optBoolean("client_offline")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · КЭШ":f.optBoolean("stale")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · ДАННЫЕ УСТАРЕЛИ":"ТЕКУЩИЕ ГИПОТЕЗЫ · LIVE");
-        if(valid&&!v3){JSONObject lv=f.optJSONObject("entry_levels");for(String side:new String[]{"BUY","SELL"}){
+        if(valid&&hasRows)out.append(f.optBoolean("archive")?"ГИПОТЕЗЫ ИЗ СНИМКА · НЕ LIVE":f.optBoolean("client_offline")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · КЭШ":f.optBoolean("stale")?"ПОСЛЕДНИЕ ГИПОТЕЗЫ · ДАННЫЕ УСТАРЕЛИ":"ТЕКУЩИЕ ГИПОТЕЗЫ · LIVE");
+        if(valid&&hasRows&&!v3){JSONObject lv=f.optJSONObject("entry_levels");for(String side:new String[]{"BUY","SELL"}){
             JSONObject l=lv==null?null:lv.optJSONObject(side);if(l!=null)out.append("\n").append(side).append(side.equals("BUY")?" выше ":" ниже ").append(px(l.optDouble("trigger")));}}
-        if(rows!=null)for(int i=0;i<Math.min(v3?4:2,rows.length());i++){
+        int scenarioLimit=requirement.isEmpty()?(v3?4:2):2;
+        if(hasRows)for(int i=0;i<Math.min(scenarioLimit,rows.length());i++){
             JSONObject r=rows.optJSONObject(i);if(r==null)continue;
             if(out.length()>0)out.append("\n\n");out.append(role(r,i)).append(" · ").append(side(r));
             if(v3)out.append(" · ").append(r.optString("title")).append("\nЭтап: ").append(stage(r.optString("stage")))
@@ -124,6 +139,7 @@ public final class ScenarioUi {
             double cancel=r.optDouble("invalidation",0);if(cancel>0)out.append("\nОтмена: ").append(px(cancel));
             if(v3&&r.optInt("side")!=0)out.append("\nЦель: ").append(source(r.optString("target1_source")));
         }
+        if(out.length()==0&&valid)out.append("ПЛАН ВХОДА: пока не сформирован");
         String campaign=EventClient.campaignSummary(state);if(!campaign.isEmpty())out.append("\n\n").append(campaign);
         appendEntryScenario(out,state.optJSONObject("campaign"));
         if("RECONCILING".equals(state.optString("campaign_state")))out.append("\n\nПозиций MT5 нет. Завершается сверка прежней кампании.");
