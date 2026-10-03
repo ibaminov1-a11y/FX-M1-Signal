@@ -7,7 +7,7 @@ def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def main():
  sys.path.insert(0,str(ROOT/'mt5_bridge'))
  from event_core import BUILD,REVISION,PROTOCOL
- assert BUILD=='10.9-EC1-R7'
+ assert BUILD=='10.9-EC1-R7.1'
  commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
  assert (E/'COMMIT.txt').read_text().strip()==commit
  subprocess.run(['git','diff','--exit-code','HEAD'],cwd=ROOT,check=True)
@@ -36,14 +36,14 @@ def main():
  from r7_updater import windows_wrapper
  for name,back in (('INSTALL_R7.cmd',False),('ROLLBACK_R7.cmd',True)):
   (package/name).write_bytes(windows_wrapper(back))
- apk=package/'FXM1_R7_DEMO.apk';shutil.copy2(ROOT/'app/build/outputs/apk/debug/app-debug.apk',apk)
+ apk=package/'FXM1_R7_1_DEMO.apk';shutil.copy2(ROOT/'app/build/outputs/apk/debug/app-debug.apk',apk)
  shutil.copy2(ROOT/'docs/UPGRADE_R7.md',package/'START_HERE_RU.md')
- source=package/'Sources/FXM1_R7_SOURCE.zip';source.parent.mkdir()
+ source=package/'Sources/FXM1_R7_1_SOURCE.zip';source.parent.mkdir()
  subprocess.run(['git','archive','--format=zip','--output='+str(source),'HEAD'],cwd=ROOT,check=True)
  with zipfile.ZipFile(source) as z:
   for p in bridge.rglob('*'):
    if p.is_file() and '_vendor' not in p.parts and p.name!='BUILD.json':assert z.read('mt5_bridge/'+p.relative_to(bridge).as_posix())==p.read_bytes()
- provenance=dict(commit=commit,build=BUILD,version_code=928,protocol=PROTOCOL,apk_sha256=digest(apk),
+ provenance=dict(commit=commit,build=BUILD,version_code=929,protocol=PROTOCOL,apk_sha256=digest(apk),
   certificate_sha256=CERT,source_sha256=digest(source),android=android,windows=windows,
   real_trading='DISABLED_IN_ADAPTER',market_profitability='NOT_ESTABLISHED',physical_mt5='NOT_TESTED',
   forecast='RESEARCH_EMPIRICAL_ANALOG; NOT_CALIBRATED',supported_trade_frames=['M1','M5','M15','M30','H1','H4','D1','W1','MN1'])
@@ -56,7 +56,7 @@ def main():
    dst=verify/p.name;shutil.copy2(p,dst)
  sums={p.relative_to(package).as_posix():digest(p) for p in package.rglob('*') if p.is_file()}
  (package/'SHA256SUMS.txt').write_text(''.join(v+'  '+k+'\n' for k,v in sorted(sums.items())),encoding='utf-8')
- out=E/'FXM1_R7_FULL.zip'
+ out=E/'FXM1_R7_1_FULL.zip'
  with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:
   for p in sorted(package.rglob('*')):
    if p.is_file():z.write(p,p.relative_to(package).as_posix())
