@@ -1,5 +1,6 @@
 package com.openai.fxm1;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.*;
 import android.util.AttributeSet;
 import android.view.*;
@@ -17,13 +18,16 @@ public class SparklineView extends View {
     public String historyFrame(){return historyFrame;}
     public String historyClock(){return historyClock;}
     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
-    private boolean customSelection=false,archive=false,panning=false,showPriceForecast=true;
+    private boolean customSelection=false,archive=false,panning=false;
+    private SharedPreferences chartPrefs;
+    private ChartDisplayState transientDisplay=new ChartDisplayState();
     private float downX,downY,lastX;
     private ScaleGestureDetector scale;
     public SparklineView(Context c){super(c);init(c);}
     public SparklineView(Context c,AttributeSet a){super(c,a);init(c);}
     public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);init(c);}
     private void init(Context c){
+        chartPrefs=c.getApplicationContext().getSharedPreferences("fxm1_chart_v1",Context.MODE_PRIVATE);
         setClickable(true);scale=new ScaleGestureDetector(c,new ScaleGestureDetector.SimpleOnScaleGestureListener(){
             public boolean onScale(ScaleGestureDetector d){viewport.zoom(d.getScaleFactor());invalidate();return true;}
         });
@@ -41,20 +45,29 @@ public class SparklineView extends View {
     public void zoomHistory(double factor){viewport.zoom(factor);invalidate();}
     public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
     public void setArchive(boolean value){archive=value;updateDescription();invalidate();}
-    public void showPriceForecast(boolean value){showPriceForecast=value;updateDescription();invalidate();}
+    public void showPriceForecast(boolean ignored){setChartMode(ChartDisplayState.PATTERNS);}
+    private String displayScope(){return archive?"archive|"+identity:identity;}
+    private ChartDisplayState displayState(){return identity.isEmpty()?transientDisplay:ChartDisplayState.load(chartPrefs,displayScope());}
+    private void saveDisplay(ChartDisplayState state){if(identity.isEmpty())transientDisplay=state;else state.save(chartPrefs,displayScope());}
+    public void setChartMode(String value){
+        if(!ChartDisplayState.PATTERNS.equals(value)&&!ChartDisplayState.CANDLES.equals(value))return;
+        ChartDisplayState state=displayState();state.mode=value;saveDisplay(state);updateDescription();invalidate();
+    }
     public JSONArray scenarioChoices(){JSONArray r=forecast.optJSONArray("scenarios");return r==null?new JSONArray():r;}
-    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;showPriceForecast=false;updateDescription();invalidate();}
+    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;ChartDisplayState state=displayState();state.mode=ChartDisplayState.PATTERNS;state.selectedScenarioIds.clear();state.selectedScenarioIds.addAll(ids);saveDisplay(state);updateDescription();invalidate();}
     private static String key(JSONObject s,int i){return s.optString("scenario_id",s.optString("name",""+i));}
     public JSONObject displayedForecast(){
         try{
+            ChartDisplayState state=displayState();
+            if(!state.selectedScenarioIds.isEmpty()){selected.clear();selected.addAll(state.selectedScenarioIds);customSelection=true;}
             JSONObject f=new JSONObject(forecast.toString());JSONArray all=scenarioChoices(),out=new JSONArray();
             for(int i=0;i<all.length();i++){JSONObject s=all.optJSONObject(i);if(s==null)continue;
                 if(out.length()<2&&(customSelection?selected.contains(key(s,i)):i<2))out.put(s);
             }
             // A new structural identity does not inherit an unrelated old selection.
             if(customSelection&&out.length()==0&&all.length()>0){customSelection=false;for(int i=0;i<Math.min(2,all.length());i++)out.put(all.get(i));}
-            f.put("scenarios",out).put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",showPriceForecast);
-            if(!viewport.live())f.put("scenarios",new JSONArray());
+            f.put("scenarios",out).put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",false).put("chart_display_mode",state.mode);
+            if(!viewport.live()||ChartDisplayState.CANDLES.equals(state.mode))f.put("scenarios",new JSONArray());
             return f;
         }catch(Exception e){return new JSONObject();}
     }
@@ -94,8 +107,9 @@ public class SparklineView extends View {
         if(!ChartViewport.validBar(forming)||(bars.length()>0&&forming.optLong("time")<=bars.optJSONObject(bars.length()-1).optLong("time")))forming=null;
         if(bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
         if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
-        ScenarioMapRenderer.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density,bars,structure,
-            forming,viewport.live()?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());
+        boolean plain=ChartDisplayState.CANDLES.equals(f.optString("chart_display_mode"));
+        ScenarioMapRenderer.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density,bars,plain?new JSONArray():structure,
+            forming,viewport.live()&&!plain?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());
     }
     static int priceDigits(JSONObject f){int digits=f==null?5:f.optInt("chart_digits",5);return digits>=0&&digits<=12?digits:5;}
     static String priceText(JSONObject f,double value){return Double.isFinite(value)&&value>0?String.format(Locale.US,"%."+priceDigits(f)+"f",value):"—";}
@@ -109,6 +123,8 @@ public class SparklineView extends View {
         if(f.optBoolean("history_only"))return f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
         if(!f.optBoolean("available",true))return "Свечи MT5. Прогноз недоступен: "+f.optString("reason","ожидаем пригодные данные выбранного периода")
             +(f.optBoolean("client_offline")?". КЭШ · нет связи с Bridge.":". Только просмотр.");
+        if(ChartDisplayState.CANDLES.equals(f.optString("chart_display_mode")))return "Свечи MT5. Геометрия и условные маршруты скрыты."
+            +(f.optBoolean("archive")?" Архивный снимок.":f.optBoolean("client_offline")?" КЭШ · нет связи с Bridge.":f.optBoolean("stale")?" Данные устарели.":" LIVE.");
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время этапов условно.");
         text.append(PriceForecastPlot.description(f));
         text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("client_offline")?" КЭШ: телефон потерял связь с Bridge. Последние полученные гипотезы; AUTO может продолжать работу самостоятельно.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");

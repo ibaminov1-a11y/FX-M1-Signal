@@ -98,7 +98,8 @@ final class ScenarioMapRenderer {
     private void draw(JSONArray bars,JSONArray structure,JSONObject live,JSONArray liveStructure,JSONObject f,JSONArray positions){
         formatting=f;
         unverified=f.optBoolean("chart_read_only");
-        boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2&&!unverified&&!f.optBoolean("chart_forecast_rejected");
+        boolean plain="CANDLES".equals(f.optString("chart_display_mode"));
+        boolean v3=f.optInt("map_version")>=3,valid=!plain&&f.optInt("map_version")>=2&&!unverified&&!f.optBoolean("chart_forecast_rejected");
         historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
         JSONObject levels=valid&&!v3&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
@@ -134,14 +135,13 @@ final class ScenarioMapRenderer {
         for(int i=0;i<5;i++)widest=Math.max(widest,p.measureText(price(high-(high-low)*i/4)));
         right=w-Math.max(58*d,widest+10*d);
         if(right<=left)return;
-        boolean futurePanel=!historical&&!unverified&&valid;
-        // With a confirmed structural scenario the LIVE split stays near the middle.
-        // WAIT still keeps a modest blank future area for levels/status, but gives
-        // most of the width to factual candles instead of an invented projection.
-        split=futurePanel?left+(right-left)*(routeCount>0?.48f:.72f):right;
+        boolean futurePanel=!historical&&!unverified&&valid&&routeCount>0;
+        // Reserve space only for actual conditional paths. WAIT does not invent
+        // a future panel or compress factual candles to make room for a fan.
+        split=futurePanel?left+(right-left)*.48f:right;
         if(!unverified){
         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
-        else if(routeCount==0)text(valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
+        else if(routeCount==0)text(plain?"СВЕЧИ MT5":valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
             String name=ScenarioUi.role(r,i);

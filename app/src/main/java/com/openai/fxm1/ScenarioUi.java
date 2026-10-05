@@ -31,6 +31,9 @@ public final class ScenarioUi {
         JSONObject cfg=s.optJSONObject("config");
         String identity=s.optString("market_scope",s.optString("snapshot_id",cfg==null?"live":cfg.optString("symbol")))+"|"
             +s.optString("market_history_generation","UNVERIFIED")+"|"+(cfg==null?s.optString("timeframe","M5"):cfg.optString("timeframe","M5"));
+        if(cfg!=null)identity+="|"+symbolKey(cfg.optString("symbol"))+"|"+cfg.optString("mode","NORMAL");
+        try{java.net.URI address=new java.net.URI(EventClient.base());identity+="|"+new java.net.URI(address.getScheme(),null,address.getHost(),address.getPort(),address.getPath(),null,null).toString();}
+        catch(Exception ignored){identity+="|local";}
         JSONObject raw=rawChart(s);
         return raw==null?identity:identity+"|"+(cfg==null?"":cfg.optString("symbol"))+"|CHART|"+raw.optString("scope")+"|"
             +raw.optString("symbol")+"|"+raw.optString("timeframe")+"|"+raw.optString("clock")+"|"+raw.optString("status");
@@ -228,6 +231,7 @@ public final class ScenarioUi {
         pinned.addView(scroll,new LinearLayout.LayoutParams(0,-2,1));
         button(a,row,"◀",()->chart.panHistory(12));button(a,row,"▶",()->chart.panHistory(-12));
         button(a,row,"−",()->chart.zoomHistory(.8));button(a,row,"+",()->chart.zoomHistory(1.25));
+        button(a,row,"СВЕЧИ",()->chart.setChartMode("CANDLES"));
         button(a,row,"ПРОГНОЗ",()->chart.showPriceForecast(true));
         button(a,row,"СЦЕНАРИИ",()->chart.showPriceForecast(false));
         Button branches=button(a,row,"ВЕТКИ",()->choose(a,chart));branches.setTag("scenario_branches");

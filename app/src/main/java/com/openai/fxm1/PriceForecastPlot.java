@@ -14,7 +14,7 @@ final class PriceForecastPlot {
     private PriceForecastPlot(){}
 
     static JSONObject visible(JSONObject f){
-        if(f==null||!f.optBoolean("available",true)||f.optBoolean("history_only")||f.optBoolean("chart_read_only")
+        if(f==null||f.has("chart_display_mode")||!f.optBoolean("available",true)||f.optBoolean("history_only")||f.optBoolean("chart_read_only")
             ||!f.optBoolean("show_price_forecast",true))return null;
         JSONObject price=f.optJSONObject("price_forecast");
         if(price==null||!price.optBoolean("available"))return null;
