@@ -53,7 +53,7 @@ public class R7ReleaseUiTest {
         return new JSONObject().put("config",new JSONObject().put("symbol","EUR/USD").put("timeframe",tf).put("mode",mode).put("lot_cap",.01).put("volume_mode","FIXED"))
             .put("forecast",f).put("quote_fresh",true).put("positions",new JSONArray());
     }
-    @Test public void priceForecastIsVisibleWhileEntryWaits()throws Exception{
+    @Test public void waitShowsNoInventedFutureAndKeepsResearchForecastOffTradingCanvas()throws Exception{
         final JSONObject f=forecast();final JSONArray history=bars();final String[] description={null};final Bitmap[] image={null};
         InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
             SparklineView chart=new SparklineView(context);chart.layout(0,0,1080,660);
@@ -62,15 +62,16 @@ public class R7ReleaseUiTest {
             description[0]=String.valueOf(chart.getContentDescription());
         });
         try{
-            assertTrue("WAIT hid the independent price forecast: "+description[0],description[0].contains("ЦЕНОВОЙ ПРОГНОЗ"));
-            assertTrue(description[0],description[0].contains("5 мин"));assertTrue(description[0],description[0].contains("60 мин"));
+            // Bridge may retain the independent analogue estimate for research,
+            // but WAIT must not turn it into a visual trading trajectory.
+            assertTrue("Research forecast remains available in data",f.getJSONObject("price_forecast").optBoolean("available"));
             int blue=0;for(int y=0;y<660;y++)for(int x=540;x<1080;x++)if(image[0].getPixel(x,y)==0xff62b6ff)blue++;
-            assertTrue("Future path must actually be drawn on Android Canvas",blue>30);
-            java.io.File output=new java.io.File(context.getExternalFilesDir(null),"r7-wait-price-forecast.png");
+            assertEquals("WAIT must not draw the analogue blue future line/band",0,blue);
+            java.io.File output=new java.io.File(context.getExternalFilesDir(null),"r7-wait-no-synthetic-future.png");
             try(java.io.FileOutputStream stream=new java.io.FileOutputStream(output)){image[0].compress(Bitmap.CompressFormat.PNG,100,stream);}
             androidx.test.uiautomator.UiDevice device=androidx.test.uiautomator.UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
             device.executeShellCommand("mkdir -p /sdcard/Download/ec1-qa");
-            device.executeShellCommand("cp "+output.getAbsolutePath()+" /sdcard/Download/ec1-qa/r7-wait-price-forecast.png");
+            device.executeShellCommand("cp "+output.getAbsolutePath()+" /sdcard/Download/ec1-qa/r7-wait-no-synthetic-future.png");
         }finally{image[0].recycle();}
     }
     @Test public void commandEnvelopeCapturesProfileBeforeViewChanges()throws Exception{
