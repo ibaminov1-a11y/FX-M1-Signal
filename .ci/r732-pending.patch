@@ -1,0 +1,21 @@
+diff --git a/app/src/androidTest/java/com/openai/fxm1/R732ActivityPatternsUiTest.java b/app/src/androidTest/java/com/openai/fxm1/R732ActivityPatternsUiTest.java
+--- a/app/src/androidTest/java/com/openai/fxm1/R732ActivityPatternsUiTest.java
++++ b/app/src/androidTest/java/com/openai/fxm1/R732ActivityPatternsUiTest.java
+@@ -49,4 +49,6 @@ public class R732ActivityPatternsUiTest {
+    final String[] description={""};ui(()->description[0]=chart().getContentDescription().toString());
+    assertTrue("Activity hides figure "+i+": "+description[0],description[0].contains(expected.getString("title")));
++   final String[] heading={""};ui(()->heading[0]=((android.widget.TextView)rule.getActivity().findViewById(R.id.confidenceText)).getText().toString());
++   assertTrue("Heading contradicts figure "+i+": "+heading[0],heading[0].contains(expected.getString("title")));
+    assertFalse(chart().displayedForecast().optBoolean("show_price_forecast",true));shot("r732-activity-"+i);
+   }
+diff --git a/mt5_bridge/event_core/__init__.py b/mt5_bridge/event_core/__init__.py
+--- a/mt5_bridge/event_core/__init__.py
++++ b/mt5_bridge/event_core/__init__.py
+@@ -2,5 +2,5 @@
+ # VERSION is the installed APK's compatibility contract; BUILD identifies this rebuild.
+ VERSION = '10.9-EC1'
+-BUILD = '10.9-EC1-R7.3'
+-REVISION = 'R7.3-DEMO'
++BUILD = '10.9-EC1-R7.3.2'
++REVISION = 'R7.3.2-PATTERNS-DEMO'
+ PROTOCOL = 'fxm1.event.v1'
