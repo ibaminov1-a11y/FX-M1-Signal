@@ -1,0 +1,90 @@
+test_active_campaign_or_unknown_order_stops_before_changes (test_r7_installer.InstallerTests.test_active_campaign_or_unknown_order_stops_before_changes) ... ok
+test_database_probe_closes_handles_and_leaves_wal_unchanged (test_r7_installer.InstallerTests.test_database_probe_closes_handles_and_leaves_wal_unchanged) ... ok
+test_failure_mid_update_restores_program (test_r7_installer.InstallerTests.test_failure_mid_update_restores_program) ... ok
+test_invalid_payload_does_not_touch_destination (test_r7_installer.InstallerTests.test_invalid_payload_does_not_touch_destination) ... ok
+test_running_process_lock_stops_update (test_r7_installer.InstallerTests.test_running_process_lock_stops_update) ... ok
+test_update_and_rollback_preserve_state_and_environment (test_r7_installer.InstallerTests.test_update_and_rollback_preserve_state_and_environment) ... ok
+test_windows_wrapper_is_shared_by_packaging_and_native_gate (test_r7_installer.InstallerTests.test_windows_wrapper_is_shared_by_packaging_and_native_gate) ... ok
+test_ci_console_can_publish_unicode_results_under_windows_legacy_encoding (test_r73_installer.R73GateOutputTests.test_ci_console_can_publish_unicode_results_under_windows_legacy_encoding) ... ok
+test_backup_metadata_write_failure_restores_previous_program (test_r73_installer.R73InstallerTests.test_backup_metadata_write_failure_restores_previous_program) ... ok
+test_bad_dependency_manifest_is_rejected_before_fresh_environment_is_created (test_r73_installer.R73InstallerTests.test_bad_dependency_manifest_is_rejected_before_fresh_environment_is_created) ... ok
+test_broken_python_is_not_misreported_as_wrong_architecture (test_r73_installer.R73InstallerTests.test_broken_python_is_not_misreported_as_wrong_architecture) ... ok
+test_colorama_failure_reports_exception_type_without_secret_message (test_r73_installer.R73InstallerTests.test_colorama_failure_reports_exception_type_without_secret_message) ... ok
+test_colorama_probe_does_not_print_unencodable_module_paths (test_r73_installer.R73InstallerTests.test_colorama_probe_does_not_print_unencodable_module_paths) ... ok
+test_dependency_failure_is_actionable_and_does_not_log_pip_credentials (test_r73_installer.R73InstallerTests.test_dependency_failure_is_actionable_and_does_not_log_pip_credentials) ... ok
+test_dependency_payload_rejects_unverified_extra_file (test_r73_installer.R73InstallerTests.test_dependency_payload_rejects_unverified_extra_file) ... ok
+test_empty_venv_is_never_silently_replaced (test_r73_installer.R73InstallerTests.test_empty_venv_is_never_silently_replaced) ... ok
+test_existing_environment_reports_wrong_python_architecture (test_r73_installer.R73InstallerTests.test_existing_environment_reports_wrong_python_architecture) ... ok
+test_failed_fresh_install_can_be_retried_without_deleting_environment (test_r73_installer.R73InstallerTests.test_failed_fresh_install_can_be_retried_without_deleting_environment) ... AUTO must be OFF; close Bridge; finish any bot campaign first.
+COLORAMA OK
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+Creating a local 64-bit Python environment...
+COLORAMA OK
+Installing missing or broken dependencies: flask, MetaTrader5. Internet access may be required.
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+COLORAMA OK
+Installing missing or broken dependencies: flask, MetaTrader5. Internet access may be required.
+ok
+test_fresh_environment_is_created_and_checked (test_r73_installer.R73InstallerTests.test_fresh_environment_is_created_and_checked) ... Creating a local 64-bit Python environment...
+ok
+test_live_campaign_blocks_before_dependency_mutation (test_r73_installer.R73InstallerTests.test_live_campaign_blocks_before_dependency_mutation) ... ok
+test_postflight_cannot_claim_success_without_a_python_environment (test_r73_installer.R73InstallerTests.test_postflight_cannot_claim_success_without_a_python_environment) ... ok
+test_postflight_failure_restores_program_while_install_lock_is_held (test_r73_installer.R73InstallerTests.test_postflight_failure_restores_program_while_install_lock_is_held) ... ok
+test_release_without_startup_helper_is_rejected_before_environment_repair (test_r73_installer.R73InstallerTests.test_release_without_startup_helper_is_rejected_before_environment_repair) ... ok
+test_running_bridge_blocks_before_dependency_mutation (test_r73_installer.R73InstallerTests.test_running_bridge_blocks_before_dependency_mutation) ... ok
+test_unmanifested_program_file_is_not_installed (test_r73_installer.R73InstallerTests.test_unmanifested_program_file_is_not_installed) ... ok
+test_batch_uses_venv_keeps_unicode_arguments_and_propagates_exit_code (test_r73_installer.R73NativeLauncherTests.test_batch_uses_venv_keeps_unicode_arguments_and_propagates_exit_code) ... Actual environment location may have moved due to redirects, links or junctions.
+  Requested location: "C:\Users\RUNNER~1\AppData\Local\Temp\R73 OneDrive путь spaces ! lqxtws74\.venv\Scripts\python.exe"
+  Actual location:    "C:\Users\runneradmin\AppData\Local\Temp\R73 OneDrive путь spaces ! lqxtws74\.venv\Scripts\python.exe"
+ok
+test_dependency_error_does_not_include_secret_text (test_r73_installer.R73StartupTests.test_dependency_error_does_not_include_secret_text) ... ok
+test_diagnosis_detects_local_listener_without_touching_trading_state (test_r73_installer.R73StartupTests.test_diagnosis_detects_local_listener_without_touching_trading_state) ... ok
+test_runtime_exit_code_is_preserved_and_failure_is_logged_without_stdout (test_r73_installer.R73StartupTests.test_runtime_exit_code_is_preserved_and_failure_is_logged_without_stdout) ... console-only-user-token
+ok
+test_nonfinite_foreign_risk_cannot_pass_account_preflight (test_r7_profiles.ProfileTests.test_nonfinite_foreign_risk_cannot_pass_account_preflight) ... ok
+test_ownership_isolated_and_global_unknown_blocks_new_order (test_r7_profiles.ProfileTests.test_ownership_isolated_and_global_unknown_blocks_new_order) ... ok
+test_restart_recovers_saved_profiles_but_not_auto (test_r7_profiles.ProfileTests.test_restart_recovers_saved_profiles_but_not_auto) ... ok
+test_selecting_new_symbol_does_not_change_or_enable_old_campaign (test_r7_profiles.ProfileTests.test_selecting_new_symbol_does_not_change_or_enable_old_campaign) ... ok
+test_state_reads_scoped_and_emergency_is_account_wide (test_r7_profiles.ProfileTests.test_state_reads_scoped_and_emergency_is_account_wide) ... ok
+test_two_symbols_open_then_emergency_closes_both_without_cross_ownership (test_r7_profiles.ProfileTests.test_two_symbols_open_then_emergency_closes_both_without_cross_ownership) ... ok
+test_additions_have_distinct_events_frozen_forecast_and_shared_budget (test_r7_release_runtime.R7RuntimeTests.test_additions_have_distinct_events_frozen_forecast_and_shared_budget) ... ok
+test_both_modes_all_native_frames_first_buy_sell (test_r7_release_runtime.R7RuntimeTests.test_both_modes_all_native_frames_first_buy_sell) ... ok
+test_no_entry_without_pullback_no_duplicate_and_pause (test_r7_release_runtime.R7RuntimeTests.test_no_entry_without_pullback_no_duplicate_and_pause) ... ok
+test_restart_requires_new_sequence (test_r7_release_runtime.R7RuntimeTests.test_restart_requires_new_sequence) ... ok
+test_colorama_is_an_explicit_environment_dependency (test_r72_simple_runtime_contract.R72SimpleRuntimeContractTests.test_colorama_is_an_explicit_environment_dependency) ... ok
+test_launcher_uses_normal_python_environment_without_vendor_path (test_r72_simple_runtime_contract.R72SimpleRuntimeContractTests.test_launcher_uses_normal_python_environment_without_vendor_path) ... ok
+test_release_package_does_not_ship_runtime_vendor_tree (test_r72_simple_runtime_contract.R72SimpleRuntimeContractTests.test_release_package_does_not_ship_runtime_vendor_tree) ... ok
+test_updater_does_not_rename_live_program_directories (test_r72_simple_runtime_contract.R72SimpleRuntimeContractTests.test_updater_does_not_rename_live_program_directories) ... ok
+
+----------------------------------------------------------------------
+Ran 43 tests in 40.460s
+
+OK
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+COLORAMA OK
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+
+--- R7.3 mixed-state recovery ---
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+COLORAMA OK
+MT5 OK; FLASK OK; EVENT_CORE OK; BRIDGE IMPORT OK
+OK: R7.3 installed. Program backup: C:\Users\runneradmin\AppData\Local\Temp\R73 OneDrive путь space ! r6d8v10o\target\r73_program_backup_1791182799471256100
+Dependency backup: C:\Users\runneradmin\AppData\Local\Temp\R73 OneDrive путь space ! r6d8v10o\target\r73_dependency_backup_1791182798974455200
+Run: C:\Users\runneradmin\AppData\Local\Temp\R73 OneDrive путь space ! r6d8v10o\target\START_BRIDGE_V10_0.bat
+History, token, database and broker clock were preserved. No trading commands sent.
+
+--- R7.3 fresh environment ---
+AUTO must be OFF; close Bridge; finish any bot campaign first.
+Creating a local 64-bit Python environment...
+COLORAMA OK
+Installing missing or broken dependencies: flask, MetaTrader5. Internet access may be required.
+MT5 OK; FLASK OK; EVENT_CORE OK; BRIDGE IMPORT OK
+OK: R7.3 installed. Program backup: C:\Users\runneradmin\AppData\Local\Temp\R73 OneDrive путь space ! r6d8v10o\fresh target путь !\r73_program_backup_1791182816791259900
+Dependency backup: C:\Users\runneradmin\AppData\Local\Temp\R73 OneDrive путь space ! r6d8v10o\fresh target путь !\r73_dependency_backup_1791182809088249300
+Run: C:\Users\runneradmin\AppData\Local\Temp\R73 OneDrive путь space ! r6d8v10o\fresh target путь !\START_BRIDGE_V10_0.bat
+History, token, database and broker clock were preserved. No trading commands sent.
+
+CMD_INSTALL_OK; BROKEN_COLORAMA_REPAIRED; MIXED_EVENT_CORE_REPLACED; FRESH_VENV_OK; INSTALLED_LAUNCHER_CHECK_OK; READ_ONLY_DIAGNOSTICS_OK; no orders

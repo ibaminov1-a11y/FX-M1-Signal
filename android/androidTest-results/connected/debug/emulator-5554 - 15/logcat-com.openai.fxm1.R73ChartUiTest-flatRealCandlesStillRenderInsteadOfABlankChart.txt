@@ -1,0 +1,2 @@
+10-05 07:01:55.683  3730  3748 I TestRunner: started: flatRealCandlesStillRenderInsteadOfABlankChart(com.openai.fxm1.R73ChartUiTest)
+10-05 07:01:55.700  3730  3748 I TestRunner: finished: flatRealCandlesStillRenderInsteadOfABlankChart(com.openai.fxm1.R73ChartUiTest)

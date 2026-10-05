@@ -1,0 +1,5 @@
+10-05 07:03:15.264  3730  3748 I TestRunner: started: signalDetailsUseCompactStableHeights(com.openai.fxm1.R7ReleaseUiTest)
+10-05 07:03:15.265  1152  1679 D EGL_emulation: app_time_stats: avg=94.41ms min=35.28ms max=388.82ms count=11
+10-05 07:03:15.499  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 07:03:15.554  2402  6844 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 932 [CONTEXT service_id=218 ]
+10-05 07:03:15.560  3730  3748 I TestRunner: finished: signalDetailsUseCompactStableHeights(com.openai.fxm1.R7ReleaseUiTest)

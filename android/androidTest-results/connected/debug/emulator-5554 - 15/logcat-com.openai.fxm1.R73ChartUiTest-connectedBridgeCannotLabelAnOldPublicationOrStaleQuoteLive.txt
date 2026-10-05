@@ -1,0 +1,2 @@
+10-05 07:01:55.760  3730  3748 I TestRunner: started: connectedBridgeCannotLabelAnOldPublicationOrStaleQuoteLive(com.openai.fxm1.R73ChartUiTest)
+10-05 07:01:55.803  3730  3748 I TestRunner: finished: connectedBridgeCannotLabelAnOldPublicationOrStaleQuoteLive(com.openai.fxm1.R73ChartUiTest)

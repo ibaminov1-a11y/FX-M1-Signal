@@ -1,0 +1,179 @@
+10-05 07:02:25.649  3730  3748 I TestRunner: started: queuedCommandCannotMoveToChangedServer(com.openai.fxm1.R73ControlsUiTest)
+10-05 07:02:25.651   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:25.651   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:25.655  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.656  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.656  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.656  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.657  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.660  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.660  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.661  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.663  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.663  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.663  1152  1159 W System  : A resource failed to call release.
+10-05 07:02:25.697   552  1778 W InputManager-JNI: Input channel object '768a494 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 07:02:25.700  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:25.711  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=95
+10-05 07:02:25.711  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=95
+10-05 07:02:25.747  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:25.753   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:25.757   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:25.848   552  1778 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 07:02:25.856   902   983 D SplashScreenView: Build android.window.SplashScreenView{cb0ce41 V.E...... ......ID 0,0-0,0}
+10-05 07:02:25.856   902   983 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 07:02:25.856   902   983 D SplashScreenView: Branding: view: android.view.View{d65cfe6 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 07:02:25.871  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 07:02:25.871   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:25.871   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:25.871  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 07:02:25.876   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 07:02:25.882  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=96, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 07:02:25.906   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 07:02:25.919   356   356 I netd    : tetherGetStats() -> {[]} <1.33ms>
+10-05 07:02:25.975   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:25.975   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.088   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.088   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.105  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@32ddcff in: PRE_ON_CREATE
+10-05 07:02:26.140  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3128KB AllocSpace bytes, 26(1128KB) LOS objects, 49% free, 3873KB/7746KB, paused 7.330ms,51.900ms total 305.581ms
+10-05 07:02:26.189   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.189   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.238  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 07:02:26.386   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.386   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.459  1152  1152 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 07:02:26.462  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@32ddcff in: CREATED
+10-05 07:02:26.466  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@32ddcff in: STARTED
+10-05 07:02:26.470  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@32ddcff in: RESUMED
+10-05 07:02:26.489  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 07:02:26.509   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.510   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.573  1152  1679 D EGL_emulation: app_time_stats: avg=151.45ms min=36.59ms max=394.19ms count=7
+10-05 07:02:26.620   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.620   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.641  1152  1679 D EGL_emulation: app_time_stats: avg=1116.05ms min=1116.05ms max=1116.05ms count=1
+10-05 07:02:26.721   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.722   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.828   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.829   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:26.830   902  1039 D EGL_emulation: app_time_stats: avg=945.07ms min=10.78ms max=3367.54ms count=4
+10-05 07:02:26.855  3730  3730 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 07:02:26.885  3730  3730 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 07:02:26.890  3730  3730 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 07:02:26.949   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:26.949   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:27.000  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2786KB AllocSpace bytes, 38(996KB) LOS objects, 49% free, 3652KB/7305KB, paused 337us,5.084ms total 45.289ms
+10-05 07:02:27.035   365  1408 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 10301184
+10-05 07:02:27.049   365  6689 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 07:02:27.049   365  6689 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 07:02:27.102   552   574 W ziparchive: Unable to open '/data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.dm': No such file or directory
+10-05 07:02:27.104   552   574 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +1s271ms
+10-05 07:02:27.114   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 07:02:27.119   902   980 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@f757d40
+10-05 07:02:27.122   552   644 W InputManager-JNI: Input channel object '39c259a Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 07:02:27.127   356   356 I netd    : tetherGetStats() -> {[]} <0.45ms>
+10-05 07:02:27.128  3730  6698 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:27.151  1152  1152 D BaseDepthController: setSurface:
+10-05 07:02:27.151  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 07:02:27.151  1152  1152 D BaseDepthController: 	mSurface: null
+10-05 07:02:27.151  1152  1152 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 07:02:27.151  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 07:02:27.151  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 07:02:27.151  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 07:02:27.151  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 07:02:27.152  1152  1152 D StatsLog: LAUNCHER_ONSTOP
+10-05 07:02:27.152  1152  1968 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 07:02:27.156  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 07:02:27.160  1152  6353 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af37af0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 07:02:27.214  3730  6700 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:27.226  3730  6698 D TrafficStats: tagSocket(130) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:27.326  3730  3730 I Choreographer: Skipped 49 frames!  The application may be doing too much work on its main thread.
+10-05 07:02:27.382  1467  1828 I BistoHotwordHelper: (REDACTED) getHotwordActive::active query: %s, watch: %s, devices connected: %s
+10-05 07:02:27.384  3730  6698 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:27.459  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4830KB AllocSpace bytes, 19(768KB) LOS objects, 49% free, 4114KB/8228KB, paused 1.787ms,7.864ms total 172.603ms
+10-05 07:02:27.477   552   677 I ImeTracker: com.openai.fxm1.ec1:12402a3c: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 07:02:27.477   552   677 I ImeTracker: com.openai.fxm1.ec1:12402a3c: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 07:02:27.512  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 07:02:27.519  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 07:02:27.526  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 07:02:27.533   427   449 W TransactionTracing: Could not find layer id 2257
+10-05 07:02:27.533   427   449 W TransactionTracing: Could not find layer id 2257
+10-05 07:02:27.533  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 07:02:27.534  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 07:02:27.553  3730  5097 I HWUI    : Davey! duration=1019ms; Flags=0, FrameTimelineVsyncId=284441, IntendedVsync=883877734081, Vsync=884694400715, InputEventId=0, HandleInputStart=884697165165, AnimationStart=884697166873, PerformTraversalsStart=884704489032, DrawStart=884706931056, FrameDeadline=884494400723, FrameInterval=884696437796, FrameStartTime=16666666, SyncQueued=884802722586, SyncStart=884802783446, IssueDrawCommandsStart=884803215623, SwapBuffers=884808723832, FrameCompleted=884897641917, DequeueBufferDuration=5685, QueueBufferDuration=7676877, GpuCompleted=884897561266, SwapBuffersCompleted=884897641917, DisplayPresentTime=0, CommandSubmissionCompleted=884808723832,
+10-05 07:02:27.821  3730  3748 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:27.893   356  6702 I resolv  : GetAddrInfoHandler::run: {100 100 100 983140 10209 0}
+10-05 07:02:27.912  3730  3748 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:27.954  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 07:02:27.961  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 07:02:27.962  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 07:02:27.962  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 07:02:27.962  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 07:02:27.963  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, true)
+10-05 07:02:27.963  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 07:02:27.963  1324  1324 W SessionManager: SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+10-05 07:02:27.963  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 07:02:27.970  3730  3748 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 07:02:28.022  3730  3730 I openai.fxm1.ec1: IncrementDisableThreadFlip blocked for 6.542ms
+10-05 07:02:28.032  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5962KB AllocSpace bytes, 19(972KB) LOS objects, 49% free, 3940KB/7881KB, paused 743us,5.235ms total 186.048ms
+10-05 07:02:28.155  3730  3730 I AssistStructure: Flattened final assist data: 17688 bytes, containing 2 windows, 105 views
+10-05 07:02:28.191   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 07:02:28.198  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 07:02:28.252  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@32ddcff in: PAUSED
+10-05 07:02:28.277  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+10-05 07:02:28.297   356   356 I netd    : tetherGetStats() -> {[]} <0.44ms>
+10-05 07:02:28.301  1152  1152 D BaseDepthController: setSurface:
+10-05 07:02:28.301  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 07:02:28.301  1152  1152 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0x71d58b2
+10-05 07:02:28.417  1152  1152 D StatsLog: LAUNCHER_ONRESUME
+10-05 07:02:28.491   552  1486 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 07:02:28.510  1152  1173 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 07:02:28.558  1152  1968 D OneSearchSuggestProvider: 	... 8 more
+10-05 07:02:28.564  1152  1968 D OneSearchSuggestProvider: Created the binder channel successfully for end point service =com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService , mChannel=i1{delegate=f{logId=359, target=directaddress:///AndroidComponentAddress%5BIntent%20%7B%20act=grpc.io.action.BIND%20cmp=com.google.android.googlequicksearchbox/com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService%20%7D%5D}} , mOneSearchConnection=l2.Z@c0909c2
+10-05 07:02:28.673  3730  3795 D EGL_emulation: app_time_stats: avg=198.96ms min=95.76ms max=445.07ms count=8
+10-05 07:02:28.682   552  1782 W system_server: Long monitor contention with owner android.anim (578) at void com.android.server.wm.WindowSurfacePlacer$Traverser.run()(WindowSurfacePlacer.java:58) waiters=3 in android.app.ActivityTaskManager$RootTaskInfo com.android.server.wm.ActivityTaskManagerService.getFocusedRootTaskInfo() for 125ms
+10-05 07:02:28.683   552   644 W system_server: Long monitor contention with owner android.anim (578) at void com.android.server.wm.WindowSurfacePlacer$Traverser.run()(WindowSurfacePlacer.java:58) waiters=0 in android.app.ActivityTaskManager$RootTaskInfo com.android.server.wm.ActivityTaskManagerService.getRootTaskInfo(int, int) for 194ms
+10-05 07:02:28.686  1152  1152 D StateManager: createAtomicAnimation - fromState: Background, toState: Normal, partial trace:
+10-05 07:02:28.686  1152  1152 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.prepareToAnimate(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:22)
+10-05 07:02:28.686  1152  1152 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 07:02:28.686  1152  1152 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 07:02:28.728  1528  1528 I A       : (REDACTED) Created gRPC endpoint for service %s
+10-05 07:02:28.735   552   677 I ImeTracker: com.google.android.apps.nexuslauncher:756838f5: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 07:02:28.735   552   677 I ImeTracker: com.google.android.apps.nexuslauncher:756838f5: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 07:02:28.749  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 07:02:28.751  1451  1657 I AiAiEcho: EchoTargets:
+10-05 07:02:28.751  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 07:02:28.751  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 07:02:28.751  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 07:02:28.752  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 07:02:28.752  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 07:02:28.754  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 07:02:28.867   396  6397 I RanchuHwc: logCompositionFallbackIfChanged: layer 526 CompositionType fallback from 3 to 1
+10-05 07:02:28.932  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 07:02:28.932  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.google.android.apps.nexuslauncher, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 07:02:28.957  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 07:02:28.958  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 07:02:29.001  1324  1324 W NotificationCenter: NotificationCenter$ListenerData.notifyOnExecutor():672 Heavy notify work detected on UI thread: |kga->jjc| takes 36ms
+10-05 07:02:29.075  3730  3730 I Choreographer: Skipped 35 frames!  The application may be doing too much work on its main thread.
+10-05 07:02:29.161  1152  1679 D EGL_emulation: app_time_stats: avg=163.94ms min=2.13ms max=1732.84ms count=15
+10-05 07:02:29.345  3730  3748 I TestRunner: finished: queuedCommandCannotMoveToChangedServer(com.openai.fxm1.R73ControlsUiTest)

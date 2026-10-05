@@ -1,0 +1,161 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig
+> Task :app:javaPreCompileDebug
+> Task :app:checkDebugAarMetadata
+> Task :app:generateDebugResValues
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:processDebugAndroidTestManifest
+> Task :app:generateDebugAndroidTestBuildConfig
+> Task :app:processDebugManifestForPackage
+> Task :app:javaPreCompileDebugAndroidTest
+> Task :app:generateDebugAndroidTestResValues
+> Task :app:checkDebugAndroidTestAarMetadata
+> Task :app:mapDebugAndroidTestSourceSetPaths
+> Task :app:generateDebugAndroidTestResources
+> Task :app:mergeDebugAndroidTestResources
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:processDebugResources
+> Task :app:processDebugAndroidTestResources
+
+> Task :app:compileDebugJavaWithJavac
+Note: /home/runner/work/FX-M1-Signal/FX-M1-Signal/app/src/main/java/com/openai/fxm1/MainActivity.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeDebugJavaResource
+
+> Task :app:compileDebugAndroidTestJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :app:desugarDebugFileDependencies
+> Task :app:mergeExtDexDebug
+> Task :app:mergeLibDexDebug
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugJniLibFolders
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeDebugAndroidTestShaders
+> Task :app:compileDebugAndroidTestShaders NO-SOURCE
+> Task :app:generateDebugAndroidTestAssets UP-TO-DATE
+> Task :app:mergeDebugAndroidTestAssets
+> Task :app:compressDebugAndroidTestAssets
+> Task :app:processDebugAndroidTestJavaRes NO-SOURCE
+> Task :app:mergeProjectDexDebug
+> Task :app:desugarDebugAndroidTestFileDependencies
+> Task :app:checkDebugAndroidTestDuplicateClasses
+> Task :app:mergeDebugAndroidTestJavaResource
+> Task :app:dexBuilderDebugAndroidTest
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:mergeLibDexDebugAndroidTest
+> Task :app:mergeDebugAndroidTestJniLibFolders
+> Task :app:mergeDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningDebugAndroidTest
+> Task :app:writeDebugAndroidTestSigningConfigVersions
+> Task :app:mergeProjectDexDebugAndroidTest
+> Task :app:mergeExtDexDebugAndroidTest
+> Task :app:packageDebugAndroidTest
+> Task :app:createDebugAndroidTestApkListingFileRedirect
+[EmulatorConsole]: Failed to start Emulator console for 5554
+
+> Task :app:connectedDebugAndroidTest
+Starting 167 tests on emulator-5554 - 15
+
+emulator-5554 - 15 Tests 1/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 2/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 4/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 5/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 6/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 7/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 8/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 10/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 11/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 13/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 14/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 16/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 17/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 19/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 20/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 22/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 26/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 29/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 30/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 32/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 33/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 34/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 35/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 36/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 37/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 38/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 40/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 42/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 52/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 54/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 60/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 61/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 62/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 63/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 64/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 65/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 66/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 67/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 68/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 71/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 72/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 74/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 75/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 77/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 78/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 84/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 87/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 88/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 89/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 90/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 92/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 93/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 95/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 96/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 103/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 105/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 106/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 107/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 113/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 114/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 115/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 136/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 139/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 141/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 144/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 146/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 148/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 151/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 153/167 completed. (0 skipped) (0 failed)
+emulator-5554 - 15 Tests 166/167 completed. (0 skipped) (0 failed)
+Finished 167 tests on emulator-5554 - 15
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__reactivecircus_android-emulator-runner-1791182907499.json
+
+BUILD SUCCESSFUL in 15m 22s
+59 actionable tasks: 59 executed

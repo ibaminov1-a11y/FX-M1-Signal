@@ -1,0 +1,5 @@
+10-05 07:01:55.550  3730  3748 I TestRunner: started: staleAndArchiveMarkersNeverClaimLive(com.openai.fxm1.R73ChartUiTest)
+10-05 07:01:55.550  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2835KB AllocSpace bytes, 18(808KB) LOS objects, 49% free, 4027KB/8054KB, paused 5.097ms,10.657ms total 329.074ms
+10-05 07:01:55.607  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=88
+10-05 07:01:55.607  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=88
+10-05 07:01:55.642  3730  3748 I TestRunner: finished: staleAndArchiveMarkersNeverClaimLive(com.openai.fxm1.R73ChartUiTest)

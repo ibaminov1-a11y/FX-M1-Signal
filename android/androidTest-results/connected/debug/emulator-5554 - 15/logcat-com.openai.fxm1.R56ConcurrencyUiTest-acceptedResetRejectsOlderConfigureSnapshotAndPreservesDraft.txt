@@ -1,0 +1,32 @@
+10-05 06:58:28.635  3730  3748 I TestRunner: started: acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft(com.openai.fxm1.R56ConcurrencyUiTest)
+10-05 06:58:28.647  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.662  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.690  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.734  1152  1679 D EGL_emulation: app_time_stats: avg=501.59ms min=24.70ms max=978.47ms count=2
+10-05 06:58:28.788  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.019  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.234  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.372  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.601   356   390 I netd    : tetherGetStats() -> {[]} <3.36ms>
+10-05 06:58:29.615   356   390 I netd    : bandwidthSetGlobalAlert(2097152) <0.17ms>
+10-05 06:58:29.620  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.646   356   390 I netd    : bandwidthRemoveInterfaceQuota(eth0) <16.13ms>
+10-05 06:58:29.666  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3170KB AllocSpace bytes, 22(1028KB) LOS objects, 49% free, 3055KB/6111KB, paused 73us,10.259ms total 144.107ms
+10-05 06:58:29.667  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.692   356   356 I netd    : bandwidthSetInterfaceQuota(eth0, 9223372036854775807) <0.73ms>
+10-05 06:58:29.711  3730  5989 D TrafficStats: tagSocket(119) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.772  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.805  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.822  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.833  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.850  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.863  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.893  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.898  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.905  3730  5990 D TrafficStats: tagSocket(119) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.949  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.966  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.985  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:29.996  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:30.002  3730  3748 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:58:30.002  3730  3748 I TestRunner: finished: acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft(com.openai.fxm1.R56ConcurrencyUiTest)

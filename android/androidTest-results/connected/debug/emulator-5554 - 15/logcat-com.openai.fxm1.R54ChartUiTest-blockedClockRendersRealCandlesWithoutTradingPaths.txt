@@ -1,0 +1,7 @@
+10-05 06:55:11.410  3730  3748 I TestRunner: started: blockedClockRendersRealCandlesWithoutTradingPaths(com.openai.fxm1.R54ChartUiTest)
+10-05 06:55:11.540   365  5507 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:55:11.540   365  5507 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:55:11.607  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=46
+10-05 06:55:11.607  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=46
+10-05 06:55:12.351  1424  1613 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:55:12.358  3730  3748 I TestRunner: finished: blockedClockRendersRealCandlesWithoutTradingPaths(com.openai.fxm1.R54ChartUiTest)

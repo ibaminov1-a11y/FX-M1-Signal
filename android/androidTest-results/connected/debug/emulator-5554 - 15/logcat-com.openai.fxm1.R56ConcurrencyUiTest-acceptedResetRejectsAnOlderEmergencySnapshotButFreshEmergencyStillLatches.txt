@@ -1,0 +1,17 @@
+10-05 06:58:28.394  3730  3748 I TestRunner: started: acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches(com.openai.fxm1.R56ConcurrencyUiTest)
+10-05 06:58:28.399  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.414  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.434  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.444  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.461  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.473  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.477  3730  5988 D TrafficStats: tagSocket(119) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.521  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.537  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.550  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.564  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.600  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.613  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.629  3730  3748 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:58:28.634  3730  3748 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:58:28.634  3730  3748 I TestRunner: finished: acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches(com.openai.fxm1.R56ConcurrencyUiTest)

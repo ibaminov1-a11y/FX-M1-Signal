@@ -1,0 +1,2 @@
+10-05 07:03:15.597  3730  3748 I TestRunner: started: commandEnvelopeCapturesProfileBeforeViewChanges(com.openai.fxm1.R7ReleaseUiTest)
+10-05 07:03:15.609  3730  3748 I TestRunner: finished: commandEnvelopeCapturesProfileBeforeViewChanges(com.openai.fxm1.R7ReleaseUiTest)

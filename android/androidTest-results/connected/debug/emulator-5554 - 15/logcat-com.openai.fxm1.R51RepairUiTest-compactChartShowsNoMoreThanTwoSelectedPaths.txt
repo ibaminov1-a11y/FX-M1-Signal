@@ -1,0 +1,5 @@
+10-05 06:52:38.208  3730  3748 I TestRunner: started: compactChartShowsNoMoreThanTwoSelectedPaths(com.openai.fxm1.R51RepairUiTest)
+10-05 06:52:38.435  1152  1679 D EGL_emulation: app_time_stats: avg=88.68ms min=30.90ms max=212.55ms count=11
+10-05 06:52:38.453  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:52:38.580  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:52:38.736  3730  3748 I TestRunner: finished: compactChartShowsNoMoreThanTwoSelectedPaths(com.openai.fxm1.R51RepairUiTest)

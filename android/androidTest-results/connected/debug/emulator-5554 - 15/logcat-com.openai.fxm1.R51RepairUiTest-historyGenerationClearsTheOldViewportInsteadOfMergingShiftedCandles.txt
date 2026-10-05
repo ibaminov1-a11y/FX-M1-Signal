@@ -1,0 +1,6 @@
+10-05 06:52:37.644  3730  3748 I TestRunner: started: historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles(com.openai.fxm1.R51RepairUiTest)
+10-05 06:52:37.652  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=31
+10-05 06:52:37.652  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=31
+10-05 06:52:37.967  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:52:38.042  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:52:38.206  3730  3748 I TestRunner: finished: historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles(com.openai.fxm1.R51RepairUiTest)

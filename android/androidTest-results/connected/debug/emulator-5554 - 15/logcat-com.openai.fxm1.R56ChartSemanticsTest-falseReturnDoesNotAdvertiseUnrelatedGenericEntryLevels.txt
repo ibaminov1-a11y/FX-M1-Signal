@@ -1,0 +1,10 @@
+10-05 06:58:27.917  3730  3748 I TestRunner: started: falseReturnDoesNotAdvertiseUnrelatedGenericEntryLevels(com.openai.fxm1.R56ChartSemanticsTest)
+10-05 06:58:27.928  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4b8851a in: DESTROYED
+10-05 06:58:27.928  3730  3730 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@45c5e6e
+10-05 06:58:27.942  1424  1525 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:58:27.942  1424  1525 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:58:27.943  1424  1525 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=44151ed7-7ad3-4731-8dd3-50eb632fcfea, generation=0)
+10-05 06:58:27.944  1424  1525 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=44151ed7-7ad3-4731-8dd3-50eb632fcfea, generation=0)
+10-05 06:58:27.948   365  5966 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:58:27.948   365  5966 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:58:27.978  3730  3748 I TestRunner: finished: falseReturnDoesNotAdvertiseUnrelatedGenericEntryLevels(com.openai.fxm1.R56ChartSemanticsTest)

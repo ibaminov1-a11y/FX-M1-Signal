@@ -1,0 +1,8 @@
+10-05 06:49:42.038  3730  3748 I TestRunner: started: openCampaignMustNotOverwriteCurrentAnalysisSignal(com.openai.fxm1.CampaignSignalUiTest)
+10-05 06:49:42.042  1636  1636 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.constellation.service.START pkg=com.google.android.gms }
+10-05 06:49:42.042  1636  1636 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.constellation.service.START pkg=com.google.android.gms }
+10-05 06:49:42.044  3289  3410 I BugleRcsEngine: [SR]: Single Registration is disabled. Skipping Single Registration capability check for subId: 1, OS.isAtLeastS:[true], enableSingleRegistrationProvisioning:[false] [CONTEXT thread_id=63 ]
+10-05 06:49:42.046  3289  3410 I RcsAvailabilityUpdaterL: RcsAvailability configuration availability and enabled status: simId: redacted-pii:sim_id[chars:20,last3:897], SipConnectionType: DUAL_REG, isConfigurationAvailableAndEnabled: false
+10-05 06:49:42.054  3289  3410 I RcsAvailabilityUpdaterL: updateRcsAvailability: currentAvailability: 9, newAvailability: 2, hint: NO_HINT
+10-05 06:49:42.060  1636  2015 I Icing   : Indexing done com.google.android.gms-internal.3p:MobileApplication
+10-05 06:49:42.069  3730  3748 I TestRunner: finished: openCampaignMustNotOverwriteCurrentAnalysisSignal(com.openai.fxm1.CampaignSignalUiTest)

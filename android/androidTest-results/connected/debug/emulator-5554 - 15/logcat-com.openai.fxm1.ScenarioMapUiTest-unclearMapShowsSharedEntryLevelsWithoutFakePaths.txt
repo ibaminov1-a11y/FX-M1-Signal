@@ -1,0 +1,5 @@
+10-05 07:03:15.735  3730  3748 I TestRunner: started: unclearMapShowsSharedEntryLevelsWithoutFakePaths(com.openai.fxm1.ScenarioMapUiTest)
+10-05 07:03:15.771  2402  6844 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 933 [CONTEXT service_id=218 ]
+10-05 07:03:15.774  2402  6430 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 23 uptime_millis: 23 exec_start_elapsed_seconds: 933 [CONTEXT service_id=218 ]
+10-05 07:03:15.797  1424  1613 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:03:15.802  3730  3748 I TestRunner: finished: unclearMapShowsSharedEntryLevelsWithoutFakePaths(com.openai.fxm1.ScenarioMapUiTest)

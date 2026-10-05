@@ -1,0 +1,2 @@
+10-05 07:01:57.006  3730  3748 I TestRunner: started: priceAxisPreservesBrokerPrecisionWithoutTruncationAcrossInstruments(com.openai.fxm1.R73ChartUiTest)
+10-05 07:01:57.016  3730  3748 I TestRunner: finished: priceAxisPreservesBrokerPrecisionWithoutTruncationAcrossInstruments(com.openai.fxm1.R73ChartUiTest)

@@ -1,0 +1,2 @@
+10-05 07:03:15.611  3730  3748 I TestRunner: started: wrongFrameHistoryAndExpiredForecastAreNotDrawn(com.openai.fxm1.R7ReleaseUiTest)
+10-05 07:03:15.615  3730  3748 I TestRunner: finished: wrongFrameHistoryAndExpiredForecastAreNotDrawn(com.openai.fxm1.R7ReleaseUiTest)

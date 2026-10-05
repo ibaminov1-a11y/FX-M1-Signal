@@ -1,0 +1,5 @@
+10-05 07:01:29.711  3730  3748 I TestRunner: started: configTransmitsChosenLotNotHardcoded001(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 07:01:30.119  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:30.270  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:30.453  1152  1679 D EGL_emulation: app_time_stats: avg=98.01ms min=41.07ms max=408.03ms count=10
+10-05 07:01:30.515  3730  3748 I TestRunner: finished: configTransmitsChosenLotNotHardcoded001(com.openai.fxm1.R5SettingsHistoryTest)

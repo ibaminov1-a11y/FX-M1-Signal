@@ -1,0 +1,5 @@
+10-05 07:03:14.444  3730  3748 I TestRunner: started: priceForecastIsVisibleWhileEntryWaits(com.openai.fxm1.R7ReleaseUiTest)
+10-05 07:03:14.937  3730  3748 D UiDevice: Executing shell command: mkdir -p /sdcard/Download/ec1-qa
+10-05 07:03:15.049  3730  3748 D UiDevice: Executing shell command: cp /storage/emulated/0/Android/data/com.openai.fxm1.ec1/files/r7-wait-price-forecast.png /sdcard/Download/ec1-qa/r7-wait-price-forecast.png
+10-05 07:03:15.098  1424  1613 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:03:15.255  3730  3748 I TestRunner: finished: priceForecastIsVisibleWhileEntryWaits(com.openai.fxm1.R7ReleaseUiTest)
