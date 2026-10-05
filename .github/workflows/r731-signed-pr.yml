@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: a634afc3900acafe93048b621ed2a25a55c38c0b
+          ref: 641fee69705d32220cddaef954e890fd606c6c49
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-java@v4
@@ -40,6 +40,6 @@ jobs:
           sha256sum evidence/FXM1_R7_3_1_SCENARIO_MAP.apk > evidence/APK_SHA256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: R731-SIGNED-a634afc3900acafe93048b621ed2a25a55c38c0b
+          name: R731-SIGNED-641fee69705d32220cddaef954e890fd606c6c49
           path: evidence/
           if-no-files-found: error
