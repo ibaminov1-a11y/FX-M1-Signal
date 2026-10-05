@@ -5,9 +5,12 @@ on:
     paths: ['.github/workflows/r732-signed-acceptance.yml']
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: r732-acceptance-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
+env:
+  R732_SOURCE_SHA: 2cca2b03d90e4c5405b9d548754b297aa0468f23
 jobs:
   signing-preflight:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
@@ -33,6 +36,38 @@ jobs:
           printf '{"certificate_sha256":"%s","private_key_exported":false,"release_allowed":false}\n' "$fingerprint" > evidence/SIGNING_PREFLIGHT.json
       - uses: actions/upload-artifact@v4
         with:
-          name: R732-SIGNING-PREFLIGHT-${{ github.event.pull_request.head.sha }}
+          name: R732-SIGNING-PREFLIGHT-${{ env.R732_SOURCE_SHA }}
           path: evidence/SIGNING_PREFLIGHT.json
+          if-no-files-found: error
+  windows:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+      R7_NO_PAUSE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R732_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Install real public dependencies
+        run: python -m pip install -r mt5_bridge/requirements_event.txt
+      - name: Verify exact launcher on Windows without broker initialization
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          python tools/windows_r732_gate.py *> evidence/windows.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/windows.log
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R732-WINDOWS-${{ env.R732_SOURCE_SHA }}
+          path: evidence/
           if-no-files-found: error
