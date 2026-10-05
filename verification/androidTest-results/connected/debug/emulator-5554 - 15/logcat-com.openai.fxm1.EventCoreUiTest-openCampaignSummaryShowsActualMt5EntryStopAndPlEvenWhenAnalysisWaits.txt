@@ -1,0 +1,1059 @@
+10-05 06:50:05.427  3730  3748 I TestRunner: started: openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits(com.openai.fxm1.EventCoreUiTest)
+10-05 06:50:05.449  1636  3747 I ebvk$a  : Unable to retrieve flag snapshot for com.google.android.gms.inappreach#com.google.android.gms, using defaults.
+10-05 06:50:05.472  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 9640KB AllocSpace bytes, 66(3764KB) LOS objects, 49% free, 3978KB/7956KB, paused 56.223ms,10.873ms total 410.381ms
+10-05 06:50:05.485  3289  3401 I BugleRcsProvisioning: BugleSystemBindingManager: onBuglePhenotypeFlagChanged
+10-05 06:50:05.490  3289  3389 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=49 ]
+10-05 06:50:05.491  3289  3390 I BugleRcsEngine: SystemBinding enabled: true [CONTEXT log_prefix="SystemBindingManager" thread_id=50 ]
+10-05 06:50:05.491  3289  3390 I BugleRcsEngine: System Binding updated [CONTEXT thread_id=50 ]
+10-05 06:50:05.494  3289  3402 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=57 ]
+10-05 06:50:05.498  3289  3401 I BugleTransport: onBuglePhenotypeFlagChanged: kicking off updateActiveTransport
+10-05 06:50:05.499  3289  3402 W BugleAction: Failed to get msisdn from Bugle
+10-05 06:50:05.500  3289  3402 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:05.500  3289  3402 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:05.500  3289  3402 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:05.500  3289  3400 I BugleTransport: isChatAvailable: RcsAvailability is DISABLED_VIA_GSERVICES (RCS is disabled for this carrier by Google)
+10-05 06:50:05.514  1528  2441 W TimedProcessReaper: Scheduling killing of process to refresh configuration
+10-05 06:50:05.518  2402  3536 W .gms.persistent: Long monitor contention with owner highpool[1] (2494) at java.util.Map ebtx.c()(:com.google.android.gms@242335041@24.23.35 (190800-646585959):52) waiters=0 in void ebtx.e() for 190ms
+10-05 06:50:05.526  3289  3388 W Bugle   : TextClassifierLibManagerImpl: Reclaiming memory at level: 40
+10-05 06:50:05.529  2402  2731 W .gms.persistent: Long monitor contention with owner [com.google.android.gms.chimera.container.intentoperation.PersistentIntentOperationChimeraService-Executor] processing com.google.android.gms.common.config.PhenotypeUpdateOperation for action com.google.android.gms.phenotype.UPDATE (3536) at void ebtx.f(android.net.Uri)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17) waiters=1 in ebtx ebtx.a(android.content.ContentResolver, android.net.Uri, java.lang.Runnable) for 164ms
+10-05 06:50:05.530  2402  2646 W .gms.persistent: Long monitor contention with owner [com.google.android.gms.chimera.container.intentoperation.PersistentIntentOperationChimeraService-Executor] processing com.google.android.gms.common.config.PhenotypeUpdateOperation for action com.google.android.gms.phenotype.UPDATE (3536) at void ebtx.f(android.net.Uri)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17) waiters=2 in ebtx ebtx.a(android.content.ContentResolver, android.net.Uri, java.lang.Runnable) for 122ms
+10-05 06:50:05.533  3289  3402 I Bugle   : getRawTelephonyPhoneNumber redacted-pii[0-chars] [CONTEXT sub_id=-1 ]
+10-05 06:50:05.534  2402  3216 W .gms.persistent: Long monitor contention with owner netscheduler-queue-handler (2731) at int dbyt.l(dbyf, bcsk)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):826) waiters=0 in void dbyt.t(boolean, bpmd) for 285ms
+10-05 06:50:05.535  3289  3402 W BugleAction: No default number, returning empty msisdn
+10-05 06:50:05.535  3289  3402 I BugleRcsEngine: isRcsAvailableForSubId called with an invalid sub id: -2 [CONTEXT log_prefix="RcsProvisioningManager" thread_id=57 ]
+10-05 06:50:05.536  3289  3401 I BugleTransport: updateActiveTransport: refreshing chat transport
+10-05 06:50:05.538  3289  3401 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=56 ]
+10-05 06:50:05.538  3289  3401 I BugleTransport: refreshChatTransport: isChatAvailable: false, enabledTransport: 1, configuration: <empty>
+10-05 06:50:05.539  1636  2864 I PeopleGalProvider: Gal directories started.
+10-05 06:50:05.539  1636  2864 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:05.539  1636  2864 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:05.541  3289  3402 I RcsClientLib: Connecting RcsEngineLifecycleService
+10-05 06:50:05.542  3289  3402 W RcsClientLib: No CS.apk RCS service found. Is RCS running in Bugle?
+10-05 06:50:05.542  3289  3402 I RcsClientLib: shouldUseCarrierServicesJibeService: false, CarrierServices rcs service found: false
+10-05 06:50:05.544  3289  3402 I RcsClientLib: com.google.android.rcs.client.lifecycle.RcsEngineLifecycleService connected
+10-05 06:50:05.546  1636  3885 I NewModuleOp: Enable component: com.google.android.gms.languageprofile.GcmReceiverService [CONTEXT service_id=167 ]
+10-05 06:50:05.554  3289  3401 D MddListenableWorkerFactory: createWorker for class: com.google.android.apps.messaging.shared.datamodel.workqueue.WorkQueueWorkerShim
+10-05 06:50:05.563  3604  3750 I BugleRcsEngine: triggerStopRcsStack for msisdn:redacted-pii:phone_number[chars:0,last2:] [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=64 ]
+10-05 06:50:05.568  1636  3885 I NewModuleOp: Enable component: com.google.android.gms.languageprofile.GcmTaskService [CONTEXT service_id=167 ]
+10-05 06:50:05.570  3289  3401 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=c35d508c-77c0-49f0-8834-7fe98efef33b, tags={ com.google.android.apps.messaging.shared.datamodel.workqueue.WorkQueueWorkerShim,data_upgrade- } ]
+10-05 06:50:05.578  1636  3885 I NewModuleOp: Schedule LanguageProfileGcmTaskChimeraService tasks. [CONTEXT service_id=167 ]
+10-05 06:50:05.587  1636  3885 I LPGcmTaskChimeraService: Scheduling sync task. [CONTEXT service_id=167 ]
+10-05 06:50:05.592  3289  3371 W Bugle   : TextClassifierLibManagerImpl: Reclaiming memory at level: 40
+10-05 06:50:05.593  2402  4051 I PTCommittedOperation: Receive new configuration for com.google.android.gms
+10-05 06:50:05.593  2402  4051 I PTCommittedOperation: Running Fixer Framework for com.google.android.gms
+10-05 06:50:05.596  1636  1647 I PeopleGalProvider: Gal directories started.
+10-05 06:50:05.596  1636  1647 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:05.596  1636  1647 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:05.598  1636  2864 I PeopleGalProvider: Gal directories started.
+10-05 06:50:05.602  1636  3885 I GmsSyncPolicyEngine: Periodic sync 2 disabled by policy, cancelled.
+10-05 06:50:05.602  1636  2864 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:05.602  1636  2864 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:05.604  1636  2864 I PeopleGalProvider: Gal directories started.
+10-05 06:50:05.605  1636  2864 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:05.605  1636  2864 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:05.605  1636  3885 I GmsSyncPolicyEngine: Periodic sync 6 disabled
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms [CONTEXT service_id=204 ]
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:05.615  2402  3145 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:05.619  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.droidguard.DroidGuardGcmTaskService started execution. cause:7 exec_start_elapsed_seconds: 142 [CONTEXT service_id=218 ]
+10-05 06:50:05.629  3289  3394 I RcsClientLib: Disconnecting RcsEngineLifecycleService
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms.esim [CONTEXT service_id=204 ]
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms.esim
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:05.630  2402  3152 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:05.632  3604  3709 I BugleRcsEngine: handleMessage processing message:[STOP_RCS_STACK] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:05.635  3604  3709 I BugleRcsEngine: RCS engine STOP RCS stack [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:05.636  3604  3709 I BugleRcsEngine: imsModule is null, shutdown not required [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=63 ]
+10-05 06:50:05.636  3604  3709 I BugleRcsEngine: skipping imsModule.stop [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=63 ]
+10-05 06:50:05.637  3604  3709 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:05.639  3604  3709 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=63 ]
+10-05 06:50:05.648  1636  3341 I Icing   : MaintenanceDriver: Registering all GCM Tasks.
+10-05 06:50:05.665  2402  2490 W BpBinder: Large outgoing transaction of 420876 bytes, interface descriptor , code 4
+10-05 06:50:05.704  3289  3410 W TimedProcessReaper: Scheduling killing of process to refresh configuration
+10-05 06:50:05.710  1152  1152 D SearchTargetUtil: query= size=15
+10-05 06:50:05.710  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hocus pocus disney+ streaming charts,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=hocus pocus disney+ streaming charts searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 4f322205-26cb-4d6a-b475-45a764f70a81
+10-05 06:50:05.710  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=iwsc 2026 bourbon winner,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=iwsc 2026 bourbon winner searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: e54f6793-3fa8-4363-8dc2-e0d1807ae972
+10-05 06:50:05.710  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=shane lilly dog legal battle,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=shane lilly dog legal battle searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: e3707b72-b56e-4dd3-9011-f4a3d8607081
+10-05 06:50:05.711  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAHwAfAMBIgACEQEDEQH/xAAcAAACAgMBAQAAAAAAAAAAAAABAgAGAwUHBAj/xAA+EAABAwMCAwUFBAYLAAAAAAABAAIDBAURBiESMVEHE0FhcRQigZHwMnKhwRVCQ7Gy4RYjMzQ1VGJ0ksLR/8QAGgEAAgMBAQAAAAAAAAAAAAAAAQIAAwQFBv/EACwRAAIBAwMDAgQHAAAAAAAAAAABAgMEERIhMRNBYRRRBSIyUkJxgZGxwdH/2gAMAwEAAhEDEQA/AOcAJgoEQF6tHGYUQFGjfCbCKQuSDZFTCbHVNgXIuFMdEwCPJHBBNkMJ8fBTChMmPGVCMbpsKFDATGQh8U5CGEoUxCFE2yGPrKASJggOaYDdEDCAmAUHRHCdCsOEQM+KZjHSPayNrnucQGtaMkk+AC6Lp/swkfT+3amqhQ07RxGFjgHgdXOOzfTf4KqrXp0VmbDCnKo8ROcY6ocbPF7R8V1g3zs80+THbra2vlZ+0ZF3u/35PyVr0Pqil1PHWezW8UjaZzW8PEDnIPgBtyWWpezhHX03jzsXxt4yenVufPgc07BzfgUSAV9E6yuNks1DFUXqgZURTSiINEDXnJBOcHw2VUZp3Qur2O/Qk4o6vGeCEljh6xu2I9PmhD4gnHVKDS9+SStcPClucgI+ggRsrNqvRtz01J3lS1s9GThlVEPdJ6OH6p+sqtnl4rdCcakdUXlGeUZQeGY/FKshAwlRaJkQhBNj5IfAIDZIEwQCcDyUSAFqYDdAc1kAToRnWOx/TEIpf0/WRh8z3OZShw+w0bF3qTkeg81YdcaPqtUVND3dydT0kZInhOS09HNHi7w3/wDc+vs6mim0ZajDjDYeBwHg4Eg/iFZV5mtXn6hz7o7FOlB0lHsfOOq9PVGnLvJRVPvxn3oJcbSs6+vUfyXTuy7U9PcaQWyoZFFXwN2LGhvfsHjt+sPH5qyat07T6ktb6SfDJWnigmxvG/HP0PIhcIlhr7Bd+B/FTV1JICCPAjkR1B/EFdKnKN/R0S+tGKadrU1LhnWe1W62uls7KWrpoaqtmJNNHIP7PwMnljw6n4qhWDQd5ulm/S9FK2nlDg6lY4ljpAP1g4fZ8uvlsvfpWyVuuL9Ldr0XPo2PHenGBIRyjb0A8fLzOV2WONsbAxgAa0YAA2AWedb0kOlB5l39vyLo0/US6kuOxr6S3PfZY6C8SNr3Oh4J3PaAJTjfZcD1nYv6O6gqLeHF0OBJA48zGc4z5ggj4L6PPJcX7aJYn6jo4mEGSOkHH8XOwPwPzS/Dakutp7Ma8gunn2OdlKfrCd2x8kq7xzEYyEMJigfVIxyD0TDCA/BMEyAxh6p246JR9YTjHNMhGXvs11gywzvt1yk4aCofxNkP7F/LP3Ttnpz6rtUT2yMa9jg5jhlrgcgjqvl0b7Kw6e1beNP4ZRTh9N/l5hxM+Hi34Lm3nw7qy10+fY1W9301pnwd3u9xgtNuqK+q4jDAzicGDJPouE61u1Ne9Qz19GJBC9jABI3B2AHJXWHtNtNwpDS36zyd2/aRreGaM+odj80jrh2ZTe8+kEZ6Nglb/Dss9pTnaycp0234Lbica6xGawDsz1XbqGgpLJM2f2ueocGuDRwDiO2Tn8l1ELmLNQdn1skZPQ2wyzRkOY5tKS5pHIgvIwV5Lz2q1crXR2ehZTgj+2nPG74NG34lV1rWpXq6qcGs+49OvClDTKSePY6DqXUVDp2gdU10nvEERQtPvyu6Afn4L59vNyqLvcqi4VhzLO7iIHJo5ADyAwEbjXVVxqn1VfUSVE7uckhyf5DyC8ZHounaWSt1l7yZjr3LqvwYyOiV2/NO762SEZWtlKEKVMf3oYHVKOQbphulymGw3URGZ6YB9RE0jIL2gjyyuyaqtWhdO07I6+gihnqY5PZg1kjuJzQOmcbubzXG6T+9QnG3eN/eF3LtK1JT2OgZSVFG6d1wgnYx4I/qsBozv98fJc2+1OrCMc754NNvp0SbMFs0hpy10dutlzo4qmvrWuBlkbkue1vE7B/VA8MLV6d0JQU9+vD7lH7RQ0Lw2nZIchwLQ8l3XAIHz8lab1TTVeptMVtOwvp4H1DpHgbNDosAn1WeKaOrn1HSQODpmODXN6F0DcLneoqpP5nut/G5qdKDfHH+FUvVj0vGy0albTshtEmDUxtjdwuY+N3AeFu4PFwjbrvyXs1NZNIWuzOmfQRwy1TDHSOAkOZC0lvLl8dl4NVMdR9kNBTVLXRTmKnb3bwQ4O+0QQeRAB+Sz9p3+A2D/cx/wK6GuTinN8tc9kVS0xUvlXCf7m3qtI6RNTFbn26OOoqInyRhjng8LC0OOc7Y42/NVbRmkbfNqa+0dwibV09CRHHxkjJcSc7HmAF0meaZt0pqdtI58Mkcjn1IO0RBbhp+9k/8VX9N2Oa3UmooaacumqKuTuZ5iXHdjcFx5nDnO+SphcTVOScnv58ls6MXOLxwaFmkrS3tIkt76GM0Elt7+OEk8IcHNbnn5H5rXac0/aavtFvVsqKKN9FTxvMUJJw0hzB18yuhVNIf6X26taNvYaiJ58+OIt/7Kt6atldTdpd7rZ6SWOlnif3Uzh7r/ej5firY3EpRlmX4f7EdFKS27nKtUU0VJqK501MwRww1MjGMHJrQdgtSVZteWyvpNRXCrqqOWKnqKuQwyObgP3J2+CrJK7dGSlSi/COfUWJtCnZKACihgfQTkIOSKTJTDmEAmWJ5je17cEtcHDPkt7qbVdx1O6ldc20wNMHiPuWFv2uHOck5+yFX0w8ig4RclJrdA1NLBc7P2j3y12uOgjbTTMibwRSTMJcxo5DYjOFr7Jqu62e61FxglEs1Sc1DZhlsu+cnGMYztjGFXmn5Jh6pVbUd/lW/JHVntvwWTVGpLtqWKOeui7ujiJDBDG4RB+N8uOcuwevI+al61hc75S0tPWNpRHSvD4+7jIOQMb5JXp0NdpmSPscM9VTurZmugmpy093IGke+0ghzOWR4cOVsrfUOvcsMZgthnhoppamept8DxOWOdjuTwjiHnyGOvPNKUKUtLgsR4/UtSlNZ1bswy9p+o5mmOP2Fj3bAx05Lh6Zcf3LWVeq70bJPYatsbYpHEzOkjcJnEv4ySSfEnpyW7s9zqad0Mzp+5pY7Sbk+Ghghp+MtkLeDiDMhpxv47lUevq5K6uqayU/1lRK6V3kSc4RoUqUpNKmkl/IKkppfUy1U/aVf6eCniZHb3CBgjY58Li7AGN/e57LI7tT1Fxtf3Vu4gCAO4d44/wBfkqQlJyrnZ2/2oVV6v3G/1NrC56mgghuTKVrIHl7O4jLTkjG+XFV0onzSHCshCNOOmKwhXJyeWDKmyB+SH1yUbCKCiEmd0QUMhwZMp85CxApgUyYGjIDhMDlY2kY3TApsi4LNp68Wu2WathqXV/tNXIA72MtbmJrT7pe7OAS45wM7BZJ9S26WKkh/Qkpjo4zHBxXOXLAc5+yBzzj02VWBUVDt4Sk5Pv5G6kksIt9o1LaKOtgqBQXGjfCwRh1NWiYGPi4jGWSN+yT4Z8fBVy6PppLjVPoOL2V0rnQhwwQ0nIBHly+C8edkc5GU0KMYS1RBKbksMmUpPRHOyXn5K0XBOaUqFKSUrGQCeaU80ShlKMhAUclIER+aXI5kyiPkkbzTDmiLgcH1TZKQcso5wU2RRwUc7pR4
+10-05 06:50:05.711  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=zelda ocarina of time remake,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=zelda ocarina of time remake searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 2d156bc9-8d02-4194-b052-11b3424eee57
+10-05 06:50:05.711  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=decaffeinated coffee,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=decaffeinated coffee searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 63158ae4-05ab-40b0-8987-595f64277d39
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=usgs el nino winter snowfall map,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=usgs el nino winter snowfall map searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 056663af-1bec-40d3-85c5-24ee2103f6c8
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAB8CAMAAACcwCSMAAAAflBMVEUTJ0/5+fn///8AAD78/PwQJU4AADsAFkYAGEcAAEAKIkwAHUkAH0oAHEkAADkAD0MAC0IAE0Xk5ejz8/TKzNK9wMh9g5TV1tt3fY9PWHLq6+1VXnY3Q2KtsLq3usODiZkvPF2Sl6UcLVOjp7JFT2pnb4MnNlleZXwAADI+Smjt/BYUAAAGqElEQVRoge1a2W7qOhQl23bmkSQEQhlCCpT//8GbQOIhNkNbH1dXwg9HRxXK8vYe17Jns/d6r/d6r/f6xXKdv4POmjb7G+gwXuZQpH8B7durCixYh3+AnRwKwBYubPPQkdd00JYFJ980NEHrGqweuzXu8cjZXs22cG4am3jr/Gp2Z/jSNYvt2+3N7M7weWwWOyLVYLZlPM2SVY5HbNNphpZAsS34MJpmcUuPvMMukUFogkoO24K9QcOJV/DYuPTMYftpxWMb9bjvzAVsXJjzuJ+J2BasjOU4SSbYuDKX40j0d2f4MTIETeJigm3lxgy3t1NsaEyNjaiZYltwIGaws6WEbSzPgk8Juwu3wAi277MeajrciF3J2LBJjICjVj50U9XNPSqwcW0k3PyDDG3s1GOFw03NjSmrLjjnYh0ZqDDhJ4e9Zv8vDdAUEtfjoWPrwCIPFgZoCpdl+IOr73D696fOHTqcnYzuxEiisUOHxpulJXXB9t8nWkpNhaKjgx5NOtiJLneR9inW/6CHnkedj+05BRdH5mgx/9Dd4lh5gXM/rcUszz0h3rxuutMsjbh0gIBtH18kpYFfCfFG0rz7idbEJxk1NM96QwmhByEWdnLodom1gqcbavjxGl7kRP8gxlvUFx+txd7f06QeuAGLPzgLQNf8h0ajAGsX09D2LxRcrG9xnwU6e2xA6zhshugKVzTzBJzw2m9AY92JaU5bDuFBrsVVYOW3M9IY7s6OGk55CQOvePDoDIoM+M1KxzTjrGTgfDMn6Fb/odHVZBNW1Jm+SH0uGDnyR22pRgLavmqmL/oUnF0skHisBlhXk+Xqy5JRcH9s7iylCeWu2pibT0sZnnOfpEWGFriAaVPamJtXqgxn5XUAJ4gqz90uNTE3VkZ5jw/9g4KTJNgyGVSbQoLotDSR0jOLgvtJ0GLGoq6Djo7FGy4yAzsfwb/2G4sjcDgnmoZZVNyb1OxhnMTbAkQh8lNTtPlsWs5t0R46QGKRvcFZlzLEtVKhQ5PA+SpVlBFjbdic4bSd+VGGYnJuilyBDfWHNubEebxNw8hJPJRclm1RA4DCbgxlom184g1Hp9Wy2VY9LGDVgfdmH219pI0Z3n/6AezV6rzxNKqv0QXuQcnQdeNpnBld+6SUQFTIUJyRRugsXVSqmFJhVwvHC/Q52/Ga/Cn06H+8jTVqA769yx95G+M+9vJqCEdtDbRfyWV6iSCiWvNi05xPaUw7+kyX5cRu1PWjt7Vsd+uDh1DiBB1vQWNf09W+/VS6v+iB66I9nhBKMzdk/XIsA7qGdJ/MJWwodnuEssCfHq4z6FGaBCGf1NKR4/rLVesMlCvCRYMQQdK57O7pEMGtURmBO2+Cou8oQ7bs724oun+m6XZItlqZbNGiOr081CRUU+T7ye5+3YxG5qxmR8kGcqUuReSzpOwAQ8V5/EGXJO5Y5JSX11kLOFfUAEJk3WK4iAcoP5jG+ljT9cZRSnmr1mcDKLaVbiGc/Pw2JIPVHmwm993x5rioYgGtItXdntbLrwk6uiHdtHf77AcCJ/G52wSBIcmLIMrcI9n0G7h0xB2QdJ5pCfOF3Y2JyY4Z/uzNTTIyWKrViCiSRDjr75+xdN0drs/IJb3qxT09ecbxOUFMfqyRXBkznjrOBcUrpvAGhFihgfJps6RjHpYJGrq6b7qr21SaO6ok4i+n4fC0QlFppjNmUubI7JY9K/EjwVUyAtU7A7TjsJsXuhWLTjyRmt3bpyYC5Swc9KpSmn9S7nJ6IrDdWTdDbtEpSt/DxcQ0bsZ2BEUiZBJB/MU4rF8qzBydE55ljUkzbXnEGwtTvbbZ3BnYwkOn7WtdmomwwlHSoV+qZojS227i9lInCMMos9f8IIHr5MXJzNsw9CIdjjLb52PHm2aBy91KQr1tjuv1sp0LsxusXu6GKbvMh3plR77vxEuL9pypCkvVnAH/xsMsHrt5XbmNVlyUQrHcXxp2hooCnUpPTcTVee9l7MnjETwxRB5yyOEhH8Hz710Lq0agwQrVZOssHpiO8+elTVzeXZ6hJBTyGx8Oe/9dfYFMn4iNhu/Uo2Vc3kGH+vB9LWv6MG/41N3QiTfqzVb+T3QVwl7esk8V9ws0OspkFEP7Q8JL0LmG6ace/N51Wixst5tbLz+/mQlQx+qH7/Vqxefj+kySbFdZN6Wn/6dY278iPo593NY3QtucntMV4qJktWs327IrsqH3axUtSOLsdJrZnvOiFaGbJWmaOIoB9EeL6FKd3+u93uu9/i/rP6RaW9RAET9UAAAAAElFTkSuQmCC,suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=true,is_personal=false,suggest_raw_text=atlanta braves baseball,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=Atlanta Braves searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: a3db0311-a5e4-41dc-9cb0-394abfa1f594
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=ss richard montgomery shipwreck salvage,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=ss richard montgomery shipwreck salvage searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 61ef6e54-01e2-49b8-949d-0cc1ae11b428
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=taylor swift music video patient zero,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=taylor swift music video patient zero searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: f1966c2f-762d-4188-a450-68ed279e81ce
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hershey park,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=hershey park searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: c31d139c-12a0-4ba8-a67f-6fd13fc87777
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=jagex runescape 4,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=jagex runescape 4 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 0f72239b-d1dc-4066-889d-62ca70015a20
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=uss dwight d eisenhower cvn 69,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=uss dwight d eisenhower cvn 69 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 8b773b98-635e-4320-b291-9d42e198d47b
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=mock draft 2027 nfl,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=mock draft 2027 nfl searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 19ad25ad-7576-4d62-985e-6d834484e584
+10-05 06:50:05.713  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=today wordle hints,input_query=android.app.search.Query@2114b6d,group_id=web140463,response_id=d69bded8-1c8a-4119-805a-282844a49249,support_query_builder=false,} searchAction=today wordle hints searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: c8afc651-0165-49f7-bad1-ae7773671296
+10-05 06:50:05.714  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.droidguard.DroidGuardGcmTaskService finished executing. cause:7 result: 1 elapsed_millis: 423 uptime_millis: 423 exec_start_elapsed_seconds: 142 [CONTEXT service_id=218 ]
+10-05 06:50:05.718  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.718  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.718  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.721  1528  3089 W A       : (REDACTED) [%s] response code: %d
+10-05 06:50:05.722  1636  3885 I LSRModuleInit: New Geofences: [] [CONTEXT service_id=277 ]
+10-05 06:50:05.723  1636  3885 I LSRModuleInit: Attempting to change container components state to enabled: true [CONTEXT service_id=277 ]
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.726  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.727  1528  1792 W A       : (REDACTED) Can't format flag %s to integer.
+10-05 06:50:05.748  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.apk' with 1 weak references
+10-05 06:50:05.749  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltBugle/PrebuiltBugle.apk' with 1 weak references
+10-05 06:50:05.750  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SystemUIGoogle/SystemUIGoogle.apk' with 1 weak references
+10-05 06:50:05.750  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/SystemUIGoogle__sdk_gphone64_x86_64__auto_generated_rro_vendor.apk' with 1 weak references
+10-05 06:50:05.750  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '/product/overlay/SystemUIGoogle__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:50:05.750  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '/product/overlay/SystemUIEmulationPixel6/SystemUIEmulationPixel6Overlay.apk' with 1 weak references
+10-05 06:50:05.750  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Maps/Maps.apk' with 1 weak references
+10-05 06:50:05.750  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/WellbeingPrebuilt/WellbeingPrebuilt.apk' with 1 weak references
+10-05 06:50:05.750  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Velvet/Velvet.apk' with 1 weak references
+10-05 06:50:05.751  2402  4052 I LSR     : Handling LSR module init in persistent process [CONTEXT service_id=277 ]
+10-05 06:50:05.751  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SettingsIntelligenceGooglePrebuilt/SettingsIntelligenceGooglePrebuilt.apk' with 1 weak references
+10-05 06:50:05.751  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/YouTube/YouTube.apk' with 1 weak references
+10-05 06:50:05.751  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SettingsGoogle/SettingsGoogle.apk' with 1 weak references
+10-05 06:50:05.751  1152  1159 W s.nexuslauncher: ApkAssets: Deleting an ApkAssets object '/product/overlay/SettingsGoogle__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:50:05.751  1152  1159 W System  : A resource failed to call release.
+10-05 06:50:05.751  1152  1159 W System  : A resource failed to call release.
+10-05 06:50:05.751  1152  1159 W System  : A resource failed to call release.
+10-05 06:50:05.751  1152  1159 W System  : A resource failed to call release.
+10-05 06:50:05.751  1152  1159 W System  : A resource failed to call release.
+10-05 06:50:05.751  1152  1159 W System  : A resource failed to call release.
+10-05 06:50:05.755  2402  4052 I LSR     : Refreshing periodic location reporting state [CONTEXT service_id=277 ]
+10-05 06:50:05.757  2402  2936 I LSR     : No periodic upload requests, periodic reporting should be disabled [CONTEXT service_id=277 ]
+10-05 06:50:05.758  2402  2936 I LSR     : Reporting should be enabled: false [CONTEXT service_id=277 ]
+10-05 06:50:05.758  2402  2936 I LSR     : Stopping periodic location reporting [CONTEXT service_id=277 ]
+10-05 06:50:05.766  1636  2571 I Google Maps Android API: Validating conditions for requesting maps_core feature. [CONTEXT service_id=71 ]
+10-05 06:50:05.767  1636  2571 I Google Maps Android API: Is maps_core feature installed? 2 [CONTEXT service_id=71 ]
+10-05 06:50:05.770  1636  2571 I Google Maps Android API: Eligible to request maps_core feature. [CONTEXT service_id=71 ]
+10-05 06:50:05.771  1636  1643 I gle.android.gms: Background concurrent mark compact GC freed 14MB AllocSpace bytes, 73(3804KB) LOS objects, 49% free, 20MB/40MB, paused 2.202ms,4.420ms total 198.341ms
+10-05 06:50:05.773  1636  2571 I Google Maps Android API: maps_core feature request succeeded. [CONTEXT service_id=71 ]
+10-05 06:50:05.777  1636  2571 I MS_Utils: version of com.google.android.apps.maps = 1067529190
+10-05 06:50:05.791  1636  1636 W ProviderHelper: Unknown dynamite feature providerinstaller.dynamite
+10-05 06:50:05.791  1636  1636 I DynamiteModule: Considering local module com.google.android.gms.providerinstaller.dynamite:1 and remote module com.google.android.gms.providerinstaller.dynamite:0
+10-05 06:50:05.791  1636  1636 I DynamiteModule: Selected local version of com.google.android.gms.providerinstaller.dynamite
+10-05 06:50:05.795  1636  2571 I MdiSyncModule: initializing module...
+10-05 06:50:05.803  1636  3559 I ChimeraConfigurator: Starting update, reason: 4 urgentFeatures: maps_core:-1
+10-05 06:50:05.807  1636  1645 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.apk' with 1 weak references
+10-05 06:50:05.808  1636  2571 I MdiSyncModule: module initialization completed
+10-05 06:50:05.813  1528  1716 I A       : (REDACTED) Refusing EXCLUSIVE task %s, it is already pending. Try again in %d seconds.
+10-05 06:50:05.819  1528  1894 I Ma      : #handleFlagUpdate()
+10-05 06:50:05.828  1636  2723 W MDM     : [123] btrf.d: Q+ devices does not need device admin.
+10-05 06:50:05.836  1636  2723 I MlBenchmarkInstaller: Intent: com.google.android.chimera.IntentOperation.NEW_MODULE [CONTEXT service_id=340 ]
+10-05 06:50:05.836  1636  2723 I MlBenchmarkInstaller: onInitRuntimeState(), intent action=com.google.android.chimera.IntentOperation.NEW_MODULE [CONTEXT service_id=340 ]
+10-05 06:50:05.836  1636  2723 I MlBenchmarkInstaller: Device sampled out, skipping. [CONTEXT service_id=340 ]
+10-05 06:50:05.838  1528  1716 I OpaEligibilityChecker: send OpaEligibilityChange broadcast to CommonBroadcastReceiver
+10-05 06:50:05.838   552  2276 I RemoteProvisionSysSvc: getRegistration(android.hardware.security.keymint.IRemotelyProvisionedComponent/default)
+10-05 06:50:05.847  1636  4025 W ChimeraUtils: Module com.google.android.gms.mobiledataplan missing resource null(0)
+10-05 06:50:05.850  2402  2646 I LSR     : Unregistering for activity transition updates. [CONTEXT service_id=277 ]
+10-05 06:50:05.851  1636  3341 I ebvk$a  : Unable to retrieve flag snapshot for com.google.android.gms.multidevice#com.google.android.gms, using defaults.
+10-05 06:50:05.854  1636  4025 W libc    : Access denied finding property "ro.hardware.chipname"
+10-05 06:50:05.855  1636  4025 W ChipsetHelper: Unknown chipset! [CONTEXT service_id=301 ]
+10-05 06:50:05.855  1636  4025 I NnApiDriverManager: Registering application with chipset 'unknown' [CONTEXT service_id=301 ]
+10-05 06:50:05.859  1636  1636 I MlBenchmarkInstaller: Feature unrequest success = true [CONTEXT service_id=340 ]
+10-05 06:50:05.862  1528  2090 W SearchServiceCore: Abort, client detached.
+10-05 06:50:05.863  1528  2090 W SearchServiceCore: Abort, client detached.
+10-05 06:50:05.863  2402  3218 W MagicTether: [HostEnablementUtils] Invalid account list. [CONTEXT service_id=276 ]
+10-05 06:50:05.867  1636  3559 I ChimeraConfigurator: Detected pending changes for urgent request: [maps_core]. Pending module sets: container:2423359190800+maps_core
+10-05 06:50:05.881  1467  1898 I A       : (REDACTED) #handleFlagsUpdate: changed %s
+10-05 06:50:05.882  1467  1898 I A       : #handleFlagsUpdate: listeners notified
+10-05 06:50:05.883   552   552 I RegistrationProxy: onServiceConnected: com.android.rkpdapp.service.RemoteProvisioningService
+10-05 06:50:05.892  1636  3559 I GmsDebugLogger: [73] 1801
+10-05 06:50:05.893   552  2351 I RegistrationProxy: IGetRegistrationCallback.onSuccess
+10-05 06:50:05.897  1636  4025 I NnApiDriverManager: Registering application with GPU 'Android Emulator OpenGL ES Translator (Google SwiftShader)' by 'Google (Google Inc.)' [CONTEXT service_id=301 ]
+10-05 06:50:05.897   552  1791 I RemoteProvisionSysSvc: Fetching key 10143 for client 149466767
+10-05 06:50:05.897   552  1791 I RegistrationProxy: getKeyAsync operation started with callback 31200540
+10-05 06:50:05.898  2971  3053 I RkpdRegistrationBinder: Key requested for : android.hardware.security.keymint.IRemotelyProvisionedComponent/default, clientUid: 1017, keyId: 10143, callback: 228601829
+10-05 06:50:05.899  1636  3559 W ZappDownloader: No successful Zapp module downloads for requested modules [MapsCoreDynamite.integ:241610202100800:permitMetered].
+10-05 06:50:05.899  1636  3559 I GmsDebugLogger: [30] [MapsCoreDynamite.integ:241610202100800]
+10-05 06:50:05.901  2971  3053 I RkpdRegistrationBinder: Key successfully assigned to client
+10-05 06:50:05.901   552   552 I RemoteProvisionSysSvc: Successfully fetched key for client 149466767
+10-05 06:50:05.903  1636  3559 W ChimeraConfigService: Retry attempt was throttled. [CONTEXT service_id=264 ]
+10-05 06:50:05.907  1636  3559 I GmsDebugLogger: [83] 1 [maps_core]
+10-05 06:50:05.910   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 148: Using TAG_CERTIFICATE_NOT_BEFORE: 0
+10-05 06:50:05.910   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 154: Using TAG_CERTIFICATE_NOT_AFTER: 2461449600000
+10-05 06:50:05.910   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 159: Got certificate date params:  NotBefore = 0, NotAfter = 2461449600000
+10-05 06:50:05.910   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 273: Setting notBefore to 0
+10-05 06:50:05.910   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 282: Setting notAfter to 2461449600
+10-05 06:50:05.923  2402  2402 I MagicTether: [AutoDisconnectIntentOperation] Canceling task. [CONTEXT service_id=276 ]
+10-05 06:50:05.924  1528  1875 I A       : NGA disabled since it's running Panthera and at least one a11y feature is on.
+10-05 06:50:05.932  1636  4025 I Pay     : Pay module init: 0 / 4 / 8 [CONTEXT service_id=198 ]
+10-05 06:50:05.932  1636  3885 W PrereqChecker: No rear-facing camera detected.
+10-05 06:50:05.943  2402  3844 I TapAndPay: Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+10-05 06:50:05.944  1636  4025 W Pay     : Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+10-05 06:50:05.944  1636  4025 I Pay     : Failed to get account info [CONTEXT service_id=198 ]
+10-05 06:50:05.947  2402  3145 I MagicTether: [AutoDisconnectIntentOperation] Canceling task. [CONTEXT service_id=276 ]
+10-05 06:50:05.949  1636  4025 W Pay     : Mdl not supported. Not triggering periodic MSO refresh task. [CONTEXT service_id=198 ]
+10-05 06:50:05.956  2402  4056 I LSR     : Cancelling periodic location reporting maintenance task [CONTEXT service_id=277 ]
+10-05 06:50:05.963  2402  3844 I TapAndPay: Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+10-05 06:50:05.963  1636  4025 W Pay     : Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+10-05 06:50:05.964  1636  4025 W Pay     : [eMoney card recovery task] exiting without init: active tapandpay account not found! [CONTEXT service_id=198 ]
+10-05 06:50:05.964  1636  4025 W Pay     : Mdoc not supported. Not triggering periodic MSO refresh task. [CONTEXT service_id=198 ]
+10-05 06:50:05.964  2402  3844 I TapAndPay: Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+10-05 06:50:05.964  1636  4025 W Pay     : Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+10-05 06:50:05.964  1636  4025 I Pay     : PendingSeProvisioningTaskOperation: Active account not found! [CONTEXT service_id=198 ]
+10-05 06:50:05.966  2402  3844 I TapAndPay: Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+10-05 06:50:05.967  1636  4025 W Pay     : Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+10-05 06:50:05.967  1636  4025 W Pay     : [eMoney txn sync] exiting without init: active tapandpay account not found! [CONTEXT service_id=198 ]
+10-05 06:50:05.967  1636  4025 I Pay     : Requested immediate check to see whether to show pay module downloading complete notification. [CONTEXT service_id=198 ]
+10-05 06:50:05.969  1636  4025 I Pay     : Requested check of feature migrations. [CONTEXT service_id=198 ]
+10-05 06:50:05.972  2402  4060 I TapAndPay: Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+10-05 06:50:05.977  1636  4025 W Pay     : Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+10-05 06:50:05.983  1636  4025 W PeoplePU: getServiceInfo failed.
+10-05 06:50:05.983  1636  4025 W PeoplePU: android.content.pm.PackageManager$NameNotFoundException: ComponentInfo{com.google.android.gms/com.google.android.gms.people.sync.focus.ContactsSyncAdapterService}
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at android.app.ApplicationPackageManager.getServiceInfo(ApplicationPackageManager.java:633)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at android.app.ApplicationPackageManager.getServiceInfo(ApplicationPackageManager.java:616)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at cywf.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):34)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at cyoi.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):27)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at com.google.android.gms.people.api.init.PeopleModuleInitIntentOperation.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):84)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at ajjh.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):129)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:05.983  1636  4025 W PeoplePU: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:05.986  1636  4025 W PeoplePU: getComponentEnabledSetting failed.
+10-05 06:50:05.986  1636  4025 W PeoplePU: java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3246)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at android.os.Parcel.createException(Parcel.java:3226)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at android.os.Parcel.readException(Parcel.java:3209)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at android.os.Parcel.readException(Parcel.java:3151)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at android.content.pm.IPackageManager$Stub$Proxy.getComponentEnabledSetting(IPackageManager.java:6361)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at android.app.ApplicationPackageManager.getComponentEnabledSetting(ApplicationPackageManager.java:3191)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at cywf.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):4)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at cyoi.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):34)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at com.google.android.gms.people.api.init.PeopleModuleInitIntentOperation.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):84)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at ajjh.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):129)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:05.986  1636  4025 W PeoplePU: Caused by: android.os.RemoteException: Remote stack trace:
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at com.android.server.pm.ComputerEngine.getComponentEnabledSettingInternal(ComputerEngine.java:5265)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at com.android.server.pm.ComputerEngine.getComponentEnabledSetting(ComputerEngine.java:5247)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at com.android.server.pm.IPackageManagerBase.getComponentEnabledSetting(IPackageManagerBase.java:385)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at android.content.pm.IPackageManager$Stub.onTransact(IPackageManager.java:3160)
+10-05 06:50:05.986  1636  4025 W PeoplePU: 	at com.android.server.pm.PackageManagerService$IPackageManagerImpl.onTransact(PackageManagerService.java:6545)
+10-05 06:50:05.986  1636  4025 W PeoplePU:
+10-05 06:50:05.986  1636  4025 I FsaEntryPointSwitcher: setting component enabled=1 for com.google.android.gms.people.sync.focus.ContactsSyncAdapterService
+10-05 06:50:05.990  1636  4025 I FsaEntryPointSwitcher: Setting component enabled succeeds.
+10-05 06:50:05.990  1636  4025 W PeoplePU: getComponentEnabledSetting failed.
+10-05 06:50:05.990  1636  4025 W PeoplePU: java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3246)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.createException(Parcel.java:3226)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.readException(Parcel.java:3209)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.readException(Parcel.java:3151)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.content.pm.IPackageManager$Stub$Proxy.getComponentEnabledSetting(IPackageManager.java:6361)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.app.ApplicationPackageManager.getComponentEnabledSetting(ApplicationPackageManager.java:3191)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at cywf.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):4)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at cyoi.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):208)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at com.google.android.gms.people.api.init.PeopleModuleInitIntentOperation.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):84)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at ajjh.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):129)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:05.990  1636  4025 W PeoplePU: getComponentEnabledSetting failed.
+10-05 06:50:05.990  1636  4025 W PeoplePU: java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ProxyGalProvider}
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3246)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.createException(Parcel.java:3226)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.readException(Parcel.java:3209)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.os.Parcel.readException(Parcel.java:3151)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.content.pm.IPackageManager$Stub$Proxy.getComponentEnabledSetting(IPackageManager.java:6361)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at android.app.ApplicationPackageManager.getComponentEnabledSetting(ApplicationPackageManager.java:3191)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at cywf.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):4)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at cxyx.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at com.google.android.gms.people.api.init.PeopleModuleInitIntentOperation.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):93)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at ajjh.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):129)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:05.990  1636  4025 W PeoplePU: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:05.997  1636  3341 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.googlequicksearchbox componentName=agsa_icing_connection serviceId=33
+10-05 06:50:06.001  1528  1715 I SettingsDataLayer.AE: Set Assistant eligibility status
+10-05 06:50:06.021  1528  1894 I SettingsDataLayer.AE: Set isHotwordOpaEligible
+10-05 06:50:06.031  1636  3341 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.googlequicksearchbox componentName=agsa_icing_connection serviceId=32
+10-05 06:50:06.041   552  1212 W ParceledListSlice: Element #14 is 37900 bytes.
+10-05 06:50:06.042   552  1212 W ParceledListSlice: Element #15 is 18184 bytes.
+10-05 06:50:06.042   552  1212 W ParceledListSlice: Element #22 is 30408 bytes.
+10-05 06:50:06.042   552  1212 W ParceledListSlice: Overly large reply size: 88136
+10-05 06:50:06.068  1636  4025 I PeopleGalProvider: Gal directories started.
+10-05 06:50:06.068  3289  3402 I BugleRcsProvisioning: BugleSystemBindingManager: onBuglePhenotypeFlagChanged
+10-05 06:50:06.069  1636  4025 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:06.069  2402  2490 I HeterodyneSyncScheduler: Scheduling Phenotype for a PhenotypeSyncImmediately(16, com.google.android.westworld) one off with window [1, 2] in seconds [CONTEXT service_id=51 ]
+10-05 06:50:06.072  3730  3748 D UiDevice: Turning on screen.
+10-05 06:50:06.072  3730  3748 D UiDevice: Pressing home button.
+10-05 06:50:06.069  1636  4025 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:06.080  3289  3388 I BugleRcsEngine: SystemBinding enabled: true [CONTEXT log_prefix="SystemBindingManager" thread_id=48 ]
+10-05 06:50:06.080  3289  3388 I BugleRcsEngine: System Binding updated [CONTEXT thread_id=48 ]
+10-05 06:50:06.095  2825  4053 I EGL_emulation: Opening libGLESv1_CM_emulation.so
+10-05 06:50:06.095  2825  4053 I EGL_emulation: Opening libGLESv2_emulation.so
+10-05 06:50:06.123   552   575 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10177, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:50:06.125  1089  1089 D CarrierSvcBindHelper: onPackageModified: com.google.android.gms
+10-05 06:50:06.126  1089  1089 D CarrierSvcBindHelper: No carrier app for: 0
+10-05 06:50:06.126   902  1365 D KeyguardService: setOccluded(false)
+10-05 06:50:06.126   902  1365 D KeyguardViewMediator: setOccluded(false)
+10-05 06:50:06.127  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:50:06.127  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:50:06.128  1152  1152 D OverviewCommandHelper: clearing pending commands - size: 0
+10-05 06:50:06.128  1152  1152 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:50:06.130   552  1486 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:50:06.131  1152  1968 D OneSearchSuggestProvider: Established or reuse existing binder channel authority=com.google.android.googlequicksearchbox
+10-05 06:50:06.131   902   902 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-05 06:50:06.132   902   902 I vol.VolumeDialogImpl: mDialog.dismiss() reason: volume_controller from: com.android.systemui.volume.VolumeDialogImpl$7.onDismissRequested:3
+10-05 06:50:06.132   902   902 D KeyguardViewMediator: handleSetOccluded(false)
+10-05 06:50:06.132   902   902 D KeyguardViewMediator: KeyguardViewMediator queue processing message: SET_OCCLUDED
+10-05 06:50:06.161   905  1044 I PermissionControllerServiceImpl: Updating user sensitive for uid 10143
+10-05 06:50:06.168   552   661 I RoleService: Granting default roles...
+10-05 06:50:06.171  3289  3399 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=54 ]
+10-05 06:50:06.183   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.retaildemo:6547c73dee150c103980bfdffe55cc9a011d785dd694a5f99afd8205bcaf1f80
+10-05 06:50:06.202   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION
+10-05 06:50:06.217  1152  1679 D EGL_emulation: app_time_stats: avg=169.89ms min=18.55ms max=1156.09ms count=10
+10-05 06:50:06.218  3289  3410 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=63 ]
+10-05 06:50:06.251  3289  3402 I BugleTransport: onBuglePhenotypeFlagChanged: kicking off updateActiveTransport
+10-05 06:50:06.256  3289  3410 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=63 ]
+10-05 06:50:06.256  3289  3410 W BugleAction: Failed to get msisdn from Bugle
+10-05 06:50:06.257  3289  3410 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:06.257  3289  3410 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:06.257  3289  3410 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:06.350  1089  1089 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+10-05 06:50:06.363  3289  3400 I BugleTransport: isChatAvailable: RcsAvailability is DISABLED_VIA_GSERVICES (RCS is disabled for this carrier by Google)
+10-05 06:50:06.370  1152  1173 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:50:06.373  3289  3382 I BugleRcsEngine: SystemBinding enabled: true [CONTEXT log_prefix="SystemBindingManager" thread_id=45 ]
+10-05 06:50:06.375  3289  3402 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=57 ]
+10-05 06:50:06.376  3289  3382 I BugleRcsEngine: System Binding updated [CONTEXT thread_id=45 ]
+10-05 06:50:06.376  3289  3400 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=55 ]
+10-05 06:50:06.376  3289  3371 I BugleRcsProvisioning: RcsProvisioningTrigger: onCsLibPhenotypeUpdated, enableProvisioningTaskInBugle = true
+10-05 06:50:06.376  3289  3371 I BugleRcsProvisioning: RcsProvisioningTrigger: updateAvailabilityForAllSimsAsync : hint = CSLIB_PHENOTYPE_UPDATE logTriggerEvent = true
+10-05 06:50:06.376  1636  4025 I PeopleGalProvider: Gal directories started.
+10-05 06:50:06.379  3730  3748 W UiAutomation: UiAutomation.grantRuntimePermission() is more robust and should be used instead of 'pm grant'
+10-05 06:50:06.380  1636  4025 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:06.380  1636  4025 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:06.383  3289  3371 I Bugle   : RcsAvailabilityUtilForProvisioningEngineV2: updateAvailabilityForAllSimsAsync, hint: CSLIB_PHENOTYPE_UPDATE
+10-05 06:50:06.385  1089  1089 E CellBroadcastUtils: getDefaultCellBroadcastReceiverPackageName: no package found
+10-05 06:50:06.389  3289  3371 I RcsAvailabilityUpdaterL: updateAvailabilityForAllSimsAsync: scheduling updateAvailabilityForRcsProvisioningId call. Hint: CSLIB_PHENOTYPE_UPDATE, enableWelcomePopupWithoutGoogleTos: false, reshowSuccessPopup: false
+10-05 06:50:06.389  3289  3371 I Bugle   : RcsAvailabilityUtilForProvisioningEngineV2: onCsLibPhenotypeUpdated
+10-05 06:50:06.390  3289  3401 I RcsAvailabilityUpdaterL: updateRcsAvailabilityForDefaultCallSim: hint: CSLIB_PHENOTYPE_UPDATE, canReshowWelcomeMessage: false
+10-05 06:50:06.395  3289  3400 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=55 ]
+10-05 06:50:06.396  3289  3401 I BugleRcsEngine: [SR]: Single Registration is disabled. Skipping Single Registration capability check for subId: 1, OS.isAtLeastS:[true], enableSingleRegistrationProvisioning:[false] [CONTEXT thread_id=56 ]
+10-05 06:50:06.397  3730  3748 D TrafficStats: tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+10-05 06:50:06.403   552  1490 W system_server: Long monitor contention with owner main (552) at boolean android.os.MessageQueue.enqueueMessage(android.os.Message, long)(MessageQueue.java:695) waiters=0 in android.os.Message android.os.MessageQueue.next() for 240ms
+10-05 06:50:06.409  3289  3401 I RcsAvailabilityUpdaterL: RcsAvailability configuration availability and enabled status: simId: redacted-pii:sim_id[chars:20,last3:897], SipConnectionType: DUAL_REG, isConfigurationAvailableAndEnabled: false
+10-05 06:50:06.415  3289  3371 I BugleRcsEngine: SystemBinding enabled: true [CONTEXT log_prefix="SystemBindingManager" thread_id=42 ]
+10-05 06:50:06.415  3289  3371 I BugleRcsEngine: System Binding updated [CONTEXT thread_id=42 ]
+10-05 06:50:06.418  3289  3399 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=54 ]
+10-05 06:50:06.419   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.apps.work.clouddpc:23962F4B43B9857638EA66F4D419518EAE282491ACDA4B94707BD59003C45E58
+10-05 06:50:06.424  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:50:06.424  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:50:06.424  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:50:06.424  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:06.424  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:06.424  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:50:06.424  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:50:06.425  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:50:06.425  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:06.425  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:06.425  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:06.425  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:50:06.425  1089  1300 D ImsResolver: maybeAddedImsService, packageName: com.google.android.gms
+10-05 06:50:06.426  3604  3652 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=53 ]
+10-05 06:50:06.426  3604  3709 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:06.427  3289  3388 W Bugle   : TextClassifierLibManagerImpl: Reclaiming memory at level: 40
+10-05 06:50:06.432  1636  4025 I DeletedNullContactsCleanup: Scheduling the service.
+10-05 06:50:06.433  1636  4025 I BackupAndSyncValidation: Scheduling the service.
+10-05 06:50:06.435  3730  3748 D TrafficStats: tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+10-05 06:50:06.440  2402  2619 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:50:06.440  2402  2619 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:50:06.446  1636  4025 I PeopleInitIntentOp: Not initializing debuggability [CONTEXT service_id=5 ]
+10-05 06:50:06.453  3604  3709 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=63 ]
+10-05 06:50:06.457  2402  2402 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.time.trustedtime.singleuserapi.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentSingleUserInternalApiService }
+10-05 06:50:06.467  1636  3559 I PersonalSafety: Entry under S&E status true, true, true  [CONTEXT service_id=310 ]
+10-05 06:50:06.469   552  1785 V SafetySourceDataValidat: Package: com.google.android.gms has expected signature
+10-05 06:50:06.469   552  1785 V SafetySourceDataValidat: Package: com.google.android.gms has expected signature
+10-05 06:50:06.478  2402  2402 I PersonalSafety: Init [CONTEXT service_id=310 ]
+10-05 06:50:06.478  2402  2402 I PersonalSafety: enabling createOptionalComponents [CONTEXT service_id=310 ]
+10-05 06:50:06.493  2402  4055 W Settings: Setting airplane_mode_on has moved from android.provider.Settings.System to android.provider.Settings.Global, returning read-only value.
+10-05 06:50:06.493  2402  4055 I PersonalSafety: Create createOptionalComponents: true true false false [CONTEXT service_id=310 ]
+10-05 06:50:06.517  2402  2731 W .gms.persistent: Long monitor contention with owner lowpool[14] (3216) at void dcbg.d(dbus, dbus)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):804) waiters=0 in void dcbg.d(dbus, dbus) for 377ms
+10-05 06:50:06.524  3289  3400 I BugleRcsProvisioning: BugleSystemBindingManager: onBuglePhenotypeFlagChanged
+10-05 06:50:06.548  1152  1152 D SearchTargetUtil: query= size=15
+10-05 06:50:06.548  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hocus pocus disney+ streaming charts,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=hocus pocus disney+ streaming charts searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: c25845ec-90a7-4391-bb20-18360f922c6c
+10-05 06:50:06.548  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=iwsc 2026 bourbon winner,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=iwsc 2026 bourbon winner searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: debe3a0e-ab8f-4b7e-9db7-5c7dd31a7bfb
+10-05 06:50:06.548  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=shane lilly dog legal battle,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=shane lilly dog legal battle searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 34eabacf-0bac-4548-950f-79da9725c519
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,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
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=zelda ocarina of time remake,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=zelda ocarina of time remake searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 71e57c5b-3480-4071-9b39-35cefccc0339
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=decaffeinated coffee,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=decaffeinated coffee searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 323d2950-b884-4dcc-a3db-8b80786ed975
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=usgs el nino winter snowfall map,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=usgs el nino winter snowfall map searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 16ddff71-8483-47b3-b623-25a584bcdc2a
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAB8CAMAAACcwCSMAAAAflBMVEUTJ0/5+fn///8AAD78/PwQJU4AADsAFkYAGEcAAEAKIkwAHUkAH0oAHEkAADkAD0MAC0IAE0Xk5ejz8/TKzNK9wMh9g5TV1tt3fY9PWHLq6+1VXnY3Q2KtsLq3usODiZkvPF2Sl6UcLVOjp7JFT2pnb4MnNlleZXwAADI+Smjt/BYUAAAGqElEQVRoge1a2W7qOhQl23bmkSQEQhlCCpT//8GbQOIhNkNbH1dXwg9HRxXK8vYe17Jns/d6r/d6r/f6xXKdv4POmjb7G+gwXuZQpH8B7durCixYh3+AnRwKwBYubPPQkdd00JYFJ980NEHrGqweuzXu8cjZXs22cG4am3jr/Gp2Z/jSNYvt2+3N7M7weWwWOyLVYLZlPM2SVY5HbNNphpZAsS34MJpmcUuPvMMukUFogkoO24K9QcOJV/DYuPTMYftpxWMb9bjvzAVsXJjzuJ+J2BasjOU4SSbYuDKX40j0d2f4MTIETeJigm3lxgy3t1NsaEyNjaiZYltwIGaws6WEbSzPgk8Juwu3wAi277MeajrciF3J2LBJjICjVj50U9XNPSqwcW0k3PyDDG3s1GOFw03NjSmrLjjnYh0ZqDDhJ4e9Zv8vDdAUEtfjoWPrwCIPFgZoCpdl+IOr73D696fOHTqcnYzuxEiisUOHxpulJXXB9t8nWkpNhaKjgx5NOtiJLneR9inW/6CHnkedj+05BRdH5mgx/9Dd4lh5gXM/rcUszz0h3rxuutMsjbh0gIBtH18kpYFfCfFG0rz7idbEJxk1NM96QwmhByEWdnLodom1gqcbavjxGl7kRP8gxlvUFx+txd7f06QeuAGLPzgLQNf8h0ajAGsX09D2LxRcrG9xnwU6e2xA6zhshugKVzTzBJzw2m9AY92JaU5bDuFBrsVVYOW3M9IY7s6OGk55CQOvePDoDIoM+M1KxzTjrGTgfDMn6Fb/odHVZBNW1Jm+SH0uGDnyR22pRgLavmqmL/oUnF0skHisBlhXk+Xqy5JRcH9s7iylCeWu2pibT0sZnnOfpEWGFriAaVPamJtXqgxn5XUAJ4gqz90uNTE3VkZ5jw/9g4KTJNgyGVSbQoLotDSR0jOLgvtJ0GLGoq6Djo7FGy4yAzsfwb/2G4sjcDgnmoZZVNyb1OxhnMTbAkQh8lNTtPlsWs5t0R46QGKRvcFZlzLEtVKhQ5PA+SpVlBFjbdic4bSd+VGGYnJuilyBDfWHNubEebxNw8hJPJRclm1RA4DCbgxlom184g1Hp9Wy2VY9LGDVgfdmH219pI0Z3n/6AezV6rzxNKqv0QXuQcnQdeNpnBld+6SUQFTIUJyRRugsXVSqmFJhVwvHC/Q52/Ga/Cn06H+8jTVqA769yx95G+M+9vJqCEdtDbRfyWV6iSCiWvNi05xPaUw7+kyX5cRu1PWjt7Vsd+uDh1DiBB1vQWNf09W+/VS6v+iB66I9nhBKMzdk/XIsA7qGdJ/MJWwodnuEssCfHq4z6FGaBCGf1NKR4/rLVesMlCvCRYMQQdK57O7pEMGtURmBO2+Cou8oQ7bs724oun+m6XZItlqZbNGiOr081CRUU+T7ye5+3YxG5qxmR8kGcqUuReSzpOwAQ8V5/EGXJO5Y5JSX11kLOFfUAEJk3WK4iAcoP5jG+ljT9cZRSnmr1mcDKLaVbiGc/Pw2JIPVHmwm993x5rioYgGtItXdntbLrwk6uiHdtHf77AcCJ/G52wSBIcmLIMrcI9n0G7h0xB2QdJ5pCfOF3Y2JyY4Z/uzNTTIyWKrViCiSRDjr75+xdN0drs/IJb3qxT09ecbxOUFMfqyRXBkznjrOBcUrpvAGhFihgfJps6RjHpYJGrq6b7qr21SaO6ok4i+n4fC0QlFppjNmUubI7JY9K/EjwVUyAtU7A7TjsJsXuhWLTjyRmt3bpyYC5Swc9KpSmn9S7nJ6IrDdWTdDbtEpSt/DxcQ0bsZ2BEUiZBJB/MU4rF8qzBydE55ljUkzbXnEGwtTvbbZ3BnYwkOn7WtdmomwwlHSoV+qZojS227i9lInCMMos9f8IIHr5MXJzNsw9CIdjjLb52PHm2aBy91KQr1tjuv1sp0LsxusXu6GKbvMh3plR77vxEuL9pypCkvVnAH/xsMsHrt5XbmNVlyUQrHcXxp2hooCnUpPTcTVee9l7MnjETwxRB5yyOEhH8Hz710Lq0agwQrVZOssHpiO8+elTVzeXZ6hJBTyGx8Oe/9dfYFMn4iNhu/Uo2Vc3kGH+vB9LWv6MG/41N3QiTfqzVb+T3QVwl7esk8V9ws0OspkFEP7Q8JL0LmG6ace/N51Wixst5tbLz+/mQlQx+qH7/Vqxefj+kySbFdZN6Wn/6dY278iPo593NY3QtucntMV4qJktWs327IrsqH3axUtSOLsdJrZnvOiFaGbJWmaOIoB9EeL6FKd3+u93uu9/i/rP6RaW9RAET9UAAAAAElFTkSuQmCC,suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=true,is_personal=false,suggest_raw_text=atlanta braves baseball,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=Atlanta Braves searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 7ad6776c-6dc0-4241-8b0d-321d822dc51e
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=ss richard montgomery shipwreck salvage,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=ss richard montgomery shipwreck salvage searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: c3ccb256-43ff-40cb-8f69-b085b612caf5
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=taylor swift music video patient zero,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=taylor swift music video patient zero searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: ed9f3f01-be2c-4005-82a7-6ff1e414e7c5
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hershey park,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=hershey park searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6ae1a54f-5cd8-4614-988f-3b202b6995f2
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=jagex runescape 4,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=jagex runescape 4 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: aff63005-c10f-4971-be10-4fe1a2bd2c37
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=uss dwight d eisenhower cvn 69,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=uss dwight d eisenhower cvn 69 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 7b587742-d6dd-4e84-8d2d-6ed54a051745
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=mock draft 2027 nfl,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=mock draft 2027 nfl searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 76d44dac-5579-4ab1-bfbf-8316441dbbd9
+10-05 06:50:06.549  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=today wordle hints,input_query=android.app.search.Query@e3f848f,group_id=web143499,response_id=d4d7f150-530a-4cfe-afbf-4a3d271f4421,support_query_builder=false,} searchAction=today wordle hints searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: e26aab21-85aa-488c-af30-c09b0b1cc2ec
+10-05 06:50:06.564   552  2351 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:50:06.565  1636  4025 W ChimeraUtils: Module com.google.android.gms.phonesky_recovery missing resource null(0)
+10-05 06:50:06.573  3289  3388 I BugleRcsEngine: SystemBinding enabled: true [CONTEXT log_prefix="SystemBindingManager" thread_id=48 ]
+10-05 06:50:06.587  3289  3388 I BugleRcsEngine: System Binding updated [CONTEXT thread_id=48 ]
+10-05 06:50:06.590  3289  3399 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=54 ]
+10-05 06:50:06.595  3289  3410 I Bugle   : getRawTelephonyPhoneNumber redacted-pii[0-chars] [CONTEXT sub_id=-1 ]
+10-05 06:50:06.601  3289  3410 W BugleAction: No default number, returning empty msisdn
+10-05 06:50:06.609  3289  3409 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=62 ]
+10-05 06:50:06.610  3289  3400 I BugleTransport: onBuglePhenotypeFlagChanged: kicking off updateActiveTransport
+10-05 06:50:06.616  3289  3387 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=47 ]
+10-05 06:50:06.617  1636  3747 E WakeLock: DG:service ** IS FORCE-RELEASED ON TIMEOUT **
+10-05 06:50:06.622  1636  3530 I PeopleGalProvider: Gal directories started.
+10-05 06:50:06.622  1636  3530 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:06.622  1636  3530 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:06.623  3289  3387 I BugleTransport: isChatAvailable: RcsAvailability is DISABLED_VIA_GSERVICES (RCS is disabled for this carrier by Google)
+10-05 06:50:06.678  3289  3409 W BugleAction: Failed to get msisdn from Bugle
+10-05 06:50:06.683  3289  3410 I BugleRcsEngine: isRcsAvailableForSubId called with an invalid sub id: -2 [CONTEXT log_prefix="RcsProvisioningManager" thread_id=63 ]
+10-05 06:50:06.683  3289  3408 I BugleTransport: updateActiveTransport: refreshing chat transport
+10-05 06:50:06.684  3289  3408 I BugleTransport: refreshChatTransport: isChatAvailable: false, enabledTransport: 1, configuration: <empty>
+10-05 06:50:06.713   902   983 D SplashScreenView: Build android.window.SplashScreenView{cbb3eb1 V.E...... ......ID 0,0-0,0}
+10-05 06:50:06.713   902   983 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:50:06.713   902   983 D SplashScreenView: Branding: view: android.view.View{6b9cf96 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:50:06.715   552   578 W system_server: Long monitor contention with owner binder:552_1C (2351) at java.util.List com.android.server.wm.ActivityTaskManagerService.getAppTasks(java.lang.String, int)(ActivityTaskManagerService.java:2712) waiters=1 in void com.android.server.wm.WindowAnimator.lambda$new$1(long) for 141ms
+10-05 06:50:06.719   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 148: Using TAG_CERTIFICATE_NOT_BEFORE: 0
+10-05 06:50:06.719   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 154: Using TAG_CERTIFICATE_NOT_AFTER: 2461449600000
+10-05 06:50:06.719   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 159: Got certificate date params:  NotBefore = 0, NotAfter = 2461449600000
+10-05 06:50:06.719   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 273: Setting notBefore to 0
+10-05 06:50:06.719   172   172 D SoftKeymaster: system/keymaster/km_openssl/certificate_utils.cpp, Line 282: Setting notAfter to 2461449600
+10-05 06:50:06.724  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:50:06.724  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:50:06.738  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=10, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:50:06.762   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:50:06.774  3289  3409 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:06.778  3289  3409 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:06.779  3289  3409 W Bugle   : Bugle: SubscriptionMetadataUtils get: unexpected subId = -2, replacing with -1
+10-05 06:50:06.780  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e5b6144 in: PRE_ON_CREATE
+10-05 06:50:06.785  3289  3394 I Bugle   : BroadcastReceiverAsyncWorkTracker: Acknowledging broadcast of buoi@67ce01a
+10-05 06:50:06.802  1636  3747 I ebvk$a  : Unable to retrieve flag snapshot for com.google.android.gms.presencemanager, using defaults.
+10-05 06:50:06.805   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.WALLET
+10-05 06:50:06.806   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:50:06.900  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[]
+10-05 06:50:06.908  1636  1642 I gle.android.gms: Compiler allocated 4843KB to compile boolean ajkg.j(int, ajjm, java.util.List, ajkf)
+10-05 06:50:06.911  3289  3399 I RcsClientLib: Connecting RcsEngineLifecycleService
+10-05 06:50:06.937  3289  3407 D MddListenableWorkerFactory: createWorker for class: com.google.android.apps.messaging.shared.datamodel.workqueue.WorkQueueWorkerShim
+10-05 06:50:06.997   552   824 D InetDiagMessage: Destroyed 3 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:50:06.997   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={10152} in 192ms
+10-05 06:50:06.998   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:50:06.998   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:50:06.998   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={20152} in 0ms
+10-05 06:50:07.003   552  1785 W system_server: Long monitor contention with owner RoleControllerService (1040) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=2 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 140ms
+10-05 06:50:07.008  3289  3409 I Bugle   : getRawTelephonyPhoneNumber redacted-pii[0-chars] [CONTEXT sub_id=-1 ]
+10-05 06:50:07.009  3289  3409 W BugleAction: No default number, returning empty msisdn
+10-05 06:50:07.009  3289  3409 I BugleRcsEngine: isRcsAvailableForSubId called with an invalid sub id: -2 [CONTEXT log_prefix="RcsProvisioningManager" thread_id=62 ]
+10-05 06:50:07.010  3289  3407 I BugleTransport: updateActiveTransport: refreshing chat transport
+10-05 06:50:07.010  3289  3407 I BugleTransport: refreshChatTransport: isChatAvailable: false, enabledTransport: 1, configuration: <empty>
+10-05 06:50:07.016  3289  3409 I RcsClientLib: Connecting RcsEngineLifecycleService
+10-05 06:50:07.017   356  4076 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+10-05 06:50:07.018  2825  4053 D TrafficStats: tagSocket(137) with statsTag=0x1809, statsUid=-1
+10-05 06:50:07.020   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:50:07.020   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:50:07.020   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={10133} in 0ms
+10-05 06:50:07.020   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:50:07.020   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:50:07.020   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={20133} in 0ms
+10-05 06:50:07.021  3289  3409 W RcsClientLib: No CS.apk RCS service found. Is RCS running in Bugle?
+10-05 06:50:07.036  3289  3409 I RcsClientLib: shouldUseCarrierServicesJibeService: false, CarrierServices rcs service found: false
+10-05 06:50:07.036  3289  3401 I RcsAvailabilityUpdaterL: updateAvailabilityForRcsProvisioningId. SimId: redacted-pii:sim_id[chars:20,last3:897], currentAvailability: 2, newAvailability: 2, hint: CSLIB_PHENOTYPE_UPDATE
+10-05 06:50:07.038  1636  4025 I GmsSyncPolicyEngine: Periodic sync 1 disabled by policy, cancelled.
+10-05 06:50:07.041  2825  4053 D TrafficStats: tagSocket(137) with statsTag=0x1809, statsUid=-1
+10-05 06:50:07.042  2825  4053 D TrafficStats: tagSocket(137) with statsTag=0x1809, statsUid=-1
+10-05 06:50:07.046  2402  2428 I .gms.persistent: Waiting for a blocking GC ProfileSaver
+10-05 06:50:07.050   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:50:07.050   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:50:07.050   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={10145} in 1ms
+10-05 06:50:07.051   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:50:07.051   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:50:07.051   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={20145} in 0ms
+10-05 06:50:07.052  3289  3402 I BugleRcsProvisioning: RcsProvisioningTrigger: onRcsAvailabilityUpdate : availability is updated to RCS is disabled for this carrier by Google, lastAvailabilityLocal is RCS is disabled for this carrier by Google, simId hash = 2674167495685312929, simId = redacted-pii:sim_id[chars:20,last3:897], isPev3Enabled = true
+10-05 06:50:07.053  3289  4074 I BugleRcsProvisioning: scheduleProvisioningForEligibleSims
+10-05 06:50:07.063  3289  3387 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=9bd46b15-ff3f-47ad-b1a8-7073c8357a91, tags={ com.google.android.apps.messaging.shared.datamodel.workqueue.WorkQueueWorkerShim,data_upgrade- } ]
+10-05 06:50:07.087  3289  4074 I BugleRcsProvisioning: scheduleProvisioning using legacy code path
+10-05 06:50:07.089  3289  4074 I BugleRcsEngine: [SR]: Single Registration is disabled. Skipping Single Registration capability check for subId: 1, OS.isAtLeastS:[true], enableSingleRegistrationProvisioning:[false] [CONTEXT thread_id=107 ]
+10-05 06:50:07.089  3289  4074 I BugleRcsProvisioning: RcsProvisioningTrigger: DR is active, initializing DR provisioning. DUAL_REG
+10-05 06:50:07.090  3289  3399 W RcsClientLib: No CS.apk RCS service found. Is RCS running in Bugle?
+10-05 06:50:07.126  1636  4025 I GmsSyncPolicyEngine: Periodic sync 2 disabled by policy, cancelled.
+10-05 06:50:07.129  3289  3400 I RcsClientLib: com.google.android.rcs.client.lifecycle.RcsEngineLifecycleService connected
+10-05 06:50:07.129  1636  4025 I GmsSyncPolicyEngine: Periodic sync 3 disabled by policy, cancelled.
+10-05 06:50:07.138   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.devicelockcontroller, role: android.app.role.SYSTEM_FINANCED_DEVICE_CONTROLLER
+10-05 06:50:07.150  3289  3399 I RcsClientLib: shouldUseCarrierServicesJibeService: false, CarrierServices rcs service found: false
+10-05 06:50:07.151  3289  3410 I BugleRcsEngine: [SR]: Single Registration is disabled. Skipping Single Registration capability check for subId: 1, OS.isAtLeastS:[true], enableSingleRegistrationProvisioning:[false] [CONTEXT thread_id=63 ]
+10-05 06:50:07.157  3289  3410 I BugleRcsEngine: Skipping provisioning scheduling since RCS is disabled [CONTEXT thread_id=63 ]
+10-05 06:50:07.163  1636  2723 I AlarmManager: setExactAndAllowWhileIdle [name: RemindersNSREFRESH_TIME_REMINDERS_ALARM type: 0 triggerAtMillis: 1791244800000]
+10-05 06:50:07.166  1089  1089 D CarrierSvcBindHelper: onPackageModified: com.google.android.gms
+10-05 06:50:07.167  1636  2723 I ChimeraConfigurator: Starting update, reason: 4 urgentFeatures: mlkit.barcode.ui:0
+10-05 06:50:07.173  1089  1089 D CarrierSvcBindHelper: No carrier app for: 0
+10-05 06:50:07.177  1089  1089 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+10-05 06:50:07.178  1089  1089 E CellBroadcastUtils: getDefaultCellBroadcastReceiverPackageName: no package found
+10-05 06:50:07.179  1089  1300 D ImsResolver: maybeAddedImsService, packageName: com.google.android.gms
+10-05 06:50:07.183  1636  2120 I Icing   : Usage reports ok 1, Failed Usage reports 0, indexed 0, rejected 0
+10-05 06:50:07.184  2402  2413 W .gms.persistent: Suspending all threads took: 11.302ms
+10-05 06:50:07.196  3289  3399 I RcsClientLib: com.google.android.rcs.client.lifecycle.RcsEngineLifecycleService connected
+10-05 06:50:07.199   552  1786 D FileUtils: Rounded bytes from 2593198080 to 4000000000
+10-05 06:50:07.199  1636  4025 I SemanticLocation: [Scheduler] Housekeeping Task com.google.android.gms.semanticlocation.mdd.MddDownloadScheduleService.schedule_mdd_task is scheduled to run at cadence bpjz@72e1af4 [CONTEXT service_id=173 ]
+10-05 06:50:07.199  1636  4025 I SemanticLocation: [Scheduler] Housekeeping Task com.google.android.gms.semanticlocation.service.SemanticLocationCleanupJob.SemanticLocationRemovedAccountsCleanup is scheduled to run at cadence bpjz@790021d [CONTEXT service_id=173 ]
+10-05 06:50:07.203  2825  4053 W SystemServiceRegistry: No service published for: persistent_data_block
+10-05 06:50:07.210  3289  3390 W Bugle   : TextClassifierLibManagerImpl: Reclaiming memory at level: 40
+10-05 06:50:07.227   902   902 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-05 06:50:07.241   905  1044 I PermissionControllerServiceImpl: Updating user sensitive for uid 10143
+10-05 06:50:07.284   552   661 I RoleService: Granting default roles...
+10-05 06:50:07.310  1152  1679 D EGL_emulation: app_time_stats: avg=364.40ms min=152.68ms max=692.56ms count=3
+10-05 06:50:07.356  3604  3664 I BugleRcsEngine: triggerStopRcsStack for msisdn:redacted-pii:phone_number[chars:0,last2:] [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=61 ]
+10-05 06:50:07.367  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e5b6144 in: CREATED
+10-05 06:50:07.367  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e5b6144 in: STARTED
+10-05 06:50:07.367  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e5b6144 in: RESUMED
+10-05 06:50:07.390  3289  3419 I RcsClientLib: Disconnecting RcsEngineLifecycleService
+10-05 06:50:07.405  3604  3709 I BugleRcsEngine: handleMessage processing message:[STOP_RCS_STACK] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:07.406  3604  3709 I BugleRcsEngine: RCS engine STOP RCS stack [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:07.409  3604  3709 I BugleRcsEngine: imsModule is null, shutdown not required [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=63 ]
+10-05 06:50:07.409  3604  3709 I BugleRcsEngine: skipping imsModule.stop [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=63 ]
+10-05 06:50:07.409  3604  3709 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:07.423  3604  3709 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=63 ]
+10-05 06:50:07.462  1467  2981 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af02870 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:50:07.468  1528  1539 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af2abf0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:50:07.469  3730  3730 I Choreographer: Skipped 30 frames!  The application may be doing too much work on its main thread.
+10-05 06:50:07.599  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2189KB AllocSpace bytes, 50(1588KB) LOS objects, 49% free, 4909KB/9818KB, paused 65us,2.232ms total 292.995ms
+10-05 06:50:07.617  1152  1152 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:50:07.622  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:50:07.652   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.retaildemo:6547c73dee150c103980bfdffe55cc9a011d785dd694a5f99afd8205bcaf1f80
+10-05 06:50:07.652   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION
+10-05 06:50:07.679  1636  2723 I ChimeraConfigurator: Detected pending changes for urgent request: [mlkit.barcode.ui]. Pending module sets: container:2423359190800+mlkit.barcode.ui+vision.barcode,tflite_dynamite:2627305025100800+tflite_dynamite
+10-05 06:50:07.736  3730  3730 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:50:07.737  3730  3730 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:50:07.737  3730  3730 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:50:07.740  1636  2864 I PeopleGalProvider: Gal directories started.
+10-05 06:50:07.742  1636  2864 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:07.742  1636  2864 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:07.746  2402  2618 W .gms.persistent: Weak pointer dereference blocked for 557 milliseconds.
+10-05 06:50:07.769   356   390 I netd    : tetherGetStats() -> {[]} <14.30ms>
+10-05 06:50:07.784   902  1039 D EGL_emulation: app_time_stats: avg=7150.86ms min=7150.86ms max=7150.86ms count=1
+10-05 06:50:07.862  1152  1679 D EGL_emulation: app_time_stats: avg=1990.71ms min=174.53ms max=3806.89ms count=2
+10-05 06:50:07.871  3604  3616 I BugleRcsEngine: triggerStopRcsStack for msisdn:redacted-pii:phone_number[chars:0,last2:] [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=39 ]
+10-05 06:50:07.878  3289  3419 I RcsClientLib: Disconnecting RcsEngineLifecycleService
+10-05 06:50:07.880   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.apps.work.clouddpc:23962F4B43B9857638EA66F4D419518EAE282491ACDA4B94707BD59003C45E58
+10-05 06:50:07.942  3604  3709 I BugleRcsEngine: handleMessage processing message:[STOP_RCS_STACK] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:07.943  3604  3709 I BugleRcsEngine: RCS engine STOP RCS stack [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:07.943  3604  3709 I BugleRcsEngine: imsModule is null, shutdown not required [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=63 ]
+10-05 06:50:07.945  1636  2723 I GmsDebugLogger: [73] 1801
+10-05 06:50:07.946  1636  2723 W ZappDownloader: No successful Zapp module downloads for requested modules [VisionBarcode.optional:242335100800:permitMetered, TfliteDynamiteDynamite.integ:262730502100800:permitMetered, MlkitBarcodeUi.optional:242335100800:permitMetered].
+10-05 06:50:07.946  1636  2723 I GmsDebugLogger: [30] [VisionBarcode.optional:242335100800],[TfliteDynamiteDynamite.integ:262730502100800],[MlkitBarcodeUi.optional:242335100800]
+10-05 06:50:07.947  3604  3709 I BugleRcsEngine: skipping imsModule.stop [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]" thread_id=63 ]
+10-05 06:50:07.947  3604  3709 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:07.952  1636  2723 W ChimeraConfigService: Retry attempt was throttled. [CONTEXT service_id=264 ]
+10-05 06:50:07.952  1636  2723 I GmsDebugLogger: [83] 1 [mlkit.barcode.ui]
+10-05 06:50:08.004   356   390 I netd    : tetherGetStats() -> {[]} <0.38ms>
+10-05 06:50:08.007  3604  3709 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=63 ]
+10-05 06:50:08.017  2825  4053 W libc    : Access denied finding property "persist.adb.tls_server.enable"
+10-05 06:50:08.044  2825  4053 W libc    : Access denied finding property "service.adb.tls.port"
+10-05 06:50:08.046  3730  3902 I HWUI    : Davey! duration=1075ms; Flags=1, FrameTimelineVsyncId=15467, IntendedVsync=144327763663, Vsync=144827763643, InputEventId=0, HandleInputStart=144840084200, AnimationStart=144840085868, PerformTraversalsStart=144840106230, DrawStart=145166835777, FrameDeadline=144344430329, FrameInterval=144839468999, FrameStartTime=16666666, SyncQueued=145314044325, SyncStart=145314859007, IssueDrawCommandsStart=145315055816, SwapBuffers=145319888498, FrameCompleted=145403739251, DequeueBufferDuration=6274, QueueBufferDuration=5263800, GpuCompleted=145403670529, SwapBuffersCompleted=145403739251, DisplayPresentTime=0, CommandSubmissionCompleted=145319888498,
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: The extras of the task (com.google.android.gms.ocr.service.ModelCleanUpTaskService:type_[2]) are not valid to be persisted so that the task is not persisted [CONTEXT service_id=218 ]
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: java.lang.IllegalArgumentException: Only the following extra parameter types are supported: Integer, Long, Double, String, Boolean, and nested Bundles with the same restrictions.
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at bpky.f(:com.google.android.gms@242335041@24.23.35 (190800-646585959):69)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at dcbg.d(:com.google.android.gms@242335041@24.23.35 (190800-646585959):510)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at dbyt.n(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at dbyt.u(:com.google.android.gms@242335041@24.23.35 (190800-646585959):360)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at dbyt.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):51)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at dbto.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):72)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:08.047  2402  3216 W NetworkScheduler: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:08.055   552   574 W ziparchive: Unable to open '/data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.dm': No such file or directory
+10-05 06:50:08.012  2825  2825 W IntentService[D: type=1400 audit(0.0:131): avc:  denied  { read } for  name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=318 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:system_adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+10-05 06:50:08.040  2825  2825 W IntentService[D: type=1400 audit(0.0:132): avc:  denied  { read } for  name="u:object_r:adbd_prop:s0" dev="tmpfs" ino=63 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+10-05 06:50:08.077   552   574 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +1s516ms
+10-05 06:50:08.088  1636  2120 I Icing   : Usage reports ok 1, Failed Usage reports 0, indexed 0, rejected 0
+10-05 06:50:08.156  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.geller.GellerCleanupService.GellerCleanup is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.156  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.settings.LocationHistoryActiveProcessingService.LocationHistoryActiveProcessing is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.157  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.settings.SettingsSyncService.OdlhSettingsSyncTask is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.157  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.settings.OdlhTombstonesCleanupJob.OdlhTombstonesCleanupJob is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.157  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.db.OdlhDatabaseCleanupJob.OdlhDatabaseCleanup is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.157  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.edit.EditMergeJob.EditMergeJob is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.162  3730  4078 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:50:08.186  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.db.OdlhRemovedAccountsCleanupJob.OdlhRemovedAccountsCleanup is scheduled to run EVERY_14_DAYS [CONTEXT service_id=173 ]
+10-05 06:50:08.186  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.db.OdlhUserEditSyncJob.OdlhUserEditSync is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.186  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.monitoring.MonitoringService.MonitoringService is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.deidentifieddata.storevisits.StoreVisitsProcessingService.StoreVisitsProcessing is scheduled to run EVERY_6_HOURS [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.deidentifieddata.wifi.WifiPlaceVisitProcessingService.WifiPlaceVisit is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.deidentifieddata.uploads.BatchDeidentifiedDataUploadService.BatchDeidentifiedDataUpload is scheduled to run EVERY_6_HOURS [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.deidentifieddata.historicalbusyness.HistoricalBusynessProcessingService.HistoricalBusyness is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.pulp.PulpInferenceService.PulpInference is scheduled to run EVERY_7_DAYS [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.pulp.PulpMddDownloadScheduleService.PulpMddRefreshDownloadTask is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.pulp.PulpMddMaintenanceService.PulpMddMaintenanceTask is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.deidentifieddata.pulptraining.PulpTrainingService.PulpTraining is scheduled to run EVERY_7_DAYS [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.topplace.TopPlaceProcessingService.TopPlaceProcessing is scheduled to run EVERY_3_DAYS [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.FederatedScheduleService.FederatedLocation is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.FederatedTaskIdentityDataService.FederatedTaskIdentityDataService is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.187  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.FederatedJobHistoryService.FederatedJobHistoryService is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.188  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.BrellaInvocationService.BrellaInvocationServiceFirstPopulation is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.233  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.BrellaInvocationService.BrellaInvocationServiceSecondPopulation is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.234  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.BrellaInvocationService.BrellaInvocationServiceThirdPopulation is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.234  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.BrellaInvocationService.BrellaInvocationServiceFourthPopulation is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.234  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.BrellaInvocationService.BrellaInvocationServiceFifthPopulation is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.234  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.regionfetcher.RegionMddMaintenanceService.RegionMddMaintenanceTask is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.234  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.federated.regionfetcher.RegionMddDownloadScheduleService.RegionMddRefreshDownloadTask is scheduled to run EVERY_6_HOURS [CONTEXT service_id=173 ]
+10-05 06:50:08.235  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.db.backup.OdlhBackupService.OdlhBackup is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.238  1636  4025 I SemanticLocation: [Scheduler] Periodic Task com.google.android.gms.semanticlocationhistory.edit.EditUploadJob.EditUploadJob is scheduled to run EVERY_DAY [CONTEXT service_id=173 ]
+10-05 06:50:08.272  1636  4025 I LocationHistory: [ModuleInit] Triggering settings sync one off task [CONTEXT service_id=314 ]
+10-05 06:50:08.278   552   985 W system_server: Long monitor contention with owner RoleControllerService (1040) at int android.content.res.AssetManager.getResourceIdentifier(java.lang.String, java.lang.String, java.lang.String)(AssetManager.java:879) waiters=1 in boolean android.content.res.AssetManager.getResourceValue(int, int, android.util.TypedValue, boolean) for 215ms
+10-05 06:50:08.294   902   980 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@83b4f22
+10-05 06:50:08.295   552   985 W InputManager-JNI: Input channel object 'ee8fe31 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:50:08.298  2402  4083 W Settings: Setting airplane_mode_on has moved from android.provider.Settings.System to android.provider.Settings.Global, returning read-only value.
+10-05 06:50:08.298  2402  4083 I PersonalSafety: start auto-detection [CONTEXT service_id=310 ]
+10-05 06:50:08.298  2402  4083 I PersonalSafety: AutoD Start settings: true true false false [CONTEXT service_id=310 ]
+10-05 06:50:08.316   552   577 W system_server: Long monitor contention with owner binder:552_8 (985) at void com.android.server.wm.WindowManagerService.removeClientToken(com.android.server.wm.Session, android.os.IBinder)(WindowManagerService.java:2061) waiters=0 in void com.android.server.wm.AccessibilityController.performComputeChangedWindowsNot(int, boolean) for 234ms
+10-05 06:50:08.344  1152  1152 D BaseDepthController: setSurface:
+10-05 06:50:08.344  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:50:08.344  1152  1152 D BaseDepthController: 	mSurface: null
+10-05 06:50:08.344  1152  1152 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:50:08.344  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:50:08.344  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:50:08.344  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:50:08.344  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:50:08.345  1152  1152 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:50:08.348  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:50:08.348  1152  1968 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:50:08.349  1152  1163 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af0f410 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:50:08.386  3730  4079 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:50:08.394   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.WALLET
+10-05 06:50:08.407  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService started execution. cause:5 exec_start_elapsed_seconds: 143 [CONTEXT service_id=218 ]
+10-05 06:50:08.409   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.devicelockcontroller, role: android.app.role.SYSTEM_FINANCED_DEVICE_CONTROLLER
+10-05 06:50:08.420  2825  2828 W id.gms.unstable: Missing inline cache for int fkid.a(java.lang.Object)
+10-05 06:50:08.420  3730  4078 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:50:08.430  2402  2413 I .gms.persistent: Background concurrent mark compact GC freed 11MB AllocSpace bytes, 30(4068KB) LOS objects, 49% free, 22MB/44MB, paused 12.434ms,693.542ms total 1.873s
+10-05 06:50:08.434  2402  2428 I .gms.persistent: WaitForGcToComplete blocked ProfileSaver on HeapTrim for 1.388s
+10-05 06:50:08.475  2402  2618 W .gms.persistent: Long monitor contention with owner lowpool[9] (2936) at void angp.execute(java.lang.Runnable)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):12) waiters=0 in void angp.execute(java.lang.Runnable) for 368ms
+10-05 06:50:08.506   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:50:08.517   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:50:08.517   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={10136} in 168ms
+10-05 06:50:08.522  1528  2090 W SearchServiceCore: Abort, client detached.
+10-05 06:50:08.534  3730  4078 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:50:08.547  3730  3730 I Choreographer: Skipped 64 frames!  The application may be doing too much work on its main thread.
+10-05 06:50:08.657  3730  3730 W openai.fxm1.ec1: Weak pointer dereference blocked for 61 milliseconds.
+10-05 06:50:08.736   552   985 W system_server: Long monitor contention with owner binder:552_1A (2276) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=0 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 156ms
+10-05 06:50:08.754  3730  3902 I HWUI    : Davey! duration=1249ms; Flags=0, FrameTimelineVsyncId=15568, IntendedVsync=144844430309, Vsync=145911096933, InputEventId=0, HandleInputStart=145918680302, AnimationStart=145918681766, PerformTraversalsStart=145918890037, DrawStart=145919668370, FrameDeadline=145427763619, FrameInterval=145918373149, FrameStartTime=16666666, SyncQueued=145928433417, SyncStart=145930671051, IssueDrawCommandsStart=145936245479, SwapBuffers=145962574698, FrameCompleted=146096169139, DequeueBufferDuration=2748, QueueBufferDuration=130615, GpuCompleted=146096169139, SwapBuffersCompleted=146089930046, DisplayPresentTime=0, CommandSubmissionCompleted=145962574698,
+10-05 06:50:08.764  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 6279KB AllocSpace bytes, 16(648KB) LOS objects, 49% free, 4027KB/8054KB, paused 2.288ms,15.393ms total 294.655ms
+10-05 06:50:08.796   552  1786 W system_server: Long monitor contention with owner binder:552_1A (2276) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=1 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 217ms
+10-05 06:50:08.800   552  1153 W system_server: Long monitor contention with owner binder:552_1A (2276) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=2 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 204ms
+10-05 06:50:08.804   552   677 I ImeTracker: com.openai.fxm1.ec1:d277a4b2: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:50:08.804   552   677 I ImeTracker: com.openai.fxm1.ec1:d277a4b2: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:50:08.809   552   984 W system_server: Long monitor contention with owner binder:552_1A (2276) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=4 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 194ms
+10-05 06:50:08.821  3730  4078 W openai.fxm1.ec1: Long monitor contention with owner pool-18-thread-1 (4079) at boolean com.openai.fxm1.EventClient.publishSnapshot(com.openai.fxm1.EventClient$ReadRequest, org.json.JSONObject)(EventClient.java:65) waiters=0 in org.json.JSONObject com.openai.fxm1.EventClient.refreshSnapshot(com.openai.fxm1.EventClient$ReadRequest, boolean) for 231ms
+10-05 06:50:08.834  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:50:08.835  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:50:08.835  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:50:08.835  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:50:08.838  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:50:08.976   356   390 I netd    : tetherGetStats() -> {[]} <5.46ms>
+10-05 06:50:08.986  2825  2825 W id.gms.unstable: Long monitor contention with owner GoogleApiHandler (2898) at boolean amqj.d(amqi, android.content.ServiceConnection, java.lang.String, java.util.concurrent.Executor)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):80) waiters=0 in void amqk.onServiceConnected(android.content.ComponentName, android.os.IBinder) for 112ms
+10-05 06:50:08.999  1636  1636 W gle.android.gms: Long monitor contention with owner binder:1636_7 (2602) at void com.google.android.gms.common.apiservice.LifecycleSynchronizer.onBeforeDispatching()(:com.google.android.gms@242335041@24.23.35 (190800-646585959):122) waiters=0 in void com.google.android.gms.common.apiservice.LifecycleSynchronizer.onServiceStart() for 158ms
+10-05 06:50:09.023  1636  4025 V SmartDevice: [ModuleInitializer] ModuleInitializer got intent Intent { act=com.google.android.chimera.IntentOperation.NEW_MODULE (has extras) } with flag 12
+10-05 06:50:09.030  1636  4025 W ChimeraUtils: Module com.google.android.gms.smartdevice missing resource null(0)
+10-05 06:50:09.030  1636  4025 D SmartDevice: [ModuleInitializer] Module init - scheduling buffered logs cleanup task
+10-05 06:50:09.030  1636  4025 I SmartDevice: [CleanBufferedLogsService] Periodic task upload_buffered_logs_periodic scheduled!
+10-05 06:50:09.094   552   577 W system_server: Long monitor contention with owner android.bg (585) at java.util.ArrayList com.android.server.accessibility.AccessibilityManagerService$AccessibilityDisplayListener.getValidDisplayList()(AccessibilityManagerService.java:5361) waiters=0 in void com.android.server.accessibility.AccessibilityWindowManager$DisplayWindowsObserver.onAccessibilityWindowsChanged(boolean, int, android.os.IBinder, android.graphics.Point, java.util.List) for 676ms
+10-05 06:50:09.095   552  2355 W system_server: Long monitor contention with owner android.bg (585) at java.util.ArrayList com.android.server.accessibility.AccessibilityManagerService$AccessibilityDisplayListener.getValidDisplayList()(AccessibilityManagerService.java:5361) waiters=1 in void com.android.server.accessibility.AccessibilityManagerService.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent, int) for 520ms
+10-05 06:50:09.096   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:50:09.097   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:50:09.102  2402  4084 W SemanticLocation: [MDD] ModelBundleMetadata: File not found: java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory) [CONTEXT service_id=173 ]
+10-05 06:50:09.102  2402  4084 W SemanticLocation: java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at libcore.io.IoBridge.open(IoBridge.java:574)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at java.io.FileInputStream.<init>(FileInputStream.java:179)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at android.app.ContextImpl.openFileInput(ContextImpl.java:774)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at android.content.ContextWrapper.openFileInput(ContextWrapper.java:251)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at android.content.ContextWrapper.openFileInput(ContextWrapper.java:251)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at android.content.ContextWrapper.openFileInput(ContextWrapper.java:251)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at ddho.k(:com.google.android.gms@242335041@24.23.35 (190800-646585959):5)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at ddhd.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):65)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at ddhd.<init>(:com.google.android.gms@242335041@24.23.35 (190800-646585959):16)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at ddov.j(:com.google.android.gms@242335041@24.23.35 (190800-646585959):18)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at ddov.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):184)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at ddov.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at com.google.android.gms.semanticlocation.service.SemanticLocationChimeraService.m(:com.google.android.gms@242335041@24.23.35 (190800-646585959):91)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at com.google.android.gms.semanticlocation.service.SemanticLocationChimeraService.p(:com.google.android.gms@242335041@24.23.35 (190800-646585959):248)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at com.google.android.gms.semanticlocation.service.SemanticLocationChimeraService.h(:com.google.android.gms@242335041@24.23.35 (190800-646585959):69)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at ddnv.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):743)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at libcore.io.Linux.open(Native Method)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at android.app.ActivityThread$AndroidOs.open(ActivityThread.java:8591)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	at libcore.io.IoBridge.open(IoBridge.java:560)
+10-05 06:50:09.102  2402  4084 W SemanticLocation: 	... 23 more
+10-05 06:50:09.181  1636  2723 I TelephonySpamInit: onModuleUpdated TelephonySpam module initialized [CONTEXT service_id=150 ]
+10-05 06:50:09.182  1636  2723 I SpamListSync: scheduleSyncTasks [CONTEXT service_id=150 ]
+10-05 06:50:09.182  1636  2723 I SpamListSync: schedulePeriodicTask [CONTEXT service_id=150 ]
+10-05 06:50:09.182  1636  2723 I SpamListSync: scheduleOneTimeTask [CONTEXT service_id=150 ]
+10-05 06:50:09.182  1636  2723 I ThreadNetworkModuleInit: Initializing runtime states: 12 [CONTEXT service_id=305 ]
+10-05 06:50:09.182  1636  2723 I ThreadNetworkModuleInit: Enable component com.google.android.gms.threadnetwork.ui.ShareCredentialsActivity [CONTEXT service_id=305 ]
+10-05 06:50:09.183  1636  2723 I ThreadBrSynchronizer: Scheduled periodic Border Router sync task: PeriodicBrSync [CONTEXT service_id=305 ]
+10-05 06:50:09.198  2402  4051 I TapAndPay: Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+10-05 06:50:09.212  1451  1464 I AiAiEcho: Settings changed for uri: content://settings/secure/active_unlock_provider
+10-05 06:50:09.214  1451  1464 I AiAiEcho: Settings changed for uri: content://settings/secure/active_unlock_target
+10-05 06:50:09.215  1636  2723 W ActiveUnlock: Tried to set empty triggers [CONTEXT service_id=327 ]
+10-05 06:50:09.216  1636  2723 W ChimeraUtils: Module com.google.android.gms.activeunlock_primary missing resource null(0)
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:50:09.220  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:50:09.220  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:50:09.221  1528  1536 W earchbox:search: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~OGgHZGG8SPhap2o4XAXzjA==/com.google.android.webview-4RxhmjYeHRZ8HLiOYL1lkA==/WebViewGoogle.apk' with 2 weak references
+10-05 06:50:09.225  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+10-05 06:50:09.226   902   902 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:50:09.228  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:50:09.228  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:50:09.228  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:09.228  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:09.229  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:09.229  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:50:09.229  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+10-05 06:50:09.230   902   902 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:50:09.234  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:50:09.235  1636  2571 I Trustlet_Onbody: onbodyAlreadySet: false [CONTEXT service_id=294 ]
+10-05 06:50:09.238  1636  2571 I Trustlet_Onbody: isOnbodySuggestionEnabledByPhenotype: false [CONTEXT service_id=294 ]
+10-05 06:50:09.240  1636  2571 I Trustlet_Onbody: isTrustAgentEnabled: etys@1d69a67[status=SUCCESS, result=[true]] [CONTEXT service_id=294 ]
+10-05 06:50:09.240  1636  2571 I Trustlet_Onbody: Trustlet onbody is supported. [CONTEXT service_id=294 ]
+10-05 06:50:09.241  1636  2571 I Trustlet_Onbody: isSupported: true [CONTEXT service_id=294 ]
+10-05 06:50:09.241  1636  2571 I Trustlet_Onbody: isChromeOsDevice: false [CONTEXT service_id=294 ]
+10-05 06:50:09.242  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:50:09.242  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:09.242  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:09.242  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:50:09.242  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:50:09.244  1636  2120 I Icing   : Indexing com.google.android.gms-internal.3p:MobileApplication from com.google.android.gms
+10-05 06:50:09.277  2402  3216 W .gms.persistent: Long monitor contention with owner netscheduler-queue-handler (2731) at void dbyt.o(int)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):27) waiters=0 in int dbyt.r(dbus) for 521ms
+10-05 06:50:09.346  1636  3200 I ChimeraConfigurator: Starting update, reason: 4 urgentFeatures: tflite_dynamite:-1
+10-05 06:50:09.366  1636  3747 I ebvk$a  : Unable to retrieve flag snapshot for com.google.android.gms.trustlet_place, using defaults.
+10-05 06:50:09.369  1636  4025 I SystemUpdate: [Installation,ReceiverIntentOperation] Received intent: Intent { act=com.google.android.gms.update.BASE_MODULE_INIT cat=[targeted_intent_op_prefix:.update.control.ReceiverIntentOperation] cmp=com.google.android.gms/.chimera.GmsIntentOperationService }.
+10-05 06:50:09.391  2402  4084 W SemanticLocation: [MDD] ModelBundleMetadata: File not found: java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory) [CONTEXT service_id=173 ]
+10-05 06:50:09.391  2402  4084 W SemanticLocation: java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at libcore.io.IoBridge.open(IoBridge.java:574)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at java.io.FileInputStream.<init>(FileInputStream.java:179)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at android.app.ContextImpl.openFileInput(ContextImpl.java:774)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at android.content.ContextWrapper.openFileInput(ContextWrapper.java:251)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at android.content.ContextWrapper.openFileInput(ContextWrapper.java:251)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at android.content.ContextWrapper.openFileInput(ContextWrapper.java:251)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at ddho.k(:com.google.android.gms@242335041@24.23.35 (190800-646585959):5)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at ddhd.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):65)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at ddop.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):20)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):97)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at libcore.io.Linux.open(Native Method)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at android.app.ActivityThread$AndroidOs.open(ActivityThread.java:8591)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	at libcore.io.IoBridge.open(IoBridge.java:560)
+10-05 06:50:09.391  2402  4084 W SemanticLocation: 	... 14 more
+10-05 06:50:09.443  1089  1089 D CarrierSvcBindHelper: onPackageModified: com.google.android.gms
+10-05 06:50:09.444  1089  1089 D CarrierSvcBindHelper: No carrier app for: 0
+10-05 06:50:09.458  1152  1173 D PackageUpdatedTask: Package updated: mOp=UPDATE packages=[com.google.android.gms]
+10-05 06:50:09.461  1451  1451 I AiAiEcho: AppFetcherImpl onPackageChanged com.google.android.gms.
+10-05 06:50:09.465  1152  1173 W AllAppsList: updatePromiseInstallInfo: no Activities matched updated package, removing all apps from package=com.google.android.gms
+10-05 06:50:09.467  1451  2066 I AiAiEcho: AppIndexer Package:[com.google.android.gms] UserProfile:[0] Enabled:[true].
+10-05 06:50:09.467  1451  2066 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.gms], userId:[0], reason:[package is updated.].
+10-05 06:50:09.483   552   661 I RoleService: Granting default roles...
+10-05 06:50:09.520  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4531KB AllocSpace bytes, 16(780KB) LOS objects, 49% free, 3542KB/7084KB, paused 1.455ms,34.854ms total 429.550ms
+10-05 06:50:09.525   905  1044 I PermissionControllerServiceImpl: Updating user sensitive for uid 10143
+10-05 06:50:09.543  1089  1089 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+10-05 06:50:09.544   902   902 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-05 06:50:09.560  1089  1089 E CellBroadcastUtils: getDefaultCellBroadcastReceiverPackageName: no package found
+10-05 06:50:09.586  1089  1300 D ImsResolver: maybeAddedImsService, packageName: com.google.android.gms
+10-05 06:50:09.639   552   565 I system_server: Background concurrent mark compact GC freed 31MB AllocSpace bytes, 52(1192KB) LOS objects, 43% free, 31MB/55MB, paused 68.323ms,26.653ms total 3.508s
+10-05 06:50:09.646  3604  3709 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:50:09.646  3604  3652 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=53 ]
+10-05 06:50:09.648  3604  3709 I BugleRcsEngine: RCS Configuration storage in Bugle is disabled by p/h flag, using ProvisioningEngineStateCacheUtil.getProvisioningConfigurationForGivenSimIfExist() [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=63 ]
+10-05 06:50:09.656   552  1040 W system_server: Long monitor contention with owner binder:552_1A (2276) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=8 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 118ms
+10-05 06:50:09.669   552  1783 W system_server: Long monitor contention with owner binder:552_1A (2276) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=12 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 134ms
+10-05 06:50:09.698   552  1784 W system_server: Long monitor contention with owner binder:552_1A (2276) at com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean)(PackageManagerService.java:1222) waiters=13 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer(boolean) for 139ms
+10-05 06:50:09.700  1636  3559 I SystemUpdate: [Execution,InstallationEventIntentOperation] Handling event of type 1.
+10-05 06:50:09.706  1636  2120 I Icing   : Indexing done com.google.android.gms-internal.3p:MobileApplication
+10-05 06:50:09.707   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.retaildemo:6547c73dee150c103980bfdffe55cc9a011d785dd694a5f99afd8205bcaf1f80
+10-05 06:50:09.713  1636  3200 I ChimeraConfigurator: Detected pending changes for urgent request: [tflite_dynamite]. Pending module sets: container:2423359190800,tflite_dynamite:2627305025100800+tflite_dynamite
+10-05 06:50:09.714   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION
+10-05 06:50:09.716  2402  3145 I UsageReportingOptionsSt: User 0 is opted-in? false [CONTEXT service_id=41 ]
+10-05 06:50:09.717  2402  3145 I UsageReportingOptionsSt: Updating global setting to unknown [CONTEXT service_id=41 ]
+10-05 06:50:09.736  1636  2723 I SystemUpdate: [Execution,InstallationIntentOperation] Received intent: Intent { act=com.google.android.gms.update.INSTALL_UPDATE cat=[targeted_intent_op_prefix:.update.execution.InstallationIntentOperation] cmp=com.google.android.gms/.chimera.GmsIntentOperationService (has extras) }.
+10-05 06:50:09.738  1636  2723 I SystemUpdate: [Execution,ExecutionManager] Action finished-execution executed for 0.00 seconds.
+10-05 06:50:09.741  2402  2495 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:50:09.741  2402  2495 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:50:09.747  1636  3200 I GmsDebugLogger: [73] 1801
+10-05 06:50:09.754  1636  3200 W ZappDownloader: No successful Zapp module downloads for requested modules [TfliteDynamiteDynamite.integ:262730502100800:permitMetered].
+10-05 06:50:09.754  1636  3200 I GmsDebugLogger: [30] [TfliteDynamiteDynamite.integ:262730502100800]
+10-05 06:50:09.758  3730  3795 D EGL_emulation: app_time_stats: avg=211.58ms min=71.82ms max=686.20ms count=8
+10-05 06:50:09.760  1636  3200 W ChimeraConfigService: Retry attempt was throttled. [CONTEXT service_id=264 ]
+10-05 06:50:09.760  1636  3200 I GmsDebugLogger: [83] 1 [tflite_dynamite]
+10-05 06:50:09.765  1636  4025 I Wear_Controller: Wearable module requires a companion app to be installed.
+10-05 06:50:09.766  1636  4025 I Wear_Controller: onStartup - Wear is not available on this device.
+10-05 06:50:09.812   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.apps.work.clouddpc:23962F4B43B9857638EA66F4D419518EAE282491ACDA4B94707BD59003C45E58
+10-05 06:50:09.852  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3504KB AllocSpace bytes, 7(300KB) LOS objects, 49% free, 3518KB/7036KB, paused 167us,5.415ms total 159.486ms
+10-05 06:50:09.874   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk' with 1 weak references
+10-05 06:50:09.877   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltBugle/PrebuiltBugle.apk' with 1 weak references
+10-05 06:50:09.878   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/AccessibilityMenu/AccessibilityMenu.apk' with 1 weak references
+10-05 06:50:09.878   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/InputDevices/InputDevices.apk' with 1 weak references
+10-05 06:50:09.878   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleTTS/GoogleTTS.apk' with 1 weak references
+10-05 06:50:09.879   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '/product/overlay/AccessibilityMenu__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:50:09.879   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/talkback/talkback.apk' with 1 weak references
+10-05 06:50:09.880   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/EmulatorTalkBackOverlay/EmulatorTalkBackOverlay.apk' with 1 weak references
+10-05 06:50:09.880   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGmail/PrebuiltGmail.apk' with 1 weak references
+10-05 06:50:09.881   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Drive/Drive.apk' with 1 weak references
+10-05 06:50:09.888   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Velvet/Velvet.apk' with 1 weak references
+10-05 06:50:09.888   552   567 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/CalendarGooglePrebuilt/CalendarGooglePrebuilt.apk' with 1 weak references
+10-05 06:50:09.900   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.WALLET
+10-05 06:50:09.911  1636  1939 I PeopleGalProvider: Gal directories started.
+10-05 06:50:09.911  1636  1939 I PeopleGalProvider: Method 1 completed.
+10-05 06:50:09.911  1636  1939 I PeopleGalProvider: Method 1 finished successfully.
+10-05 06:50:09.920   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.devicelockcontroller, role: android.app.role.SYSTEM_FINANCED_DEVICE_CONTROLLER
+10-05 06:50:09.927   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:50:09.928   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:50:09.928  1451  1451 I AiAiEcho: AppFetcherImpl onPackageChanged com.google.android.gms.
+10-05 06:50:09.929  1152  1173 D PackageUpdatedTask: Package updated: mOp=UPDATE packages=[com.google.android.gms]
+10-05 06:50:09.930  1451  2063 I AiAiEcho: AppIndexer Package:[com.google.android.gms] UserProfile:[0] Enabled:[true].
+10-05 06:50:09.930  1451  2063 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.gms], userId:[0], reason:[package is updated.].
+10-05 06:50:09.931  1152  1173 W AllAppsList: updatePromiseInstallInfo: no Activities matched updated package, removing all apps from package=com.google.android.gms
+10-05 06:50:09.944  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService finished executing. cause:5 result: 3 elapsed_millis: 81 uptime_millis: 81 exec_start_elapsed_seconds: 143 [CONTEXT service_id=218 ]
+10-05 06:50:09.955  1424  1428 I FuseDaemon: Background concurrent mark compact GC freed 2472KB AllocSpace bytes, 34(676KB) LOS objects, 49% free, 3112KB/6225KB, paused 161us,5.563ms total 15.268ms
+10-05 06:50:09.980   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:50:09.980   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:50:09.983  2402  2731 I NetworkScheduler: ignoring stale queue check message
+10-05 06:50:09.988  1152  1173 D PackageUpdatedTask: Package updated: mOp=UPDATE packages=[com.google.android.gms]
+10-05 06:50:09.988  1451  1451 I AiAiEcho: AppFetcherImpl onPackageChanged com.google.android.gms.
+10-05 06:50:09.990  1451  2055 I AiAiEcho: AppIndexer Package:[com.google.android.gms] UserProfile:[0] Enabled:[true].
+10-05 06:50:09.990  1451  2055 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.gms], userId:[0], reason:[package is updated.].
+10-05 06:50:09.992  1152  1173 W AllAppsList: updatePromiseInstallInfo: no Activities matched updated package, removing all apps from package=com.google.android.gms
+10-05 06:50:09.996   552   585 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:50:10.055  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.icing.proxy.IcingInternalCorporaUpdateService started execution. cause:7 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.056  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.icing.proxy.IcingInternalCorporaUpdateService finished executing. cause:7 result: 1 elapsed_millis: 21 uptime_millis: 21 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.104  1636  2120 I Pay     : Device does not support HCE. [CONTEXT service_id=198 ]
+10-05 06:50:10.106  2402  2646 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.118  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 2 elapsed_millis: 24 uptime_millis: 24 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms.playintegrityautoprotect#com.google.android.gms [CONTEXT service_id=204 ]
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms.playintegrityautoprotect#com.google.android.gms
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:10.120  2402  3152 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms.wallet_dynamite#com.google.android.gms [CONTEXT service_id=204 ]
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms.wallet_dynamite#com.google.android.gms
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:10.128  2402  3152 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:10.150  2402  2646 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.151  2402  2490 I TapAndPay: Disabling TapAndPay HCE service [CONTEXT service_id=79 ]
+10-05 06:50:10.152  1636  2015 W Pay     : Active account was null, notification task will be cancelled. [CONTEXT service_id=198 ]
+10-05 06:50:10.152  1636  2015 W Pay     : No account found on the task or the device. Notification task will not be rescheduled. [CONTEXT service_id=198 ]
+10-05 06:50:10.154  2402  4083 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 2 elapsed_millis: 15 uptime_millis: 15 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms.semanticlocation [CONTEXT service_id=204 ]
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms.semanticlocation
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:10.173  2402  3534 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms.time#com.google.android.gms [CONTEXT service_id=204 ]
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms.time#com.google.android.gms
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:10.180  2402  3534 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:10.187  2402  3216 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.190  1636  4025 E WorkSourceUtil: Could not find package: com.google.android.gms.westworld
+10-05 06:50:10.219  2402  4088 W ChimeraUtils: Module com.google.android.gms.location__nonwearable missing resource location_module_display_name(0)
+10-05 06:50:10.220  1636  3885 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.221  1636  3885 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.221  1636  2723 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.232  2402  4087 I PTCommittedOperation: Receive new configuration for com.google.android.gms.auth_api_phone
+10-05 06:50:10.235  1636  3200 I SyncIntentOperation: Handling the intent: Intent { act=com.google.android.gms.phenotype.COMMITTED pkg=com.google.android.gms cmp=com.google.android.gms/.chimera.GmsIntentOperationService (has extras) }. [CONTEXT service_id=80 ]
+10-05 06:50:10.236  1636  4089 I MdiSyncModule: flag handling is skipping irrelevant intent.
+10-05 06:50:10.236  1636  4095 I MlBenchmarkInstaller: Intent: com.google.android.gms.phenotype.COMMITTED [CONTEXT service_id=340 ]
+10-05 06:50:10.236  1636  4095 I MlBenchmarkInstaller: COMMITTED Extra package name: com.google.android.gms.auth_api_phone [CONTEXT service_id=340 ]
+10-05 06:50:10.236  1636  4095 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.237  1636  4095 I GmsSyncPolicyEngine: Periodic sync 1 disabled by policy, cancelled.
+10-05 06:50:10.237  1636  4095 I GmsSyncPolicyEngine: Periodic sync 2 disabled by policy, cancelled.
+10-05 06:50:10.237  1636  4095 I GmsSyncPolicyEngine: Periodic sync 3 disabled by policy, cancelled.
+10-05 06:50:10.240  1636  4025 I NewModuleComplete: Received com.google.android.chimera.IntentOperation.NEW_MODULE(com.google.android.gms.chimera.GmsIntentOperationService,1,true)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms.auth_api_phone [CONTEXT service_id=204 ]
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms.auth_api_phone
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:10.241  2402  4052 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:10.248  1636  4091 I LocationHistory: [IntentOperation] Handling action com.google.android.gms.phenotype.COMMITTED [CONTEXT service_id=314 ]
+10-05 06:50:10.253   356   390 I netd    : tetherGetStats() -> {[]} <0.34ms>
+10-05 06:50:10.259  1636  4025 I NewModuleHelper: Received com.google.android.chimera.container.NEW_MODULE_FINALIZE(1/0): com.google.android.gms.chimera.GmsIntentOperationService,1,true
+10-05 06:50:10.259  1636  4025 I NewModuleHelper: Completed all new module init intents for all processes.
+10-05 06:50:10.270  2402  3220 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 89 uptime_millis: 89 exec_start_elapsed_seconds: 147 [CONTEXT service_id=218 ]
+10-05 06:50:10.284  1636  4025 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.289  1636  4095 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.289  1636  4089 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.291  1636  4025 I SyncIntentOperation: Handling the intent: Intent { act=com.google.android.gms.phenotype.COMMITTED pkg=com.google.android.gms cmp=com.google.android.gms/.chimera.GmsIntentOperationService (has extras) }. [CONTEXT service_id=80 ]
+10-05 06:50:10.291  1636  2723 I MdiSyncModule: flag handling is skipping irrelevant intent.
+10-05 06:50:10.291  1636  2723 I MlBenchmarkInstaller: Intent: com.google.android.gms.phenotype.COMMITTED [CONTEXT service_id=340 ]
+10-05 06:50:10.291  1636  2723 I MlBenchmarkInstaller: COMMITTED Extra package name: com.google.android.gms.auth_api_proxy [CONTEXT service_id=340 ]
+10-05 06:50:10.294  1636  4091 W ModuleInitIntentOp: Dropping unexpected action com.google.android.gms.phenotype.COMMITTED
+10-05 06:50:10.294  1636  4091 I GmsSyncPolicyEngine: Periodic sync 1 disabled by policy, cancelled.
+10-05 06:50:10.297  1636  4095 I LocationHistory: [IntentOperation] Handling action com.google.android.gms.phenotype.COMMITTED [CONTEXT service_id=314 ]
+10-05 06:50:10.300  1636  4091 I GmsSyncPolicyEngine: Periodic sync 2 disabled by policy, cancelled.
+10-05 06:50:10.300  1636  4091 I GmsSyncPolicyEngine: Periodic sync 3 disabled by policy, cancelled.
+10-05 06:50:10.302  2402  2413 I .gms.persistent: Background concurrent mark compact GC freed 28MB AllocSpace bytes, 20(2640KB) LOS objects, 49% free, 15MB/30MB, paused 4.051ms,1.462ms total 120.023ms
+10-05 06:50:10.303  2402  3145 I PTCommittedOperation: Receive new configuration for com.google.android.gms.auth_api_proxy
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: Update for unknown DeviceConfig package com.google.android.gms.auth_api_proxy [CONTEXT service_id=204 ]
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: daaf: No package exists for config package: com.google.android.gms.auth_api_proxy
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):233)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):29)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at com.google.android.gms.platformconfigurator.PhenotypeConfigurationUpdateListener.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):207)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at com.google.android.chimera.IntentOperation.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):2)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at ajom.onHandleIntent(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at pkf.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):70)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at pke.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):152)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at emsz.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:50:10.308  2402  4098 W PlatformConfigurator: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:50:10.325  2402  4084 I GCoreUlr: Unbound from all signal providers.
+10-05 06:50:10.340  2402  2402 I GCoreUlr: Unbound from all signal providers.
+10-05 06:50:10.340  2402  2402 I GCoreUlr: Stopping handler for UlrDispSvcFast
+10-05 06:50:10.347  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e5b6144 in: PAUSED
+10-05 06:50:10.354  1152  1152 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:50:10.354  3730  3748 I TestRunner: finished: openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits(com.openai.fxm1.EventCoreUiTest)

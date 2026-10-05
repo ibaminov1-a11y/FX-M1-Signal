@@ -1,0 +1,26 @@
+10-05 07:01:56.033  3730  3748 I TestRunner: started: nativeChartScreenshotsCoverInstrumentScaleSmallScreensAndHistory(com.openai.fxm1.R73ChartUiTest)
+10-05 07:01:56.171  1424  3429 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.331  1424  3486 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.360  2402  6288 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.367  2402  6288 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 23 uptime_millis: 23 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.368  1424  1614 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.404   552   565 I system_server: NativeAlloc concurrent mark compact GC freed 13MB AllocSpace bytes, 8(160KB) LOS objects, 45% free, 28MB/52MB, paused 795us,19.329ms total 895.077ms
+10-05 07:01:56.409  1424  6480 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.442  1424  1614 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.442  2402  6430 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.451  2402  6430 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 12 uptime_millis: 12 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.470  1424  3429 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.495  2402  6288 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.498  1424  1614 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.507  2402  6288 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 24 uptime_millis: 24 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.530  1424  1614 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.554  1424  3429 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.558  2402  6430 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.565  2402  6288 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 12 uptime_millis: 12 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.582  1424  6480 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.610  1424  3486 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.628  2402  6431 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.635  1424  3486 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.650  2402  6430 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 39 uptime_millis: 39 exec_start_elapsed_seconds: 853 [CONTEXT service_id=218 ]
+10-05 07:01:56.668  1424  3429 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:01:56.672  3730  3748 I TestRunner: finished: nativeChartScreenshotsCoverInstrumentScaleSmallScreensAndHistory(com.openai.fxm1.R73ChartUiTest)

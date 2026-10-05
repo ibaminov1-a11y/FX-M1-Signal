@@ -1,0 +1,2 @@
+10-05 07:03:14.332  3730  3748 I TestRunner: started: oldProfileFailureDoesNotInvalidateCurrentProfile(com.openai.fxm1.R7ProfileReadUiTest)
+10-05 07:03:14.395  3730  3748 I TestRunner: finished: oldProfileFailureDoesNotInvalidateCurrentProfile(com.openai.fxm1.R7ProfileReadUiTest)

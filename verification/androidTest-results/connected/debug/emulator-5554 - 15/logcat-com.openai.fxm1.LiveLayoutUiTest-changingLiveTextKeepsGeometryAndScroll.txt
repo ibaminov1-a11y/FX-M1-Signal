@@ -1,0 +1,225 @@
+10-05 06:51:45.982  3730  3748 I TestRunner: started: changingLiveTextKeepsGeometryAndScroll(com.openai.fxm1.LiveLayoutUiTest)
+10-05 06:51:46.057  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=23
+10-05 06:51:46.057  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=23
+10-05 06:51:46.278  3289  3293 I .apps.messaging: Compiler allocated 5739KB to compile java.lang.Object aflc.d()
+10-05 06:51:46.312  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:46.343  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:46.365   552   985 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:51:46.371   902   983 D SplashScreenView: Build android.window.SplashScreenView{f8a70a1 V.E...... ......ID 0,0-0,0}
+10-05 06:51:46.371   902   983 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:51:46.371   902   983 D SplashScreenView: Branding: view: android.view.View{9c932c6 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:51:46.372   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:46.386  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:51:46.386  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:51:46.392   356   356 I netd    : tetherGetStats() -> {[]} <0.39ms>
+10-05 06:51:46.393   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:51:46.401  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=24, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:51:46.420  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e844dfe in: PRE_ON_CREATE
+10-05 06:51:46.471  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:51:46.552  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e844dfe in: CREATED
+10-05 06:51:46.552  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e844dfe in: STARTED
+10-05 06:51:46.560  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e844dfe in: RESUMED
+10-05 06:51:46.684  1152  1152 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:51:46.687  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:51:46.819   902  1039 D EGL_emulation: app_time_stats: avg=1188.95ms min=72.87ms max=4212.88ms count=4
+10-05 06:51:46.868  3730  3730 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:51:46.873  3730  3730 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:51:46.878  3730  3730 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:51:46.879  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3496KB AllocSpace bytes, 53(1692KB) LOS objects, 49% free, 4546KB/9092KB, paused 177us,142.141ms total 323.535ms
+10-05 06:51:46.895  1152  1679 D EGL_emulation: app_time_stats: avg=475.76ms min=225.12ms max=1154.57ms count=4
+10-05 06:51:47.009   552   574 W ziparchive: Unable to open '/data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.dm': No such file or directory
+10-05 06:51:47.020  3730  4854 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:47.023   552   574 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +646ms
+10-05 06:51:47.051   902   980 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@b3ac920
+10-05 06:51:47.052   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:47.063   552  1791 W InputManager-JNI: Input channel object 'ddbba14 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:51:47.076  3730  4855 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:47.233  3730  4854 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:47.245   552   824 D ConnectivityService: releasing NetworkRequest [ REQUEST id=143, [ Transports: CELLULAR Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Forbidden: LOCAL_NETWORK Uid: 10144 RequestorUid: 10144 RequestorPkg: com.google.android.googlequicksearchbox UnderlyingNetworks: Null] ] (release request)
+10-05 06:51:47.246   552   824 I ConnectivityService: Update capabilities for net 101 : -FOREGROUND
+10-05 06:51:47.250   356   356 I netd    : networkSetPermissionForNetwork(101, 1) <4.36ms>
+10-05 06:51:47.257  3730  3730 I Choreographer: Skipped 37 frames!  The application may be doing too much work on its main thread.
+10-05 06:51:47.264  1152  1152 D BaseDepthController: setSurface:
+10-05 06:51:47.264  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:51:47.264  1152  1152 D BaseDepthController: 	mSurface: null
+10-05 06:51:47.264  1152  1152 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:51:47.265  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:51:47.265  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:51:47.265  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:51:47.265  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:51:47.265  1152  1152 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:51:47.286  1152  1968 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:51:47.286  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:51:47.301  1152  1941 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af12770 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:51:47.312  1528  3435 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af45d40 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:51:47.373  3730  4854 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:47.391   552   677 I ImeTracker: com.openai.fxm1.ec1:4c13055e: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:51:47.395   552   677 I ImeTracker: com.openai.fxm1.ec1:4c13055e: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:51:47.396  3730  3796 I HWUI    : Davey! duration=784ms; Flags=0, FrameTimelineVsyncId=49350, IntendedVsync=243977759677, Vsync=244594426319, InputEventId=0, HandleInputStart=244628391759, AnimationStart=244628393900, PerformTraversalsStart=244628792343, DrawStart=244629638720, FrameDeadline=244394426327, FrameInterval=244605779740, FrameStartTime=16666666, SyncQueued=244649533367, SyncStart=244649561937, IssueDrawCommandsStart=244649839621, SwapBuffers=244651449630, FrameCompleted=244761793585, DequeueBufferDuration=5235, QueueBufferDuration=3278092, GpuCompleted=244761793585, SwapBuffersCompleted=244754983273, DisplayPresentTime=7593476152375099936, CommandSubmissionCompleted=244651449630,
+10-05 06:51:47.419  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:51:47.420  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:51:47.420  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:51:47.420  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:51:47.420  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:51:47.724  3730  3736 W openai.fxm1.ec1: Suspending all threads took: 14.425ms
+10-05 06:51:47.737  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 7860KB AllocSpace bytes, 27(1188KB) LOS objects, 49% free, 4367KB/8734KB, paused 15.761ms,2.238ms total 512.400ms
+10-05 06:51:48.470  3730  3795 D EGL_emulation: app_time_stats: avg=183.79ms min=69.06ms max=387.38ms count=8
+10-05 06:51:48.726   902  1039 D EGL_emulation: app_time_stats: avg=476.59ms min=38.20ms max=1469.24ms count=4
+10-05 06:51:48.998  2825  2847 W id.gms.unstable: Failed to create temp profile file for /data/user/0/com.google.android.gms/app_dg_cache/FBBAB0C936B5DF55F009F8BAF903A19505BD33A3/oat/the.apk.cur.prof: No such file or directory
+10-05 06:51:48.998  2825  2847 W id.gms.unstable: Could not save profiling info to /data/user/0/com.google.android.gms/app_dg_cache/FBBAB0C936B5DF55F009F8BAF903A19505BD33A3/oat/the.apk.cur.prof
+10-05 06:51:49.183   356   356 I netd    : tetherGetStats() -> {[]} <0.50ms>
+10-05 06:51:49.400  3730  4863 D TrafficStats: tagSocket(136) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:49.449  4860  4860 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-05 06:51:49.449  4860  4860 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-05 06:51:49.496  3730  3795 D EGL_emulation: app_time_stats: avg=137.49ms min=61.15ms max=406.45ms count=7
+10-05 06:51:49.530   145   145 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-05 06:51:49.531  4860  4864 I Gralloc4: mapper 4.x is not supported
+10-05 06:51:49.605  1424  3429 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:51:49.640  2402  4865 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 246 [CONTEXT service_id=218 ]
+10-05 06:51:49.652  2402  4868 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 21 uptime_millis: 21 exec_start_elapsed_seconds: 246 [CONTEXT service_id=218 ]
+10-05 06:51:49.792   552  2350 I ActivityManager: Broadcasting: Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x400000 }
+10-05 06:51:49.794   552  1791 W JobInfo : Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+10-05 06:51:49.797   552   574 I ActivityManager: Broadcast completed: result=0
+10-05 06:51:49.798  1424  1852 I MediaProvider: Begin Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:51:49.807  1424  1852 I MediaProvider: End Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:51:49.818  1424  1466 D WM-SystemJobScheduler: Scheduling work ID 9c11e4e2-403e-4a8d-a4e0-e34d197e6156Job ID 7
+10-05 06:51:49.825  1424  1466 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:51:49.825  1424  1466 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:51:49.848  2402  4869 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 247 [CONTEXT service_id=218 ]
+10-05 06:51:49.853  2402  4701 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 17 uptime_millis: 17 exec_start_elapsed_seconds: 247 [CONTEXT service_id=218 ]
+10-05 06:51:50.578  3730  3795 D EGL_emulation: app_time_stats: avg=102.34ms min=51.70ms max=226.57ms count=10
+10-05 06:51:50.616  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2909KB AllocSpace bytes, 6(292KB) LOS objects, 49% free, 3518KB/7036KB, paused 161us,5.476ms total 61.762ms
+10-05 06:51:51.313  1424  1424 D WM-DelayedWorkTracker: Scheduling work 9c11e4e2-403e-4a8d-a4e0-e34d197e6156
+10-05 06:51:51.313  1424  1424 D WM-GreedyScheduler: Starting tracking for 9c11e4e2-403e-4a8d-a4e0-e34d197e6156
+10-05 06:51:51.317  1424  1525 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:51:51.317  1424  1525 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:51:51.319  1424  1525 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=9c11e4e2-403e-4a8d-a4e0-e34d197e6156, generation=0)
+10-05 06:51:51.320  1424  1525 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=9c11e4e2-403e-4a8d-a4e0-e34d197e6156, generation=0)
+10-05 06:51:51.325  1424  1424 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:51:51.326  1424  4874 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:51:51.326  1424  4874 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@273165b[Not completed, 1 dependents]. Future map: {9c11e4e2-403e-4a8d-a4e0-e34d197e6156=java.util.concurrent.CompletableFuture@273165b[Not completed, 1 dependents]}
+10-05 06:51:51.328  1424  4874 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:51:51.328  1424  4874 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:51:51.333  1424  4874 D PickerSyncController:    Latest ID/Gen=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary/33
+10-05 06:51:51.333  1424  4874 D PickerSyncController:    Cached ID/Gen=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary/25
+10-05 06:51:51.333  1424  4874 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=25, latest=Bundle[{last_media_sync_generation=33, media_collection_id=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary}], pageSize=1000}
+10-05 06:51:51.333  1424  4874 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:51:51.333  1424  4874 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:51:51.334  1424  4874 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.334  1424  4874 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.334  1424  4874 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:51:51.335  1424  4874 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:51:51.335  1424  4874 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.335  1424  4874 D PickerSyncController: Saving next page token: 1791183109000|1000000026 for key: local_provider:media_add:resume
+10-05 06:51:51.335  1424  4874 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.335  1424  4874 D PickerNotificationSender: Sending a notification for media update
+10-05 06:51:51.335  1424  4874 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:51:51.335  1424  4874 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:51:51.336  1424  4874 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:51:51.336  1424  4874 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:51:51.336  1424  4874 D ExternalDbFacade: Token received for queryMedia = 1791183109000|1000000026
+10-05 06:51:51.337  1424  4874 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:51:51.340  1424  4874 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.340  1424  4874 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:51:51.340  1424  4874 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.340  1424  4874 D PickerNotificationSender: Sending a notification for media update
+10-05 06:51:51.340  1424  4874 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:51:51.340  1424  4874 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:51:51.341  1424  4874 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:51:51.341  1424  4874 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:51:51.341  1424  4874 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791183109000|1000000026, android.provider.extra.SYNC_GENERATION=25, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 1
+10-05 06:51:51.341  1424  4874 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:51:51.341  1424  4874 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:51:51.341  1424  4874 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.342  1424  4874 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.346  1424  4874 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:51:51.346  1424  4874 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.346  1424  4874 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:51:51.346  1424  4874 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:51.346  1424  4874 D PickerNotificationSender: Sending a notification for media update
+10-05 06:51:51.346  1424  4874 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:51:51.346  1424  4874 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:51:51.346  1424  4874 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:51:51.346  1424  4874 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:51:51.350  1424  4874 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791183109000|1000000026, android.provider.extra.SYNC_GENERATION=25, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:51:51.353  1424  4874 I PickerSyncTracker: Marked sync future complete for work id: 9c11e4e2-403e-4a8d-a4e0-e34d197e6156. Future map: {}
+10-05 06:51:51.353  1424  4874 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:51:51.357  1424  1466 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=9c11e4e2-403e-4a8d-a4e0-e34d197e6156, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:51:51.358  1424  1424 D WM-Processor: Processor 9c11e4e2-403e-4a8d-a4e0-e34d197e6156 executed; reschedule = false
+10-05 06:51:51.358  1424  1424 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=9c11e4e2-403e-4a8d-a4e0-e34d197e6156, generation=0)
+10-05 06:51:51.365  1424  1525 D WM-GreedyScheduler: Cancelling work ID 9c11e4e2-403e-4a8d-a4e0-e34d197e6156
+10-05 06:51:51.367  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:51:51.367  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:51:51.368  1424  1525 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:51:51.552  3730  4855 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:51.554  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3609KB AllocSpace bytes, 2(60KB) LOS objects, 49% free, 4266KB/8532KB, paused 515us,7.336ms total 61.216ms
+10-05 06:51:51.624  3730  3795 D EGL_emulation: app_time_stats: avg=116.26ms min=74.34ms max=140.10ms count=9
+10-05 06:51:52.169  4878  4878 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-05 06:51:52.169  4878  4878 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-05 06:51:52.188   145   145 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-05 06:51:52.188  4878  4881 I Gralloc4: mapper 4.x is not supported
+10-05 06:51:52.369  1424  1613 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:51:52.402  2402  4869 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 249 [CONTEXT service_id=218 ]
+10-05 06:51:52.408  2402  4868 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 15 uptime_millis: 15 exec_start_elapsed_seconds: 249 [CONTEXT service_id=218 ]
+10-05 06:51:52.521   552  1791 I ActivityManager: Broadcasting: Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x400000 }
+10-05 06:51:52.523   552  2355 W JobInfo : Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+10-05 06:51:52.528   552   574 I ActivityManager: Broadcast completed: result=0
+10-05 06:51:52.529  1424  1852 I MediaProvider: Begin Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:51:52.535  1424  1852 I MediaProvider: End Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:51:52.544  1424  1525 D WM-SystemJobScheduler: Scheduling work ID 646a3e2f-5f53-4ccc-9d61-acef99f64d3bJob ID 8
+10-05 06:51:52.546  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:51:52.546  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:51:52.550  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:51:52.550  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e844dfe in: PAUSED
+10-05 06:51:52.555  1152  1152 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:51:52.557   552  1486 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:51:52.557   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:51:52.573  1152  1968 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:51:52.580  1152  1968 D OneSearchSuggestProvider: Created the binder channel successfully for end point service =com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService , mChannel=i1{delegate=f{logId=71, target=directaddress:///AndroidComponentAddress%5BIntent%20%7B%20act=grpc.io.action.BIND%20cmp=com.google.android.googlequicksearchbox/com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService%20%7D%5D}} , mOneSearchConnection=l2.Z@ec0911c
+10-05 06:51:52.588  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+10-05 06:51:52.590  1152  1173 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:51:52.598  1528  1528 I A       : (REDACTED) Created gRPC endpoint for service %s
+10-05 06:51:52.599   356   356 I netd    : tetherGetStats() -> {[]} <2.00ms>
+10-05 06:51:52.606  1152  1152 D BaseDepthController: setSurface:
+10-05 06:51:52.606  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:51:52.606  1152  1152 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0xd87169c
+10-05 06:51:52.618  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:51:52.618  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:51:52.618  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:51:52.618  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:52.618  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:52.618  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:51:52.634  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:51:52.662  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:51:52.662  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:52.662  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:52.662  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:52.663  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:51:52.770  3730  3795 D EGL_emulation: app_time_stats: avg=224.21ms min=70.98ms max=730.10ms count=5
+10-05 06:51:52.891   552  1791 W system_server: Long monitor contention with owner android.anim (578) at void com.android.server.wm.WindowSurfacePlacer$Traverser.run()(WindowSurfacePlacer.java:58) waiters=1 in android.app.ActivityTaskManager$RootTaskInfo com.android.server.wm.ActivityTaskManagerService.getRootTaskInfo(int, int) for 222ms
+10-05 06:51:52.935  1152  1152 D StateManager: createAtomicAnimation - fromState: Background, toState: Normal, partial trace:
+10-05 06:51:52.935  1152  1152 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.prepareToAnimate(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:22)
+10-05 06:51:52.935  1152  1152 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:51:52.935  1152  1152 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:51:52.937   902   909 W ndroid.systemui: Missing inline cache for void com.android.wm.shell.transition.Transitions.processReadyQueue(com.android.wm.shell.transition.Transitions$Track)
+10-05 06:51:52.937   902   909 W ndroid.systemui: Missing inline cache for void com.android.wm.shell.transition.Transitions.processReadyQueue(com.android.wm.shell.transition.Transitions$Track)
+10-05 06:51:52.946  3730  3748 I TestRunner: finished: changingLiveTextKeepsGeometryAndScroll(com.openai.fxm1.LiveLayoutUiTest)

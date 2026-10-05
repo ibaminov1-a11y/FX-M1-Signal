@@ -1,0 +1,15 @@
+{
+  "commit": "61bfe8661ee54b98ee1ca6fc191998a2764f47b1",
+  "tests": 167,
+  "failures": 0,
+  "r7_tests": 6,
+  "r73_chart_tests": 19,
+  "r73_controls_tests": 19,
+  "excluded_legacy_suite": "V108RepairTest: retired V10.8/TwelveData protocol",
+  "full_suite_run_id": 37274041525,
+  "full_suite_result": "167 passed, 0 failed, 0 skipped",
+  "collection_recovery": "Original full suite passed; optional post-test adb logcat exited 255 before export. Original tested APK retained byte-for-byte.",
+  "tested_apk_sha256": "6cc4c6ef0797eebff96b2c93fb72d8829186751061ec15b6d4421a30fd4575ee",
+  "screenshot_recovery_run_id": 37276385778,
+  "screenshot_recovery_tests": 25
+}

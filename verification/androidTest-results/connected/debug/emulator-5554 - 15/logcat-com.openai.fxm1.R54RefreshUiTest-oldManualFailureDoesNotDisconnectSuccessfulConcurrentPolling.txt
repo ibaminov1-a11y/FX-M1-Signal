@@ -1,0 +1,678 @@
+10-05 06:56:57.911  3730  3748 I TestRunner: started: oldManualFailureDoesNotDisconnectSuccessfulConcurrentPolling(com.openai.fxm1.R54RefreshUiTest)
+10-05 06:56:57.916  3730  3748 D UiDevice: Turning on screen.
+10-05 06:56:57.919  1152  1679 D EGL_emulation: app_time_stats: avg=139.22ms min=70.75ms max=329.87ms count=8
+10-05 06:56:58.010   552   638 W InputManager-JNI: Input channel object 'f95c47b com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:56:58.179  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=54
+10-05 06:56:58.180  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=54
+10-05 06:56:58.452   552   565 I system_server: NativeAlloc concurrent mark compact GC freed 12MB AllocSpace bytes, 15(300KB) LOS objects, 46% free, 28MB/52MB, paused 617us,1.702ms total 567.424ms
+10-05 06:56:59.314  3730  3748 D UiDevice: Pressing home button.
+10-05 06:56:59.358   552   575 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10177, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:56:59.361   902   902 I vol.VolumeDialogImpl: mDialog.dismiss() reason: volume_controller from: com.android.systemui.volume.VolumeDialogImpl$7.onDismissRequested:3
+10-05 06:56:59.369  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:56:59.369  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:56:59.370  1152  1152 D OverviewCommandHelper: clearing pending commands - size: 0
+10-05 06:56:59.370  1152  1152 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:56:59.372  1152  1173 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:56:59.373   552  1486 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:56:59.375   902  1308 D KeyguardService: setOccluded(false)
+10-05 06:56:59.376   902  1308 D KeyguardViewMediator: setOccluded(false)
+10-05 06:56:59.376   902   902 D KeyguardViewMediator: handleSetOccluded(false)
+10-05 06:56:59.376   902   902 D KeyguardViewMediator: KeyguardViewMediator queue processing message: SET_OCCLUDED
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:56:59.377  1152  1968 D OneSearchSuggestProvider: Established or reuse existing binder channel authority=com.google.android.googlequicksearchbox
+10-05 06:56:59.389  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:56:59.389  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:56:59.389  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:56:59.389  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:56:59.389  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:56:59.389  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:56:59.390  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:56:59.391  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:56:59.391  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:56:59.391  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:56:59.391  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:56:59.391  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:56:59.398  1152  1679 D EGL_emulation: app_time_stats: avg=132.14ms min=62.13ms max=618.05ms count=11
+10-05 06:56:59.461  1152  1152 D SearchTargetUtil: query= size=15
+10-05 06:56:59.461  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hocus pocus disney+ streaming charts,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=hocus pocus disney+ streaming charts searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: f91f4da3-1ddd-4495-80df-54dc0135cc90
+10-05 06:56:59.461  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=iwsc 2026 bourbon winner,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=iwsc 2026 bourbon winner searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6310a05e-1e89-4b10-bc58-69bdb0761814
+10-05 06:56:59.461  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=shane lilly dog legal battle,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=shane lilly dog legal battle searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: e82c20a4-2b20-47f5-8460-bbbc798a0d4f
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,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
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=zelda ocarina of time remake,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=zelda ocarina of time remake searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 86bd325c-cb13-4a87-8b93-7bc2322eaba6
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=decaffeinated coffee,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=decaffeinated coffee searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: a3359298-b714-45e3-83f4-ed205a46df1e
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=usgs el nino winter snowfall map,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=usgs el nino winter snowfall map searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: bb3592c5-42f2-4a35-afb6-6c13b0388e17
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/png;base64,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,suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=true,is_personal=false,suggest_raw_text=atlanta braves baseball,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=Atlanta Braves searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6cac237e-69d3-4eb3-93a0-0223f8f6b1b9
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=ss richard montgomery shipwreck salvage,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=ss richard montgomery shipwreck salvage searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: bae42654-2337-4afd-8ec9-26dca44fba3c
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=taylor swift music video patient zero,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=taylor swift music video patient zero searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: e4bf431e-9048-49b3-9bb9-8c174ca48b59
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hershey park,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=hershey park searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: fccf003b-df4a-4c88-b7c4-2c4d0e4384bb
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=jagex runescape 4,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=jagex runescape 4 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: e5b50ae3-2b95-40da-97f0-a760ac44ddbb
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=uss dwight d eisenhower cvn 69,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=uss dwight d eisenhower cvn 69 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 231f18db-95f9-4dde-8bb7-94c414f2726a
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=mock draft 2027 nfl,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=mock draft 2027 nfl searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 25897abc-2960-46ec-a126-e8eeb1b3c1bd
+10-05 06:56:59.462  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=today wordle hints,input_query=android.app.search.Query@4979e5c,group_id=web556742,response_id=14b9d235-5e80-4e5e-bd1f-c57d340478f5,support_query_builder=false,} searchAction=today wordle hints searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 1a3b014b-e2ca-4b89-add3-c15d6ea12e25
+10-05 06:56:59.541  1152  1157 I s.nexuslauncher: Background concurrent mark compact GC freed 4622KB AllocSpace bytes, 74(1712KB) LOS objects, 49% free, 6182KB/12MB, paused 5.794ms,4.657ms total 77.178ms
+10-05 06:56:59.545  1152  1159 W System  : A resource failed to call release.
+10-05 06:56:59.545  1152  1159 W System  : A resource failed to call release.
+10-05 06:56:59.545  1152  1159 W System  : A resource failed to call release.
+10-05 06:56:59.546  1152  1159 W System  : A resource failed to call release.
+10-05 06:56:59.546  1152  1159 W System  : A resource failed to call release.
+10-05 06:56:59.546  1152  1159 W System  : A resource failed to call release.
+10-05 06:56:59.782  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:56:59.799  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:56:59.818   552  1785 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:56:59.824   902   983 D SplashScreenView: Build android.window.SplashScreenView{909f545 V.E...... ......ID 0,0-0,0}
+10-05 06:56:59.824   902   983 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:56:59.824   902   983 D SplashScreenView: Branding: view: android.view.View{a56a49a G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:56:59.832   481   532 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:56:59.870   356   390 I netd    : tetherGetStats() -> {[]} <0.33ms>
+10-05 06:56:59.885  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:56:59.886  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:56:59.899  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4cced6f in: PRE_ON_CREATE
+10-05 06:56:59.905  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=55, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:56:59.910   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:57:00.008  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:57:00.194  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4cced6f in: CREATED
+10-05 06:57:00.197  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4cced6f in: STARTED
+10-05 06:57:00.197  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4cced6f in: RESUMED
+10-05 06:57:00.298  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:57:00.299  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:57:00.299  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:57:00.299  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:57:00.299  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:57:00.299  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:57:00.300  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:57:00.300  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:57:00.300  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:57:00.300  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:57:00.300  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:57:00.300  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:57:00.300  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+10-05 06:57:00.300  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:57:00.343  1152  1152 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:57:00.344  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:57:00.358  1152  1679 D EGL_emulation: app_time_stats: avg=1406.65ms min=146.20ms max=2667.10ms count=2
+10-05 06:57:00.366  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:57:00.367  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:57:00.367  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:57:00.367  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:57:00.367  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:57:00.375  3730  3730 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:57:00.375  3730  3730 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:57:00.375  3730  3730 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:57:00.413   902  1039 D EGL_emulation: app_time_stats: avg=1392.07ms min=29.77ms max=6272.16ms count=5
+10-05 06:57:00.418   902   902 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:57:00.618   552   574 W ziparchive: Unable to open '/data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.dm': No such file or directory
+10-05 06:57:00.622   552   574 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +799ms
+10-05 06:57:00.669   902   980 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@b9e87fd
+10-05 06:57:00.670  3730  5684 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:00.673   552  2355 W InputManager-JNI: Input channel object '3bdaca Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:57:00.675  1152  1152 D BaseDepthController: setSurface:
+10-05 06:57:00.675  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:57:00.675  1152  1152 D BaseDepthController: 	mSurface: null
+10-05 06:57:00.675  1152  1152 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:57:00.675  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:57:00.675  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:57:00.675  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:57:00.675  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:57:00.676  1152  1152 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:57:00.677  1152  1968 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:57:00.678  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:57:00.678  1152  2330 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af10190 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:57:00.714  3730  5686 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:00.785   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:57:00.785  3730  3730 I Choreographer: Skipped 34 frames!  The application may be doing too much work on its main thread.
+10-05 06:57:00.852   552   677 I ImeTracker: com.openai.fxm1.ec1:6a9982f7: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:57:00.852   552   677 I ImeTracker: com.openai.fxm1.ec1:6a9982f7: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:57:00.870  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:57:00.919  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:57:00.919  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:57:00.923  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:57:00.923  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:57:00.924   356   390 I netd    : tetherGetStats() -> {[]} <7.11ms>
+10-05 06:57:00.970  3730  5684 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:01.196  3730  4890 I HWUI    : Davey! duration=874ms; Flags=0, FrameTimelineVsyncId=164541, IntendedVsync=557577747133, Vsync=558144413777, InputEventId=0, HandleInputStart=558156553429, AnimationStart=558156555166, PerformTraversalsStart=558169771681, DrawStart=558171144995, FrameDeadline=557977747117, FrameInterval=558156409344, FrameStartTime=16666666, SyncQueued=558176385015, SyncStart=558176411041, IssueDrawCommandsStart=558176603219, SwapBuffers=558348822216, FrameCompleted=558452302828, DequeueBufferDuration=3833, QueueBufferDuration=1866996, GpuCompleted=558452241021, SwapBuffersCompleted=558452302828, DisplayPresentTime=138429176710256, CommandSubmissionCompleted=558348822216,
+10-05 06:57:01.220  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 9271KB AllocSpace bytes, 67(2336KB) LOS objects, 49% free, 6694KB/13MB, paused 865us,73.151ms total 618.620ms
+10-05 06:57:01.375  3730  5684 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:02.136  3730  3795 D EGL_emulation: app_time_stats: avg=151.05ms min=52.84ms max=500.19ms count=10
+10-05 06:57:02.337  3730  3748 W UiAutomation: UiAutomation.grantRuntimePermission() is more robust and should be used instead of 'pm grant'
+10-05 06:57:02.369   423   849 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 06:57:02.371   552   982 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 18
+10-05 06:57:02.395  3730  5695 D TrafficStats: tagSocket(130) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:02.416   423   537 D AudioFlinger: mixer(0x74d01f1f58e0) throttle end: throttle time(33)
+10-05 06:57:02.469  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3509KB AllocSpace bytes, 13(568KB) LOS objects, 49% free, 3667KB/7335KB, paused 127us,6.244ms total 27.845ms
+10-05 06:57:02.530   423   537 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 06:57:02.592  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:02.593  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:02.627   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:02.634   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:02.639   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:02.642   902   902 W TouchableRegionManager: onHeadsUpPinnedModeChanged
+10-05 06:57:02.646   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:57:02.650   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:57:02.651  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:02.651  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:02.662   356   390 I netd    : tetherGetStats() -> {[]} <0.40ms>
+10-05 06:57:02.669   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:57:02.671   902  1039 D EGL_emulation: app_time_stats: avg=564.49ms min=41.54ms max=1712.37ms count=4
+10-05 06:57:02.850   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:02.855   902   902 D DLObserver: add listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@5d0d9a3
+10-05 06:57:02.856   902   902 D DLObserver: add listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@34e84a0
+10-05 06:57:02.856   902   902 D DLObserver: add listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@8976859
+10-05 06:57:02.856   902   902 D DLObserver: add listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@818bc1e
+10-05 06:57:02.856   902   902 D DLObserver: add listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@90d6cff
+10-05 06:57:02.856   902   902 D DLObserver: add listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@e274acc
+10-05 06:57:02.856   902   902 D BiometricsRepositoryImpl: currentUser authFlags changed, new value: AuthenticationFlags(userId=0, flag=0)
+10-05 06:57:02.856   902   902 D DLObserver: onDockEvent mDockState = 0
+10-05 06:57:02.856   902   902 D BiometricsRepositoryImpl: currentUser authFlags changed, new value: AuthenticationFlags(userId=0, flag=0)
+10-05 06:57:02.856   902   902 D DLObserver: onDockEvent mDockState = 0
+10-05 06:57:02.857   902   902 D BiometricsRepositoryImpl: currentUser authFlags changed, new value: AuthenticationFlags(userId=0, flag=0)
+10-05 06:57:02.857   902   902 D DLObserver: onDockEvent mDockState = 0
+10-05 06:57:02.857   902   902 D BiometricsRepositoryImpl: currentUser authFlags changed, new value: AuthenticationFlags(userId=0, flag=0)
+10-05 06:57:02.857   902   902 D DLObserver: onDockEvent mDockState = 0
+10-05 06:57:02.857   902   902 D BiometricsRepositoryImpl: currentUser authFlags changed, new value: AuthenticationFlags(userId=0, flag=0)
+10-05 06:57:02.857   902   902 D DLObserver: onDockEvent mDockState = 0
+10-05 06:57:02.857   902   902 D BiometricsRepositoryImpl: currentUser authFlags changed, new value: AuthenticationFlags(userId=0, flag=0)
+10-05 06:57:02.857   902   902 D DLObserver: onDockEvent mDockState = 0
+10-05 06:57:02.869   902   997 D ControlsListingControllerImpl: Subscribing callback, service count: 0
+10-05 06:57:02.871   902   997 D ControlsListingControllerImpl: Subscribing callback, service count: 0
+10-05 06:57:02.872   902   997 D ControlsListingControllerImpl: Subscribing callback, service count: 0
+10-05 06:57:02.873   902   997 E QuickAccessWalletKeyguardQuickAffordanceConfig: Wallet card retrieval error, message: "null"
+10-05 06:57:02.873   902   997 E QuickAccessWalletKeyguardQuickAffordanceConfig: Wallet card retrieval error, message: "null"
+10-05 06:57:02.873   902   997 E QuickAccessWalletKeyguardQuickAffordanceConfig: Wallet card retrieval error, message: "null"
+10-05 06:57:02.873   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:02.874   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:02.950  3730  5697 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:03.155  3730  3795 D EGL_emulation: app_time_stats: avg=253.31ms min=85.97ms max=705.11ms count=4
+10-05 06:57:03.440   356   390 I netd    : tetherGetStats() -> {[]} <5.84ms>
+10-05 06:57:03.442   356   356 I netd    : bandwidthSetGlobalAlert(2097152) <0.12ms>
+10-05 06:57:03.448  3730  5695 D TrafficStats: tagSocket(133) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:03.561  3730  3748 D UiDevice: Opening notification.
+10-05 06:57:03.563  3730  3748 D UiDevice: Waiting 5000ms for SearchCondition[hasObject=BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$']].
+10-05 06:57:03.563  3730  3748 D UiDevice: Searching for node with selector: BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$'].
+10-05 06:57:03.578   902   902 D ZenModeController: Added callback class com.android.systemui.qs.tiles.DndTile$3
+10-05 06:57:03.634  1152  1679 D EGL_emulation: app_time_stats: avg=304.14ms min=9.76ms max=2366.53ms count=10
+10-05 06:57:03.731   902  1039 D EGL_emulation: app_time_stats: avg=530.21ms min=95.69ms max=964.73ms count=2
+10-05 06:57:03.740  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:03.741  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:03.783  3730  3748 W UiDevice: Skipping null root node for window: AccessibilityWindowInfo[title=FX M1 EC1, displayId=0, id=142, taskId=55, type=TYPE_APPLICATION, layer=0, region=SkRegion((0,0,1080,2400)), bounds=Rect(0, 0 - 1080, 2400), focused=true, active=true, pictureInPicture=false, transitionTime=558039, hasParent=false, isAnchored=false, hasChildren=false]
+10-05 06:57:03.795  3730  3748 W ByMatcher: Node returned null child: android.view.accessibility.AccessibilityNodeInfo@3cc2a; boundsInParent: Rect(0, 0 - 1080, 128); boundsInScreen: Rect(0, 0 - 1080, 128); boundsInWindow: Rect(0, 0 - 1080, 128); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: true; visible: true; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-05 06:57:03.795  3730  3748 W ByMatcher: Skipping null child (0 of 2)
+10-05 06:57:03.796  3730  3748 W ByMatcher: Skipping null child (1 of 2)
+10-05 06:57:03.807  3730  3748 W ByMatcher: Node returned null child: android.view.accessibility.AccessibilityNodeInfo@3cc2a; boundsInParent: Rect(0, 0 - 1080, 128); boundsInScreen: Rect(0, 0 - 1080, 128); boundsInWindow: Rect(0, 0 - 1080, 128); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: true; visible: true; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-05 06:57:03.807  3730  3748 W ByMatcher: Skipping null child (0 of 2)
+10-05 06:57:03.807  3730  3748 W ByMatcher: Skipping null child (1 of 2)
+10-05 06:57:03.890   902  1039 D EGL_emulation: app_time_stats: avg=138.04ms min=60.05ms max=399.92ms count=8
+10-05 06:57:04.031   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.031   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.133   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.133   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.202  3730  3795 D EGL_emulation: app_time_stats: avg=348.91ms min=78.69ms max=876.90ms count=3
+10-05 06:57:04.261   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.261   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.355   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:04.356   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:04.361   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:04.371   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.371   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.469   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.469   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.573   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.573   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.595  3730  5695 D TrafficStats: tagSocket(138) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:04.630  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4179KB AllocSpace bytes, 10(480KB) LOS objects, 49% free, 3507KB/7015KB, paused 142us,5.536ms total 209.110ms
+10-05 06:57:04.677   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.677   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.781   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.781   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.863  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:04.864  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:04.883   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:04.885   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:04.885   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.885   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:04.886   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:04.912   902  1039 D EGL_emulation: app_time_stats: avg=201.61ms min=70.74ms max=361.76ms count=5
+10-05 06:57:04.993   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:04.993   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:05.093   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:05.093   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:05.197   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:05.197   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:05.301   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:05.301   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:05.405   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:05.405   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:05.406   365  1408 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 4174656
+10-05 06:57:05.444  3730  5686 D TrafficStats: tagSocket(127) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:05.458  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2780KB AllocSpace bytes, 12(516KB) LOS objects, 49% free, 4047KB/8095KB, paused 132us,5.007ms total 21.828ms
+10-05 06:57:05.482  3730  3748 D UiDevice: Pressing back button.
+10-05 06:57:05.511   365  5694 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:57:05.511   365  5694 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:57:05.560  3730  3795 D EGL_emulation: app_time_stats: avg=614.00ms min=187.36ms max=1040.63ms count=2
+10-05 06:57:05.568  1152  1679 D EGL_emulation: app_time_stats: avg=260.45ms min=10.80ms max=1510.97ms count=7
+10-05 06:57:05.661   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:57:05.714   902  1039 D EGL_emulation: app_time_stats: avg=990.67ms min=246.07ms max=1735.27ms count=2
+10-05 06:57:05.919   902  1039 D EGL_emulation: app_time_stats: avg=246.57ms min=45.14ms max=620.22ms count=4
+10-05 06:57:06.032   552   677 I ImeTracker: com.openai.fxm1.ec1:72b72b0c: onRequestHide at ORIGIN_SERVER reason HIDE_SAME_WINDOW_FOCUSED_WITHOUT_EDITOR fromUser false
+10-05 06:57:06.032   552   677 I ImeTracker: com.openai.fxm1.ec1:72b72b0c: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:57:06.040  3730  3748 D UiDevice: Waiting 10000ms for SearchCondition[gone=BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$']].
+10-05 06:57:06.051  3730  3748 D UiDevice: Searching for node with selector: BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$'].
+10-05 06:57:06.066  3730  5695 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:06.102  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:57:06.113  3730  3736 W openai.fxm1.ec1: Suspending all threads took: 36.268ms
+10-05 06:57:06.139  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:57:06.139  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:57:06.161  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:57:06.161  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:57:06.569  3730  3795 D EGL_emulation: app_time_stats: avg=252.36ms min=106.94ms max=447.12ms count=4
+10-05 06:57:06.614   902   902 D ZenModeController: Removed callback class com.android.systemui.qs.tiles.DndTile$3
+10-05 06:57:06.618  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4053KB AllocSpace bytes, 18(808KB) LOS objects, 49% free, 4635KB/9271KB, paused 42.765ms,50.241ms total 767.316ms
+10-05 06:57:06.641  3730  5684 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:06.658  3730  5684 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:06.667  3730  5684 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:06.868  3730  3748 D UiDevice: Searching for node with selector: BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$'].
+10-05 06:57:06.922  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:06.923  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:06.943   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:06.944   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:06.944   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:06.950   902  1039 D EGL_emulation: app_time_stats: avg=331.71ms min=43.75ms max=481.13ms count=3
+10-05 06:57:07.638  3730  3748 D UiDevice: Searching for node with selector: BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$'].
+10-05 06:57:07.716  3730  5697 D TrafficStats: tagSocket(134) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:07.748  3730  3748 D UiDevice: Searching for node with selector: BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$'].
+10-05 06:57:07.796  3730  5695 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:07.801  3730  3795 D EGL_emulation: app_time_stats: avg=404.28ms min=61.47ms max=938.34ms count=3
+10-05 06:57:07.802  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3507KB AllocSpace bytes, 13(524KB) LOS objects, 49% free, 4847KB/9695KB, paused 192us,5.970ms total 52.809ms
+10-05 06:57:07.959  3730  3748 D UiDevice: Searching for node with selector: BySelector [PKG='\Qcom.android.systemui\E', TEXT='^.*\QFX M1\E.*$'].
+10-05 06:57:08.105  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:08.105  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:08.122   902  1039 D EGL_emulation: app_time_stats: avg=585.79ms min=73.18ms max=1098.39ms count=2
+10-05 06:57:08.128   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:08.128   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:08.129   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:08.342   902   902 W TouchableRegionManager: onHeadsUpPinnedModeChanged
+10-05 06:57:08.400   902  1039 D EGL_emulation: app_time_stats: avg=1343.19ms min=253.06ms max=2433.33ms count=2
+10-05 06:57:08.478   902   902 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=com.android.systemui.back.domain.interactor.BackActionInteractor$callback$2@228b647
+10-05 06:57:08.509   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:57:08.515   902   997 D ControlsListingControllerImpl: Unsubscribing callback
+10-05 06:57:08.516   902   902 D DLObserver: remove listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@5d0d9a3
+10-05 06:57:08.516   902   902 D DLObserver: remove listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@34e84a0
+10-05 06:57:08.517   902   997 D ControlsListingControllerImpl: Unsubscribing callback
+10-05 06:57:08.518   902   902 D DLObserver: remove listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@8976859
+10-05 06:57:08.519   902   902 D DLObserver: remove listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@818bc1e
+10-05 06:57:08.520   902   997 D ControlsListingControllerImpl: Unsubscribing callback
+10-05 06:57:08.520   902   902 D DLObserver: remove listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@90d6cff
+10-05 06:57:08.521   902   902 D DLObserver: remove listener: com.android.systemui.dock.DockManagerExtensionsKt$retrieveIsDocked$1$callback$1@e274acc
+10-05 06:57:08.550   356   390 I netd    : tetherGetStats() -> {[]} <0.33ms>
+10-05 06:57:08.824  3730  3795 D EGL_emulation: app_time_stats: avg=511.46ms min=91.91ms max=931.00ms count=2
+10-05 06:57:08.915  3730  5695 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:09.160  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:09.160  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:09.191   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:09.192   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:09.395  3730  3748 D UiDevice: Waiting 5000ms for SearchCondition[hasObject=BySelector [RES='\Qcom.openai.fxm1.ec1:id/refreshStatusText\E']].
+10-05 06:57:09.395  3730  3748 D UiDevice: Searching for node with selector: BySelector [RES='\Qcom.openai.fxm1.ec1:id/refreshStatusText\E'].
+10-05 06:57:09.399  3730  3748 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:09.504  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE SCREENSHOT scrollY=0 enabled=true shown=true focused=true pullEligible=false pulling=false refreshing=false
+10-05 06:57:09.588  5701  5701 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-05 06:57:09.588  5701  5701 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-05 06:57:09.603   145   145 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-05 06:57:09.603  5701  5704 I Gralloc4: mapper 4.x is not supported
+10-05 06:57:09.819  1424  1613 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:57:09.837  3730  3736 W openai.fxm1.ec1: Suspending all threads took: 9.797ms
+10-05 06:57:09.850  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3475KB AllocSpace bytes, 13(568KB) LOS objects, 49% free, 4271KB/8543KB, paused 10.111ms,2.961ms total 36.349ms
+10-05 06:57:09.863  3730  5686 D TrafficStats: tagSocket(140) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:09.890  1636  5705 I GmscoreIpa: Starting mediastore instant index [CONTEXT service_id=255 ]
+10-05 06:57:09.913  2402  5237 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 567 [CONTEXT service_id=218 ]
+10-05 06:57:09.928  2402  5707 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 66 uptime_millis: 66 exec_start_elapsed_seconds: 567 [CONTEXT service_id=218 ]
+10-05 06:57:09.981  3730  3795 D EGL_emulation: app_time_stats: avg=559.53ms min=50.05ms max=1069.00ms count=2
+10-05 06:57:10.036  3730  5695 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:10.103   552  2355 I ActivityManager: Broadcasting: Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x400000 }
+10-05 06:57:10.106   552   638 W JobInfo : Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+10-05 06:57:10.110   552   574 I ActivityManager: Broadcast completed: result=0
+10-05 06:57:10.111  1424  1852 I MediaProvider: Begin Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:57:10.114  1424  1852 W ExifInterface: Invalid image: ExifInterface got an unsupported image format file(ExifInterface supports JPEG and some RAW image formats only) or a corrupted JPEG file to ExifInterface.
+10-05 06:57:10.114  1424  1852 W ExifInterface: java.io.IOException: Encountered corrupt PNG file.
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at android.media.ExifInterface.getPngAttributes(ExifInterface.java:3443)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at android.media.ExifInterface.loadAttributes(ExifInterface.java:2008)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at android.media.ExifInterface.<init>(ExifInterface.java:1640)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at android.media.ExifInterface.<init>(ExifInterface.java:1591)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.scanItemImage(ModernMediaScanner.java:1392)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.scanItem(ModernMediaScanner.java:1054)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.-$$Nest$smscanItem(ModernMediaScanner.java:0)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.visitFile(ModernMediaScanner.java:854)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.visitFile(ModernMediaScanner.java:351)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at java.nio.file.Files.walkFileTree(Files.java:2670)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at java.nio.file.Files.walkFileTree(Files.java:2742)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.walkFileTree(ModernMediaScanner.java:467)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.runInternal(ModernMediaScanner.java:430)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.run(ModernMediaScanner.java:419)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.scanFile(ModernMediaScanner.java:285)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.MediaProvider.scanFile(MediaProvider.java:2154)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.MediaService.onScanFile(MediaService.java:225)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at com.android.providers.media.MediaService.onHandleWork(MediaService.java:85)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at androidx.core.app.JobIntentService$CommandProcessor.doInBackground(JobIntentService.java:396)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at androidx.core.app.JobIntentService$CommandProcessor.doInBackground(JobIntentService.java:387)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at android.os.AsyncTask$3.call(AsyncTask.java:394)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:57:10.114  1424  1852 W ExifInterface: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:57:10.122  1424  1852 I MediaProvider: End Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:57:10.133  1424  1466 D WM-SystemJobScheduler: Scheduling work ID 6340efb5-c264-462a-a720-2d9c663a65ffJob ID 20
+10-05 06:57:10.135  1424  1466 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:57:10.137  1424  1466 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:57:10.166  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5028KB AllocSpace bytes, 18(788KB) LOS objects, 49% free, 4658KB/9316KB, paused 2.182ms,3.404ms total 184.223ms
+10-05 06:57:10.174  3730  3748 D UiDevice: Swiping from (540, 200) to (540, 778) in 36 steps.
+10-05 06:57:10.187  2402  5708 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 567 [CONTEXT service_id=218 ]
+10-05 06:57:10.189  2402  5237 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 10 uptime_millis: 10 exec_start_elapsed_seconds: 567 [CONTEXT service_id=218 ]
+10-05 06:57:10.209  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=0 x=540.0 y=200.0 scrollY=0 enabled=true shown=true focused=true pullEligible=false pulling=false refreshing=false
+10-05 06:57:10.209  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=false refreshing=false
+10-05 06:57:10.224  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=216.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=false refreshing=false
+10-05 06:57:10.224  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=false refreshing=false
+10-05 06:57:10.241  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=235.83984 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=false refreshing=false
+10-05 06:57:10.241  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=false refreshing=false
+10-05 06:57:10.272  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=252.74707 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=false refreshing=false
+10-05 06:57:10.272  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.346  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=264.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.347  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.374  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=280.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.375  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.387  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:10.387  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:10.391  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=296.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.391  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.408  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=317.74707 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.408  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.409   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:10.410   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:10.424  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=330.87402 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.424  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.440  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=350.94824 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.441  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.457  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=366.74707 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.457  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.474  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=382.03613 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.474  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.490  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=397.72266 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.491  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.534  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=408.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.535  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.558  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=424.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.558  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.592  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=440.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.592  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.607  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=456.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.607  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.624  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=478.84082 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.624  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.641  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=495.08008 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.641  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.658  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=510.4082 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.658  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.674  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=524.92285 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.674  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.691  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=543.48535 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.691  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.707  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=558.4092 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.707  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.724  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=575.4131 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.724  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.740  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=590.72266 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.741  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.757  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=606.4092 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.757  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.774  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=623.4131 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.774  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.784   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:57:10.784   552   824 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:57:10.784   552   824 D InetDiagMessage: Destroyed live tcp sockets for uids={99000} in 1ms
+10-05 06:57:10.791  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=638.72266 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.791  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.808  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=654.4092 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.808  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.824  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=670.0947 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.824  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.841  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=687.0801 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.841  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.857  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=701.2197 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.857  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.874  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=719.8408 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.874  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.914  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=736.5293 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.915  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.970  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=745.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.970  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.995  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=2 x=540.0 y=761.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:10.995  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=2 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:11.021  3730  3795 D EGL_emulation: app_time_stats: avg=171.85ms min=53.34ms max=436.99ms count=6
+10-05 06:57:11.116  3730  3730 I R54GestureTrace: r54-monitor-timeout BEFORE action=1 x=540.0 y=778.0 scrollY=0 enabled=true shown=true focused=true pullEligible=true pulling=true refreshing=false
+10-05 06:57:11.124  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER action=1 scrollY=0 enabled=true shown=true focused=true pullEligible=false pulling=false refreshing=true
+10-05 06:57:11.142  3730  5684 D TrafficStats: tagSocket(127) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:11.359  3730  5695 D TrafficStats: tagSocket(130) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:11.383  3730  3730 I R54GestureTrace: r54-monitor-timeout AFTER PULL ActivityTouchEvents=37 scrollY=0 enabled=true shown=true focused=true pullEligible=false pulling=false refreshing=true
+10-05 06:57:11.506  5717  5717 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-05 06:57:11.509  5717  5717 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-05 06:57:11.595   145   145 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-05 06:57:11.599  5717  5720 I Gralloc4: mapper 4.x is not supported
+10-05 06:57:11.758  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:11.758  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:11.821  1424  1424 D WM-DelayedWorkTracker: Scheduling work 6340efb5-c264-462a-a720-2d9c663a65ff
+10-05 06:57:11.821  1424  1424 D WM-GreedyScheduler: Starting tracking for 6340efb5-c264-462a-a720-2d9c663a65ff
+10-05 06:57:11.837  1424  1525 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:57:11.837  1424  1525 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:57:11.838  1424  1525 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=6340efb5-c264-462a-a720-2d9c663a65ff, generation=0)
+10-05 06:57:11.839  1424  1525 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=6340efb5-c264-462a-a720-2d9c663a65ff, generation=0)
+10-05 06:57:11.842  1424  1424 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:57:11.842  1424  4891 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:57:11.842  1424  4891 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@3a1d3bc[Not completed, 1 dependents]. Future map: {6340efb5-c264-462a-a720-2d9c663a65ff=java.util.concurrent.CompletableFuture@3a1d3bc[Not completed, 1 dependents]}
+10-05 06:57:11.843  1424  1424 D WM-SystemJobService: onStartJob for WorkGenerationalId(workSpecId=6340efb5-c264-462a-a720-2d9c663a65ff, generation=0)
+10-05 06:57:11.843  1424  4891 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:57:11.843  1424  4891 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:57:11.844  1424  4891 D PickerSyncController:    Latest ID/Gen=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary/142
+10-05 06:57:11.844  1424  4891 D PickerSyncController:    Cached ID/Gen=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary/134
+10-05 06:57:11.844  1424  4891 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=134, latest=Bundle[{last_media_sync_generation=142, media_collection_id=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary}], pageSize=1000}
+10-05 06:57:11.844  1424  4891 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:57:11.844  1424  4891 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:11.844  1424  4891 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.844  1424  4891 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.844  1424  4891 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:57:11.845  1424  4891 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:11.845  1424  4891 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.845  1424  4891 D PickerSyncController: Saving next page token: 1791183429000|1000000044 for key: local_provider:media_add:resume
+10-05 06:57:11.845  1424  4891 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.845  1424  4891 D PickerNotificationSender: Sending a notification for media update
+10-05 06:57:11.846  1424  4891 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:57:11.846  1424  4891 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:57:11.846  1424  4891 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:57:11.846  1424  4891 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:57:11.846  1424  4891 D ExternalDbFacade: Token received for queryMedia = 1791183429000|1000000044
+10-05 06:57:11.846  1424  4891 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:11.846  1424  4891 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.846  1424  4891 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:57:11.846  1424  4891 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.847  1424  4891 D PickerNotificationSender: Sending a notification for media update
+10-05 06:57:11.847  1424  4891 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:57:11.847  1424  4891 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:57:11.847  1424  4891 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:57:11.847  1424  4891 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:57:11.847  1424  4891 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791183429000|1000000044, android.provider.extra.SYNC_GENERATION=134, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 1
+10-05 06:57:11.847  1424  4891 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:57:11.847  1424  4891 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:11.847  1424  4891 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.847  1424  4891 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.848  1424  4891 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:11.848  1424  4891 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.848  1424  4891 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:57:11.848  1424  4891 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:11.848  1424  4891 D PickerNotificationSender: Sending a notification for media update
+10-05 06:57:11.849  1424  4891 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:57:11.849  1424  4891 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:57:11.850  1424  4891 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:57:11.850  1424  4891 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:57:11.850  1424  4891 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791183429000|1000000044, android.provider.extra.SYNC_GENERATION=134, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:57:11.850  1424  4891 I PickerSyncTracker: Marked sync future complete for work id: 6340efb5-c264-462a-a720-2d9c663a65ff. Future map: {}
+10-05 06:57:11.850  1424  4891 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:57:11.851   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:11.852   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:11.853  1424  1466 D WM-Processor: Work WorkGenerationalId(workSpecId=6340efb5-c264-462a-a720-2d9c663a65ff, generation=0) is already enqueued for processing
+10-05 06:57:11.854  1424  1466 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=6340efb5-c264-462a-a720-2d9c663a65ff, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:57:11.854  1424  3429 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:57:11.855  1424  1424 D WM-Processor: Processor 6340efb5-c264-462a-a720-2d9c663a65ff executed; reschedule = false
+10-05 06:57:11.855  1424  1424 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=6340efb5-c264-462a-a720-2d9c663a65ff, generation=0)
+10-05 06:57:11.856  1424  1424 D WM-SystemJobService: 6340efb5-c264-462a-a720-2d9c663a65ff executed on JobScheduler
+10-05 06:57:11.865  1424  1525 D WM-GreedyScheduler: Cancelling work ID 6340efb5-c264-462a-a720-2d9c663a65ff
+10-05 06:57:11.866  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:57:11.866  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:57:11.866  1424  1525 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:57:11.891  2402  5708 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 569 [CONTEXT service_id=218 ]
+10-05 06:57:11.896  2402  5582 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 13 uptime_millis: 13 exec_start_elapsed_seconds: 569 [CONTEXT service_id=218 ]
+10-05 06:57:11.954  3730  5697 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:12.032  3730  3795 D EGL_emulation: app_time_stats: avg=134.64ms min=52.12ms max=474.14ms count=7
+10-05 06:57:12.084   552  2355 I ActivityManager: Broadcasting: Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x400000 }
+10-05 06:57:12.093   552  1783 W JobInfo : Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+10-05 06:57:12.097   552   574 I ActivityManager: Broadcast completed: result=0
+10-05 06:57:12.097  1424  1852 I MediaProvider: Begin Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:57:12.114  3730  3748 D TrafficStats: tagSocket(133) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:12.151  1424  1852 I MediaProvider: End Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:57:12.162  1424  1525 D WM-SystemJobScheduler: Scheduling work ID ddbb2e00-7733-4405-8c95-cc5b55d09558Job ID 21
+10-05 06:57:12.168  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:57:12.169  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:57:12.204  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5662KB AllocSpace bytes, 25(1104KB) LOS objects, 49% free, 5334KB/10MB, paused 318us,18.925ms total 272.396ms
+10-05 06:57:12.242  2402  5582 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 569 [CONTEXT service_id=218 ]
+10-05 06:57:12.251  2402  5707 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 17 uptime_millis: 17 exec_start_elapsed_seconds: 569 [CONTEXT service_id=218 ]
+10-05 06:57:12.561  3730  5695 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:12.787  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:12.787  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:12.808   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:12.809   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:13.046  3730  3795 D EGL_emulation: app_time_stats: avg=337.29ms min=87.54ms max=820.57ms count=3
+10-05 06:57:13.120  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 6101KB AllocSpace bytes, 25(1140KB) LOS objects, 49% free, 3619KB/7239KB, paused 133us,5.931ms total 66.577ms
+10-05 06:57:13.585  3730  5695 D TrafficStats: tagSocket(134) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:13.657  1424  1424 D WM-DelayedWorkTracker: Scheduling work ddbb2e00-7733-4405-8c95-cc5b55d09558
+10-05 06:57:13.657  1424  1424 D WM-GreedyScheduler: Starting tracking for ddbb2e00-7733-4405-8c95-cc5b55d09558
+10-05 06:57:13.658  1424  1525 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:57:13.659  1424  1525 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:57:13.659  1424  1525 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=ddbb2e00-7733-4405-8c95-cc5b55d09558, generation=0)
+10-05 06:57:13.661  1424  1525 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=ddbb2e00-7733-4405-8c95-cc5b55d09558, generation=0)
+10-05 06:57:13.662  1424  1424 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:57:13.663  1424  4948 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:57:13.664  1424  4948 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@ac3cef2[Not completed, 1 dependents]. Future map: {ddbb2e00-7733-4405-8c95-cc5b55d09558=java.util.concurrent.CompletableFuture@ac3cef2[Not completed, 1 dependents]}
+10-05 06:57:13.664  1424  4948 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:57:13.664  1424  4948 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:57:13.665  1424  4948 D PickerSyncController:    Latest ID/Gen=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary/150
+10-05 06:57:13.665  1424  4948 D PickerSyncController:    Cached ID/Gen=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary/142
+10-05 06:57:13.665  1424  4948 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=142, latest=Bundle[{last_media_sync_generation=150, media_collection_id=1409:cfae5bd7-f84a-4b60-a136-24e006aa7c44:external_primary}], pageSize=1000}
+10-05 06:57:13.665  1424  4948 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:57:13.665  1424  4948 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:13.665  1424  4948 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-6]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.665  1424  4948 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.665  1424  4948 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:57:13.666  1424  4948 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:13.666  1424  4948 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-6]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.666  1424  4948 D PickerSyncController: Saving next page token: 1791183432000|1000000045 for key: local_provider:media_add:resume
+10-05 06:57:13.666  1424  4948 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.667  1424  4948 D PickerNotificationSender: Sending a notification for media update
+10-05 06:57:13.668  1424  4948 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:57:13.668  1424  4948 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:57:13.668  1424  4948 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:57:13.668  1424  4948 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:57:13.669  1424  4948 D ExternalDbFacade: Token received for queryMedia = 1791183432000|1000000045
+10-05 06:57:13.669  1424  4948 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:13.669  1424  4948 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-6]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.669  1424  4948 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:57:13.670  1424  4948 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.670  1424  4948 D PickerNotificationSender: Sending a notification for media update
+10-05 06:57:13.670  1424  4948 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:57:13.670  1424  4948 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:57:13.671  1424  4948 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:57:13.671  1424  4948 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:57:13.671  1424  4948 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791183432000|1000000045, android.provider.extra.SYNC_GENERATION=142, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 1
+10-05 06:57:13.671  1424  4948 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:57:13.671  1424  4948 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:13.671  1424  4948 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-6]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.671  1424  4948 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.672  1424  4948 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:57:13.672  1424  4948 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread pool-3-thread-6]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.672  1424  4948 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:57:13.672  1424  4948 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:57:13.672  1424  4948 D PickerNotificationSender: Sending a notification for media update
+10-05 06:57:13.672  1424  4948 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:57:13.672  1424  4948 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:57:13.672  1424  4948 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:57:13.672  1424  4948 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:57:13.673  1424  4948 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791183432000|1000000045, android.provider.extra.SYNC_GENERATION=142, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:57:13.673  1424  4948 I PickerSyncTracker: Marked sync future complete for work id: ddbb2e00-7733-4405-8c95-cc5b55d09558. Future map: {}
+10-05 06:57:13.673  1424  4948 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:57:13.674  1424  1525 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=ddbb2e00-7733-4405-8c95-cc5b55d09558, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:57:13.674  1424  1424 D WM-Processor: Processor ddbb2e00-7733-4405-8c95-cc5b55d09558 executed; reschedule = false
+10-05 06:57:13.674  1424  1424 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=ddbb2e00-7733-4405-8c95-cc5b55d09558, generation=0)
+10-05 06:57:13.676  1424  1525 D WM-GreedyScheduler: Cancelling work ID ddbb2e00-7733-4405-8c95-cc5b55d09558
+10-05 06:57:13.677  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:57:13.677  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:57:13.677  1424  1525 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:57:13.702  1528  1528 I BgTaskExecutorImpl: (REDACTED) Starting %s background task %s.
+10-05 06:57:13.709  1528  5117 I NetworkRecognitionRnr: Using pair HTTP connection
+10-05 06:57:13.711  1528  2553 I A       : [Upload] Connected
+10-05 06:57:13.714  1528  1528 E A       : onError
+10-05 06:57:13.714  1528  1528 E A       : com.google.android.apps.gsa.shared.speech.b.l: errorCode: 65561, engine: 2
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.staticplugins.bp.a.f.a(PG:23)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.o.hi(PG:13)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.ci.g.a.f.e(PG:9)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:162)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.speech.k.a.g.iO(PG:26)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.p.c(PG:102)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.q.run(PG:1)
+10-05 06:57:13.714  1528  1528 E A       : 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:57:13.714  1528  1528 E A       : 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.e.run(PG:12)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.bg.run(PG:3)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.bg.run(PG:3)
+10-05 06:57:13.714  1528  1528 E A       : 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:57:13.714  1528  1528 E A       : 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:57:13.714  1528  1528 E A       : 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.l.run(PG:42)
+10-05 06:57:13.714  1528  1528 E A       : Caused by: com.google.android.apps.gsa.shared.speech.b.n: errorCode: 65586, engine: 2
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.o.hi(PG:6)
+10-05 06:57:13.714  1528  1528 E A       : 	... 14 more
+10-05 06:57:13.714  1528  1528 E A       : Caused by: com.google.android.apps.gsa.shared.speech.b.j: errorCode: 401, engine: 2
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.assistant.shared.n.i.b(PG:30)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.producers.j.hs(PG:11)
+10-05 06:57:13.714  1528  1528 E A       : 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:135)
+10-05 06:57:13.714  1528  1528 E A       : 	... 12 more
+10-05 06:57:13.717  1528  1715 W CronetNetworkRqstWrppr: Upload request without a content type.
+10-05 06:57:13.718  1528  2553 I NetworkRecognitionRnr: Using pair HTTP connection
+10-05 06:57:13.718  1528  3089 I A       : [Upload] Connected
+10-05 06:57:13.719   356   390 I netd    : tetherGetStats() -> {[]} <0.37ms>
+10-05 06:57:13.720  1528  1528 W A       : Failed to sync device settings.
+10-05 06:57:13.720  1528  1528 I A       : Retrying to sync device settings.
+10-05 06:57:13.723  1528  1528 W JobInfo : Job 'com.google.android.googlequicksearchbox/com.google.android.apps.gsa.tasks.BackgroundTasksJobService#-353' has a deadline with functional constraints and an extremely short time window of 0 ms (delay=480000, deadline=480000). The functional constraints are not likely to be satisfied when the job runs.
+10-05 06:57:13.724   552   982 W JobInfo : Job 'com.google.android.googlequicksearchbox/com.google.android.apps.gsa.tasks.BackgroundTasksJobService#-353' has a deadline with functional constraints and an extremely short time window of 0 ms (delay=480000, deadline=480000). The functional constraints are not likely to be satisfied when the job runs.
+10-05 06:57:13.724   552   982 W JobInfo : Job 'com.google.android.googlequicksearchbox/com.google.android.apps.gsa.tasks.BackgroundTasksJobService#-353' has a deadline with functional constraints and an extremely short time window of 0 ms (delay=480000, deadline=480000). The functional constraints are not likely to be satisfied when the job runs.
+10-05 06:57:13.813  1451  1860 W AiAiEcho: LyftNotificationParser Ridesharing ETA not enabled
+10-05 06:57:13.813  1451  1860 I AiAiEcho: SmartspaceNotificationPredictor no parser can handle this notification or notification is invalid
+10-05 06:57:13.841   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:13.842   902  1194 D LocalImageResolver: Couldn't use ImageDecoder for drawable, falling back to non-resized load.
+10-05 06:57:14.030  3730  5686 D TrafficStats: tagSocket(134) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:14.094  3730  3795 D EGL_emulation: app_time_stats: avg=524.09ms min=105.79ms max=942.39ms count=2
+10-05 06:57:14.228  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3702KB AllocSpace bytes, 16(704KB) LOS objects, 49% free, 3913KB/7826KB, paused 340us,3.168ms total 125.325ms
+10-05 06:57:14.613  3730  5695 D TrafficStats: tagSocket(130) with statsTag=0xffffffff, statsUid=-1
+10-05 06:57:14.736  3730  3748 I TestRunner: finished: oldManualFailureDoesNotDisconnectSuccessfulConcurrentPolling(com.openai.fxm1.R54RefreshUiTest)

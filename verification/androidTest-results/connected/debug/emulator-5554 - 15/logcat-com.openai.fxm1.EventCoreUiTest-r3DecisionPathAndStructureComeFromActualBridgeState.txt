@@ -1,0 +1,1002 @@
+10-05 06:51:02.594  3730  3748 I TestRunner: started: r3DecisionPathAndStructureComeFromActualBridgeState(com.openai.fxm1.EventCoreUiTest)
+10-05 06:51:02.823  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.824  2402  2412 W .gms.persistent: Missing inline cache for boolean dtol.b(dtoj, dtoo, byte[])
+10-05 06:51:02.873  1451  1685 I AiAiTextClassifier: [KnowledgeGraphCollectionsTableDownloaderImpl] Config changed, triggering a sync of KnowledgeGraphCollectionsTable
+10-05 06:51:02.879  1451  2062 I AiAiCaptions: TtsLangFetcherImpl::fetch(). Fetching locales en_US
+10-05 06:51:02.883  1451  2062 I TextToSpeech: Sucessfully bound to com.google.android.tts
+10-05 06:51:02.883  1451  2062 I AiAiCaptions: TtsLangFetcherImpl::fetch(). Fetching locales en_US
+10-05 06:51:02.883  1451  2062 W AiAiCaptions: TtsSynthesizerImpl::initialize(): TTS engine is initializing
+10-05 06:51:02.887  1451  1685 I AiAiTextClassifier: Updating text classifier flags in CutoffProvider.
+10-05 06:51:02.901  1451  4544 E AiAiEcho: Reading elements from Geller failed with cause
+10-05 06:51:02.901  1451  4544 E AiAiEcho: iey: Code: UNKNOWN, Message: Geller data fetch is not enabled
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at ifp.a(PG:17)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at kzb.b(PG:22)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at aaer.g(PG:13)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at kotlinx.coroutines.DispatchedTask.run(PG:114)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at wqm.a(PG:3)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at wpo.run(PG:21)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at wqn.run(PG:5)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:307)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at hqv.run(PG:221)
+10-05 06:51:02.901  1451  4544 E AiAiEcho: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:51:02.925  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.929  1451  1684 E SP.Service.AiAi: captions_i18n_v0_en-US is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.929  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.929  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.929  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.929  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.929  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.929  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.929  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.929  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.929  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.929  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.930  1451  1684 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:51:02.930  1451  1684 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:51:02.936  1451  1685 I AiAiNowPlaying: Now Playing config changed. Refreshing FA controller
+10-05 06:51:02.937  1451  1685 I AiAiNowPlaying: Now Playing config changed. Refreshing FA controller.
+10-05 06:51:02.937  1451  1685 I AiAiNowPlaying: Registering Now Playing population: NOW_PLAYING_USAGE
+10-05 06:51:02.937  1451  1685 I AiAiNowPlaying: Registering Now Playing population: NOW_PLAYING_USAGE_WEEKLY
+10-05 06:51:02.945  1451  1685 I ModelReloader: Cancelled all jobs.
+10-05 06:51:02.945  1451  1685 I AmbientMusicServiceMana: Unloading model 9f6ad62a-1f0b-11e7-87c5-40a8f03d3f15
+10-05 06:51:02.945  1451  1685 I SoundTriggerManagerComp: Unloading model 9f6ad62a-1f0b-11e7-87c5-40a8f03d3f15
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: xrv: java.lang.reflect.InvocationTargetException
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at xrw.c(PG:57)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at xdo.v(PG:37)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at xdo.e(PG:101)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at xdl.a(PG:36)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at mjl.L(PG:25)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at qel.f(PG:34)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at qdw.e(PG:7)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at mjo.a(PG:11)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at qem.run(PG:11)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at won.execute(PG:1)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at qeo.onPropertiesChanged(PG:47)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at android.provider.DeviceConfig.lambda$handleChange$0(DeviceConfig.java:1661)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at android.provider.DeviceConfig$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at wqm.a(PG:3)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at wpo.run(PG:21)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at wqn.run(PG:5)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:307)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at hqv.run(PG:221)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: Caused by: java.lang.reflect.InvocationTargetException
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at java.lang.reflect.Method.invoke(Native Method)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at xrw.c(PG:50)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	... 23 more
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: Caused by: java.lang.IllegalStateException: No underlying SoundTriggerModule available
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	at android.media.soundtrigger.SoundTriggerManager.deleteModel(SoundTriggerManager.java:264)
+10-05 06:51:02.947  1451  1685 E AmbientMusicServiceMana: 	... 25 more
+10-05 06:51:02.959  1451  1685 I AiAiTextClassifier: [ResourceDownloaderImpl]: downloadResource: Another download of kg_collections_table is in progress.
+10-05 06:51:02.961  2125  2125 I GoogleTtsServicePeer: Creating Google TTS service, version googletts.google-speech-apk_20240319.00_p0.617183227
+10-05 06:51:02.962  2125  2125 I ExoPlayerImpl: Init 4fd2e [AndroidXMedia3/1.3.0] [emu64xa, sdk_gphone64_x86_64, Google, 35]
+10-05 06:51:02.970   358   358 W Zygote  : forkRepeatedly terminated due to non-simple command
+10-05 06:51:02.970   358   358 D Zygote  : mbuffer starts with 1 , nice name is , mEnd = 35, mNext = 35, mLinesLeft = 0, mFd = 6
+10-05 06:51:02.979  2125  2125 I ExoPlayerImpl: Init 6d800cf [AndroidXMedia3/1.3.0] [emu64xa, sdk_gphone64_x86_64, Google, 35]
+10-05 06:51:02.983  1451  1464 I AiAiEcho: Settings changed for uri: content://settings/secure/now_playing_enabled
+10-05 06:51:02.984  1451  1685 I AiAiStatsd: Usage metrics: 0 features enabled, 0 features used for date 2026-10-03.
+10-05 06:51:02.984  1451  1685 I AiAiStatsd: AiAi is used for the day (2026-10-03): true, the week: true
+10-05 06:51:02.986  1451  1685 I AiAiStatsd: Uploading atoms for date: 2026-10-03.
+10-05 06:51:02.986  1451  1685 I AiAiStatsd: Total days uploaded: 1 days.
+10-05 06:51:02.990   356   356 I netd    : tetherGetStats() -> {[]} <0.47ms>
+10-05 06:51:02.995  1451  2050 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+10-05 06:51:03.015  2125  2125 I PipelineReaderImpl: Initializing en-us-x-iog-lstm-embedded from disk
+10-05 06:51:03.030  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:51:03.033  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:51:03.033  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:51:03.033  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:03.033  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:03.035  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:51:03.036  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:51:03.036  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:51:03.036  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:51:03.036  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:03.036  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:03.036  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:51:03.036  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+10-05 06:51:03.038   902   902 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:51:03.038  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:51:03.040  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:51:03.040  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:03.040  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:03.040  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:03.040  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:51:03.041   552   657 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:03.208  3730  3748 D UiDevice: Turning on screen.
+10-05 06:51:03.212  3730  3748 D UiDevice: Pressing home button.
+10-05 06:51:03.251   902   902 I vol.VolumeDialogImpl: mDialog.dismiss() reason: volume_controller from: com.android.systemui.volume.VolumeDialogImpl$7.onDismissRequested:3
+10-05 06:51:03.258   552   575 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10177, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:51:03.273  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:51:03.273  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:51:03.274  1152  1152 D OverviewCommandHelper: clearing pending commands - size: 0
+10-05 06:51:03.276  1152  1152 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:51:03.282   902  1077 D KeyguardService: setOccluded(false)
+10-05 06:51:03.282   902  1077 D KeyguardViewMediator: setOccluded(false)
+10-05 06:51:03.282   902   902 D KeyguardViewMediator: handleSetOccluded(false)
+10-05 06:51:03.282   902   902 D KeyguardViewMediator: KeyguardViewMediator queue processing message: SET_OCCLUDED
+10-05 06:51:03.298  1424  1470 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.299   552  1486 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:51:03.301  1424  1470 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread fg]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.303  1424  1470 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:51:03.305  1152  1968 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:51:03.305  1424  1470 D PickerDataLayer: Cloud provider allowlist was changed, and the current cloud provider is no longer on the allowlist. Allowlist: [com.google.android.apps.photos] Current Provider: null
+10-05 06:51:03.305  1424  1470 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.305  1424  1470 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread fg]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.305  1424  1470 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.309  1152  1968 D OneSearchSuggestProvider: Established or reuse existing binder channel authority=com.google.android.googlequicksearchbox
+10-05 06:51:03.321  1152  1173 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:51:03.329  1451  1657 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:51:03.329  1451  1657 I AiAiEcho: EchoTargets:
+10-05 06:51:03.329  1451  1657 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:51:03.329  1451  1657 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:03.329  1451  1657 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:51:03.329  1451  1657 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:51:03.329  1451  1657 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:51:03.330  1152  1152 D SsBaseTemplateCard: No text view can be set up
+10-05 06:51:03.332  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:03.332  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:03.332  1152  1152 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:51:03.332  1152  1152 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:51:03.330  3730  3748 W UiAutomation: UiAutomation.grantRuntimePermission() is more robust and should be used instead of 'pm grant'
+10-05 06:51:03.370  1424  1462 I MediaApplication: PhotoPickerSettingsActivity is now enabled
+10-05 06:51:03.370  1424  1462 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.370  1424  1462 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.390  3730  3748 D TrafficStats: tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:03.493  3730  3748 D TrafficStats: tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:03.495  1424  1462 D CloudProviderUtils: Available CloudMediaProvider-s: [CloudProviderInfo{authority='com.google.android.apps.photos.cloudpicker', pkg='com.google.android.apps.photos', uid=10167}]
+10-05 06:51:03.495  1424  1462 I PickerSyncController: Only 1 cloud provider found, hence com.google.android.apps.photos.cloudpicker is the default
+10-05 06:51:03.495  1424  1462 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.495  1424  1462 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.495  1424  1462 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.495  1424  1462 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.495  1424  1462 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.507  1424  1462 D PickerSyncController: Updated cloud provider to: com.google.android.apps.photos.cloudpicker
+10-05 06:51:03.507  1424  1462 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:51:03.507  1424  1462 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.507  1424  1462 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.515  1152  1152 D SearchTargetUtil: query= size=15
+10-05 06:51:03.516  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hocus pocus disney+ streaming charts,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=hocus pocus disney+ streaming charts searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 131fb077-4df9-4b2e-b147-d5eba4747a6a
+10-05 06:51:03.516  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=iwsc 2026 bourbon winner,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=iwsc 2026 bourbon winner searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 1a44f06c-e215-462f-bfec-14681691f07e
+10-05 06:51:03.516  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=shane lilly dog legal battle,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=shane lilly dog legal battle searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: b8a42fe1-db2c-4639-887b-ad391ff46f2d
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,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
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=zelda ocarina of time remake,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=zelda ocarina of time remake searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 5e6a8957-72b1-4fc4-af04-c719b6d704b7
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=decaffeinated coffee,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=decaffeinated coffee searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 8029f581-caeb-4392-a5e7-f56fa161127b
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=usgs el nino winter snowfall map,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=usgs el nino winter snowfall map searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 90fcb1c0-b43a-4692-80ef-633642c2596d
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/png;base64,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,suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=true,is_personal=false,suggest_raw_text=atlanta braves baseball,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=Atlanta Braves searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 7ec14bad-1f3f-4d97-803d-f67198509ccf
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=ss richard montgomery shipwreck salvage,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=ss richard montgomery shipwreck salvage searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 0d0d2958-0dc8-4bcb-9e6f-ad1e01c5eaf1
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=taylor swift music video patient zero,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=taylor swift music video patient zero searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 4a8ead6e-85a4-4d1d-a279-912009170581
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hershey park,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=hershey park searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 9f0c9eb7-999e-487d-8b1a-b0e957336d97
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=jagex runescape 4,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=jagex runescape 4 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 526fd4f8-5a21-408f-ad5e-fc31b60d1460
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=uss dwight d eisenhower cvn 69,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=uss dwight d eisenhower cvn 69 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 037570e4-4091-438d-b6f6-66613e9558b3
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=mock draft 2027 nfl,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=mock draft 2027 nfl searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 2af379cf-7f2e-4e17-9b8b-12737fdc472b
+10-05 06:51:03.517  1152  1152 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=today wordle hints,input_query=android.app.search.Query@f0221d8,group_id=web200660,response_id=6a26a470-5a4e-4f8d-afa5-cba00f04b8c8,support_query_builder=false,} searchAction=today wordle hints searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 9d4c90c1-959e-498d-afa9-5f6372a2d349
+10-05 06:51:03.518  1424  1462 D PickerNotificationSender: Sending a notification for available providers update
+10-05 06:51:03.526  1424  1462 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.526  1424  1462 D PickerSyncController: Initialized cloud provider to: com.google.android.apps.photos.cloudpicker
+10-05 06:51:03.526  1424  1462 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@33f315c[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:51:03.534  1424  1462 I SyncWorkManager: Scheduling periodic proactive syncs
+10-05 06:51:03.539  1424  1466 D WM-SystemJobScheduler: Scheduling work ID 770a9345-022e-4fa9-95aa-7f16baf4ac7cJob ID 4
+10-05 06:51:03.545  1324  1846 I ForegroundDownloadTaskWorker: ForegroundDownloadTaskWorker$1.onSuccess():68 onSuccess
+10-05 06:51:03.546  1324  1821 I DataFileManager: DataFileManager.addDataWithoutNotify():185 adding data en-840 mdd
+10-05 06:51:03.546  1324  1821 I DelightKLPDownloader: DelightKLPDownloader$2.onSuccess():207 klp en_840 downloaded with version 2024070900
+10-05 06:51:03.547  1324  1820 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=cd17c4ae-5fad-48d6-805e-b1f76245873d, tags={ com.google.android.libraries.inputmethod.mdd.ForegroundDownloadTaskWorker } ]
+10-05 06:51:03.552  1424  1466 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:51:03.553  1424  1462 I SyncWorkManager: Scheduling periodic picker album data resets
+10-05 06:51:03.558   552  1783 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:51:03.561  1424  1525 D WM-SystemJobScheduler: Scheduling work ID 37bc5ac6-1068-45be-b206-170be32eb50eJob ID 5
+10-05 06:51:03.574   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:51:03.575  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:51:03.575  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:51:03.589   902   983 D SplashScreenView: Build android.window.SplashScreenView{589204e V.E...... ......ID 0,0-0,0}
+10-05 06:51:03.589   902   983 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:51:03.589   902   983 D SplashScreenView: Branding: view: android.view.View{d8eb56f G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:51:03.598   481  2110 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:03.607  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 06:51:03.607  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 06:51:03.635  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@bfbe39e in: PRE_ON_CREATE
+10-05 06:51:03.639  1424  1462 I TranscodeHelper: Empty transcode compat stale
+10-05 06:51:03.639  1424  1462 I TranscodeHelper: Parsed 0 packages from resource
+10-05 06:51:03.639  1424  1462 I TranscodeHelper: Parsed 8 packages from device config
+10-05 06:51:03.639  1424  1462 I MediaProvider: Changed PhotoPickerActivity component state to STATE_ENABLED ( 1 )
+10-05 06:51:03.639  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=17, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:51:03.651  1424  1462 I MediaProvider: Changed PhotoPickerGetContentActivity component state to STATE_ENABLED ( 1 )
+10-05 06:51:03.651  1424  1462 I MediaProvider: Changed PhotoPickerUserSelectActivity component state to STATE_ENABLED ( 1 )
+10-05 06:51:03.732  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:51:03.790  1152  1679 D EGL_emulation: app_time_stats: avg=335.13ms min=81.95ms max=610.00ms count=4
+10-05 06:51:03.869  1528  1528 I BgTaskExecutorImpl: (REDACTED) Starting %s background task %s.
+10-05 06:51:03.886  1424  1428 I FuseDaemon: Background concurrent mark compact GC freed 1947KB AllocSpace bytes, 24(2476KB) LOS objects, 49% free, 3139KB/6279KB, paused 92us,579us total 266.035ms
+10-05 06:51:03.911   552   577 W system_server: Long monitor contention with owner android.anim (578) at void com.android.server.wm.WindowSurfacePlacer$Traverser.run()(WindowSurfacePlacer.java:58) waiters=0 in java.util.HashMap com.android.server.wm.AccessibilityWindowsPopulator.getWindowsTransformMatrix(java.util.List) for 143ms
+10-05 06:51:04.135  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@bfbe39e in: CREATED
+10-05 06:51:04.135  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@bfbe39e in: STARTED
+10-05 06:51:04.182  1089  1089 D CarrierSvcBindHelper: onPackageModified: com.google.android.providers.media.module
+10-05 06:51:04.183  1089  1089 D CarrierSvcBindHelper: No carrier app for: 0
+10-05 06:51:04.187  1089  1089 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+10-05 06:51:04.189   902   902 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-05 06:51:04.189   902   902 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+10-05 06:51:04.190  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@bfbe39e in: RESUMED
+10-05 06:51:04.230   356   356 I netd    : tetherGetStats() -> {[]} <0.32ms>
+10-05 06:51:04.310   552   661 I RoleService: Granting default roles...
+10-05 06:51:04.315  3289  3289 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:51:04.315  1528  1528 W JobService: onNetworkChanged() not implemented in com.google.android.apps.gsa.tasks.BackgroundTasksJobService. Must override in a subclass.
+10-05 06:51:04.359  1089  1089 E CellBroadcastUtils: getDefaultCellBroadcastReceiverPackageName: no package found
+10-05 06:51:04.363  3604  3652 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=53 ]
+10-05 06:51:04.371   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.retaildemo:6547c73dee150c103980bfdffe55cc9a011d785dd694a5f99afd8205bcaf1f80
+10-05 06:51:04.372   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION
+10-05 06:51:04.372   905  3036 I PermissionControllerServiceImpl: Updating user sensitive for uid 10192
+10-05 06:51:04.373   905  3036 I PermissionControllerServiceImpl: Updating user sensitive for uid 10139
+10-05 06:51:04.397  1089  1089 D CarrierSvcBindHelper: onPackageModified: com.google.android.as
+10-05 06:51:04.397  1089  1089 D CarrierSvcBindHelper: No carrier app for: 0
+10-05 06:51:04.398  1089  1300 D ImsResolver: maybeAddedImsService, packageName: com.google.android.providers.media.module
+10-05 06:51:04.398   552  1040 W Role    : Default holder doesn't have required signing certificate: com.google.android.apps.work.clouddpc:23962F4B43B9857638EA66F4D419518EAE282491ACDA4B94707BD59003C45E58
+10-05 06:51:04.433  3604  3709 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:51:04.439  1089  1089 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+10-05 06:51:04.441  1089  1089 E CellBroadcastUtils: getDefaultCellBroadcastReceiverPackageName: no package found
+10-05 06:51:04.462  1089  1300 D ImsResolver: maybeAddedImsService, packageName: com.google.android.as
+10-05 06:51:04.547   902  1039 D EGL_emulation: app_time_stats: avg=4495.59ms min=4495.59ms max=4495.59ms count=1
+10-05 06:51:04.549  1152  1679 D EGL_emulation: app_time_stats: avg=870.85ms min=189.38ms max=2166.77ms count=3
+10-05 06:51:04.553  1152  1152 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:51:04.585  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:51:04.698  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2308KB AllocSpace bytes, 49(1552KB) LOS objects, 49% free, 4265KB/8531KB, paused 91us,8.629ms total 404.073ms
+10-05 06:51:04.736  1152  1157 I s.nexuslauncher: Background concurrent mark compact GC freed 4526KB AllocSpace bytes, 70(1504KB) LOS objects, 49% free, 6644KB/12MB, paused 234us,230.881ms total 1.159s
+10-05 06:51:04.738   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.WALLET
+10-05 06:51:04.743  1152  1159 W System  : A resource failed to call release.
+10-05 06:51:04.743  1152  1159 W System  : A resource failed to call release.
+10-05 06:51:04.743  1152  1159 W System  : A resource failed to call release.
+10-05 06:51:04.743  1152  1159 W System  : A resource failed to call release.
+10-05 06:51:04.743  1152  1159 W System  : A resource failed to call release.
+10-05 06:51:04.743  1152  1159 W System  : A resource failed to call release.
+10-05 06:51:04.786  3289  3394 I Bugle   : BroadcastReceiverAsyncWorkTracker: Acknowledging broadcast of buoi@67ce01a
+10-05 06:51:04.790   552   638 W system_server: Long monitor contention with owner android.bg (585) at boolean com.android.server.accessibility.magnification.MagnificationConnectionManager.requestConnection(boolean)(MagnificationConnectionManager.java:302) waiters=0 in int com.android.server.accessibility.AccessibilityWindowManager.addAccessibilityInteractionConnection(android.view.IWindow, android.os.IBinder, android.view.accessibility.IAccessibilityInteractionConnection, java.lang.String, int) for 366ms
+10-05 06:51:04.790   552  2276 W system_server: Long monitor contention with owner android.bg (585) at boolean com.android.server.accessibility.magnification.MagnificationConnectionManager.requestConnection(boolean)(MagnificationConnectionManager.java:302) waiters=1 in void com.android.server.accessibility.AccessibilityManagerService.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent, int) for 106ms
+10-05 06:51:04.790   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:04.790   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:04.791  1451  1451 I AiAiEcho: AppFetcherImpl onPackageChanged com.google.android.providers.media.module.
+10-05 06:51:04.795  2402  2619 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:51:04.796  2402  2619 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:51:04.796  3730  3730 I Choreographer: Skipped 45 frames!  The application may be doing too much work on its main thread.
+10-05 06:51:04.796  1451  2066 I AiAiEcho: AppIndexer Package:[com.google.android.providers.media.module] UserProfile:[0] Enabled:[true].
+10-05 06:51:04.796  1451  2066 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.providers.media.module], userId:[0], reason:[package is updated.].
+10-05 06:51:04.813  2125  2125 E tflite  : third_party/tensorflow/lite/core/subgraph.cc:1059 tensor.data.raw != nullptr was not true.
+10-05 06:51:04.821   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:04.821   552   552 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:04.821  1451  1451 I AiAiEcho: AppFetcherImpl onPackageChanged com.google.android.as.
+10-05 06:51:04.822  1451  2065 I AiAiEcho: AppIndexer Package:[com.google.android.as] UserProfile:[0] Enabled:[true].
+10-05 06:51:04.822  1451  2065 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.as], userId:[0], reason:[package is updated.].
+10-05 06:51:04.823  1152  1173 D PackageUpdatedTask: Package updated: mOp=UPDATE packages=[com.google.android.providers.media.module]
+10-05 06:51:04.844  1152  1173 W AllAppsList: updatePromiseInstallInfo: no Activities matched updated package, removing all apps from package=com.google.android.providers.media.module
+10-05 06:51:04.845  1152  1173 D PackageUpdatedTask: Package updated: mOp=UPDATE packages=[com.google.android.as]
+10-05 06:51:04.859  1152  1173 W AllAppsList: updatePromiseInstallInfo: no Activities matched updated package, removing all apps from package=com.google.android.as
+10-05 06:51:04.873   552  1040 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.devicelockcontroller, role: android.app.role.SYSTEM_FINANCED_DEVICE_CONTROLLER
+10-05 06:51:04.883  1528  1703 I NetworkRecognitionRnr: Using pair HTTP connection
+10-05 06:51:04.913  3730  3730 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:51:04.914  3730  3730 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:51:04.916  1089  1097 I m.android.phone: Background concurrent mark compact GC freed 4420KB AllocSpace bytes, 0(0B) LOS objects, 49% free, 3525KB/7050KB, paused 118us,106.170ms total 435.851ms
+10-05 06:51:04.922  3730  3730 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:51:04.945  1528  2141 I A       : [Upload] Connected
+10-05 06:51:04.951  1528  1715 W CronetNetworkRqstWrppr: Upload request without a content type.
+10-05 06:51:04.962  1528  1528 E A       : onError
+10-05 06:51:04.962  1528  1528 E A       : com.google.android.apps.gsa.shared.speech.b.l: errorCode: 65561, engine: 2
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.staticplugins.bp.a.f.a(PG:23)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.o.hi(PG:13)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.ci.g.a.f.e(PG:9)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:162)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.speech.k.a.g.iO(PG:26)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.p.c(PG:102)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.q.run(PG:1)
+10-05 06:51:04.962  1528  1528 E A       : 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:51:04.962  1528  1528 E A       : 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.e.run(PG:12)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.bg.run(PG:3)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.bg.run(PG:3)
+10-05 06:51:04.962  1528  1528 E A       : 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:51:04.962  1528  1528 E A       : 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:51:04.962  1528  1528 E A       : 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.shared.util.c.a.l.run(PG:42)
+10-05 06:51:04.962  1528  1528 E A       : Caused by: com.google.android.apps.gsa.shared.speech.b.n: errorCode: 65586, engine: 2
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.o.hi(PG:6)
+10-05 06:51:04.962  1528  1528 E A       : 	... 14 more
+10-05 06:51:04.962  1528  1528 E A       : Caused by: com.google.android.apps.gsa.shared.speech.b.j: errorCode: 401, engine: 2
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.assistant.shared.n.i.b(PG:30)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.s3.producers.j.hs(PG:11)
+10-05 06:51:04.962  1528  1528 E A       : 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:135)
+10-05 06:51:04.962  1528  1528 E A       : 	... 12 more
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: Exception in upload method
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: com.google.android.apps.gsa.shared.n.d: Error code: 262182
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.shared.w.bg.d(PG:41)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.libraries.gsa.c.a.am.d(PG:10)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.libraries.gsa.c.a.bl.b(PG:39)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.libraries.gsa.c.a.e.a(PG:18)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.libraries.gsa.c.a.a.run(PG:13)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.be.execute(PG:1)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.i(PG:1)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:95)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.m(PG:17)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.j.fC(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.m(PG:17)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.j.fC(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.m(PG:17)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.j.fC(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.m(PG:17)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.j.fC(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.m(PG:17)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.c.fC(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.bt.cancel(PG:5)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:84)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.staticplugins.an.b.a.run(PG:18)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.be.execute(PG:1)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.i(PG:1)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:95)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.m(PG:17)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.j.fC(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.shared.util.c.ai.fC(PG:13)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.m(PG:17)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.c.fC(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.l(PG:30)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.common.util.concurrent.d.cancel(PG:52)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.s3.p.a(PG:9)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.s3.s.a(PG:7)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.staticplugins.bp.a.d.e(PG:7)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.staticplugins.bp.a.d.c(PG:35)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.staticplugins.bp.a.f.a(PG:37)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.s3.o.hi(PG:13)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.ci.g.a.f.e(PG:9)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.speech.k.a.g.d(PG:162)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.speech.k.a.g.iO(PG:26)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.s3.p.c(PG:102)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.s3.q.run(PG:1)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.shared.util.c.a.e.run(PG:12)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.shared.util.c.a.bg.run(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.shared.util.c.a.bg.run(PG:3)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:51:04.964  1528  1715 E cr_CronetUrlRequestContext: 	at com.google.android.apps.gsa.shared.util.c.a.l.run(PG:42)
+10-05 06:51:04.975  1528  2141 I NetworkRecognitionRnr: Using pair HTTP connection
+10-05 06:51:04.975  1528  3090 I A       : [Upload] Connected
+10-05 06:51:04.976  1528  1528 W A       : Failed to sync device settings.
+10-05 06:51:04.976  1528  1528 I A       : Retrying to sync device settings.
+10-05 06:51:04.981  1528  1528 W JobInfo : Job 'com.google.android.googlequicksearchbox/com.google.android.apps.gsa.tasks.BackgroundTasksJobService#-353' has a deadline with functional constraints and an extremely short time window of 0 ms (delay=120000, deadline=120000). The functional constraints are not likely to be satisfied when the job runs.
+10-05 06:51:04.981   552   638 W JobInfo : Job 'com.google.android.googlequicksearchbox/com.google.android.apps.gsa.tasks.BackgroundTasksJobService#-353' has a deadline with functional constraints and an extremely short time window of 0 ms (delay=120000, deadline=120000). The functional constraints are not likely to be satisfied when the job runs.
+10-05 06:51:04.982   552   638 W JobInfo : Job 'com.google.android.googlequicksearchbox/com.google.android.apps.gsa.tasks.BackgroundTasksJobService#-353' has a deadline with functional constraints and an extremely short time window of 0 ms (delay=120000, deadline=120000). The functional constraints are not likely to be satisfied when the job runs.
+10-05 06:51:05.121   552   574 W ziparchive: Unable to open '/data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.dm': No such file or directory
+10-05 06:51:05.129   552   574 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +1s569ms
+10-05 06:51:05.173   902   980 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@15af35a
+10-05 06:51:05.190   552  1783 W InputManager-JNI: Input channel object 'e23fab0 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:51:05.200  3730  4567 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:05.254  1152  1152 D BaseDepthController: setSurface:
+10-05 06:51:05.254  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:51:05.254  1152  1152 D BaseDepthController: 	mSurface: null
+10-05 06:51:05.254  1152  1152 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:51:05.256  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:51:05.256  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:51:05.256  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:51:05.256  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:51:05.256  1152  1152 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:51:05.257  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:51:05.257  1152  1968 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:51:05.257  1152  1526 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af100d0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:51:05.282   356   356 I netd    : tetherGetStats() -> {[]} <0.32ms>
+10-05 06:51:05.418  3730  4569 D TrafficStats: tagSocket(127) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:05.557  1152  1152 I ActivityThread: Schedule relaunch activity: com.google.android.apps.nexuslauncher.NexusLauncherActivity
+10-05 06:51:05.582  3730  3730 I Choreographer: Skipped 46 frames!  The application may be doing too much work on its main thread.
+10-05 06:51:05.613  1152  1679 D EGL_emulation: app_time_stats: avg=170.42ms min=8.83ms max=794.46ms count=6
+10-05 06:51:05.615  3730  4567 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:05.652  1152  1152 D CannedAnimCoordinator: Wrong controller access from h2.i@513204d, actual provider null
+10-05 06:51:05.746  1152  1152 D b/254119092: unregistering activity lifecycle callbacks from onActivityDestroyed.
+10-05 06:51:05.746  1152  1152 D b/254119092: clearActivity
+10-05 06:51:05.746  1152  1152 D b/254119092: mActivity and mContext agree taskbarIsPresent=false
+10-05 06:51:05.749  3730  4567 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:05.772   552   677 I ImeTracker: com.openai.fxm1.ec1:2ca4eb09: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:51:05.772   552   677 I ImeTracker: com.openai.fxm1.ec1:2ca4eb09: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:51:05.774  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:51:05.790  3730  3836 I HWUI    : Davey! duration=946ms; Flags=0, FrameTimelineVsyncId=34933, IntendedVsync=202177761349, Vsync=202944427985, InputEventId=0, HandleInputStart=202952759064, AnimationStart=202952760662, PerformTraversalsStart=202952978950, DrawStart=202953708891, FrameDeadline=202194428015, FrameInterval=202952500610, FrameStartTime=16666666, SyncQueued=202971926052, SyncStart=202971947422, IssueDrawCommandsStart=202972185114, SwapBuffers=203026716946, FrameCompleted=203124136810, DequeueBufferDuration=3434, QueueBufferDuration=558419, GpuCompleted=203124082990, SwapBuffersCompleted=203124136810, DisplayPresentTime=7593476152375099936, CommandSubmissionCompleted=203026716946,
+10-05 06:51:05.825  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:51:05.825  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:51:05.826   481  2110 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:51:05.827  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:51:05.827  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:51:05.844  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 6413KB AllocSpace bytes, 18(776KB) LOS objects, 49% free, 3978KB/7956KB, paused 100us,5.633ms total 346.203ms
+10-05 06:51:05.848  1152  1152 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=com.android.launcher3.uioverrides.QuickstepLauncher$2@262e81d
+10-05 06:51:05.854  1324  1324 W NotificationCenter: NotificationCenter$ListenerData.notifyOnExecutor():672 Heavy notify work detected on UI thread: |kga->jjc| takes 27ms
+10-05 06:51:05.860  1152  1152 D RecentsView: reset - mEnableDrawingLiveTile: false, mRecentsAnimationController: null
+10-05 06:51:05.942   552  1783 W InputManager-JNI: Input channel object '1a492cc com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:51:05.964   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:51:06.286  1152  1152 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:51:06.324  3730  3748 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:06.335   356   356 I netd    : tetherGetStats() -> {[]} <0.38ms>
+10-05 06:51:06.356  1152  1152 D DeviceSearchAlg: search timeout = %d200
+10-05 06:51:06.357  1152  1152 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:51:06.357  1152  1152 W BcSmartspaceView: Current card is not present in the Adapter; cannot log.
+10-05 06:51:06.402  1152  1152 I OverviewComponentObserver: updateOverviewTargets: mIsHomeDisabled=false, isDefaultHomeNull=false, mIsDefaultHome=true
+10-05 06:51:06.402  1152  1152 D OverviewActionsView: updateActionButtonsVisibility() called: showSingleTaskActions = [true], showGroupActions = [false]
+10-05 06:51:06.404  3730  3748 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:06.426  2125  2125 I ComposerWrapperImpl: Done initializing en-us-x-iog-lstm-embedded
+10-05 06:51:06.435  1152  1152 D ModelCallbacks: startBinding: hotseat layout was vertical: false and is setting to false
+10-05 06:51:06.436  1152  1152 D Launcher.Workspace: addInScreenFromBind: hotseat inflation with x = 0 and y = 0
+10-05 06:51:06.436  1152  1152 D Launcher.Workspace: addInScreenFromBind: hotseat inflation with x = 1 and y = 0
+10-05 06:51:06.436  1152  1152 D Launcher.Workspace: addInScreenFromBind: hotseat inflation with x = 2 and y = 0
+10-05 06:51:06.436  1152  1152 D Launcher.Workspace: addInScreenFromBind: hotseat inflation with x = 3 and y = 0
+10-05 06:51:06.438  1451  1464 I TextToSpeech: Connected to TTS engine
+10-05 06:51:06.441  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.441  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.441  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.441  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.442  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.442  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.442  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.442  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.443  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.445  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.446  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.448  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.449  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.450  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.458  3730  3748 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:51:06.459  2125  2135 W RankedDispatcher: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 I GoogleTTSServiceImpl: currentLocale = en-US
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.464  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.465  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.468  1451  1451 I AiAiEcho: SearchContextManagerImpl::setSearchContext resultTypes=[141151] extras=[Bundle[{launcher.maxInlineIcons=3, dynamic_ranking_m3_enabled=true, qs_tiles_asi_enabled=true, allowlist_enabled=false, one_search_enabled=true, system_clock=true, version_code=12, gms_play_query_lower_bound=2, gms_play_query_upper_bound=20, recent_search_block_enabled=true, gms_play_feature_supported=true, launcher.gridSize=4, showhiddentargets_enabled=false, ose_info=1}]] sessionId=[com.google.android.apps.nexuslauncher:acbd0ffd-2308-46f2-a456-e871a8a052fd,0]
+10-05 06:51:06.470  1152  1152 D OverviewActionsView: updateActionButtonsVisibility() called: showSingleTaskActions = [true], showGroupActions = [false]
+10-05 06:51:06.475  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.475  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.475  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.478  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.478  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.479  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.479  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.480  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.481  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.481  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.483  1152  1172 D SearchTargetUtil: query= size=1
+10-05 06:51:06.484  1152  1172 D SearchTargetUtil: layoutType=icon_row resultType=4096 packageName= extras=Bundle{aiai_settings_enabled=true,icon_container_enabled=true,zero_state_query_ready=true,zero_state_all_apps_web_suggest_count=3,rank=1.0,toast_settings_toggle_values=16777476,key_ipc_start=203852,hide_subtitle=true,enable_launch_animations=true,zero_state_qsb_web_suggest_count=10,}ParentID: null targetID: SESSION_INFO:0::zero_state_flags
+10-05 06:51:06.487  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.488  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.488  1152  1172 D InputMonitorCompat: Input monitor (minus-one-disp0) created
+10-05 06:51:06.488  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.488  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.490  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.574  1152  1172 D InputMonitorCompat: Input event receiver for monitor (minus-one-disp0) created
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.575  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.576  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.644   552   638 W system_server: Long monitor contention with owner SettingsProvider (657) at java.util.HashMap com.android.providers.settings.SettingsProvider.getAllConfigFlags(java.lang.String)(SettingsProvider.java:1398) waiters=1 in int com.android.providers.settings.SettingsProvider.setAllConfigSettings(java.lang.String, java.util.Map) for 166ms
+10-05 06:51:06.702  1152  1152 W PhoneWindow: Previously focused view reported id 2131361965 during save, but can't be found during restore.
+10-05 06:51:06.726   552   661 I SafetyCenterService: Safety Center is already enabled, ignoring change
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.764  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.765  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.767  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.768  2125  2135 W LegacyVoicePolicyManage: The requested voice is not available for this app identifier
+10-05 06:51:06.775  2125  2135 W RankedDispatcher: The requested voice is not available for this app identifier
+10-05 06:51:06.775  2125  2135 I GoogleTTSServiceImpl: For default lang en-us is name en-US-language (en-us-x-iog-server)
+10-05 06:51:06.775  1451  2277 I TextToSpeech: Setting up the connection to TTS engine...
+10-05 06:51:06.781  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:51:06.781  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:51:06.783  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:51:06.783  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:51:06.783  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:51:06.783  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:51:06.794  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:51:06.803  1152  1152 I Choreographer: Skipped 70 frames!  The application may be doing too much work on its main thread.
+10-05 06:51:06.803  1451  1451 I AiAiCaptions: TtsSynthesizerImpl::onInit(): status: true(0).
+10-05 06:51:06.860  1152  1152 D OverviewActionsView: updateActionButtonsVisibility() called: showSingleTaskActions = [true], showGroupActions = [false]
+10-05 06:51:06.865  1152  1152 D InputMonitorCompat: Input event receiver for monitor (minus-one-disp0) disposed
+10-05 06:51:06.869   552  1783 W InputManager-JNI: Input channel object '[Gesture Monitor] minus-one (client)' was disposed without first being removed with the input manager!
+10-05 06:51:06.870  1152  1152 D InputMonitorCompat: Input monitor (minus-one-disp0) disposed
+10-05 06:51:06.870  1152  1152 D TISBindHelper: TIS service connected
+10-05 06:51:06.870  1152  1152 D b/254119092: Set mActivity=com.google.android.apps.nexuslauncher.NexusLauncherActivity@3a2695d
+10-05 06:51:06.870  1152  1152 D b/254119092: mActivity and mContext agree taskbarIsPresent=false
+10-05 06:51:06.870  1152  1152 D b/254119092: registering activity lifecycle callbacks from setActivity().
+10-05 06:51:06.927   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:51:07.077  2402  2646 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.droidguard.DroidGuardGcmTaskService started execution. cause:7 exec_start_elapsed_seconds: 203 [CONTEXT service_id=218 ]
+10-05 06:51:07.170  2125  2135 W RankedDispatcher: The requested voice is not available for this app identifier
+10-05 06:51:07.186   552  1779 D ConnectivityService: requestNetwork for uid/pid:10144/1528 activeRequest: null callbackRequest: 143 [NetworkRequest [ REQUEST id=143, [ Transports: CELLULAR Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Forbidden: LOCAL_NETWORK Uid: 10144 RequestorUid: 10144 RequestorPkg: com.google.android.googlequicksearchbox UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false
+10-05 06:51:07.195   356   356 I netd    : networkSetPermissionForNetwork(101, 0) <1.36ms>
+10-05 06:51:07.222  2125  2135 I GoogleTTSServiceImpl: onIsValidVoiceName(en-us-x-tpf-local): SUCCESS
+10-05 06:51:07.271  3730  3795 D EGL_emulation: app_time_stats: avg=312.50ms min=90.52ms max=679.72ms count=7
+10-05 06:51:07.272   552   824 D ConnectivityService: NetReassign [143 : null → 101] [c 0] [a 78] [i 0]
+10-05 06:51:07.272   552   824 D ConnectivityService: reportNetworkConnectivity(100, false) by 10144
+10-05 06:51:07.278   990  1956 D NetworkMonitor/100: Forcing reevaluation for UID 10144. Dns signal count: 0
+10-05 06:51:07.295  3730  3745 I HWUI    : Davey! duration=765ms; Flags=0, FrameTimelineVsyncId=35495, IntendedVsync=203861094615, Vsync=204311094597, InputEventId=0, HandleInputStart=204325577156, AnimationStart=204325578774, PerformTraversalsStart=204325623827, DrawStart=204329142523, FrameDeadline=204161094603, FrameInterval=204325465822, FrameStartTime=16666666, SyncQueued=204331780972, SyncStart=204346890863, IssueDrawCommandsStart=204347094875, SwapBuffers=204491741904, FrameCompleted=204641751397, DequeueBufferDuration=7256, QueueBufferDuration=1462673, GpuCompleted=204641613240, SwapBuffersCompleted=204641751397, DisplayPresentTime=-3413499132736433408, CommandSubmissionCompleted=204491741904,
+10-05 06:51:07.310  2402  2936 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.droidguard.DroidGuardGcmTaskService finished executing. cause:7 result: 1 elapsed_millis: 802 uptime_millis: 802 exec_start_elapsed_seconds: 203 [CONTEXT service_id=218 ]
+10-05 06:51:07.326  2125  2135 W RankedDispatcher: The requested voice is not available for this app identifier
+10-05 06:51:07.328  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@bfbe39e in: PAUSED
+10-05 06:51:07.331  2125  4553 I GoogleTTSServiceImpl: Synthesis request for locale eng-USA and name en-us-x-tpf-local
+10-05 06:51:07.340   990  4580 D TrafficStats: tagSocket(129) with statsTag=0xffffff81, statsUid=-1
+10-05 06:51:07.340   990  4579 D TrafficStats: tagSocket(92) with statsTag=0xffffff81, statsUid=-1
+10-05 06:51:07.341   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:51:07.376  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:51:07.384  3730  3748 I TestRunner: finished: r3DecisionPathAndStructureComeFromActualBridgeState(com.openai.fxm1.EventCoreUiTest)

@@ -1,0 +1,2 @@
+10-05 07:01:55.872  3730  3748 I TestRunner: started: historyAnchorSurvivesNewCandlesAndForecastStaysHidden(com.openai.fxm1.R73ChartUiTest)
+10-05 07:01:55.937  3730  3748 I TestRunner: finished: historyAnchorSurvivesNewCandlesAndForecastStaysHidden(com.openai.fxm1.R73ChartUiTest)

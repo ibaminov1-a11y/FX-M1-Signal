@@ -1,0 +1,4 @@
+10-05 07:01:24.011  3730  3748 I TestRunner: started: singleBarHistoryDoesNotThrow(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 07:01:24.366  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:24.384  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:24.400  3730  3748 I TestRunner: finished: singleBarHistoryDoesNotThrow(com.openai.fxm1.R5SettingsHistoryTest)

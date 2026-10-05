@@ -1,0 +1,110 @@
+10-05 07:00:52.092  3730  3748 I TestRunner: started: nativeWaitAndSignalDetailsUseActiveTradeFrame(com.openai.fxm1.R57ScalpUiTest)
+10-05 07:00:52.101  3730  3748 D UiDevice: Turning on screen.
+10-05 07:00:52.105   552   644 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 07:00:52.111   902   983 D SplashScreenView: Build android.window.SplashScreenView{f5ca434 V.E...... ......ID 0,0-0,0}
+10-05 07:00:52.111   902   983 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 07:00:52.111   902   983 D SplashScreenView: Branding: view: android.view.View{8b1f25d G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 07:00:52.112   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 07:00:52.115  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 07:00:52.115  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 07:00:52.124  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=80, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 07:00:52.127  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@6b8e32b in: PRE_ON_CREATE
+10-05 07:00:52.140   356   356 I netd    : tetherGetStats() -> {[]} <0.52ms>
+10-05 07:00:52.148   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 07:00:52.267  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 07:00:52.380  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@6b8e32b in: CREATED
+10-05 07:00:52.380  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@6b8e32b in: STARTED
+10-05 07:00:52.425  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@6b8e32b in: RESUMED
+10-05 07:00:52.540  1152  1679 D EGL_emulation: app_time_stats: avg=198.73ms min=63.58ms max=505.06ms count=5
+10-05 07:00:52.570  1152  1152 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 07:00:52.577  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 07:00:52.600  3730  3730 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 07:00:52.601  3730  3730 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 07:00:52.602  3730  3730 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 07:00:52.636  1152  1679 D EGL_emulation: app_time_stats: avg=397.95ms min=29.65ms max=1531.51ms count=5
+10-05 07:00:52.662   902  1039 D EGL_emulation: app_time_stats: avg=943.98ms min=3.99ms max=3079.22ms count=4
+10-05 07:00:52.841   552   574 W ziparchive: Unable to open '/data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.dm': No such file or directory
+10-05 07:00:52.857   552   574 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +734ms
+10-05 07:00:52.870   481   533 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 07:00:52.871   902   980 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@f7d73ff
+10-05 07:00:52.882   552  1782 W InputManager-JNI: Input channel object '5ce54c7 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 07:00:52.897  1152  1152 D BaseDepthController: setSurface:
+10-05 07:00:52.897  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 07:00:52.897  1152  1152 D BaseDepthController: 	mSurface: null
+10-05 07:00:52.897  1152  1152 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 07:00:52.898  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 07:00:52.898  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 07:00:52.898  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 07:00:52.898  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 07:00:52.898  1152  1152 D StatsLog: LAUNCHER_ONSTOP
+10-05 07:00:52.900  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 07:00:52.903  1152  1968 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 07:00:52.904  1152  2990 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af3ac40 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 07:00:53.015   552   677 I ImeTracker: com.openai.fxm1.ec1:1534ffa5: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 07:00:53.016   552   677 I ImeTracker: com.openai.fxm1.ec1:1534ffa5: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 07:00:53.018  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 07:00:53.019  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 07:00:53.019  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 07:00:53.020  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 07:00:53.021  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 07:00:53.180   356   356 I netd    : tetherGetStats() -> {[]} <0.56ms>
+10-05 07:00:53.383  2402  2691 I ActivityScheduler: nextTriggerTime: 893482, in 102729ms, detectorType: 39, FULL_TYPE alarmWindowMillis: 80000
+10-05 07:00:53.385  2402  2691 W SystemServiceRegistry: No service published for: wifirtt
+10-05 07:00:53.637  6284  6284 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-05 07:00:53.640  6284  6284 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-05 07:00:53.665   145   145 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-05 07:00:53.665  6284  6287 I Gralloc4: mapper 4.x is not supported
+10-05 07:00:53.769  1424  1614 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 07:00:53.889  2402  6243 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 791 [CONTEXT service_id=218 ]
+10-05 07:00:53.953  2402  6206 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 130 uptime_millis: 130 exec_start_elapsed_seconds: 791 [CONTEXT service_id=218 ]
+10-05 07:00:54.063  3730  3795 D EGL_emulation: app_time_stats: avg=135.59ms min=80.54ms max=250.36ms count=9
+10-05 07:00:54.243   552   644 I ActivityManager: Broadcasting: Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x400000 }
+10-05 07:00:54.247   552  1211 W JobInfo : Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+10-05 07:00:54.265  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2569KB AllocSpace bytes, 46(1432KB) LOS objects, 49% free, 3376KB/6752KB, paused 142us,5.362ms total 124.275ms
+10-05 07:00:54.271   552  2352 D WifiNl80211Manager: Scan result ready event
+10-05 07:00:54.271   552  2352 D WifiNative: Scan result ready event
+10-05 07:00:54.272   552   574 I ActivityManager: Broadcast completed: result=0
+10-05 07:00:54.275  1424  1852 I MediaProvider: Begin Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 07:00:54.287   552   817 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+10-05 07:00:54.296  1424  1852 W ExifInterface: Invalid image: ExifInterface got an unsupported image format file(ExifInterface supports JPEG and some RAW image formats only) or a corrupted JPEG file to ExifInterface.
+10-05 07:00:54.296  1424  1852 W ExifInterface: java.io.EOFException
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.media.ExifInterface$ByteOrderedDataInputStream.readShort(ExifInterface.java:5044)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.media.ExifInterface.readByteOrder(ExifInterface.java:3995)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.media.ExifInterface.parseTiffHeaders(ExifInterface.java:4015)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.media.ExifInterface.getRawAttributes(ExifInterface.java:2974)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.media.ExifInterface.loadAttributes(ExifInterface.java:2023)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.media.ExifInterface.<init>(ExifInterface.java:1640)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.media.ExifInterface.<init>(ExifInterface.java:1591)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.scanItemImage(ModernMediaScanner.java:1392)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.scanItem(ModernMediaScanner.java:1054)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.-$$Nest$smscanItem(ModernMediaScanner.java:0)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.visitFile(ModernMediaScanner.java:854)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.visitFile(ModernMediaScanner.java:351)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at java.nio.file.Files.walkFileTree(Files.java:2670)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at java.nio.file.Files.walkFileTree(Files.java:2742)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.walkFileTree(ModernMediaScanner.java:467)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.runInternal(ModernMediaScanner.java:430)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner$Scan.run(ModernMediaScanner.java:419)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.scan.ModernMediaScanner.scanFile(ModernMediaScanner.java:285)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.MediaProvider.scanFile(MediaProvider.java:2154)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.MediaService.onScanFile(MediaService.java:225)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at com.android.providers.media.MediaService.onHandleWork(MediaService.java:85)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at androidx.core.app.JobIntentService$CommandProcessor.doInBackground(JobIntentService.java:396)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at androidx.core.app.JobIntentService$CommandProcessor.doInBackground(JobIntentService.java:387)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at android.os.AsyncTask$3.call(AsyncTask.java:394)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 07:00:54.296  1424  1852 W ExifInterface: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 07:00:54.297  1424  1852 D HWUI    : --- Failed to create image decoder with message 'unimplemented'
+10-05 07:00:54.297  1424  1852 D HWUI    : --- Failed to create image decoder with message 'unimplemented'
+10-05 07:00:54.304  1424  1852 I MediaProvider: End Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 07:00:54.323  1424  1525 D WM-SystemJobScheduler: Scheduling work ID 8f642bfa-e736-40b3-ae16-bf23b3de3d0eJob ID 32
+10-05 07:00:54.334  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 770a9345-022e-4fa9-95aa-7f16baf4ac7c}. Requires device idle.
+10-05 07:00:54.334  1424  1525 D WM-GreedyScheduler: Ignoring {WorkSpec: 37bc5ac6-1068-45be-b206-170be32eb50e}. Requires device idle.
+10-05 07:00:54.353  2402  6288 W GLSUser : [DeviceKeyStore] Cannot load key: Device key file not found.
+10-05 07:00:54.425   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 07:00:54.448  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 07:00:54.467  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@6b8e32b in: PAUSED
+10-05 07:00:54.483  1152  1152 D StatsLog: LAUNCHER_ONRESUME
+10-05 07:00:54.486  3730  3748 I TestRunner: finished: nativeWaitAndSignalDetailsUseActiveTradeFrame(com.openai.fxm1.R57ScalpUiTest)

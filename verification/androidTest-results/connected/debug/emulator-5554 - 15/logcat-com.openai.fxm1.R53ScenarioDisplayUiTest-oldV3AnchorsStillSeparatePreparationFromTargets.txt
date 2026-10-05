@@ -1,0 +1,4 @@
+10-05 06:54:55.325  3730  3748 I TestRunner: started: oldV3AnchorsStillSeparatePreparationFromTargets(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:54:55.355  2402  5398 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 432 [CONTEXT service_id=218 ]
+10-05 06:54:55.365  2402  5448 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 9 uptime_millis: 9 exec_start_elapsed_seconds: 432 [CONTEXT service_id=218 ]
+10-05 06:54:55.410  3730  3748 I TestRunner: finished: oldV3AnchorsStillSeparatePreparationFromTargets(com.openai.fxm1.R53ScenarioDisplayUiTest)

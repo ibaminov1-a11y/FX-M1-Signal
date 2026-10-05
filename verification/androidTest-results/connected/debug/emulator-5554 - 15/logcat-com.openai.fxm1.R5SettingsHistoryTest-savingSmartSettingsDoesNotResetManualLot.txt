@@ -1,0 +1,102 @@
+10-05 07:01:30.516  3730  3748 I TestRunner: started: savingSmartSettingsDoesNotResetManualLot(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 07:01:30.632  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3696KB AllocSpace bytes, 49(2464KB) LOS objects, 49% free, 3899KB/7799KB, paused 72us,74.631ms total 162.689ms
+10-05 07:01:31.003  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:31.031  3730  3748 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:31.094   552  1778 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@bf76b13, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 07:01:31.102   902   983 D SplashScreenView: Build android.window.SplashScreenView{cf59408 V.E...... ......ID 0,0-0,0}
+10-05 07:01:31.102   902   983 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 07:01:31.102   902   983 D SplashScreenView: Branding: view: android.view.View{ddaa7a1 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 07:01:31.104  1152  1152 W SplitSelectStateCtor: Missing session instanceIds
+10-05 07:01:31.104  1152  1152 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 07:01:31.130  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=86, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 07:01:31.136  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@9089f85 in: PRE_ON_CREATE
+10-05 07:01:31.145   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 07:01:31.173   356   356 I netd    : tetherGetStats() -> {[]} <1.27ms>
+10-05 07:01:31.204   481   532 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 07:01:31.308  3730  3730 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 07:01:31.467  1152  1679 D EGL_emulation: app_time_stats: avg=123.10ms min=63.92ms max=322.65ms count=8
+10-05 07:01:31.566   552  1783 W InputManager-JNI: Input channel object '166daa8 Toast (client)' was disposed without first being removed with the input manager!
+10-05 07:01:31.592  1152  1152 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 07:01:31.598  1152  1152 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 07:01:31.733  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@9089f85 in: CREATED
+10-05 07:01:31.738  1152  1679 D EGL_emulation: app_time_stats: avg=1049.40ms min=312.11ms max=2473.76ms count=3
+10-05 07:01:31.746   902  1039 D EGL_emulation: app_time_stats: avg=1598.29ms min=21.99ms max=5947.18ms count=4
+10-05 07:01:31.750  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@9089f85 in: STARTED
+10-05 07:01:31.752  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@9089f85 in: RESUMED
+10-05 07:01:31.884  3730  3730 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 07:01:31.885  3730  3730 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 07:01:31.885  3730  3730 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 07:01:32.112   552   574 W ziparchive: Unable to open '/data/app/~~mpihWau7WGrDot9cTsW6TA==/com.openai.fxm1.ec1-fDskLffE9IVAsrHhZW7xaA==/base.dm': No such file or directory
+10-05 07:01:32.113   552   574 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +1s8ms
+10-05 07:01:32.120  3730  6396 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:32.133   481   532 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 07:01:32.194   902   980 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@c1fdf23
+10-05 07:01:32.195   552  2351 W InputManager-JNI: Input channel object '9f24c67 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 07:01:32.207   356   356 I netd    : tetherGetStats() -> {[]} <12.97ms>
+10-05 07:01:32.209  3730  6398 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:32.211  1152  1152 D BaseDepthController: setSurface:
+10-05 07:01:32.211  1152  1152 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 07:01:32.211  1152  1152 D BaseDepthController: 	mSurface: null
+10-05 07:01:32.212  1152  1152 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 07:01:32.213  1152  1152 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 07:01:32.213  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 07:01:32.213  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 07:01:32.213  1152  1152 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 07:01:32.213  1152  1152 D StatsLog: LAUNCHER_ONSTOP
+10-05 07:01:32.258  1152  1968 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 07:01:32.258  1152  2990 I IPCThreadState: oneway function results for code 2 on binder at 0x7de41af3b750 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 07:01:32.263  3730  6396 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:32.282  1152  1152 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 07:01:32.324  3730  3730 I Choreographer: Skipped 31 frames!  The application may be doing too much work on its main thread.
+10-05 07:01:32.404  3730  6396 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:32.407   552   677 I ImeTracker: com.openai.fxm1.ec1:c5beb58e: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 07:01:32.414   552   677 I ImeTracker: com.openai.fxm1.ec1:c5beb58e: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 07:01:32.514  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 07:01:32.520  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 07:01:32.524  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 07:01:32.525  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 07:01:32.533  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 07:01:32.537  3730  3745 I HWUI    : Davey! duration=721ms; Flags=0, FrameTimelineVsyncId=266724, IntendedVsync=829177736269, Vsync=829694402915, InputEventId=0, HandleInputStart=829695306923, AnimationStart=829695308631, PerformTraversalsStart=829695609141, DrawStart=829696614397, FrameDeadline=829511069589, FrameInterval=829695108518, FrameStartTime=16666666, SyncQueued=829705084296, SyncStart=829705106681, IssueDrawCommandsStart=829705362969, SwapBuffers=829784971429, FrameCompleted=829898987602, DequeueBufferDuration=4571, QueueBufferDuration=4670254, GpuCompleted=829898987602, SwapBuffersCompleted=829895182850, DisplayPresentTime=0, CommandSubmissionCompleted=829784971429,
+10-05 07:01:32.750  1152  1679 D EGL_emulation: app_time_stats: avg=72.66ms min=7.04ms max=375.29ms count=11
+10-05 07:01:32.782   902  1039 D EGL_emulation: app_time_stats: avg=470.46ms min=7.61ms max=933.31ms count=2
+10-05 07:01:32.802  3730  3736 W openai.fxm1.ec1: Suspending all threads took: 24.537ms
+10-05 07:01:32.866  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5525KB AllocSpace bytes, 16(692KB) LOS objects, 49% free, 4657KB/9314KB, paused 25.368ms,21.709ms total 649.715ms
+10-05 07:01:32.873  3730  6398 W openai.fxm1.ec1: Long monitor contention with owner pool-351-thread-1 (6396) at boolean com.openai.fxm1.EventClient.publishSnapshot(com.openai.fxm1.EventClient$ReadRequest, org.json.JSONObject)(EventClient.java:65) waiters=0 in boolean com.openai.fxm1.EventClient.publishSnapshot(com.openai.fxm1.EventClient$ReadRequest, org.json.JSONObject) for 199ms
+10-05 07:01:33.124  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4893KB AllocSpace bytes, 19(848KB) LOS objects, 49% free, 3772KB/7544KB, paused 3.509ms,5.677ms total 175.963ms
+10-05 07:01:33.361  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3462KB AllocSpace bytes, 8(376KB) LOS objects, 49% free, 3656KB/7312KB, paused 1.241ms,6.661ms total 34.697ms
+10-05 07:01:33.590  3730  3795 D EGL_emulation: app_time_stats: avg=161.12ms min=80.59ms max=428.96ms count=9
+10-05 07:01:33.738   423   849 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 07:01:33.738   552  1783 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 18
+10-05 07:01:33.757   423   537 D AudioFlinger: mixer(0x74d01f1f58e0) throttle end: throttle time(5)
+10-05 07:01:33.826  3730  3748 D UiDevice: Waiting 5000ms for SearchCondition[findObject=BySelector [TEXT='\QСОХРАНИТЬ\E']].
+10-05 07:01:33.827  3730  3748 D UiDevice: Retrieving node with selector: BySelector [TEXT='\QСОХРАНИТЬ\E'].
+10-05 07:01:33.902  3730  3730 D AutofillManager: notifyViewReadyInner:1073741833
+10-05 07:01:33.940   423   537 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 07:01:34.461  3730  6403 D TrafficStats: tagSocket(146) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:34.591  3730  3795 D EGL_emulation: app_time_stats: avg=166.28ms min=80.84ms max=327.76ms count=6
+10-05 07:01:34.698  3730  3748 D UiObject2: Clicking on (840, 1880).
+10-05 07:01:34.882  3730  3748 W GestureController: Gestures took longer than expected (184ms >> 16ms), device might be in a busy state.
+10-05 07:01:34.956   423   849 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 07:01:34.976   552  2350 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 18
+10-05 07:01:35.025   423   537 D AudioFlinger: mixer(0x74d01f1f58e0) throttle end: throttle time(64)
+10-05 07:01:35.034  3730  3795 D EGL_emulation: app_time_stats: avg=208.17ms min=38.65ms max=375.99ms count=5
+10-05 07:01:35.069  3730  6404 D TrafficStats: tagSocket(163) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:35.074  3730  3730 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@da4b8f9
+10-05 07:01:35.126   552  1778 W InputManager-JNI: Input channel object 'd20f6a com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 07:01:35.211   423   537 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 07:01:35.215  3730  6404 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:35.275   552   677 I ImeTracker: com.openai.fxm1.ec1:c09f8d7d: onRequestHide at ORIGIN_SERVER reason HIDE_SAME_WINDOW_FOCUSED_WITHOUT_EDITOR fromUser false
+10-05 07:01:35.280   552   677 I ImeTracker: com.openai.fxm1.ec1:c09f8d7d: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 07:01:35.284  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 07:01:35.287  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 07:01:35.288  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 07:01:35.288  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 07:01:35.288  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 07:01:35.389  3730  6404 D TrafficStats: tagSocket(127) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:35.550  3730  6404 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 07:01:35.620  1152  1152 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 07:01:35.624   427   427 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 07:01:35.636  3730  3736 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5533KB AllocSpace bytes, 26(1092KB) LOS objects, 49% free, 5481KB/10MB, paused 292us,5.351ms total 248.137ms
+10-05 07:01:35.646  3730  3795 D EGL_emulation: app_time_stats: avg=169.22ms min=55.06ms max=482.02ms count=6
+10-05 07:01:35.664  3730  3730 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@9089f85 in: PAUSED
+10-05 07:01:35.668  3730  3748 I TestRunner: finished: savingSmartSettingsDoesNotResetManualLot(com.openai.fxm1.R5SettingsHistoryTest)

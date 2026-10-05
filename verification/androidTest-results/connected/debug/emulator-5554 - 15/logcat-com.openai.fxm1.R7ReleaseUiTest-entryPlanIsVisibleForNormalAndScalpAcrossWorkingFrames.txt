@@ -1,0 +1,2 @@
+10-05 07:03:14.437  3730  3748 I TestRunner: started: entryPlanIsVisibleForNormalAndScalpAcrossWorkingFrames(com.openai.fxm1.R7ReleaseUiTest)
+10-05 07:03:14.443  3730  3748 I TestRunner: finished: entryPlanIsVisibleForNormalAndScalpAcrossWorkingFrames(com.openai.fxm1.R7ReleaseUiTest)

@@ -1,0 +1,7 @@
+10-05 06:58:27.992  3730  3748 I TestRunner: started: repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime(com.openai.fxm1.R56ChartSemanticsTest)
+10-05 06:58:27.994  1424  4874 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:58:27.994  1424  4874 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@913884c[Not completed, 1 dependents]. Future map: {44151ed7-7ad3-4731-8dd3-50eb632fcfea=java.util.concurrent.CompletableFuture@913884c[Not completed, 1 dependents]}
+10-05 06:58:27.994  1424  4874 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:58:27.994  1424  4874 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:58:28.019   552   644 W InputManager-JNI: Input channel object 'da9cf44 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:58:28.042  3730  3748 I TestRunner: finished: repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime(com.openai.fxm1.R56ChartSemanticsTest)

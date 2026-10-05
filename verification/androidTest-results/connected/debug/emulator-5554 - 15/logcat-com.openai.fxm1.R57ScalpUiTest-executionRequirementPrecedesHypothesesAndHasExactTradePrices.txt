@@ -1,0 +1,3 @@
+10-05 07:00:52.083  3730  3748 I TestRunner: started: executionRequirementPrecedesHypothesesAndHasExactTradePrices(com.openai.fxm1.R57ScalpUiTest)
+10-05 07:00:52.090  3730  3748 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 07:00:52.090  3730  3748 I TestRunner: finished: executionRequirementPrecedesHypothesesAndHasExactTradePrices(com.openai.fxm1.R57ScalpUiTest)

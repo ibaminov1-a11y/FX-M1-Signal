@@ -1,0 +1,2 @@
+10-05 06:55:12.369  3730  3748 I TestRunner: started: rawRowsFromAnotherInstrumentScopeOrTimeframeAreRejected(com.openai.fxm1.R54ChartUiTest)
+10-05 06:55:12.377  3730  3748 I TestRunner: finished: rawRowsFromAnotherInstrumentScopeOrTimeframeAreRejected(com.openai.fxm1.R54ChartUiTest)

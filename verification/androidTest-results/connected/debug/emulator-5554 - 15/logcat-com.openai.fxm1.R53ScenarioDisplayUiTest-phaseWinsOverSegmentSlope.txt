@@ -1,0 +1,13 @@
+10-05 06:54:54.780  3730  3748 I TestRunner: started: phaseWinsOverSegmentSlope(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:54:54.813  2402  2402 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.auth.account.workaccount.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+10-05 06:54:54.814  2402  2402 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.gmscompliance.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentBoundBrokerService }
+10-05 06:54:54.827  3289  3289 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:54:54.828  2402  5398 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 432 [CONTEXT service_id=218 ]
+10-05 06:54:54.828   552   824 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:54:54.828   552   824 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:54:54.831  3604  3652 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=53 ]
+10-05 06:54:54.834  3604  3709 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[ad3372cb-032a]>Handler" thread_id=63 ]
+10-05 06:54:54.836  2402  2498 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:54:54.836  2402  2498 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:54:54.845  2402  5441 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 38 uptime_millis: 38 exec_start_elapsed_seconds: 432 [CONTEXT service_id=218 ]
+10-05 06:54:54.870  3730  3748 I TestRunner: finished: phaseWinsOverSegmentSlope(com.openai.fxm1.R53ScenarioDisplayUiTest)

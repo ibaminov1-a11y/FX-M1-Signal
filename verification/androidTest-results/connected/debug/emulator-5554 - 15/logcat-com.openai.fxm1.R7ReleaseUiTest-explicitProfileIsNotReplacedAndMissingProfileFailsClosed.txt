@@ -1,0 +1,3 @@
+10-05 07:03:15.563  3730  3748 I TestRunner: started: explicitProfileIsNotReplacedAndMissingProfileFailsClosed(com.openai.fxm1.R7ReleaseUiTest)
+10-05 07:03:15.585  2402  6845 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 141 uptime_millis: 141 exec_start_elapsed_seconds: 932 [CONTEXT service_id=218 ]
+10-05 07:03:15.596  3730  3748 I TestRunner: finished: explicitProfileIsNotReplacedAndMissingProfileFailsClosed(com.openai.fxm1.R7ReleaseUiTest)

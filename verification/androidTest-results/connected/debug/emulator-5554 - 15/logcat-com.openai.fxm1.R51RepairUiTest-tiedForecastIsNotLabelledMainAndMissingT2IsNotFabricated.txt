@@ -1,0 +1,49 @@
+10-05 06:52:27.971  3730  3748 I TestRunner: started: tiedForecastIsNotLabelledMainAndMissingT2IsNotFabricated(com.openai.fxm1.R51RepairUiTest)
+10-05 06:52:27.986  3730  3730 E WindowManager: android.view.WindowLeaked: Activity com.openai.fxm1.MainActivity has leaked window com.android.internal.policy.DecorView{b58ebb3 V.E...... R....... 0,0-1024,1544}[MainActivity] that was originally added here
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.view.ViewRootImpl.<init>(ViewRootImpl.java:1246)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.view.ViewRootImpl.<init>(ViewRootImpl.java:1232)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.view.WindowManagerGlobal.addView(WindowManagerGlobal.java:428)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.view.WindowManagerImpl.addView(WindowManagerImpl.java:158)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.app.Dialog.show(Dialog.java:352)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.app.AlertDialog$Builder.show(AlertDialog.java:1131)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at com.openai.fxm1.MainActivity.showSmartFeaturesDialog(MainActivity.java:1169)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at com.openai.fxm1.MainActivity.lambda$onCreate$9$com-openai-fxm1-MainActivity(MainActivity.java:414)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at com.openai.fxm1.MainActivity$$ExternalSyntheticLambda68.onClick(D8$$SyntheticClass:0)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.view.View.performClick(View.java:8028)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at com.openai.fxm1.OwnRiskOnlyUiTest.lambda$accountWideRiskControlsAreAbsent$0$com-openai-fxm1-OwnRiskOnlyUiTest(OwnRiskOnlyUiTest.java:27)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at com.openai.fxm1.OwnRiskOnlyUiTest$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2612)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at java.lang.reflect.Method.invoke(Native Method)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+10-05 06:52:27.986  3730  3730 E WindowManager: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+10-05 06:52:27.994   365  4980 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:52:27.994   365  4980 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:52:28.035  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.035  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.035  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.035  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.035  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.036  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.036  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.036  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.036  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.036  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.039  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.039  1152  1159 W System  : A resource failed to call release.
+10-05 06:52:28.079   552  1785 W InputManager-JNI: Input channel object '4536f70 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:52:28.097   365  1408 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 713728
+10-05 06:52:28.098  3730  3730 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@8b3211f
+10-05 06:52:28.102  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=29
+10-05 06:52:28.102  1152  1152 I TopTaskTracker: onTaskRemoved: taskId=29
+10-05 06:52:28.103   365  4980 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:52:28.103   365  4980 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:52:28.290  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:52:28.351  3730  3748 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:52:28.388  3730  3748 I TestRunner: finished: tiedForecastIsNotLabelledMainAndMissingT2IsNotFabricated(com.openai.fxm1.R51RepairUiTest)
