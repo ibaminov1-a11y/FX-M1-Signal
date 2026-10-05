@@ -52,6 +52,15 @@ class PriceForecastTests(unittest.TestCase):
         self.assertNotEqual(new['snapshot_id'],before['snapshot_id'])
         self.assertEqual(before,frozen)
 
+    def test_brief_feed_failure_cannot_rewrite_an_already_issued_minute(self):
+        p=self.predictor();before=self.issue(p)
+        unavailable=p.update(self.data(),Quote((T+1)*1000,1.1062,1.10621,False),T+1,
+            symbol='EURUSD',timeframe='M5',mode='NORMAL',scope='123@DEMO|EURUSD')
+        self.assertFalse(unavailable['available'])
+        self.assertEqual(unavailable['projection'],[])
+        restored=self.issue(p,now=T+2,price=1.1062)
+        self.assertEqual(restored,before,'Reconnect must not repaint a previously issued minute')
+
     def test_scopes_modes_and_timeframes_do_not_share_forecasts(self):
         p=self.predictor();a=self.issue(p);b=self.issue(p,scope='456@DEMO|EURUSD')
         c=self.issue(p,mode='SCALP');d=self.issue(p,tf='M15')

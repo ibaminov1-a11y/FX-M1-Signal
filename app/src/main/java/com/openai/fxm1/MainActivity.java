@@ -73,6 +73,8 @@ public class MainActivity extends Activity {
     private volatile boolean uiClosed;
     private String lastProjectedProfile="";
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService commandExecutor = Executors.newSingleThreadExecutor();
+    private String pendingControl="";
     private final Handler monitorHandler = new Handler(Looper.getMainLooper());
     private final Handler serviceUiHandler = new Handler(Looper.getMainLooper());
 
@@ -300,8 +302,9 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            prefs.edit().putString("ec_token", key).apply();
+            prefs.edit().putString("ec_token", key).putBoolean("server_verified",false).putBoolean("mt5_connected_snapshot",false).apply();
             setApiKeyEditMode(false);
+            restoreTradingSnapshotFromPrefs();
 
             if (getSharedPreferences("fxm1", MODE_PRIVATE).getBoolean("bg_running", false)) {
                 sendBackgroundCommand(MonitoringService.ACTION_REFRESH);
@@ -370,7 +373,8 @@ public class MainActivity extends Activity {
         autoTradingSwitch.setOnClickListener(v->{
             if(suppressAutoSwitch)return;
             boolean isChecked=autoTradingSwitch.isChecked();
-            if(!serverConnected||!mt5Connected){
+            if(!pendingControl.isEmpty()){restoreTradingSnapshotFromPrefs();return;}
+            if(!serverConnected||(isChecked&&!mt5Connected)){
                 suppressAutoSwitch=true;
                 autoTradingSwitch.setChecked(prefs.getBoolean("auto_trading",false));
                 suppressAutoSwitch=false;
@@ -392,19 +396,7 @@ public class MainActivity extends Activity {
                 .setMessage(realMode?
                     "REAL-счёт. Пилотный лимит жёстко ограничен: ≤0.25% риска и ≤0.01 lot на ступень. Комиссия берётся из сохранённого профиля счёта/инструмента или истории MT5. REAL ARM действует только до перезапуска Bridge.":
                     "Источник — MT5. DEMO-комиссия считается 0 автоматически. Первый вход — только по модели/триггеру, добавления только в плюс и в пределах общего риска.")
-                .setNegativeButton("Отмена",null).setPositiveButton(realMode?"ПОДТВЕРДИТЬ REAL":"Подтвердить DEMO",(d,w)->submitTask(()->{
-                    try{
-                        EventClient.configure();
-                        JSONObject current=EventClient.poll(),cfg=current.optJSONObject("config");
-                        if(cfg==null||!cfg.optBoolean("approved",false))
-                            EventClient.command("approve_profile",new JSONObject().put("confirmation",realMode?"APPROVE_REAL_RISK":"APPROVE_DEMO_RISK"));
-                        if(realMode&&!EventClient.poll().optBoolean("real_armed",false))
-                            EventClient.command("arm_real",new JSONObject().put("confirmation","ARM_REAL_LIVE"));
-                        JSONObject out=EventClient.command("enable",new JSONObject().put("confirmation",realMode?"ENABLE_REAL":"ENABLE_DEMO"));
-                        EventClient.poll();
-                        deliverUi(()->{addJournal(out.optString("message"));startUnifiedMonitoringService();});
-                    }catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setTitle("AUTO не включён").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
-                })).show();
+                .setNegativeButton("Отмена",null).setPositiveButton(realMode?"ПОДТВЕРДИТЬ REAL":"Подтвердить DEMO",(d,w)->enableDemo()).show();
         });
 
         emergencyStopButton.setOnClickListener(v -> {
@@ -605,8 +597,12 @@ public class MainActivity extends Activity {
         if (smartStatusText != null) smartStatusText.setTextColor(C_MUTED);
         if (statsText != null) statsText.setTextColor(C_TEXT);
         if (signalHistoryText != null) signalHistoryText.setTextColor(C_MUTED);
-        accountText.setText("Счёт: —\nБаланс: —\nEquity: —");
-        positionsText.setText("Открытые позиции: —\nТекущий P/L: —\nСегодня: —\nВсего: —");
+        SharedPreferences cached=getSharedPreferences("fxm1",MODE_PRIVATE);
+        String currency=cached.getString("mt5_currency_snapshot","USD");
+        accountText.setText("КЭШ · последнее состояние счёта\nСчёт: "+cached.getString("mt5_account_type_snapshot","—")
+            +"\nБаланс: "+money(Double.longBitsToDouble(cached.getLong("mt5_balance_bits",Double.doubleToLongBits(Double.NaN))),currency)
+            +"\nEquity: "+money(Double.longBitsToDouble(cached.getLong("mt5_equity_bits",Double.doubleToLongBits(Double.NaN))),currency));
+        renderPositionsMoneyCard(cached.getInt("mt5_positions_snapshot",0),Double.longBitsToDouble(cached.getLong("mt5_floating_bits",Double.doubleToLongBits(0))),currency);
         lastMt5Bid = Double.NaN;
         lastMt5Ask = Double.NaN;
         updatePriceComparison();
@@ -706,28 +702,29 @@ public class MainActivity extends Activity {
             demoAccount = "DEMO".equalsIgnoreCase(accountType);
             serverStatusText.setText("APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n"+p.getString("ec_runtime_build","")+"\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
-            accountText.setText("Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
+            accountText.setText((mt5?"":"КЭШ · нет свежих данных MT5\n")+"Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             renderPositionsMoneyCard(positions, floating, currency);
             closeAllButton.setEnabled(mt5 && positions > 0);
-            autoTradingSwitch.setEnabled(true);
+            autoTradingSwitch.setEnabled(pendingControl.isEmpty());
             suppressAutoSwitch = true;
             boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
             JSONObject bridgeState = EventClient.state();
             boolean emergency = p.getBoolean("v108_emergency_latched", false) || bridgeState.optBoolean("emergency", false);
             boolean paused = bridgeState.optBoolean("paused", true);
             boolean bridgeAuto = bridgeState.optBoolean("auto", false) && !paused && !emergency;
-            boolean autoSaved = bridgeAuto && mt5 && targetAllowed;
+            boolean autoSaved = bridgeAuto;
             autoTradingSwitch.setChecked(autoSaved);
             p.edit().putBoolean("auto_trading", autoSaved).putBoolean("auto_user_enabled", autoSaved).putInt("ec_limit", 0).apply();
             autoTradingSwitch.setText(TradeSettings.autoTitle());
             if("REAL".equalsIgnoreCase(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
             if (autoStatusText != null) {
-                String autoStatus=emergency ? "EMERGENCY · AUTO заблокирован" :
-                        autoSaved ? "AUTO включён · разрешена торговля · счёт "+accountType+"\n"+(bridgeState.optJSONObject("entry_gate")==null?"":bridgeState.optJSONObject("entry_gate").optString("reason")) :
+                String autoStatus=emergency ? (p.getBoolean("ec_emergency_pending",false)?"EMERGENCY · локальная блокировка · ожидается Bridge":"EMERGENCY · AUTO заблокирован") :
+                        autoSaved ? "AUTO включён · "+(mt5&&targetAllowed?"разрешена торговля":"ожидание готовности MT5")+" · счёт "+accountType+"\n"+(bridgeState.optJSONObject("entry_gate")==null?"":bridgeState.optJSONObject("entry_gate").optString("reason")) :
                         paused ? "AUTO выключен · PAUSE" : "AUTO выключен · "+accountType;
                 JSONObject pendingProfile=bridgeState.optJSONObject("pending_config");
                 if(pendingProfile!=null)autoStatus+="\nПосле кампании: "+EventClient.profileLabel(pendingProfile);
                 if(EventClient.hasProfileDraft())autoStatus+="\nВыбор на телефоне ожидает подтверждения Bridge";
+                if(!pendingControl.isEmpty())autoStatus+="\nОжидается подтверждение Bridge: "+pendingControl;
                 autoStatusText.setText(autoStatus);
                 autoStatusText.setTextColor(emergency ? C_RED : autoSaved ? C_GREEN : C_MUTED);
             }
@@ -735,6 +732,7 @@ public class MainActivity extends Activity {
         } else {
             setTradingControlsOffline();
         }
+        if(!pendingControl.isEmpty()){autoTradingSwitch.setEnabled(false);closeAllButton.setEnabled(false);}
     }
 
     private void updateLegacyFrameNote(){
@@ -751,11 +749,13 @@ public class MainActivity extends Activity {
         updateLegacyFrameNote();
         autoStatusText.setText("Профиль выбран: "+EventClient.profileLabel(desired)+"\nОжидается подтверждение Bridge");
         if(EventClient.base().isEmpty())return;
-        submitTask(()->{try{EventClient.configureUserSelection(desired);EventClient.poll();deliverUi(()->{
+        final EventClient.ReadRequest read=EventClient.newReadRequest();
+        submitControlTask(()->{try{EventClient.configureUserSelection(read,desired);EventClient.poll();deliverUi(()->{
                 syncUiFromBackgroundService();JSONObject pending=EventClient.state().optJSONObject("pending_config");
                 Toast.makeText(this,pending==null?"Профиль сохранён: "+EventClient.profileLabel(desired):"После кампании: "+EventClient.profileLabel(pending),Toast.LENGTH_LONG).show();});}
-            catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setTitle("Выбор сохранён на телефоне")
-                .setMessage("Bridge пока не применил профиль: "+safeMessage(e)).setNegativeButton("Позже",null).setPositiveButton("Повторить",(d,w)->onProfileChanged()).show());}});
+            catch(Exception e){deliverUi(()->{if(!EventClient.isCurrentSource(read)||!EventClient.selectionMatches(desired))return;
+                new AlertDialog.Builder(this).setTitle("Выбор сохранён на телефоне")
+                .setMessage("Bridge пока не применил профиль: "+safeMessage(e)).setNegativeButton("Позже",null).setPositiveButton("Повторить",(d,w)->onProfileChanged()).show();});}});
     }
     private void onLotChanged(){onProfileChanged();}
 
@@ -800,6 +800,30 @@ public class MainActivity extends Activity {
         catch (java.util.concurrent.RejectedExecutionException e) {
             if (!uiClosed && !isDestroyed()) throw e;
         }
+    }
+    private void submitControlTask(Runnable task) {
+        if(uiClosed||isFinishing()||isDestroyed())return;
+        try{commandExecutor.execute(()->{if(!uiClosed)task.run();});}
+        catch(java.util.concurrent.RejectedExecutionException e){if(!uiClosed)throw e;}
+    }
+    private void enableDemo(){
+        if(!pendingControl.isEmpty())return;
+        final EventClient.ReadRequest scope=EventClient.newReadRequest();
+        final JSONObject desired;
+        try{desired=EventClient.config();}catch(Exception e){addJournal(safeMessage(e));return;}
+        pendingControl="AUTO ON";restoreTradingSnapshotFromPrefs();
+        submitControlTask(()->{
+            try{
+                EventClient.requireCurrentSelection(scope,desired);
+                EventClient.configureUserSelection(scope,desired);
+                EventClient.requireCurrentSelection(scope,desired);
+                JSONObject result=EventClient.command("enable",new JSONObject().put("confirmation","ENABLE_DEMO"));
+                EventClient.poll();
+                deliverUi(()->{pendingControl="";addJournal(result.optString("message"));restoreTradingSnapshotFromPrefs();startUnifiedMonitoringService();});
+            }catch(Exception e){deliverUi(()->{pendingControl="";restoreTradingSnapshotFromPrefs();
+                new AlertDialog.Builder(this).setTitle("AUTO: требуется проверка состояния")
+                    .setMessage("Результат не подтверждён. Обновите состояние Bridge перед повторным разрешением AUTO.\n"+safeMessage(e)).setPositiveButton("OK",null).show();});}
+        });
     }
 
     private void refreshAllData(){
@@ -846,7 +870,7 @@ public class MainActivity extends Activity {
         if(errors!=null)for(int i=0;i<errors.length();i++){
             if(warnings.length()>0)warnings.append("; ");warnings.append(errors.optString(i));
         }
-        if(!EventClient.prefs().getBoolean("server_verified",false)){
+        if(!EventClient.prefs().getBoolean("mt5_connected_snapshot",false)){
             if(warnings.length()>0)warnings.append("; ");warnings.append("Нет свежих данных счёта MT5");
         }
         if(warnings.length()>0){
@@ -873,94 +897,30 @@ public class MainActivity extends Activity {
         serverStatusText.setText("SERVER: CHECKING…   •   MT5: …");
         serverStatusText.setTextColor(C_YELLOW);
 
+        final EventClient.ReadRequest read=EventClient.newReadRequest();
         submitTask(() -> {
             try {
-                JSONObject root = httpJson("GET", base + "/health", null);
-                boolean serverOk = root.optBoolean("ok", false);
-                boolean mt5Ok = root.optBoolean("mt5_connected", false);
-                String accountType = root.optString("account_type", "UNKNOWN").toUpperCase(Locale.US);
-                double balance = root.optDouble("balance", Double.NaN);
-                double equity = root.optDouble("equity", Double.NaN);
-                int positions = root.optInt("positions", 0);
-                double floating = root.optDouble("floating_pl", 0.0);
-                String currency = root.optString("currency", "USD");
-                String bridgeVersion = root.optString("bridge_version", "?");
-                boolean bridgeRealEnabled = root.optBoolean("real_trading_enabled", false);
-                String accountKey = root.optString("account_key", "");
-                boolean versionMatch = ExecutionFeedback.bridgeCompatible(bridgeVersion);
-                JSONArray brokerSymbols=null;
-                if(serverOk&&mt5Ok){try{brokerSymbols=httpJson("GET",base+"/symbols",null).optJSONArray("symbols");}catch(Exception ignored){}}
-                final JSONArray finalBrokerSymbols=brokerSymbols;
-
+                EventClient.readState(read);
+                JSONArray symbols=null;
+                if(getSharedPreferences("fxm1",MODE_PRIVATE).getBoolean("mt5_connected_snapshot",false)){
+                    try{symbols=EventClient.readSymbols(read).optJSONArray("symbols");}catch(Exception ignored){}
+                }
+                final JSONArray available=symbols;
                 deliverUi(() -> {
                     serverCheckButton.setEnabled(true);
-                    serverConnected = serverOk;
-                    mt5Connected = mt5Ok;
-                    demoAccount = "DEMO".equals(accountType);
-                    realTradingEnabled = bridgeRealEnabled;
-
-                    serverStatusText.setText(
-                            "APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n" +
-                            (versionMatch ? "" : "⚠ VERSION MISMATCH · AUTO BLOCKED\n") +
-                            "SERVER: " + (serverOk ? "CONNECTED" : "ERROR") +
-                            "   •   MT5: " + (mt5Ok ? "CONNECTED" : "OFFLINE")
-                    );
-                    serverStatusText.setTextColor(
-                            serverOk && mt5Ok && versionMatch ? C_GREEN : C_RED
-                    );
-
-                    if (serverOk && mt5Ok) {
-                        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("server_verified", true).apply();
-                        setServerEditMode(false);
-                    } else {
-                        getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("server_verified", false).apply();
-                        setServerEditMode(true);
-                    }
-
-                    accountText.setText(
-                            "Счёт: " + accountType +
-                            "\nБаланс: " + money(balance, currency) +
-                            "\nEquity: " + money(equity, currency)
-                    );
-                    renderPositionsMoneyCard(positions, floating, currency);
-                    getSharedPreferences("fxm1", MODE_PRIVATE).edit()
-                            .putBoolean("mt5_connected_snapshot", serverOk && mt5Ok)
-                            .putString("mt5_account_type_snapshot", accountType)
-                            .putString("mt5_account_key_snapshot", accountKey)
-                            .putLong("mt5_balance_bits", Double.doubleToLongBits(balance))
-                            .putLong("mt5_equity_bits", Double.doubleToLongBits(equity))
-                            .putString("mt5_currency_snapshot", currency)
-                            .putString("bridge_version_snapshot", bridgeVersion)
-                            .putBoolean("bridge_version_match_snapshot", versionMatch)
-                            .putBoolean("bridge_real_enabled_snapshot", bridgeRealEnabled)
-                            .putInt("mt5_positions_snapshot", positions)
-                            .putLong("mt5_floating_bits", Double.doubleToLongBits(floating))
-                            .apply();
-                    closeAllButton.setEnabled(serverOk && mt5Ok && positions > 0);
-                    if(finalBrokerSymbols!=null)syncBrokerSymbols(finalBrokerSymbols);
-                    autoTradingSwitch.setText(TradeSettings.autoTitle());
-                    if("REAL".equals(accountType)){riskSpinner.setSelection(0);riskSpinner.setEnabled(false);}
-
-                    if (!serverOk || !mt5Ok || !versionMatch || !("REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount)) {
-                        forceAutoOff(versionMatch ? null : "AUTO заблокирован: APP/BRIDGE версии не совпадают");
-                    }
-                    addJournal(serverOk && mt5Ok
-                            ? "Связь с MT5 установлена · " + accountType + " · Bridge V" + bridgeVersion
-                            : "Сервер ответил, MT5 пока не готов");
-
-                    if (serverOk && mt5Ok) {
-                        refreshMt5Quote((String) symbolSpinner.getSelectedItem());
-                        refreshStatsAndPositions();
-                    }
+                    if(!EventClient.isCurrentSource(read))return;
+                    restoreTradingSnapshotFromPrefs();setServerEditMode(false);
+                    if(available!=null)syncBrokerSymbols(available);
+                    addJournal(mt5Connected?"Связь с MT5 установлена":"Bridge подключён; MT5 пока не готов");
+                    if(mt5Connected)refreshStatsAndPositions();
                 });
             } catch (Exception e) {
+                EventClient.offlineIfCurrent(read,e);
                 deliverUi(() -> {
                     serverCheckButton.setEnabled(true);
-                    getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("server_verified", false).apply();
-                    setServerEditMode(true);
-                    setTradingControlsOffline();
-                    addJournal("Ошибка сервера: " + safeMessage(e));
-                    Toast.makeText(this, "Сервер пока недоступен", Toast.LENGTH_SHORT).show();
+                    if(!EventClient.isCurrentSource(read))return;
+                    restoreTradingSnapshotFromPrefs();setServerEditMode(true);
+                    addJournal("Проверка Bridge: " + safeMessage(e));
                 });
             }
         });
@@ -972,6 +932,7 @@ public class MainActivity extends Activity {
         getSharedPreferences("fxm1",MODE_PRIVATE).edit().putBoolean("v108_emergency_latched",true)
             .putBoolean("ec_emergency_pending",true)
             .putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).commit();
+        try{EventClient.beginEmergency();}catch(Exception e){addJournal(safeMessage(e));}
         sendBackgroundCommand(MonitoringService.ACTION_EMERGENCY_CONFIRMED);
         addJournal("Emergency: запрет новых входов сохранён; закрытие проверяется по MT5");
     }
@@ -1170,19 +1131,18 @@ public class MainActivity extends Activity {
         Button adopt=new Button(this);adopt.setText("ПРИВЯЗАТЬ ТЕКУЩИЙ СЧЁТ MT5");styleOutlineButton(adopt,C_PURPLE);box.addView(adopt);
         adopt.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Привязать текущий MT5 счёт?")
             .setMessage("Только без открытой кампании EventCore. AUTO будет выключен.")
-            .setNegativeButton("Отмена",null).setPositiveButton("Привязать",(d,w)->submitTask(()->{
-                try{EventClient.command("adopt_account",new JSONObject().put("confirmation","ADOPT_MT5_ACCOUNT"));EventClient.poll();deliverUi(this::checkServer);}
+            .setNegativeButton("Отмена",null).setPositiveButton("Привязать",(d,w)->{
+                try{eventCommand("adopt_account",new JSONObject().put("confirmation","ADOPT_MT5_ACCOUNT"));}
                 catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
-            })).show());
+            }).show());
 
         Button reset=new Button(this);reset.setText("СНЯТЬ БЛОКИРОВКУ ПОСЛЕ СВЕРКИ");styleOutlineButton(reset,C_PURPLE);box.addView(reset);
-        reset.setOnClickListener(v->submitTask(()->{
+        reset.setOnClickListener(v->{
             try{
                 String mode=EventClient.state().optJSONObject("account")==null?actual:EventClient.state().optJSONObject("account").optString("type",actual);
-                EventClient.command("reset",new JSONObject().put("confirmation","REAL".equals(mode)?"RESET_REAL_FLAT":"RESET_DEMO_FLAT"));
-                EventClient.poll();deliverUi(this::checkServer);
+                eventCommand("reset",new JSONObject().put("confirmation","REAL".equals(mode)?"RESET_REAL_FLAT":"RESET_DEMO_FLAT"));
             }catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}
-        }));
+        });
 
         ScrollView smartScroll=new ScrollView(this);smartScroll.addView(box);
         new AlertDialog.Builder(this).setTitle("Умные функции").setView(smartScroll).setNegativeButton("ОТМЕНА",null)
@@ -1194,15 +1154,18 @@ public class MainActivity extends Activity {
                     .putFloat("max_spread_pips",3f).putInt("cooldown_minutes",0)
                     .putBoolean("ec_dynamic_adds",true).putBoolean("session_filter_enabled",false).apply();
                 autoTradingSwitch.setText(TradeSettings.autoTitle());
-                if(modeChanged)submitTask(()->{try{EventClient.poll();deliverUi(this::restoreTradingSnapshotFromPrefs);}catch(Exception e){deliverUi(()->autoStatusText.setText("Смена режима: ожидается подтверждение PAUSE от Bridge"));}});
+                if(modeChanged)eventCommand("pause",new JSONObject());
                 if(!wanted.equals(actual)){
                     new AlertDialog.Builder(this).setTitle("Режим сохранён")
                         .setMessage("В приложении выбран "+wanted+", а в MT5 сейчас "+actual+". Переключите счёт в MT5, затем нажмите «Привязать текущий счёт MT5».")
                         .setPositiveButton("OK",null).show();
                     return;
                 }
-                submitTask(()->{try{EventClient.configure();EventClient.poll();deliverUi(this::checkServer);}
-                    catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
+                try{
+                    final EventClient.ReadRequest scope=EventClient.newReadRequest();final JSONObject desired=EventClient.config();
+                    submitControlTask(()->{try{EventClient.configure(scope,desired);EventClient.poll();deliverUi(this::restoreTradingSnapshotFromPrefs);}
+                        catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
+                }catch(Exception e){addJournal(safeMessage(e));}
             }).show();
     }
 
@@ -1243,13 +1206,15 @@ public class MainActivity extends Activity {
     private void refreshStatsAndPositions() {
         if (serverBaseFromPrefs().isEmpty() || moneyRefreshInFlight || manualRefreshInFlight) return;
         moneyRefreshInFlight = true;
+        final EventClient.ReadRequest read=EventClient.newReadRequest();
         submitTask(() -> {
             try {
                 // Use the same source/account/generation checks as pull-to-refresh.
-                EventClient.refreshFinancial();
+                EventClient.refreshFinancial(read);
                 deliverUi(this::syncUiFromBackgroundService);
             } catch (Exception e) {
-                deliverUi(this::refreshSmartUi);
+                EventClient.offlineIfCurrent(read,e);
+                deliverUi(()->{restoreTradingSnapshotFromPrefs();refreshSmartUi();});
             } finally { moneyRefreshInFlight = false; }
         });
     }
@@ -1259,6 +1224,7 @@ public class MainActivity extends Activity {
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         String realized = p.getString("money_realized_snapshot", "");
         StringBuilder sb = new StringBuilder();
+        if(!p.getBoolean("server_verified",false)||!p.getBoolean("mt5_connected_snapshot",false))sb.append("КЭШ · последнее состояние MT5\n");
         sb.append("Открытые позиции: ").append(openCount)
           .append("\nТекущий P/L: ").append(signedMoney(floating, currency));
         if (realized != null && !realized.trim().isEmpty()) {
@@ -1283,18 +1249,20 @@ public class MainActivity extends Activity {
             return;
         }
 
+        final EventClient.ReadRequest read=EventClient.newReadRequest();
         submitTask(() -> {
             try {
-                EventClient.refreshFinancial();
+                EventClient.refreshFinancial(read);
                 deliverUi(() -> {
                     restoreTradingSnapshotFromPrefs();refreshSmartUi();
                     showMoneyHistoryDialogText(p.getString("money_realized_snapshot","Сегодня: —\nВсего: —"),
                         p.getString("trade_log_full_snapshot",p.getString("trade_log_snapshot","Пока пусто")));
                 });
             } catch (Exception e) {
-                deliverUi(() -> showMoneyHistoryDialogText(
+                EventClient.offlineIfCurrent(read,e);
+                deliverUi(() -> {restoreTradingSnapshotFromPrefs();showMoneyHistoryDialogText(
                     p.getString("money_realized_snapshot","Сегодня: —\nВсего: —")+"\n\nКЭШ · Bridge: "+safeMessage(e),
-                    p.getString("trade_log_full_snapshot",p.getString("trade_log_snapshot","Пока пусто"))));
+                    p.getString("trade_log_full_snapshot",p.getString("trade_log_snapshot","Пока пусто")));});
             }
         });
     }
@@ -1498,7 +1466,7 @@ public class MainActivity extends Activity {
         int cached = p.getInt("state_cache_count", 0);
         long since = p.getLong("state_signal_since_ms", 0L);
         long updated = p.getLong("state_last_update_ms", 0L);
-        String source = offline ? "КЭШ · НЕТ СВЯЗИ С BRIDGE" : bgRunning ? "LIVE" : "STOP";
+        String source = offline ? "КЭШ · НЕТ СВЯЗИ С BRIDGE" : !p.getBoolean("mt5_connected_snapshot",false)?"BRIDGE CONNECTED · ОЖИДАНИЕ MT5":bgRunning ? "LIVE" : "STOP";
         statusText.setText(symbol+" · "+tf+" · "+source+" · ДАННЫЕ MT5");
 
         boolean deferredProfile=currentState.optJSONObject("campaign")!=null||currentState.optJSONObject("pending_config")!=null;
@@ -2584,21 +2552,7 @@ public class MainActivity extends Activity {
     }
 
     private String fmt(double x) {
-        if (!Double.isFinite(x) || x == 0) return "—";
-
-        if (x >= 100) {
-            return String.format(
-                    Locale.US,
-                    "%.3f",
-                    x
-            );
-        }
-
-        return String.format(
-                Locale.US,
-                "%.5f",
-                x
-        );
+        return EventClient.price(EventClient.state(),x);
     }
 
     private void applySystemInsets(){
@@ -2627,6 +2581,7 @@ public class MainActivity extends Activity {
         serviceUiHandler.removeCallbacksAndMessages(null);
 
         executor.shutdownNow();
+        commandExecutor.shutdownNow();
         super.onDestroy();
     }
 
@@ -2721,10 +2676,13 @@ public class MainActivity extends Activity {
         box.addView(smartLabel(label));EditText v=new EditText(this);v.setTextColor(C_TEXT);v.setHintTextColor(C_MUTED);v.setSingleLine(true);v.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);v.setText(value);box.addView(v);return v;
     }
     private void eventCommand(String cmd,JSONObject data){
-        final JSONObject envelope;try{envelope=EventClient.envelope(data);}catch(Exception e){addJournal(safeMessage(e));return;}
-        submitTask(()->{try{JSONObject r=EventClient.http("POST",EventClient.base()+"/ec/command/"+cmd,envelope);
-            if("reset".equals(cmd))getSharedPreferences("fxm1",MODE_PRIVATE).edit().putBoolean("v108_emergency_latched",false).putBoolean("ec_emergency_pending",false).apply();
-            EventClient.poll();deliverUi(()->{addJournal(r.optString("message"));restoreTradingSnapshotFromPrefs();});
-        }catch(Exception e){deliverUi(()->new AlertDialog.Builder(this).setTitle("EventCore").setMessage(safeMessage(e)).setPositiveButton("OK",null).show());}});
+        if(!pendingControl.isEmpty())return;
+        final EventClient.CommandRequest request;try{request=EventClient.prepareCommand(cmd,data);}catch(Exception e){addJournal(safeMessage(e));return;}
+        pendingControl=cmd.toUpperCase(Locale.US);restoreTradingSnapshotFromPrefs();
+        submitControlTask(()->{try{JSONObject result=EventClient.sendCommand(request);
+            if("pause".equals(cmd))getSharedPreferences("fxm1",MODE_PRIVATE).edit().putBoolean("ec_mode_pause_pending",false).apply();
+            EventClient.poll();deliverUi(()->{pendingControl="";addJournal(result.optString("message"));restoreTradingSnapshotFromPrefs();});
+        }catch(Exception e){deliverUi(()->{pendingControl="";restoreTradingSnapshotFromPrefs();new AlertDialog.Builder(this).setTitle("EventCore: проверьте состояние")
+            .setMessage("Результат команды не подтверждён. Обновите состояние Bridge.\n"+safeMessage(e)).setPositiveButton("OK",null).show();});}});
     }
 }

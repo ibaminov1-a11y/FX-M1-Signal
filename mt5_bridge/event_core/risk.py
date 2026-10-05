@@ -12,6 +12,24 @@ def money(deal):
     return sum(number(deal.get(k,0), k) for k in ('profit','commission','swap','fee'))
 
 
+def realized_net(deals):
+    """Net result of closed volume, allocating its share of opening expenses.
+
+    Remaining live volume is charged separately by the round-trip fee reserve.
+    A partial close must neither drop nor double count its opening commission.
+    """
+    groups={}
+    for d in deals:
+        if d.get('type') not in (0,1):continue
+        g=groups.setdefault(d['position_id'],dict(opened=0.,closed=0.,opening=0.,exits=0.))
+        if d.get('entry')==0:
+            g['opened']+=number(d['volume'],'opening volume');g['opening']+=money(d)
+        elif d.get('entry') in (1,3):
+            g['closed']+=number(d['volume'],'closing volume');g['exits']+=money(d)
+    return sum(g['exits']+g['opening']*min(1.,g['closed']/g['opened'])
+               if g['opened']>0 else g['exits'] for g in groups.values())
+
+
 def symbol_key(value):
     return str(value or '').replace('/','').replace(' ','').upper()
 
@@ -214,9 +232,10 @@ def plan_order(broker, cfg: Config, account, info, q: Quote, d: Decision, positi
     step=number(info['volume_step'],'volume_step',positive=True)
     budget=float(campaign.get('budget',cfg.budget(account))) if campaign else cfg.budget(account)
     budget=min(budget,cfg.budget(account))
-    spent=max(0,-float(campaign.get('realized',0))) if campaign else 0
+    realized=number(campaign.get('realized',0),'campaign realized P/L') if campaign else 0.
+    spent=max(0,-realized)
     running_risk=spent
-    net=0.
+    net=realized
     for p in positions:
         ps=int(p['side']);psl=number(p['sl'],'existing SL',positive=True)
         if ps!=side or p['symbol']!=symbol:

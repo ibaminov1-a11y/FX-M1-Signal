@@ -21,10 +21,11 @@ public class MonitoringService extends Service {
     private static final String CHANNEL="fx_monitor_controls_v73";
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final ExecutorService io=Executors.newSingleThreadExecutor();
-    private boolean running=false,busy=false;
+    private final ExecutorService emergencyIo=Executors.newSingleThreadExecutor();
+    private boolean running=false,busy=false,emergencyInFlight=false;
     private SharedPreferences prefs(){return getSharedPreferences("fxm1",MODE_PRIVATE);}
-    private final Runnable tick=new Runnable(){public void run(){if(!running)return;if(!busy){busy=true;io.execute(()->{
-        try{if(prefs().getBoolean("ec_emergency_pending",false)){EventClient.command("emergency",new JSONObject());prefs().edit().putBoolean("ec_emergency_pending",false).apply();}JSONObject state=EventClient.poll();if(EventClient.needsConfigure(state))EventClient.configure();}
+    private final Runnable tick=new Runnable(){public void run(){if(!running)return;if(prefs().getBoolean("ec_emergency_pending",false))issueEmergency();if(!busy){busy=true;io.execute(()->{
+        try{EventClient.poll();}
         catch(Exception e){EventClient.offline(e);}finally{handler.post(()->{busy=false;notifyState();if(running)handler.postDelayed(tick,1000);});}
     });}else handler.postDelayed(this,1000);}};
     @Override public void onCreate(){super.onCreate();EventClient.init(this);NotificationChannel c=new NotificationChannel(CHANNEL,"FX M1 Bot · мониторинг",NotificationManager.IMPORTANCE_HIGH);c.setSound(null,null);c.enableVibration(false);getSystemService(NotificationManager.class).createNotificationChannel(c);}
@@ -43,27 +44,31 @@ public class MonitoringService extends Service {
         // Publish it only after Android has completed foreground promotion.
         prefs().edit().putBoolean("bg_running",true).putLong("monitor_stopped_ms",0).apply();
         if(ACTION_EMERGENCY_CONFIRMED.equals(action)||ACTION_STOP_ALL.equals(action))emergency();
-        else if(ACTION_REFRESH.equals(action)||ACTION_START.equals(action))io.execute(()->{
-            try{EventClient.configure();}catch(Exception e){prefs().edit().putString("ec_message",String.valueOf(e.getMessage())).apply();}
-        });
+        // Monitoring and refresh are read-only. Only an explicit profile choice configures Bridge.
         handler.removeCallbacks(tick);handler.post(tick);return START_STICKY;
     }
     private void emergency(){prefs().edit().putBoolean("v108_emergency_latched",true).putBoolean("ec_emergency_pending",true)
-        .putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).putString("ec_message","Аварийная блокировка телефона сохранена; ожидается Bridge").commit();issue("emergency",true);notifyState();}
-    private void issue(String command,boolean clearPending){
-        final JSONObject envelope;
-        try{envelope=EventClient.envelope(new JSONObject());}catch(Exception e){EventClient.offline(e);return;}
-        io.execute(()->{try{JSONObject r=EventClient.http("POST",EventClient.base()+"/ec/command/"+command,envelope);
-            SharedPreferences.Editor ed=prefs().edit().putString("ec_message",r.optString("message"));if(clearPending)ed.putBoolean("ec_emergency_pending",false);ed.apply();EventClient.poll();}
+        .putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).putString("ec_message","Аварийная блокировка телефона сохранена; ожидается Bridge").commit();
+        try{if(!prefs().contains("ec_emergency_request"))EventClient.beginEmergency();}
+        catch(Exception e){prefs().edit().putString("ec_message",String.valueOf(e.getMessage())).apply();}
+        issueEmergency();notifyState();}
+    private void issueEmergency(){
+        if(emergencyInFlight)return;
+        final EventClient.CommandRequest request;
+        try{request=EventClient.pendingEmergency();}catch(Exception e){prefs().edit().putString("ec_message",String.valueOf(e.getMessage())).apply();return;}
+        emergencyInFlight=true;
+        emergencyIo.execute(()->{try{JSONObject r=EventClient.sendCommand(request);
+            prefs().edit().putString("ec_message",r.optString("message")).apply();}
             catch(Exception e){prefs().edit().putString("ec_message",String.valueOf(e.getMessage())).apply();}
-            finally{handler.post(this::notifyState);}});
+            finally{handler.post(()->{emergencyInFlight=false;notifyState();});}});
     }
     private boolean notifyState(){if(!running)return false;JSONObject s=EventClient.state(),d=s.optJSONObject("decision"),cfg=s.optJSONObject("config"),fc=s.optJSONObject("forecast");
         String signal=d==null?"WAIT":d.optString("signal","WAIT");
         String symbol=cfg==null?"MT5":cfg.optString("symbol","MT5");
         String engine=cfg==null?"COMPUTE V1":cfg.optString("engine_mode","COMPUTE_V1");
         boolean emergency=prefs().getBoolean("v108_emergency_latched",false)||s.optBoolean("emergency",false);
-        String state=emergency?"EMERGENCY":s.optBoolean("auto",false)&&!s.optBoolean("paused",true)?"AUTO ON":"AUTO OFF";
+        String state=emergency?(prefs().getBoolean("ec_emergency_pending",false)?"EMERGENCY · ожидается Bridge":"EMERGENCY"):
+            s.optBoolean("client_offline",false)?"КЭШ · нет связи с Bridge":s.optBoolean("auto",false)&&!s.optBoolean("paused",true)?"AUTO ON":"AUTO OFF";
         String confidence="";
         if(fc!=null&&fc.optInt("side",0)!=0)confidence=" · "+(fc.optInt("side")>0?"BUY ":"SELL ")+"вес "+Math.round(fc.optDouble("confidence",0)*100);
         String timeframe=cfg==null?"M5":cfg.optString("timeframe","M5");
@@ -82,5 +87,5 @@ public class MonitoringService extends Service {
         return true;
     }
     @Override public IBinder onBind(Intent i){return null;}
-    @Override public void onDestroy(){running=false;prefs().edit().putBoolean("bg_running",false).apply();handler.removeCallbacksAndMessages(null);io.shutdown();super.onDestroy();}
+    @Override public void onDestroy(){running=false;prefs().edit().putBoolean("bg_running",false).apply();handler.removeCallbacksAndMessages(null);io.shutdownNow();emergencyIo.shutdown();super.onDestroy();}
 }

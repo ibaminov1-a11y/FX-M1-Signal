@@ -91,18 +91,24 @@ public class SparklineView extends View {
     @Override public boolean performClick(){super.performClick();return true;}
     @Override protected void onDraw(Canvas c){
         super.onDraw(c);JSONArray bars=viewport.window();JSONObject f=displayedForecast(),forming=viewport.live()?liveBar:null;
-        if(isUnverifiedMarket()&&bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
-        if(bars.length()<2&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
+        if(!ChartViewport.validBar(forming)||(bars.length()>0&&forming.optLong("time")<=bars.optJSONObject(bars.length()-1).optLong("time")))forming=null;
+        if(bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
+        if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
         ScenarioMapRenderer.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density,bars,structure,
             forming,viewport.live()?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());
     }
-    private static String priceText(double value){return String.format(Locale.US,"%.5f",value);}
+    static int priceDigits(JSONObject f){int digits=f==null?5:f.optInt("chart_digits",5);return digits>=0&&digits<=12?digits:5;}
+    static String priceText(JSONObject f,double value){return Double.isFinite(value)&&value>0?String.format(Locale.US,"%."+priceDigits(f)+"f",value):"—";}
     public static String mapDescription(JSONObject f){
+        if(f!=null&&f.optBoolean("chart_forecast_rejected"))return f.optString("chart_reason")
+            +(f.optBoolean("client_offline")?" КЭШ · нет связи с Bridge.":"");
         if(f!=null&&f.optBoolean("chart_read_only"))return ScenarioUi.rawChartLabel(f)+". "+f.optString("chart_reason")
             +". Только просмотр. "+ScenarioUi.chartClockLabel(f)+"; прогноз и уровни входа скрыты."
             +(f.optBoolean("client_offline")?" КЭШ · НЕТ СВЯЗИ С BRIDGE. Телефон потерял связь; текущие данные неизвестны.":"");
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
         if(f.optBoolean("history_only"))return f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
+        if(!f.optBoolean("available",true))return "Свечи MT5. Прогноз недоступен: "+f.optString("reason","ожидаем пригодные данные выбранного периода")
+            +(f.optBoolean("client_offline")?". КЭШ · нет связи с Bridge.":". Только просмотр.");
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время этапов условно.");
         text.append(PriceForecastPlot.description(f));
         text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("client_offline")?" КЭШ: телефон потерял связь с Bridge. Последние полученные гипотезы; AUTO может продолжать работу самостоятельно.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");
@@ -112,8 +118,8 @@ public class SparklineView extends View {
         JSONObject entries=f.optJSONObject("entry_levels");
         if(entries!=null&&f.optInt("map_version")<3)for(String side:new String[]{"BUY","SELL"}){
             JSONObject level=entries.optJSONObject(side);if(level==null)continue;
-            text.append(" ").append(side).append(" ").append(priceText(level.optDouble("trigger")))
-                .append("; отмена ").append(priceText(level.optDouble("invalidation"))).append(".");
+            text.append(" ").append(side).append(" ").append(priceText(f,level.optDouble("trigger")))
+                .append("; отмена ").append(priceText(f,level.optDouble("invalidation"))).append(".");
         }
         JSONArray scenarios=f.optJSONArray("scenarios");
         if(scenarios!=null)for(int i=0;i<scenarios.length();i++){
@@ -121,16 +127,17 @@ public class SparklineView extends View {
             text.append(" ").append(ScenarioUi.role(v,i)).append(" ").append(v.optInt("side")>0?"BUY":v.optInt("side")<0?"SELL":"WAIT");
             if(!v.optString("stage").isEmpty())text.append("; этап: ").append(ScenarioUi.stage(v.optString("stage")));
             double event=v.optDouble("event_level",Double.NaN);
-            if(f.optInt("map_version")>=3&&Double.isFinite(event)&&event>0)text.append("; уровень проверки ").append(priceText(event));
+            if(f.optInt("map_version")>=3&&Double.isFinite(event)&&event>0)text.append("; уровень проверки ").append(priceText(f,event));
             double t1=v.optDouble("target1",v.optDouble("target",Double.NaN)),t2=v.optDouble("target2",Double.NaN);
-            if(Double.isFinite(t1)&&t1>0)text.append(" T1 ").append(priceText(t1));
-            if(Double.isFinite(t2)&&t2>0)text.append(" T2 ").append(priceText(t2));
+            if(Double.isFinite(t1)&&t1>0)text.append(" T1 ").append(priceText(f,t1));
+            if(Double.isFinite(t2)&&t2>0)text.append(" T2 ").append(priceText(f,t2));
             text.append(". ").append(v.optString("next_event", ""));
         }
-        text.append(f.optBoolean("client_offline")?" Последняя цена из кэша ":" LIVE ").append(priceText(f.optDouble("live_price"))).append(".");
+        text.append(f.optBoolean("archive")?" Цена снимка ":f.optBoolean("client_offline")?" Последняя цена из кэша ":f.optBoolean("stale")?" Последняя устаревшая цена ":" LIVE ")
+            .append(priceText(f,f.optDouble("live_price"))).append(".");
         JSONObject active=f.optJSONObject("active_scenario"),reversal=f.optJSONObject("reversal_status");
         if(active!=null)text.append(" Активный ").append(active.optInt("side")>0?"BUY":"SELL")
-            .append("; отмена ").append(priceText(active.optDouble("invalidation"))).append(".");
+            .append("; отмена ").append(priceText(f,active.optDouble("invalidation"))).append(".");
         if(reversal!=null)text.append(" Разворот: ").append(reversal.optString("status","WAIT"))
             .append(" ").append(reversal.optString("reason","")).append(".");
         return text.toString();

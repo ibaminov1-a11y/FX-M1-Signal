@@ -118,5 +118,6 @@ class PriceForecaster:
             self._key=key;self._cached=copy.deepcopy(result)
             return result
         except (ValueError, TypeError, KeyError, IndexError, ArithmeticError) as exc:
-            self._key=None;self._cached=None
+            # An interruption hides the forecast, but cannot rewrite an already
+            # issued observation minute when the same validated source returns.
             return dict(empty, reason=str(exc))

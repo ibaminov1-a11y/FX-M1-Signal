@@ -1,6 +1,8 @@
 from __future__ import annotations
 from dataclasses import asdict
+from contextlib import contextmanager
 import argparse, hmac, json, logging, secrets, socket, threading, time, uuid
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from flask import Flask, jsonify, request
 from . import VERSION, PROTOCOL, BUILD, REVISION
@@ -10,10 +12,32 @@ from .mt5_adapter import MT5Broker, MAGIC
 from .store import Store, ProcessLock
 from .risk import summary
 from .clock_setup import load_clock_policy
+from .runtime_view import RuntimeViews
+
+
+def configure_runtime_log(directory,token,logger=None):
+    class RedactedFormatter(logging.Formatter):
+        def format(self,record):
+            value=super().format(record)
+            return value.replace(token,'[REDACTED]') if token else value
+    handler=RotatingFileHandler(Path(directory)/'bridge-runtime.log',maxBytes=2*1024*1024,backupCount=3,encoding='utf-8')
+    handler.setFormatter(RedactedFormatter('%(asctime)s %(levelname)s %(message)s'))
+    (logger or logging.getLogger()).addHandler(handler)
+    return handler
 
 
 def create_app(engine,token):
     app=Flask(__name__);app.config['MAX_CONTENT_LENGTH']=16384
+    views=RuntimeViews(engine);app.config['runtime_views']=views
+    class Busy(Blocked):pass
+    @contextmanager
+    def admission():
+        if not engine.lock.acquire(timeout=.25):
+            raise Busy('Bridge занят обработкой MT5. Команда/запрос не приняты; повторите после обновления статуса.')
+        try:yield
+        finally:engine.lock.release()
+    @app.errorhandler(Busy)
+    def busy(e):return jsonify(ok=False,accepted=False,server_connected=True,runtime_busy=True,message=str(e)),503
     @app.before_request
     def auth():
         if not hmac.compare_digest(request.headers.get('Authorization',''),'Bearer '+token):
@@ -34,25 +58,28 @@ def create_app(engine,token):
     @app.errorhandler(404)
     def missing(e):return jsonify(ok=False,message='Этот старый endpoint не исполняет сделки. Нужен APK EventCore.'),404
 
-    def snap(): return engine.snapshot()
+    def snap():
+        result=views.read()
+        if result is None:raise Busy('Профиль ещё не опубликован; повторите получение состояния.')
+        return result
     def healthy(s):return bool(s['account']) and s.get('account_age',999)<10
 
     @app.get('/ec/state')
     def state():
-        with engine.lock:
-            engine.heartbeat=engine.clock()
-            if request.args.get('refresh')=='1':
-                return jsonify(engine.refresh_view())
-            return jsonify(snap())
+        if request.args.get('refresh')=='1':
+            with admission():
+                result=engine.refresh_view();views.remember(result)
+                return jsonify(result)
+        return jsonify(snap())
 
     @app.get('/ec/forecast')
     def forecast():
-        return jsonify(engine.forecast_snapshot(request.args.get('tf',engine.config.timeframe)))
+        with admission():return jsonify(engine.forecast_snapshot(request.args.get('tf',engine.config.timeframe)))
 
     @app.get('/ec/price-forecasts')
     def price_forecasts():
         # Read-only: a GET neither recalculates forecasts nor executes the engine.
-        with engine.lock:
+        with admission():
             tf=request.args.get('tf',engine.config.timeframe)
             view=engine.forecast_snapshot(tf)
             price=view.get('forecast',{}).get('price_forecast',{})
@@ -63,7 +90,7 @@ def create_app(engine,token):
 
     @app.get('/ec/history')
     def chart_history():
-        with engine.lock:
+        with admission():
             tf=request.args.get('tf',engine.config.timeframe)
             if tf not in TF_SECONDS:raise Blocked('Неизвестный таймфрейм истории')
             before=request.args.get('before',type=int);limit=max(1,min(request.args.get('limit',1000,type=int),2000))
@@ -74,7 +101,7 @@ def create_app(engine,token):
 
     @app.get('/ec/scenarios')
     def scenario_history():
-        with engine.lock:
+        with admission():
             limit=max(1,min(request.args.get('limit',30,type=int),100))
             before=request.args.get('before',type=float);key=request.args.get('id')
             snapshots=engine.store.scenario_snapshots(engine.market_scope(),before,limit,key)
@@ -88,14 +115,15 @@ def create_app(engine,token):
     @app.get('/health')
     def health():
         s=snap();a=s['account'];pos=s['all_positions']
-        return jsonify(ok=healthy(s),protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,real_trading_enabled=s.get('real_armed',False),
+        return jsonify(ok=healthy(s),server_connected=True,runtime_busy=s.get('runtime_busy',False),snapshot_age=s.get('snapshot_age',0),
+            protocol=PROTOCOL,bridge_version=VERSION,bridge_build=BUILD,real_trading_enabled=s.get('real_armed',False),
             mt5_connected=healthy(s),account_type=a.get('type','UNKNOWN'),account_key=a.get('key',''),currency=a.get('currency','USD'),
             balance=a.get('balance'),equity=a.get('equity'),positions=len(pos),
             floating_pl=sum(p['profit']+p.get('swap',0) for p in pos),message=s['execution'])
 
     @app.get('/quote')
     def quote():
-        with engine.lock:
+        with admission():
             info=engine.broker.symbol(request.args.get('symbol',engine.config.symbol))
             q=engine.broker.quote(info['name']);q.validate(engine.clock())
             return jsonify(ok=True,bid=q.bid,ask=q.ask,symbol=info['name'],time=q.time_msc/1000,
@@ -112,7 +140,7 @@ def create_app(engine,token):
     @app.get('/trade-ledger')
     @app.get('/trade-log')
     def history():
-        with engine.lock:
+        with admission():
             s=snap()
             if not s['history_ok']:raise Blocked('История MT5 не обновлена: '+s['history_error'])
             limit=min(5000,max(1,int(request.args.get('limit',1000))))
@@ -143,7 +171,7 @@ def create_app(engine,token):
 
     @app.get('/risk-state')
     def risk():
-        with engine.lock:
+        with admission():
             engine._refresh(engine.clock())
             return jsonify(engine.risk)
 
@@ -162,14 +190,15 @@ def create_app(engine,token):
     def command(cmd):
         data=request.get_json(silent=False)
         if not isinstance(data,dict):raise Blocked('Ожидался объект команды')
-        with engine.lock:
+        with admission():
             sequence(data,cmd)
-            return jsonify(engine.command(cmd,data))
+            result=engine.command(cmd,data);views.publish()
+            return jsonify(dict(result,accepted=True))
 
     @app.get('/ec/journal')
     @app.get('/journal')
     def journal():
-        with engine.lock:return jsonify(ok=True,events=engine.store.events(min(1000,int(request.args.get('limit',100)))))
+        with admission():return jsonify(ok=True,events=engine.store.events(min(1000,int(request.args.get('limit',100)))))
 
     @app.get('/stats')
     def stats():
@@ -179,7 +208,7 @@ def create_app(engine,token):
 
     @app.get('/symbols')
     def symbols():
-        with engine.lock:
+        with admission():
             names=engine.broker.symbols() if hasattr(engine.broker,'symbols') else [engine.config.symbol]
             return jsonify(ok=True,symbols=names,count=len(names),source='MT5')
 
@@ -193,7 +222,7 @@ def create_app(engine,token):
 
 
 def main():
-    p=argparse.ArgumentParser(description='FXM1 EventCore EC1 — DEMO + gated REAL pilot')
+    p=argparse.ArgumentParser(description='FXM1 EventCore EC1 — DEMO ONLY')
     p.add_argument('--host',default='127.0.0.1');p.add_argument('--port',type=int,default=8000)
     p.add_argument('--terminal',default=None)
     p.add_argument('--state-dir',default=str(Path(__file__).resolve().parents[1]/'event_state'))
@@ -208,16 +237,24 @@ def main():
         except OSError:pass
     token=tokenfile.read_text(encoding='utf-8').strip()
     if len(token)<32:raise SystemExit('Ключ Bridge повреждён. Не удаляйте базу состояния.')
+    configure_runtime_log(directory,token)
+    logging.getLogger().setLevel(logging.INFO)
+    logging.info('Bridge %s startup; host=%s port=%s; AUTO OFF; DEMO ONLY',BUILD,args.host,args.port)
     policy=load_clock_policy(directory)
     from .portfolio import Portfolio
     store=Store(directory/'campaign.sqlite3');engine=Portfolio(MT5Broker(mt5,args.terminal,**policy),store)
+    app=create_app(engine,token)
+    views=app.config['runtime_views']
     def worker():
         while True:
-            try:engine.step()
+            try:
+                engine.step()
+                views.publish()
             except Exception:
                 with engine.lock:
                     for runtime in engine.engines.values():
                         runtime.auto=False;runtime.paused=True;runtime.recovery=True;runtime.save()
+                    views.publish()
                 logging.exception('Runtime error; new entries inhibited')
             time.sleep(.5)
     threading.Thread(target=worker,name='event-core',daemon=True).start()
@@ -228,5 +265,5 @@ def main():
     print('Ключ Bridge (не публикуйте): '+token,flush=True)
     print('Только доверенная локальная сеть. Не открывать порт в Интернет.',flush=True)
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
-    try:create_app(engine,token).run(host=args.host,port=args.port,threaded=True,use_reloader=False,debug=False)
+    try:app.run(host=args.host,port=args.port,threaded=True,use_reloader=False,debug=False)
     finally:lock.close()

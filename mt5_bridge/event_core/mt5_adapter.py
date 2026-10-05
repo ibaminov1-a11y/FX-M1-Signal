@@ -44,12 +44,17 @@ class MT5Broker:
 
     def connect(self):
         if not self.initialized:
-            ok=self.mt5.initialize(path=self.terminal_path) if self.terminal_path else self.mt5.initialize()
+            # MetaQuotes documents path as positional and timeout in milliseconds.
+            # A lost terminal must not occupy the execution owner for the 60s default.
+            ok=self.mt5.initialize(self.terminal_path,timeout=5000) if self.terminal_path else self.mt5.initialize(timeout=5000)
             if not ok: raise Blocked('Не удалось подключиться к MT5: '+str(self.mt5.last_error()))
             self.initialized=True
-        info=required(self.mt5.terminal_info(),'состояние терминала')
-        if not info.connected:
-            self.initialized=False;raise Blocked('Терминал MT5 не подключён к серверу')
+        try:
+            info=required(self.mt5.terminal_info(),'состояние терминала')
+            if not info.connected:raise Blocked('Терминал MT5 не подключён к серверу')
+        except Exception:
+            self.initialized=False
+            raise
 
     def account(self):
         a=required(self.mt5.account_info(),'счёт');t=required(self.mt5.terminal_info(),'терминал')

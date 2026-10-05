@@ -8,8 +8,9 @@ import java.util.*;
 final class ScenarioMapRenderer {
     private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Canvas c;
-    private final float d,w,h,left,right;
-    private float split,top,bottom;
+    private final float d,w,h,left;
+    private float right,split,top,bottom;
+    private JSONObject formatting;
     private double low=Double.POSITIVE_INFINITY,high=Double.NEGATIVE_INFINITY;
     private final ArrayList<Annotation> annotations=new ArrayList<>();
     private static final class Annotation {String text;float x,y;int color,priority;
@@ -28,7 +29,15 @@ final class ScenarioMapRenderer {
     private float y(double v){return top+(float)((high-v)/(high-low))*(bottom-top);}
     private float clippedY(double v){return Math.max(top,Math.min(bottom,y(v)));}
     private void bound(double v){if(Double.isFinite(v)&&v>0){low=Math.min(low,v);high=Math.max(high,v);}}
-    private static String price(double v){return String.format(Locale.US,"%.5f",v);}
+    private String price(double v){return SparklineView.priceText(formatting,v);}
+    private static String utc(String pattern,long seconds){
+        java.text.SimpleDateFormat format=new java.text.SimpleDateFormat(pattern,Locale.US);
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));return format.format(new Date(seconds*1000));
+    }
+    private String candleTimes(long first,long last){
+        String pattern=first/86400==last/86400?"HH:mm":"dd.MM HH:mm";
+        return "Свечи "+utc(pattern,first)+" — "+utc(pattern,last)+" UTC";
+    }
     private void text(String s,float x,float yy,int color,float size){
         p.setPathEffect(null);p.setStyle(Paint.Style.FILL);p.setColor(color);p.setTextSize(size*d);
         float available=w-x-4*d;
@@ -56,7 +65,7 @@ final class ScenarioMapRenderer {
         if(!label.isEmpty())annotations.add(new Annotation(label,x,yy,color,priority));
     }
     private void drawAnnotations(){
-        RectF bounds=new RectF(split+3*d,top+3*d,right-2*d,bottom-3*d);
+        RectF bounds=new RectF((split<right?split:left)+3*d,top+3*d,right-2*d,bottom-3*d);
         ArrayList<RectF> placed=new ArrayList<>();annotations.sort(Comparator.comparingInt(v->v.priority));
         for(Annotation a:annotations){
             p.setTextSize(8*d);String label=a.text;
@@ -86,15 +95,15 @@ final class ScenarioMapRenderer {
     }
     private int routeColor(JSONObject s,int i){return stale?MUTED:i==0?(s.optInt("side")>0?GREEN:s.optInt("side")<0?RED:0xffbbbbcf):ALTS[(i-1)%3];}
     private void draw(JSONArray bars,JSONArray structure,JSONObject live,JSONArray liveStructure,JSONObject f,JSONArray positions){
+        formatting=f;
         unverified=f.optBoolean("chart_read_only");
-        boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2&&!unverified;
+        boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2&&!unverified&&!f.optBoolean("chart_forecast_rejected");
         historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
         JSONObject levels=valid&&!v3&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
         JSONObject priceForecast=PriceForecastPlot.visible(f);
         int routeCount=routes==null?0:Math.min(2,routes.length());
-        top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:60)*d;
-        split=historical||unverified?right:left+(right-left)*.44f;
+        top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:76)*d;
         for(int i=0;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null){bound(b.optDouble("low"));bound(b.optDouble("high"));}}
         if(live!=null){bound(live.optDouble("low"));bound(live.optDouble("high"));}
         double historyLow=low,historyHigh=high,historyRange=Math.max(1e-8,historyHigh-historyLow);
@@ -111,11 +120,25 @@ final class ScenarioMapRenderer {
             for(int i=0;i<projection.length();i++){JSONObject point=projection.optJSONObject(i);
                 bound(point.optDouble("low"));bound(point.optDouble("high"));}
         }
+        boolean showPositions=!historical&&!unverified&&!f.optBoolean("archive");
+        if(showPositions&&positions!=null)for(int i=0;i<positions.length();i++){
+            JSONObject position=positions.optJSONObject(i);if(!positionMatches(f,position))continue;
+            bound(position.optDouble("price_open"));bound(position.optDouble("sl"));
+        }
         if(unverified)readOnlyHeading(f);
-        if(!Double.isFinite(low)||!Double.isFinite(high)||high<=low||bottom<=top||right<=left){
+        if(!Double.isFinite(low)||!Double.isFinite(high)||bottom<=top||right<=left){
             if(unverified)text("Нет доступных свечей MT5",left,top+20*d,MUTED,11);return;
         }
+        // A flat or sub-tick market is still real data; give it a readable tick-scale range.
+        double minimumSpan=4*Math.pow(10,-SparklineView.priceDigits(f));
+        if(high-low<minimumSpan){double center=(high+low)/2;low=Math.max(minimumSpan*.01,center-minimumSpan/2);high=low+minimumSpan;}
         double margin=(high-low)*.10;low-=margin;high+=margin;
+        p.setTextSize(8.5f*d);float widest=0;
+        for(int i=0;i<5;i++)widest=Math.max(widest,p.measureText(price(high-(high-low)*i/4)));
+        right=w-Math.max(58*d,widest+10*d);
+        if(right<=left)return;
+        boolean futurePanel=!historical&&!unverified&&(routeCount>0||priceForecast!=null);
+        split=futurePanel?left+(right-left)*.44f:right;
         if(!unverified){
         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
         else if(routeCount==0)text(priceForecast!=null?"ЦЕНОВОЙ ПРОГНОЗ · вход отдельно":valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
@@ -128,17 +151,18 @@ final class ScenarioMapRenderer {
         }
         }
         if(tied&&!historical&&!unverified)text("Равнозначные варианты · без предпочтения",left,(16+16*routeCount)*d,MUTED,8);
-        String stamp=f.optDouble("data_asof",0)>0?new java.text.SimpleDateFormat("HH:mm:ss",Locale.US).format(new Date((long)(f.optDouble("data_asof")*1000))):"—";
-        String marketHeading="MT5 · "+f.optString("timeframe","—")+" · "+stamp;
+        String stamp=f.optDouble("data_asof",0)>0?utc("HH:mm:ss",(long)f.optDouble("data_asof"))+" UTC":"—";
+        String symbol=f.optString("chart_symbol");
+        String marketHeading="MT5 · "+f.optString("timeframe","—")+" · "+(symbol.isEmpty()?"":symbol+" · ")+(historical?"история":stamp);
         if(!unverified)text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":marketHeading),left,top-7*d,stale?0xffffb04d:MUTED,8);
         for(int i=0;i<5;i++){
             float yy=top+(bottom-top)*i/4;line(left,yy,right,yy,0xff312b43,.6f,false);
             text(price(high-(high-low)*i/4),right+4*d,yy+3*d,MUTED,8.5f);
         }
-        if(!historical&&!unverified)line(split,top,split,bottom,0xff756b89,.8f,true);
+        if(futurePanel)line(split,top,split,bottom,0xff756b89,.8f,true);
         int count=bars.length()+(live==null?0:1);float step=(split-left-8*d)/Math.max(1,count);
         HashMap<Long,Float> xs=new HashMap<>();
-        long first=bars.optJSONObject(0).optLong("time"),last=bars.optJSONObject(bars.length()-1).optLong("time");
+        long first=bars.length()>0?bars.optJSONObject(0).optLong("time"):live.optLong("time"),last=bars.length()>0?bars.optJSONObject(bars.length()-1).optLong("time"):first;
         long interval=bars.length()>1?Math.max(1,last-bars.optJSONObject(bars.length()-2).optLong("time")):300;
         for(int i=0;i<bars.length();i++){
             JSONObject b=bars.optJSONObject(i);if(b==null)continue;
@@ -189,7 +213,7 @@ final class ScenarioMapRenderer {
             text(ScenarioUi.chartClockLabel(f)+" · прогноз скрыт",left,h-9*d,MUTED,8);return;
         }
         if(historical){
-            text(new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US).format(new Date(first*1000))+" — "+new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US).format(new Date(last*1000)),left,h-24*d,MUTED,9);
+            text(candleTimes(first,last),left,h-24*d,MUTED,9);
             text("Свайп: история · масштаб: − / + · LIVE: вернуться",left,h-9*d,MUTED,8);return;
         }
         if(levels!=null){
@@ -206,24 +230,43 @@ final class ScenarioMapRenderer {
         }
         if(routeCount>0){JSONObject r=routes.optJSONObject(0);level(r.optDouble("invalidation"),"Отмена "+(r.optInt("side")>0?"BUY ":"SELL ")+price(r.optDouble("invalidation")),0xffa996b6);}
         if(active!=null)level(active.optDouble("invalidation"),"Активный "+(active.optInt("side")>0?"BUY":"SELL")+": отмена",0xffffb04d);
+        if(showPositions&&positions!=null)for(int i=0;i<positions.length();i++){
+            JSONObject position=positions.optJSONObject(i);if(!positionMatches(f,position))continue;
+            String ticket="#"+position.optLong("ticket"),state=stale?"КЭШ ":"";
+            positionLevel(position.optDouble("price_open"),state+"MT5 "+ticket+" "+(position.optInt("side")>0?"BUY ":"SELL ")+price(position.optDouble("price_open")));
+            positionLevel(position.optDouble("sl"),state+"SL MT5 "+ticket+" "+price(position.optDouble("sl")));
+        }
         if(priceForecast!=null)PriceForecastPlot.draw(c,f,priceForecast,new RectF(split,top,right,bottom),low,high,d);
         else for(int i=routeCount-1;i>=0;i--)route(routes.optJSONObject(i),i,current);
         if(Double.isFinite(current)){
             p.setColor(0xffeeeeff);c.drawCircle(split,clippedY(current),3*d,p);
-            text(clientOffline?"КЭШ":"LIVE",split-29*d,clippedY(current)-6*d,0xffeeeeff,9);
+            String marker=f.optBoolean("archive")?"СНИМОК":clientOffline?"КЭШ":stale?"УСТАРЕЛО":"LIVE";
+            p.setTextSize(9*d);text(marker,Math.max(left,split-p.measureText(marker)-3*d),clippedY(current)-6*d,0xffeeeeff,9);
         }
         drawAnnotations();
+        text(candleTimes(first,live==null?last:live.optLong("time")),left,h-44*d,MUTED,8);
         if(priceForecast!=null){
-            text(stale?"Сохранённый прогноз · связь/данные устарели":"Синий: ценовой прогноз · полоса исторических примеров",left,h-26*d,MUTED,8);
-            text("Не гарантия · условные пути: кнопка «Сценарии»",left,h-11*d,MUTED,8);
+            text("Прогноз от "+utc("HH:mm",priceForecast.optLong("issued_at"))+" UTC · полоса примеров",left,h-26*d,MUTED,8);
+            text("Оценка, не гарантия · условия входа: «Сценарии»",left,h-11*d,MUTED,8);
             return;
         }
         boolean legacy=false;
         if(routes!=null)for(int i=0;i<routeCount;i++)legacy|=!hasPhaseMeaning(routes.optJSONObject(i));
-        line(left,h-44*d,left+17*d,h-44*d,MUTED,2,true);
-        text(legacy?"Старая ветка: этапы входа не размечены":"До подтверждения входа",left+23*d,h-41*d,MUTED,9);
-        text(legacy?"Цвет — условная ветка, не факт сделки":"Цвет — после подтверждения, не факт сделки",left,h-26*d,MUTED,9);
-        text("Оценка — не вероятность · свайп: история · нажми: крупнее",left,h-11*d,MUTED,8);
+        text(legacy?"Цвет — условная ветка; этапы входа не размечены":"Серый — до входа · цвет — после, не факт сделки",left,h-26*d,MUTED,8);
+        text("Этапы условны · оценка — не вероятность · свайп: история",left,h-11*d,MUTED,8);
+    }
+    private static String symbolKey(String value){return value.replace("/","").trim().toUpperCase(Locale.ROOT);}
+    private static boolean positionMatches(JSONObject f,JSONObject position){
+        if(position==null||position.optLong("ticket")<=0||Math.abs(position.optInt("side"))!=1
+            ||!Double.isFinite(position.optDouble("volume"))||position.optDouble("volume")<=0
+            ||!Double.isFinite(position.optDouble("price_open"))||position.optDouble("price_open")<=0)return false;
+        String symbol=symbolKey(position.optString("symbol"));
+        return !symbol.isEmpty()&&(symbol.equals(symbolKey(f.optString("chart_symbol")))||symbol.equals(symbolKey(f.optString("chart_broker_symbol"))));
+    }
+    private void positionLevel(double value,String label){
+        if(!Double.isFinite(value)||value<=0||value<low||value>high)return;
+        int color=stale?MUTED:0xff70d0e0;float yy=y(value);
+        line(left,yy,right,yy,color,1,false);annotate(label,split+3*d,yy-4*d,color,-1);
     }
     private double lineValue(JSONObject l,long t){return l.optDouble("price")+l.optDouble("slope")*(t-l.optDouble("t0"));}
     private void nearBound(double v,double lo,double hi,double range){if(v>=lo-1.2*range&&v<=hi+1.2*range)bound(v);}

@@ -1,0 +1,166 @@
+name: R7.3 exact-source verified DEMO release
+on:
+  push:
+    branches: [repair/r7.3-stability-20261005]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: r73-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire Python regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/COMMIT.txt
+          python -m compileall -q mt5_bridge/event_core mt5_bridge/bridge_startup.py tests/event_core tools
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Check original signing certificate
+        run: |
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/r73-cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/r73-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - name: Entire current Android API35 regression and actual screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_r7_native.sh
+      - name: Collect exact tested binary and evidence
+        if: always()
+        run: |
+          git diff --exit-code HEAD
+          mkdir -p artifacts/android/evidence
+          cp -r evidence/. artifacts/android/evidence/
+          if test -f app/build/outputs/apk/debug/app-debug.apk; then cp app/build/outputs/apk/debug/app-debug.apk artifacts/android/; fi
+          if test -d app/build/outputs/androidTest-results; then cp -r app/build/outputs/androidTest-results artifacts/android/evidence/; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R73-VERIFY-ANDROID-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - run: python -m pip install -r mt5_bridge/requirements_event.txt
+      - name: Native Windows update, locks, WAL, rollback, fresh install and launcher
+        run: python tools/windows_r7_gate.py
+      - name: Collect native evidence even on failure
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/windows/evidence | Out-Null
+          if (Test-Path evidence) { Copy-Item evidence/* artifacts/windows/evidence -Recurse -Force }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R73-VERIFY-WINDOWS-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+  package:
+    needs: [android, windows]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: R73-VERIFY-*
+          merge-multiple: true
+          path: artifacts
+      - name: Build one complete verified DEMO package
+        if: needs.android.result == 'success' && needs.windows.result == 'success'
+        run: |
+          mkdir -p evidence app/build/outputs/apk/debug
+          cp -r artifacts/android/evidence/. evidence/
+          cp -r artifacts/windows/evidence/. evidence/
+          cp artifacts/android/app-debug.apk app/build/outputs/apk/debug/
+          python tools/package_r7.py
+      - uses: actions/upload-artifact@v4
+        if: needs.android.result == 'success' && needs.windows.result == 'success'
+        with:
+          name: FXM1-R7.3-FULL-${{ github.sha }}
+          path: |
+            evidence/FXM1_R7_3_FULL.zip
+            evidence/R7_PACKAGE_SHA256.txt
+          if-no-files-found: error
+      - name: Make test evidence and successful package retrievable
+        if: always()
+        env:
+          EXPORT_DIR: ${{ runner.temp }}/r73-export
+          EVIDENCE_BRANCH: qa/r73-evidence-${{ github.run_id }}
+        run: |
+          mkdir -p "$EXPORT_DIR"
+          python - <<'PY'
+          import os,shutil
+          from pathlib import Path
+          export=Path(os.environ['EXPORT_DIR'])
+          allowed={'.png','.json','.log','.txt','.xml'}
+          for source in Path('artifacts').glob('*/evidence'):
+              for path in source.rglob('*'):
+                  if path.is_file() and path.suffix in allowed:
+                      dest=export/source.parent.name/path.relative_to(source)
+                      dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(path,dest)
+          for name in ('FXM1_R7_3_FULL.zip','R7_PACKAGE_SHA256.txt'):
+              p=Path('evidence')/name
+              if p.is_file():shutil.copy2(p,export/name)
+          (export/'SOURCE_COMMIT.txt').write_text(os.environ['GITHUB_SHA']+'\n')
+          PY
+          git switch --orphan "$EVIDENCE_BRANCH"
+          cp -r "$EXPORT_DIR"/. .
+          for path in SOURCE_COMMIT.txt android windows FXM1_R7_3_FULL.zip R7_PACKAGE_SHA256.txt; do
+            if test -e "$path"; then git add -- "$path"; fi
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'R7.3 native verification artifacts for ${{ github.sha }}'
+          git push origin HEAD:"refs/heads/$EVIDENCE_BRANCH"

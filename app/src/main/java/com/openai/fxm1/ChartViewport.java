@@ -9,8 +9,15 @@ final class ChartViewport {
     private long edge=Long.MAX_VALUE;
     private int visible=36;
     void clear(){history.clear();live=true;edge=Long.MAX_VALUE;}
+    static boolean validBar(JSONObject b){
+        if(b==null||b.optLong("time",0)<=0)return false;
+        double o=b.optDouble("open",Double.NaN),c=b.optDouble("close",Double.NaN),
+            lo=b.optDouble("low",Double.NaN),hi=b.optDouble("high",Double.NaN);
+        return Double.isFinite(o)&&Double.isFinite(c)&&Double.isFinite(lo)&&Double.isFinite(hi)
+            &&lo>0&&lo<=Math.min(o,c)&&hi>=Math.max(o,c);
+    }
     void merge(JSONArray incoming){if(incoming==null)return;for(int i=0;i<incoming.length();i++){
-        JSONObject b=incoming.optJSONObject(i);if(b!=null&&b.optLong("time",0)>0)history.put(b.optLong("time"),b);
+        JSONObject b=incoming.optJSONObject(i);if(validBar(b))history.put(b.optLong("time"),b);
     }}
     JSONArray window(){JSONArray out=new JSONArray();NavigableMap<Long,JSONObject> data=live?history:history.headMap(edge,true);
         ArrayList<JSONObject> rows=new ArrayList<>(data.descendingMap().values());
@@ -21,7 +28,7 @@ final class ChartViewport {
         int index=Collections.binarySearch(keys,old);if(index<0)index=-index-2;
         int next=Math.max(0,Math.min(keys.size()-1,index-count));edge=keys.get(next);live=false;
     }
-    void zoom(double scale){visible=Math.max(12,Math.min(240,(int)Math.round(visible/scale)));}
+    void zoom(double scale){if(Double.isFinite(scale)&&scale>0)visible=(int)Math.max(12,Math.min(240,Math.round(visible/scale)));}
     boolean live(){return live;}void follow(){live=true;edge=Long.MAX_VALUE;}
     long edge(){return history.isEmpty()?0:live?history.lastKey():edge;}
     long oldest(){return history.isEmpty()?0:history.firstKey();}

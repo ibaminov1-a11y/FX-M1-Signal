@@ -17,18 +17,27 @@ public final class EventClient {
     private static Context app;
     // Only preference publication is locked; network reads never block service commands.
     private static final Object STATE_READ_LOCK=new Object();
-    private static long nextReadSequence,lastPublishedRead,lastAuxiliaryRead,lastResetRead;
+    private static final Object EMERGENCY_RESET_LOCK=new Object();
+    private static long nextReadSequence,lastPublishedRead,lastAuxiliaryRead,lastResetRead,commandGeneration;
     static final class ReadRequest {
         final String source,token;
         String profileId;
         boolean profileTransition=false;
         long sequence;
-        ReadRequest(String source,String token,long sequence){this.source=source;this.token=token;this.sequence=sequence;this.profileId=state().optString("profile_id","");}
+        final long generation;
+        ReadRequest(String source,String token,long sequence){
+            this.source=source;this.token=token;this.sequence=sequence;this.generation=commandGeneration;
+            this.profileTransition=!source.equals(prefs().getString("ec_state_source",source));
+            this.profileId=profileTransition?"":state().optString("profile_id","");
+        }
     }
     private static final class ReadFailure extends IOException {
         final ReadRequest read;
         final Exception original;
         ReadFailure(ReadRequest read,Exception original){super(original.getMessage(),original);this.read=read;this.original=original;}
+    }
+    private static final class BridgeBusy extends IOException {
+        BridgeBusy(String message){super(message);}
     }
     static ReadRequest newReadRequest(){
         synchronized(STATE_READ_LOCK){return new ReadRequest(base(),prefs().getString("ec_token",""),lastPublishedRead);}
@@ -36,6 +45,15 @@ public final class EventClient {
     private static void requireSameSource(ReadRequest read) throws IOException {
         if(!read.source.equals(base())||!read.token.equals(prefs().getString("ec_token","")))
             throw new IOException("Подключение изменено; повторите обновление");
+    }
+    static boolean isCurrentSource(ReadRequest read){return read.source.equals(base())&&read.token.equals(prefs().getString("ec_token",""));}
+    static JSONObject readSymbols(ReadRequest read) throws Exception {return readHttp(read,"/symbols");}
+    static void requireCurrentSelection(ReadRequest read,JSONObject desired) throws Exception {
+        synchronized(STATE_READ_LOCK){
+            requireActiveRead();requireSameSource(read);
+            if(read.generation!=commandGeneration)throw new IOException("Команда отменена более поздним управлением");
+            if(desired!=null&&!configMatches(desired,config()))throw new IOException("Выбор изменён; подтвердите текущий профиль");
+        }
     }
     private static void startRead(ReadRequest read) throws Exception {
         synchronized(STATE_READ_LOCK){requireActiveRead();requireSameSource(read);read.sequence=++nextReadSequence;}
@@ -49,7 +67,15 @@ public final class EventClient {
     }
     static void offlineIfCurrent(ReadRequest read,Exception error){
         synchronized(STATE_READ_LOCK){
-            if(read==null||!read.profileId.equals(state().optString("profile_id",""))||read.sequence<lastPublishedRead||!read.source.equals(base())||!read.token.equals(prefs().getString("ec_token","")))return;
+            if(Thread.currentThread().isInterrupted()||read==null||(!read.profileTransition&&!read.profileId.equals(state().optString("profile_id","")))||read.sequence<lastPublishedRead||!read.source.equals(base())||!read.token.equals(prefs().getString("ec_token","")))return;
+            if(error instanceof BridgeBusy){
+                JSONObject snapshot=state();long received=prefs().getLong("ec_received_elapsed",0);
+                double accountAge=snapshot.optDouble("account_age",999)+(SystemClock.elapsedRealtime()-received)/1000.0;
+                prefs().edit().putBoolean("server_verified",true)
+                    .putBoolean("mt5_connected_snapshot",read.source.equals(prefs().getString("ec_state_source",read.source))&&prefs().getBoolean("mt5_connected_snapshot",false)&&accountAge<10)
+                    .putString("ec_message",error.getMessage()).putString("money_refresh_error","Bridge занят; показан последний снимок").apply();
+                return;
+            }
             offlineSnapshot(error);lastPublishedRead=read.sequence;
         }
     }
@@ -78,12 +104,19 @@ public final class EventClient {
             // This is a presentation copy. Losing phone connectivity neither makes the
             // Bridge's own market data stale nor changes its independent AUTO state.
             JSONObject snapshot=new JSONObject(prefs().getString("ec_state","{}"));
-            boolean offline=!prefs().getBoolean("server_verified",false);
+            boolean offline=!prefs().getBoolean("server_verified",false)||!base().equals(prefs().getString("ec_state_source",base()));
             snapshot.put("client_offline",offline);
             JSONObject forecast=snapshot.optJSONObject("forecast");
             if(forecast!=null)forecast.put("client_offline",offline);
             return snapshot;
         }catch(Exception e){return new JSONObject();}
+    }
+    static String price(JSONObject snapshot,double value){
+        if(!Double.isFinite(value)||value<=0)return "—";
+        JSONObject instrument=snapshot==null?null:snapshot.optJSONObject("instrument");
+        int digits=instrument==null?5:instrument.optInt("digits",5);
+        if(digits<0||digits>12)digits=5;
+        return String.format(Locale.US,"%."+digits+"f",value);
     }
     public static String campaignSummary(JSONObject state){
         if(state==null)return "";
@@ -97,9 +130,10 @@ public final class EventClient {
         }
         if(volume<=0)return "";
         String cls=campaign.optBoolean("confirmed",false)?"CONFIRMED":campaign.optString("entry_class","PROBE");
-        String slText=!Double.isFinite(minSl)?"—":Math.abs(maxSl-minSl)<.0000005?String.format(Locale.US,"%.5f",minSl):String.format(Locale.US,"%.5f … %.5f",minSl,maxSl);
+        String minSlText=price(state,minSl),maxSlText=price(state,maxSl);
+        String slText=minSlText.equals(maxSlText)?minSlText:minSlText+" … "+maxSlText;
         return "ОТКРЫТАЯ КАМПАНИЯ: "+(side>0?"BUY":side<0?"SELL":"—")+" · "+cls+
-            "\nEntry MT5: "+String.format(Locale.US,"%.5f",weighted/volume)+" · "+String.format(Locale.US,"%.2f",volume)+" lot"+
+            "\nEntry MT5: "+price(state,weighted/volume)+" · "+String.format(Locale.US,"%.2f",volume)+" lot"+
             "\nSL MT5: "+slText+"\nP/L: "+String.format(Locale.US,"%+.2f USD",pl)+
             "\nВыход: структура / защитный SL; фиксированный TP не используется";
     }
@@ -109,7 +143,7 @@ public final class EventClient {
     private static JSONObject http(String method,String url,JSONObject data,String source,String token) throws Exception {
         if(source.isEmpty())throw new IOException("Не задан адрес Bridge EventCore");
         URL target=new URL(url);URL origin=new URL(source);
-        if(!target.getHost().equals(origin.getHost())||target.getPort()!=origin.getPort())throw new IOException("Ключ не отправляется другому серверу");
+        if(!target.getProtocol().equals(origin.getProtocol())||!target.getHost().equals(origin.getHost())||target.getPort()!=origin.getPort())throw new IOException("Ключ не отправляется другому серверу");
         HttpURLConnection c=(HttpURLConnection)target.openConnection();
         c.setInstanceFollowRedirects(false);c.setConnectTimeout(2500);c.setReadTimeout(3500);c.setRequestMethod(method);
         c.setRequestProperty("Authorization","Bearer "+token);
@@ -121,39 +155,156 @@ public final class EventClient {
             ByteArrayOutputStream out=new ByteArrayOutputStream();
             if(in!=null)try(InputStream stream=in){byte[] buf=new byte[4096];int n;while((n=stream.read(buf))!=-1){out.write(buf,0,n);if(out.size()>8000000)throw new IOException("Слишком большой ответ Bridge");}}
             JSONObject r=new JSONObject(out.toString("UTF-8"));
+            if(code==503&&r.optBoolean("server_connected",false)&&r.optBoolean("runtime_busy",false))
+                throw new BridgeBusy(r.optString("message","Bridge занят; повторите обновление"));
             if(code<200||code>=300)throw new IOException(r.optString("message","Bridge HTTP "+code));
             return r;
         }finally{c.disconnect();}
     }
-    public static synchronized JSONObject envelope(JSONObject body) throws Exception {
+    public static JSONObject envelope(JSONObject body) throws Exception {
+        synchronized(STATE_READ_LOCK){
         SharedPreferences p=prefs();long seq=p.getLong("ec_sequence",0)+1;
         if(!p.edit().putLong("ec_sequence",seq).commit())throw new IOException("Нельзя сохранить порядок команд");
         JSONObject b=body==null?new JSONObject():new JSONObject(body.toString());
-        synchronized(STATE_READ_LOCK){
             JSONObject snapshot=state(),caps=snapshot.optJSONObject("capabilities");
             if(caps!=null&&caps.optBoolean("profile_registry")&&!b.has("profile_id")){
                 String id=snapshot.optString("profile_id","");
                 if(id.isEmpty())throw new IOException("Профиль команды не определён; обновите состояние Bridge");
                 b.put("profile_id",id);
             }
-        }
         return b.put("client_id",p.getString("ec_client_id","")).put("sequence",seq).put("command_id",UUID.randomUUID().toString());
+        }
     }
-    public static JSONObject command(String cmd,JSONObject body) throws Exception{
-        JSONObject data=body==null?new JSONObject():new JSONObject(body.toString());
-        if("enable".equals(cmd)&&"ENABLE_DEMO".equals(data.optString("confirmation")))
-            data.put("allow_wait",true).put("accept_pending_profile",true).put("config",config());
-        JSONObject result=http("POST",base()+"/ec/command/"+cmd,envelope(data));
-        // Clear the phone latch only after Bridge has accepted explicit reconciliation.
-        // Settings calls this method directly, so cleanup belongs at the transport boundary.
-        if("reset".equals(cmd))synchronized(STATE_READ_LOCK){
-            // A response captured before accepted reconciliation must not restore
-            // the emergency latch after it has been explicitly cleared.
-            prefs().edit().putBoolean("v108_emergency_latched",false)
-                .putBoolean("ec_emergency_pending",false).commit();
-            lastPublishedRead=lastResetRead=++nextReadSequence;
+    /** Immutable intent captured before entering any worker queue. Never retarget or re-envelope it. */
+    static final class CommandRequest {
+        final String command,source,token,profileId,payload;
+        final long generation;
+        final boolean durableEmergency;
+        CommandRequest(String command,String source,String token,JSONObject payload,long generation){
+            this(command,source,token,payload,generation,false);
+        }
+        CommandRequest(String command,String source,String token,JSONObject payload,long generation,boolean durableEmergency){
+            this.command=command;this.source=source;this.token=token;this.payload=payload.toString();
+            this.profileId=payload.optString("profile_id","");this.generation=generation;this.durableEmergency=durableEmergency;
+        }
+    }
+    static CommandRequest prepareCommand(String command,JSONObject body) throws Exception {
+        synchronized(STATE_READ_LOCK){
+            if(!"emergency".equals(command)&&!base().equals(prefs().getString("ec_state_source",base())))throw new IOException("Обновите состояние нового Bridge перед управлением");
+            JSONObject data=body==null?new JSONObject():new JSONObject(body.toString());
+            if("enable".equals(command)&&"ENABLE_DEMO".equals(data.optString("confirmation")))
+                data.put("allow_wait",true).put("accept_pending_profile",true).put("config",config());
+            if("emergency".equals(command)||"disable".equals(command)||"pause".equals(command)||"close".equals(command)||"reset".equals(command))++commandGeneration;
+            JSONObject payload=envelope(data);
+            if("emergency".equals(command))payload.remove("profile_id");
+            return new CommandRequest(command,base(),prefs().getString("ec_token",""),payload,commandGeneration);
+        }
+    }
+    private static void requireCurrentCommand(CommandRequest request) throws Exception {
+        requireActiveRead();
+        if(!request.source.equals(base())||!request.token.equals(prefs().getString("ec_token","")))
+            throw new IOException("Подключение изменено; прежняя команда отменена");
+        if(request.durableEmergency){
+            JSONObject saved=new JSONObject(prefs().getString("ec_emergency_request","{}")),payload=saved.optJSONObject("payload");
+            if(!prefs().getBoolean("ec_emergency_pending",false)||!prefs().getBoolean("v108_emergency_latched",false)||payload==null
+                    ||!payload.optString("command_id").equals(new JSONObject(request.payload).optString("command_id")))
+                throw new IOException("Аварийная команда уже подтверждена или отменена сверкой");
+        }else if(request.generation!=commandGeneration)throw new IOException("Команда отменена более поздним управлением");
+        if(!"emergency".equals(request.command)&&!request.profileId.equals(state().optString("profile_id","")))
+            throw new IOException("Профиль изменён; прежняя команда отменена");
+        if("enable".equals(request.command)){
+            if(prefs().getBoolean("v108_emergency_latched",false)||emergencyUncertainAt(request.source,request.token))throw new IOException("AUTO заблокирован: EMERGENCY");
+            JSONObject desired=new JSONObject(request.payload).optJSONObject("config");
+            if(desired!=null&&!configMatches(desired,config()))throw new IOException("Выбор изменён; подтвердите AUTO для текущего профиля");
+        }
+    }
+    static JSONObject sendCommand(CommandRequest request) throws Exception {
+        if("emergency".equals(request.command)||"reset".equals(request.command)){
+            synchronized(EMERGENCY_RESET_LOCK){return sendCommandNow(request);}
+        }
+        return sendCommandNow(request);
+    }
+    private static JSONObject sendCommandNow(CommandRequest request) throws Exception {
+        synchronized(STATE_READ_LOCK){
+            requireCurrentCommand(request);
+            if("reset".equals(request.command)&&emergencyUncertainAt(request.source,request.token))
+                throw new IOException("EMERGENCY отправлен, но ответ Bridge ещё не подтверждён. Дождитесь подтверждения той же команды перед сверкой.");
+            // A transport timeout cannot prove whether Bridge executed the packet.
+            // Persist this before transmission; only a same-ID acknowledgement resolves it.
+            if(request.durableEmergency&&!prefs().edit().putBoolean("ec_emergency_uncertain",true).commit())
+                throw new IOException("Не удалось сохранить состояние аварийной отправки");
+        }
+        JSONObject result=http("POST",request.source+"/ec/command/"+request.command,new JSONObject(request.payload),request.source,request.token);
+        synchronized(STATE_READ_LOCK){
+            // A response from an old connection or superseded command cannot update this screen or its latches.
+            requireCurrentCommand(request);
+            lastPublishedRead=++nextReadSequence;
+            if(request.durableEmergency){
+                JSONObject archive=emergencyArchive();archive.remove(emergencyConnectionKey(request.source,request.token));
+                prefs().edit().putBoolean("ec_emergency_pending",false).putBoolean("ec_emergency_uncertain",false)
+                    .putString("ec_emergency_archive",archive.toString()).commit();
+            }
+            if("reset".equals(request.command)){
+                JSONObject archive=emergencyArchive(),active=new JSONObject(prefs().getString("ec_emergency_request","{}"));
+                if(prefs().getBoolean("ec_emergency_uncertain",false)&&active.has("source")
+                        &&(!request.source.equals(active.optString("source"))||!request.token.equals(active.optString("token"))))
+                    archive.put(emergencyConnectionKey(active.getString("source"),active.getString("token")),active);
+                prefs().edit().putBoolean("v108_emergency_latched",false).putBoolean("ec_emergency_pending",false)
+                    .putString("ec_emergency_archive",archive.toString()).remove("ec_emergency_request").remove("ec_emergency_uncertain").commit();
+                lastResetRead=lastPublishedRead;
+            }
         }
         return result;
+    }
+    public static JSONObject command(String cmd,JSONObject body) throws Exception{
+        return sendCommand(prepareCommand(cmd,body));
+    }
+    private static String emergencyConnectionKey(String source,String token){return source+"\n"+token;}
+    private static JSONObject emergencyArchive() throws Exception{return new JSONObject(prefs().getString("ec_emergency_archive","{}"));}
+    private static boolean emergencyUncertainAt(String source,String token) throws Exception {
+        JSONObject active=new JSONObject(prefs().getString("ec_emergency_request","{}"));
+        return (prefs().getBoolean("ec_emergency_uncertain",false)&&source.equals(active.optString("source"))&&token.equals(active.optString("token")))
+            ||emergencyArchive().has(emergencyConnectionKey(source,token));
+    }
+    /** Emergency retries reuse one durable ID and the original connection, including after service restart. */
+    static CommandRequest pendingEmergency() throws Exception {
+        synchronized(STATE_READ_LOCK){
+            String saved=prefs().getString("ec_emergency_request","");
+            if(!saved.isEmpty()){
+                JSONObject value=new JSONObject(saved);
+                return new CommandRequest("emergency",value.getString("source"),value.getString("token"),value.getJSONObject("payload"),commandGeneration,true);
+            }
+            // Older builds persisted only a boolean. Its destination and identity
+            // are unknowable, so keep the latch and require a new explicit tap.
+            throw new IOException("Аварийная блокировка сохранена; нажмите EMERGENCY для отправки текущему Bridge");
+        }
+    }
+    static CommandRequest beginEmergency() throws Exception {
+        synchronized(STATE_READ_LOCK){
+            JSONObject archive=emergencyArchive(),active=new JSONObject(prefs().getString("ec_emergency_request","{}"));
+            String source=base(),token=prefs().getString("ec_token","");
+            if(prefs().getBoolean("ec_emergency_uncertain",false)){
+                // Replacing an unacknowledged ID would leave an older packet free
+                // to take effect after a later reset. Resolve that same ID first.
+                if(source.equals(active.optString("source"))&&token.equals(active.optString("token"))){++commandGeneration;return pendingEmergency();}
+                archive.put(emergencyConnectionKey(active.getString("source"),active.getString("token")),active);
+            }
+            JSONObject prior=archive.optJSONObject(emergencyConnectionKey(source,token));
+            if(prior!=null){
+                ++commandGeneration;
+                if(!prefs().edit().putString("ec_emergency_archive",archive.toString()).putString("ec_emergency_request",prior.toString())
+                        .putBoolean("ec_emergency_pending",true).putBoolean("ec_emergency_uncertain",true).putBoolean("v108_emergency_latched",true)
+                        .putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).commit())throw new IOException("Не удалось восстановить аварийную команду");
+                return pendingEmergency();
+            }
+            CommandRequest prepared=prepareCommand("emergency",new JSONObject());
+            CommandRequest request=new CommandRequest(prepared.command,prepared.source,prepared.token,new JSONObject(prepared.payload),prepared.generation,true);
+            JSONObject value=new JSONObject().put("source",request.source).put("token",request.token).put("payload",new JSONObject(request.payload));
+            if(!prefs().edit().putString("ec_emergency_request",value.toString()).putString("ec_emergency_archive",archive.toString()).putBoolean("ec_emergency_pending",true)
+                    .putBoolean("ec_emergency_uncertain",false).putBoolean("v108_emergency_latched",true).putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).commit())
+                throw new IOException("Не удалось сохранить аварийную команду");
+            return request;
+        }
     }
     public static String accountMode(){
         String target=prefs().getString("target_trade_mode","DEMO").toUpperCase(Locale.US);
@@ -195,6 +346,7 @@ public final class EventClient {
             if(remote.optBoolean(key)!=desired.optBoolean(key))return false;
         return true;
     }
+    static boolean selectionMatches(JSONObject desired){try{return configMatches(desired,config());}catch(Exception e){return false;}}
     public static boolean hasProfileDraft(){return prefs().contains("ec_profile_draft");}
     /** Called only from an actual selector change; a poll may never create this draft. */
     public static JSONObject rememberProfileSelection(String symbol,int timeframe,int mode,int risk) throws Exception {
@@ -226,26 +378,37 @@ public final class EventClient {
         if(state.optJSONObject("campaign")!=null||state.optJSONObject("pending_config")!=null||state.optBoolean("auto",false)||state.optBoolean("exit_pending",false))return false;
         return !configMatches(state.optJSONObject("config"),config());
     }
-    public static void configure() throws Exception { configure(false,null); }
+    public static void configure() throws Exception { configure(false,null,newReadRequest()); }
+    static void configure(ReadRequest read) throws Exception {configure(false,null,read);}
+    static void configure(ReadRequest read,JSONObject desired) throws Exception {configure(false,new JSONObject(desired.toString()),read);}
     public static void configureUserSelection() throws Exception { configureUserSelection(config()); }
-    public static void configureUserSelection(JSONObject desired) throws Exception { configure(true,new JSONObject(desired.toString())); }
-    private static void configure(boolean explicit,JSONObject selection) throws Exception {
-        JSONObject desired=explicit?selection:config();
-        ReadRequest read=newReadRequest();startRead(read);
+    public static void configureUserSelection(JSONObject desired) throws Exception { configureUserSelection(newReadRequest(),desired); }
+    static void configureUserSelection(ReadRequest read,JSONObject desired) throws Exception {configure(true,new JSONObject(desired.toString()),read);}
+    private static void configure(boolean explicit,JSONObject selection,ReadRequest read) throws Exception {
+        JSONObject desired=selection==null?config():selection;
+        requireCurrentSelection(read,selection);startRead(read);
         JSONObject current=readHttp(read,"/ec/state");
         if(!PROTOCOL.equals(current.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
+        if(read.profileTransition&&read.profileId.isEmpty()){
+            publishSnapshot(read,current);read.profileId=current.optString("profile_id","");read.profileTransition=false;
+        }
         if(!explicit&&(hasProfileDraft()||current.optJSONObject("campaign")!=null||current.optJSONObject("pending_config")!=null||current.optBoolean("auto",false))){
             publishSnapshot(read,current);return;
         }
-        synchronized(STATE_READ_LOCK){requireSameSource(read);if(read.sequence<lastResetRead)return;}
+        synchronized(STATE_READ_LOCK){requireSameSource(read);if(read.sequence<lastResetRead)return;requireCurrentSelection(read,selection);}
         JSONObject pending=current.optJSONObject("pending_config");
         if(configMatches(pending==null?current.optJSONObject("config"):pending,desired)){
             finishProfileSelection(read,explicit,desired,current,null);return;
         }
         JSONObject a=current.optJSONObject("account");
         if(a!=null&&!desired.optString("account_mode").equals(a.optString("type")))throw new IOException("Выбран "+desired.optString("account_mode")+", фактический MT5: "+a.optString("type")+". Новые входы остановлены; переключите счёт MT5 отдельно.");
-        JSONObject result=command("configure",new JSONObject().put("config",desired).put("allow_deferred",true)
-            .put("preserve_auto",explicit).put("accept_pending_profile",explicit).put("profile_id",read.profileId));
+        final CommandRequest request;
+        synchronized(STATE_READ_LOCK){
+            requireCurrentSelection(read,selection);
+            request=prepareCommand("configure",new JSONObject().put("config",desired).put("allow_deferred",true)
+                .put("preserve_auto",explicit).put("accept_pending_profile",explicit).put("profile_id",read.profileId));
+        }
+        JSONObject result=sendCommand(request);
         requireSameSource(read);
         ReadRequest confirmation=new ReadRequest(read.source,read.token,read.sequence);
         confirmation.profileId=result.optString("profile_id",read.profileId);confirmation.profileTransition=explicit;
@@ -257,6 +420,7 @@ public final class EventClient {
         synchronized(STATE_READ_LOCK){
             requireActiveRead();requireSameSource(read);if(read.sequence<lastPublishedRead)return;
             JSONObject draft=new JSONObject(prefs().getString("ec_profile_draft","{}"));
+            if(explicit&&hasProfileDraft()&&!configMatches(draft,desired))return;
             JSONObject applied=state.optJSONObject("pending_config");if(applied==null)applied=state.optJSONObject("config");
             if(explicit&&configMatches(draft,desired)&&configMatches(applied,desired))prefs().edit().remove("ec_profile_draft").apply();
             publishSnapshot(read,state);
@@ -269,9 +433,6 @@ public final class EventClient {
     }
     public static JSONObject poll() throws Exception {
         prefs().edit().putLong("state_last_attempt_ms",System.currentTimeMillis()).apply();
-        if(prefs().getBoolean("ec_mode_pause_pending",false)){
-            command("pause",new JSONObject());prefs().edit().putBoolean("ec_mode_pause_pending",false).apply();
-        }
         ReadRequest read=newReadRequest();
         try{
             startRead(read);JSONObject s=readHttp(read,"/ec/state");
@@ -289,7 +450,7 @@ public final class EventClient {
         JSONObject value=http("GET",read.source+scoped,null,read.source,read.token);
         requireActiveRead();requireSameSource(read);return value;
     }
-    /** Foreground view refresh: deliberately excludes poll()'s pending command path. */
+    /** Foreground view refresh, with no trading side effects. */
     static JSONObject readState(ReadRequest read) throws Exception {
         startRead(read);JSONObject snapshot=readHttp(read,"/ec/state");
         if(!PROTOCOL.equals(snapshot.optString("protocol")))throw new IOException("Нужен Bridge EventCore EC1; старый Bridge не подходит");
@@ -309,12 +470,13 @@ public final class EventClient {
             requireActiveRead();requireSameSource(read);errors.put(label+": "+String.valueOf(e.getMessage()));return null;
         }
     }
-    /** Explicit read-only refresh. Unlike poll(), it never sends a pending PAUSE/configuration. */
+    /** Explicit read-only refresh; neither this path nor polling sends control commands. */
     public static JSONObject refreshAll() throws Exception {
         return refreshAll(newReadRequest());
     }
     static JSONObject refreshAll(ReadRequest read) throws Exception {return refreshSnapshot(read,true);}
     public static JSONObject refreshFinancial() throws Exception {return refreshSnapshot(newReadRequest(),false);}
+    static JSONObject refreshFinancial(ReadRequest read) throws Exception {return refreshSnapshot(read,false);}
     private static JSONObject refreshSnapshot(ReadRequest read,boolean full) throws Exception {
             startRead(read);
             prefs().edit().putLong("state_last_attempt_ms",System.currentTimeMillis()).apply();
@@ -467,7 +629,8 @@ public final class EventClient {
         if(positions!=null)for(int i=0;i<positions.length();i++){JSONObject x=positions.getJSONObject(i);floating+=x.optDouble("profit")+x.optDouble("swap");}
         String risk=rs.optBoolean("allowed",false)?"RISK OK":"RISK BLOCK: "+rs.optJSONArray("blocks");
         SharedPreferences.Editor e=p.edit().putString("ec_state",s.toString()).putLong("ec_received_elapsed",SystemClock.elapsedRealtime())
-            .putBoolean("server_verified",connected).putBoolean("mt5_connected_snapshot",connected)
+            .putString("ec_state_source",base())
+            .putBoolean("server_verified",true).putBoolean("mt5_connected_snapshot",connected)
             .putBoolean("auto_trading",auto).putBoolean("auto_user_enabled",auto).putBoolean("trading_paused",s.optBoolean("paused",true))
             .putString("bridge_version_snapshot",VERSION).putBoolean("bridge_version_match_snapshot",true).putBoolean("bridge_real_enabled_snapshot",s.optBoolean("real_armed",false))
             .putString("mt5_account_type_snapshot",a.optString("type","UNKNOWN")).putString("mt5_account_key_snapshot",a.optString("key",""))

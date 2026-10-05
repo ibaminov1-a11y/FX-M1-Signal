@@ -58,6 +58,8 @@ class ProfileBroker:
 class Portfolio:
     def __init__(self,broker,store,clock=time.time):
         self.broker=broker;self.store=store;self.clock=clock;self.lock=threading.RLock()
+        self._all_positions=[];self._positions_time=0.;self._positions_error='Позиции MT5 ещё не получены'
+        self._positions_account_key=''
         self.engines={};self.meta={};self._view=contextvars.ContextVar('r7_profile_view',default=None)
         saved=store.load('r7_profiles')
         if saved:
@@ -93,17 +95,38 @@ class Portfolio:
         return min(account['equity'],account['balance'])*pct/100
     def snapshot(self):
         with self.lock:
-            s=self.engines[self.profile_id].snapshot();s['profile_id']=self.profile_id
-            s.setdefault('capabilities',{})['profile_registry']=True
-            s['profiles']=[dict(profile_id=k,symbol=self.meta[k]['symbol'],config=asdict(e.config),auto=e.auto,
-                paused=e.paused,campaign=copy.deepcopy(e.campaign),execution=e.execution) for k,e in self.engines.items()]
-            if s.get('account'):s['account_risk_budget']=self.account_budget(s['account'])
-            s['all_positions']=self.broker.positions()
-            return s
+            return self._snapshot(self.profile_id)
+    def _snapshot(self,ident):
+        s=self.engines[ident].snapshot();s['profile_id']=ident
+        s.setdefault('capabilities',{})['profile_registry']=True
+        s['profiles']=[dict(profile_id=k,symbol=self.meta[k]['symbol'],config=asdict(e.config),auto=e.auto,
+            paused=e.paused,campaign=copy.deepcopy(e.campaign),execution=e.execution) for k,e in self.engines.items()]
+        if s.get('account'):s['account_risk_budget']=self.account_budget(s['account'])
+        same_account=bool(self._positions_account_key and self._positions_account_key==s.get('account',{}).get('key'))
+        s['all_positions']=copy.deepcopy(self._all_positions) if same_account else []
+        s['positions_age']=max(0.,self.clock()-self._positions_time)
+        s['positions_ok']=same_account and not self._positions_error and s['positions_age']<10
+        s['positions_error']=self._positions_error if same_account else 'Позиции текущего счёта ещё не подтверждены'
+        s['foreign_positions']=sum(p.get('magic')!=MAGIC for p in s['all_positions'])
+        if not s['positions_ok']:s['account_age']=max(10.,s['account_age'])
+        return s
+    def view_snapshots(self):
+        with self.lock:return [self._snapshot(ident) for ident in self.engines]
+    def _refresh_positions(self):
+        # Only the serialized runtime calls MT5. HTTP snapshots never perform I/O.
+        try:
+            account_key=self.broker.account()['key']
+            positions=self.broker.positions()
+            if self.broker.account()['key']!=account_key:raise Blocked('Счёт изменён во время получения позиций')
+            self._all_positions=copy.deepcopy(positions);self._positions_time=self.clock();self._positions_error=''
+            self._positions_account_key=account_key
+        except Exception as exc:self._positions_error=str(exc)
     def refresh_view(self):
         with self.lock:
             result=self.engines[self.profile_id].refresh_view()
-            result.update({k:v for k,v in self.snapshot().items() if k in ('profiles','profile_id','capabilities','all_positions','account_risk_budget')})
+            self._refresh_positions()
+            result.update({k:v for k,v in self.snapshot().items() if k in ('profiles','profile_id','capabilities','all_positions','account_risk_budget',
+                'positions_ok','positions_age','positions_error','foreign_positions','account_age')})
             return result
     def step(self):
         with self.lock:
@@ -112,6 +135,7 @@ class Portfolio:
                 except Exception:
                     e.auto=False;e.paused=True;e.recovery=True;e.save()
                     raise
+            self._refresh_positions()
             return self.snapshot()
     def command(self,cmd,data=None):
         data=dict(data or {})

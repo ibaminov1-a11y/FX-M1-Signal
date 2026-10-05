@@ -291,20 +291,50 @@ public final class ScenarioUi {
         }catch(Exception e){a.runOnUiThread(()->error(a,e));}});
     }
     public static void enlarge(Activity a){open(a,null);}
+    private static void chartMetadata(JSONObject state,JSONObject forecast)throws JSONException{
+        JSONObject config=state.optJSONObject("config"),instrument=state.optJSONObject("instrument");
+        String symbol=config==null?state.optString("symbol"):config.optString("symbol");
+        String frame=config==null?state.optString("timeframe",forecast.optString("timeframe")):config.optString("timeframe","M5");
+        boolean mismatch=(!frame.isEmpty()&&!forecast.optString("timeframe").isEmpty()&&!frame.equals(forecast.optString("timeframe")))
+            ||(!symbol.isEmpty()&&!forecast.optString("symbol").isEmpty()&&!symbolKey(symbol).equals(symbolKey(forecast.optString("symbol"))));
+        if(mismatch){
+            forecast.put("available",false).put("chart_forecast_rejected",true)
+                .put("chart_reason","Гипотезы не соответствуют выбранному инструменту или периоду; показаны только свечи MT5.")
+                .put("scenarios",new JSONArray()).put("timeframe",frame);
+            for(String key:new String[]{"price_forecast","entry_levels","active_scenario","live_price","support","resistance","data_asof"})forecast.remove(key);
+        }
+        if(!symbol.isEmpty())forecast.put("chart_symbol",symbolKey(symbol));
+        if(!frame.isEmpty()){
+            forecast.put("chart_timeframe",frame);
+            if(forecast.optString("timeframe").isEmpty())forecast.put("timeframe",frame);
+        }
+        if(instrument!=null){
+            if(instrument.has("digits"))forecast.put("chart_digits",instrument.optInt("digits",5));
+            forecast.put("chart_broker_symbol",instrument.optString("name",symbol));
+        }
+        if(!state.optString("market_scope").isEmpty())forecast.put("chart_scope",state.optString("market_scope"));
+        if(config!=null&&!config.optString("mode").isEmpty())forecast.put("chart_mode",config.optString("mode"));
+        if(state.has("client_offline"))forecast.put("client_offline",state.optBoolean("client_offline"));
+        if(state.optDouble("snapshot_age",0)>10||(state.has("quote_fresh")&&!state.optBoolean("quote_fresh")))forecast.put("stale",true);
+    }
     public static void populate(SparklineView chart,JSONObject s){
         JSONObject d=s.optJSONObject("decision"),cfg=s.optJSONObject("config");chart.setMarketIdentity(marketIdentity(s));
         chart.setHistoryContext(s.optString("market_scope"),cfg==null?s.optString("timeframe","M5"):cfg.optString("timeframe","M5"),s.optString("market_history_generation"));
         JSONObject raw=rawChart(s);
         if(raw!=null){
             boolean matches=sameChartMarket(s,raw);JSONObject display=new JSONObject();
-            try{display.put("chart_read_only",true).put("chart_status",raw.optString("status"))
+            try{chartMetadata(s,display);display.put("chart_read_only",true).put("chart_status",raw.optString("status"))
                 .put("chart_reason",matches?raw.optString("reason"):"Свечи не соответствуют выбранному инструменту, счёту или периоду; ожидаем данные MT5.")
                 .put("chart_offset_minutes",raw.optInt("offset_minutes",raw.optInt("chart_offset_minutes",raw.optInt("clock_offset_minutes",0))))
                 .put("client_offline",s.optBoolean("client_offline"));}catch(JSONException ignored){}
             chart.setMarket(matches?raw.optJSONArray("bars"):new JSONArray(),null,null,null,"CHART_ONLY",
                 matches?raw.optJSONObject("live_bar"):null,null,display);
-        }else chart.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
-                d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
+        }else{
+            JSONObject forecast=new JSONObject();
+            try{JSONObject supplied=s.optJSONObject("forecast");forecast=new JSONObject(supplied==null?"{}":supplied.toString());chartMetadata(s,forecast);}catch(JSONException ignored){}
+            chart.setMarket(s.optJSONArray("bars"),d==null?null:d.optJSONArray("levels"),s.optJSONArray("positions"),
+                d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),forecast);
+        }
         updateControls(chart);
     }
     private static String chartTitle(JSONObject s){

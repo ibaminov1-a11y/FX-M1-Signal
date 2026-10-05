@@ -14,11 +14,18 @@ final class PriceForecastPlot {
     private PriceForecastPlot(){}
 
     static JSONObject visible(JSONObject f){
-        if(f==null||f.optBoolean("history_only")||f.optBoolean("chart_read_only")
+        if(f==null||!f.optBoolean("available",true)||f.optBoolean("history_only")||f.optBoolean("chart_read_only")
             ||!f.optBoolean("show_price_forecast",true))return null;
         JSONObject price=f.optJSONObject("price_forecast");
         if(price==null||!price.optBoolean("available"))return null;
         if(!f.optString("timeframe").equals(price.optString("timeframe")))return null;
+        if(f.has("chart_timeframe")&&!f.optString("chart_timeframe").equals(price.optString("timeframe")))return null;
+        if(f.has("chart_symbol")&&!symbol(f.optString("chart_symbol")).equals(symbol(price.optString("symbol"))))return null;
+        if(!f.optString("chart_scope").isEmpty()&&!f.optString("chart_mode").isEmpty()){
+            String expected=f.optString("chart_scope")+"|"+price.optString("symbol")+"|"+f.optString("chart_mode")
+                +"|"+price.optString("timeframe")+"|"+price.optString("model");
+            if(!expected.equals(price.optString("scope")))return null;
+        }
         double issued=price.optDouble("issued_at",Double.NaN),origin=price.optDouble("origin",Double.NaN);
         JSONArray points=price.optJSONArray("projection");
         if(!Double.isFinite(issued)||issued<=0||!Double.isFinite(origin)||origin<=0||points==null||points.length()==0)return null;
@@ -43,12 +50,12 @@ final class PriceForecastPlot {
             return raw!=null&&!f.optBoolean("history_only")&&!f.optBoolean("chart_read_only")
                 ?" Ценовой прогноз недоступен: "+raw.optString("reason","нет пригодных точек выбранного периода")+".":"";
         }
-        boolean old=f.optBoolean("stale")||f.optBoolean("client_offline");
+        boolean old=f.optBoolean("stale")||f.optBoolean("client_offline")||f.optBoolean("archive");
         StringBuilder s=new StringBuilder(old?" СОХРАНЁННЫЙ ЦЕНОВОЙ ПРОГНОЗ; нет свежего расчёта. ":" ЦЕНОВОЙ ПРОГНОЗ: ");
         JSONArray points=price.optJSONArray("projection");
         for(int i=0;i<points.length();i++){
             JSONObject pt=points.optJSONObject(i);if(i>0)s.append("; ");
-            s.append(pt.optInt("minutes")).append(" мин: ").append(String.format(Locale.US,"%.5f",pt.optDouble("center")));
+            s.append(pt.optInt("minutes")).append(" мин от расчёта: ").append(SparklineView.priceText(f,pt.optDouble("center")));
         }
         s.append(". Исследовательская модель. Полоса исторических примеров не является гарантией или вероятностью. Не разрешает вход.");
         return s.toString();
@@ -60,7 +67,7 @@ final class PriceForecastPlot {
         double issued=price.optDouble("issued_at"),now=f.optDouble("data_asof",issued),
             end=points.optJSONObject(points.length()-1).optDouble("time");
         if(end<=now)return;
-        boolean old=f.optBoolean("stale")||f.optBoolean("client_offline");int color=old?MUTED:BLUE;
+        boolean old=f.optBoolean("stale")||f.optBoolean("client_offline")||f.optBoolean("archive");int color=old?MUTED:BLUE;
         Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);Path band=new Path(),center=new Path();
         float startX=x(issued,now,end,area),startY=y(price.optDouble("origin"),low,high,area);
         band.moveTo(startX,startY);center.moveTo(startX,startY);
@@ -78,13 +85,16 @@ final class PriceForecastPlot {
         for(int i=0;i<points.length();i++){JSONObject point=points.optJSONObject(i);
             canvas.drawCircle(x(point.optDouble("time"),now,end,area),y(point.optDouble("center"),low,high,area),2.3f*density,p);}
         canvas.restoreToCount(saved);
-        p.setTextSize(8*density);p.setColor(color);float previousRight=area.left;
-        for(int i=0;i<points.length();i++){
+        // Reserve the furthest horizon first; never force overlapping or expired tick labels.
+        p.setTextSize(8*density);p.setColor(color);float nextLeft=area.right+5*density;
+        for(int i=points.length()-1;i>=0;i--){
             JSONObject point=points.optJSONObject(i);String label="+"+point.optInt("minutes")+" мин";
+            if(point.optDouble("time")<=now)continue;
             float width=p.measureText(label),xx=Math.max(area.left,Math.min(area.right-width,x(point.optDouble("time"),now,end,area)-width/2));
-            if(xx>=previousRight||i==points.length()-1){canvas.drawText(label,xx,area.bottom+12*density,p);previousRight=xx+width+5*density;}
+            if(width<=area.width()&&xx+width+5*density<=nextLeft){canvas.drawText(label,xx,area.bottom+12*density,p);nextLeft=xx;}
         }
     }
+    private static String symbol(String value){return value.replace("/","").trim().toUpperCase(Locale.ROOT);}
     private static float x(double t,double now,double end,RectF a){return a.left+(float)((t-now)/(end-now))*a.width();}
     private static float y(double price,double low,double high,RectF a){return a.top+(float)((high-price)/(high-low))*a.height();}
 }

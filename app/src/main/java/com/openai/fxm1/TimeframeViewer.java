@@ -29,7 +29,8 @@ final class TimeframeViewer {
     }
     TimeframeViewer(Activity activity){this.activity=activity;}
     private static String frame(JSONObject s){JSONObject c=s.optJSONObject("config");return c==null?"M5":c.optString("timeframe","M5");}
-    private static String symbol(JSONObject s){JSONObject c=s.optJSONObject("config");return c==null?"":c.optString("symbol").replace("/","").toUpperCase(Locale.ROOT);}
+    private static String symbolKey(String value){return value.replace("/","").trim().toUpperCase(Locale.ROOT);}
+    private static String symbol(JSONObject s){JSONObject c=s.optJSONObject("config");return c==null?"":symbolKey(c.optString("symbol"));}
     private static String account(JSONObject s){JSONObject a=s.optJSONObject("account");return a==null?"":a.optString("key");}
     private static String mode(JSONObject s){JSONObject c=s.optJSONObject("config");return c==null?"":c.optString("mode")+"|"+c.optString("account_mode");}
     private static String context(JSONObject s){return EventClient.base()+"|"+EventClient.prefs().getString("ec_token","")+"|"+account(s)+"|"+symbol(s)+"|"+mode(s)+"|"+frame(s)+"|"+s.optString("market_scope")+"|"+s.optString("market_history_generation");}
@@ -86,7 +87,7 @@ final class TimeframeViewer {
     private boolean profileWaiting(){
         JSONObject cfg=trade.optJSONObject("config");
         return cfg!=null&&trade.optJSONObject("campaign")==null&&trade.optJSONObject("pending_config")==null
-            &&(!cfg.optString("symbol").equals(EventClient.prefs().getString("selected_symbol","EUR/USD"))||!frame(trade).equals(EventClient.tf()));
+            &&(!symbol(trade).equals(symbolKey(EventClient.prefs().getString("selected_symbol","EUR/USD")))||!frame(trade).equals(EventClient.tf()));
     }
     private void fetch(){
         if(!active||closed||inFlight||profileWaiting()||(Timeframes.index(selected)<0&&!selected.equals(frame(trade)))||EventClient.base().isEmpty())return;
@@ -132,8 +133,8 @@ final class TimeframeViewer {
                 if(!selected.equals(frame(trade))&&(!copy.optBoolean("available",true)||(forecast!=null&&!forecast.optBoolean("available",true)))&&forecast!=null)forecast.put("scenarios",new JSONArray());
                 long elapsed=SystemClock.elapsedRealtime()-(selected.equals(frame(trade))?tradeReceived:received.getOrDefault(selected,0L));
                 double asof=forecast==null?0:forecast.optDouble("data_asof",copy.optDouble("analysis_time",0));
-                double age=elapsed/1000.0+Math.max(0,copy.optDouble("server_time",asof)-asof);
-                if(forecast!=null&&(elapsed>10000||age>10))forecast.put("stale",true);
+                double age=elapsed/1000.0+Math.max(0,copy.optDouble("snapshot_age",0))+Math.max(0,copy.optDouble("server_time",asof)-asof);
+                if(forecast!=null&&(age>10||(copy.has("quote_fresh")&&!copy.optBoolean("quote_fresh"))))forecast.put("stale",true);
                 if(!failure.isEmpty()){
                     copy.put("client_offline",true);JSONObject f=copy.optJSONObject("forecast");if(f!=null)f.put("client_offline",true);
                 }
@@ -190,7 +191,8 @@ final class TimeframeViewer {
     private boolean tradeIsStale(){
         JSONObject f=trade.optJSONObject("forecast");
         double asof=f==null?trade.optDouble("analysis_time",0):f.optDouble("data_asof",trade.optDouble("analysis_time",0));
-        return (SystemClock.elapsedRealtime()-tradeReceived)/1000.0+Math.max(0,trade.optDouble("server_time",asof)-asof)>10;
+        return (trade.has("quote_fresh")&&!trade.optBoolean("quote_fresh"))
+            ||(SystemClock.elapsedRealtime()-tradeReceived)/1000.0+Math.max(0,trade.optDouble("snapshot_age",0))+Math.max(0,trade.optDouble("server_time",asof)-asof)>10;
     }
     private String overview(){
         JSONArray rows=trade.optJSONArray("timeframes");

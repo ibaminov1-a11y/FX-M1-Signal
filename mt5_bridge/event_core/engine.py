@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import asdict, fields, replace
 import copy, hashlib, math, threading, time
-from .model import Bar, Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure, validate_bar_history
+from .model import Bar, Config, Decision, Blocked, PROFILES, TF_SECONDS, atr, pivots, number, ordered, live_structure, validate_bar_history, bar_close_time
 from .strategy import Strategy
 from .compute_core import ComputeCore, make_compute
-from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key, exit_evidence
+from .risk import risk_state, plan_order, ledger, summary, quantize, day_start, estimate_roundtrip_fee_per_lot, symbol_key, exit_evidence, realized_net
 from .mt5_adapter import MAGIC
 from .observers import ForecastObservers, CONTEXT, PUBLIC_TIMEFRAMES
 
@@ -178,6 +178,9 @@ class Engine:
     def _refresh(self,now):
         self.broker.connect()
         a=self.broker.account();current_positions=self.broker.positions();current_orders=self.broker.orders()
+        prior_volumes={int(p.get('identifier',p['ticket'])):float(p['volume']) for p in self._owned()}
+        current_volumes={int(p.get('identifier',p['ticket'])):float(p['volume']) for p in current_positions if p['magic']==MAGIC}
+        volume_decreased=any(current_volumes.get(pid,0)<volume-1e-8 for pid,volume in prior_volumes.items())
         self.account=a;self.account_time=now;self.positions=current_positions;self.orders=current_orders
         if self.account_key and a['key']!=self.account_key:
             # The account snapshot now identifies the newly selected MT5 account.
@@ -193,16 +196,33 @@ class Engine:
             self.auto=False;self.paused=True;self.real_armed=False
             raise Blocked('Поддерживаются USD DEMO/REAL hedging; contest/netting/другая валюта пока запрещены')
         flat_campaign=bool(self.campaign and not self._owned() and not self._owned_orders() and not self.store.pending())
-        history_interval=1.0 if self.exit_pending or flat_campaign else 10.0
-        if not self.history_time or now-self.history_time>=history_interval:
-            try:
-                self.deals=self.broker.history(now)
-                self._campaign_history()
-                self.history_time=now;self.history_ok=True;self.history_error=''
-            except Exception as e:
-                self.history_ok=False;self.history_time=now;self.history_error=str(e)
+        history_interval=1.0 if self.exit_pending or flat_campaign or self._campaign_volume_pending() else 10.0
+        if volume_decreased or not self.history_time or now-self.history_time>=history_interval:
+            self._refresh_history(now)
         self._resolve_fee_profile()
         self._refresh_risk(now)
+
+    def _refresh_history(self,now):
+        try:
+            self.deals=self.broker.history(now)
+            self._campaign_history()
+            self.history_time=now;self.history_ok=True;self.history_error=''
+        except Exception as exc:
+            self.history_ok=False;self.history_time=now;self.history_error=str(exc)
+
+    def _campaign_volume_pending(self):
+        """A current position snapshot is not proof of the money on missing volume."""
+        if not self.campaign:return False
+        ids={int(pid) for pid in self.campaign.get('position_ids',[])}
+        expected={pid:0. for pid in ids};opened=set()
+        for d in self.deals:
+            pid=int(d.get('position_id',0))
+            if pid not in ids or d.get('type') not in (0,1):continue
+            if d.get('entry')==0:
+                expected[pid]+=float(d['volume']);opened.add(pid)
+            elif d.get('entry') in (1,3):expected[pid]-=float(d['volume'])
+        live={int(p.get('identifier',p['ticket'])):float(p['volume']) for p in self._owned()}
+        return bool(ids-opened or any(abs(expected[pid]-live.get(pid,0))>1e-8 for pid in ids))
 
     def _campaign_history(self):
         # Date-range history can miss a close when broker time is ahead of PC time.
@@ -211,12 +231,13 @@ class Engine:
         merged={int(d['ticket']):d for d in self.deals}
         merged.update(self.campaign_history_cache)
         self.reconcile_detail=''
-        if self.campaign and not self._owned() and hasattr(self.broker,'history_position'):
+        if self.campaign and hasattr(self.broker,'history_position'):
+            live={int(p.get('identifier',p['ticket'])):float(p['volume']) for p in self._owned()}
             for pid in self.campaign.get('position_ids',[]):
                 relevant=[d for d in merged.values() if int(d.get('position_id',0))==int(pid)]
                 opened=sum(float(d['volume']) for d in relevant if d.get('entry')==0)
                 closed=sum(float(d['volume']) for d in relevant if d.get('entry') in (1,3))
-                if opened>0 and closed>=opened-1e-8:continue
+                if opened>0 and abs(opened-closed-live.get(int(pid),0))<=1e-8:continue
                 try:
                     rows=self.broker.history_position(int(pid))
                     if rows is None:raise Blocked('MT5 не вернул историю позиции')
@@ -254,13 +275,13 @@ class Engine:
         elif self.paused:blocks.append('PAUSE')
         if self.pending_config:blocks.append('PROFILE_PENDING')
         if self.exit_pending:blocks.append('CLOSING')
-        if self.campaign and not self._owned():blocks.append('RECONCILING')
+        if self.campaign and (not self._owned() or self._campaign_volume_pending()):blocks.append('RECONCILING')
         if not self.history_ok or self.clock()-self.history_time>15:blocks.append('HISTORY_WAIT')
         if not self.risk.get('allowed',False):blocks.append('RISK_WAIT')
         if self.market_errors or not self.quote_ready:blocks.append('MARKET_WAIT')
         labels={'EMERGENCY':'аварийная блокировка','RECOVERY':'сверка неизвестного исполнения',
             'AUTO_OFF':'AUTO выключен','PAUSE':'пауза','PROFILE_PENDING':'новый профиль ждёт завершения прежней кампании',
-            'CLOSING':'ждём подтверждения закрытия MT5','RECONCILING':'позиций нет; сверяем закрытый объём в истории MT5',
+            'CLOSING':'ждём подтверждения закрытия MT5','RECONCILING':'сверяем объём кампании и закрытые сделки в истории MT5',
             'HISTORY_WAIT':'ожидаем историю MT5','RISK_WAIT':'проверка риска не разрешает вход',
             'MARKET_WAIT':'ожидаем свежие рыночные данные'}
         return dict(allowed=not blocks,blocks=blocks,
@@ -285,8 +306,7 @@ class Engine:
             self.execution='Есть позиции EC1 без сохранённой кампании: нужна ручная сверка'
         if self.campaign and self.history_ok:
             ids=set(self.campaign.get('position_ids',[]))
-            self.campaign['realized']=sum(d['profit']+d.get('swap',0)+d.get('commission',0)+d.get('fee',0)
-                for d in self.deals if d.get('position_id') in ids and d.get('entry') in (1,3))
+            self.campaign['realized']=realized_net(d for d in self.deals if d.get('position_id') in ids)
             if not owned and not self._owned_orders() and not self.store.pending():
                 closed_ids={row['position_id'] for row in ledger(self.deals,self.positions)}
                 if not ids.issubset(closed_ids):
@@ -432,6 +452,8 @@ class Engine:
                     live=self.broker.current_bar(symbol,live_tf)
                     if live.time>now+LIVE_M5_CLOCK_SKEW_SEC:
                         raise Blocked('MT5 вернул текущую '+live_tf+' свечу из будущего')
+                    if self.bars and live.time<=self.bars[-1].time:
+                        raise Blocked('Текущая '+live_tf+' свеча не следует за закрытой историей')
                     self.live_bar=live
                 except Exception as exc:
                     self.live_bar=None
@@ -444,11 +466,11 @@ class Engine:
         ctf=CONTEXT[self.config.timeframe]
         if not self.bars or not self.context:
             self.market_errors.append('Нет полной истории рабочего и старшего таймфреймов')
-        elif ctf!='MN1' and now-self.context[-1].time>TF_SECONDS[ctf]*2.5:
+        elif now-bar_close_time(self.context[-1].time,ctf,self.context[-1].clock_offset_seconds)>TF_SECONDS[ctf]*1.5:
             self.market_errors.append('Контекст старшего таймфрейма устарел')
-        if self.bars and self.config.timeframe!='MN1':
+        if self.bars:
             tf=TF_SECONDS[self.config.timeframe]
-            if now-(self.bars[-1].time+tf)>tf*1.5:
+            if now-bar_close_time(self.bars[-1].time,self.config.timeframe,self.bars[-1].clock_offset_seconds)>tf*1.5:
                 self.market_errors.append('Закрытые свечи MT5 исторические; для входа нужны новые данные')
         if self.market_errors:self._refresh_chart_market(now)
         else:self.chart_market=None
@@ -532,7 +554,8 @@ class Engine:
             self._cancel_reversal('AUTO/профиль/проверка риска больше не разрешают разворот',now);return
         if now>float(pr['expires']):
             self._cancel_reversal('Срок подтверждения разворота истёк',now);return
-        if pr['account_key']!=self.account_key or symbol_key(pr['symbol'])!=symbol_key(self.config.symbol):
+        current_symbol=self.info.get('name',self.config.symbol)
+        if pr['account_key']!=self.account_key or symbol_key(pr['symbol'])!=symbol_key(current_symbol):
             self._cancel_reversal('Счёт или инструмент изменился',now);return
         if decision is None or not self.quote_ready or self.market_errors:
             self._cancel_reversal('Нет свежего подтверждения рынка',now);return
@@ -836,6 +859,14 @@ class Engine:
         if (self._owned_orders() or (not self.campaign and self._owned()) or
             any(p['magic']!=MAGIC for p in self.positions) or any(o['magic']!=MAGIC for o in self.orders)):
             raise Blocked('Экспозиция изменилась перед отправкой')
+        if self.campaign:
+            # A leg can close between the regular history poll and this addition.
+            # Reconcile its money and volume before evaluating net profit or risk.
+            self._refresh_history(now)
+            if not self.history_ok:raise Blocked('История кампании не обновлена: '+self.history_error)
+            self._reconcile()
+            if not self.campaign or self._campaign_volume_pending():
+                raise Blocked('Добавление ждёт сверки объёма кампании в истории MT5')
         self._refresh_risk(now)
         if not self.risk.get('allowed'):raise Blocked('Проверка риска не разрешила отправку')
         q=self.broker.quote(self.info['name']);q.validate(now)

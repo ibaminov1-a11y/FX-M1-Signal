@@ -12,7 +12,8 @@ class TradingBroker(IndependentBroker):
     def __init__(self,clock,side=1):
         super().__init__(clock)
         self.bid=1.106; self.ask=self.bid+.00001
-        for tf in FRAMES:
+        self.frames['M10']=wave(NOW,tf=600)
+        for tf in TF_SECONDS:
             original=self.frames[tf]
             bars=wave(NOW,tf=60,trend=.00006)
             if side<0:bars=[Bar(x.time,2.212-x.open,2.212-x.low,2.212-x.high,2.212-x.close,10) for x in bars]
@@ -38,7 +39,7 @@ class R7RuntimeTests(unittest.TestCase):
         return s
     def test_both_modes_all_native_frames_first_buy_sell(self):
         for mode in ('NORMAL','SCALP'):
-            for tf in FRAMES:
+            for tf in TF_SECONDS:
                 for side in (1,-1):
                     with self.subTest(mode=mode,tf=tf,side=side):
                         self.start(mode,tf,side);s=self.first()
@@ -46,6 +47,24 @@ class R7RuntimeTests(unittest.TestCase):
                         self.assertEqual(self.b.sent[0].side,side)
                         self.assertEqual(self.e.campaign['timeframe'],tf)
                         self.assertEqual(s['forecast']['execution_setup']['timeframe'],tf)
+                        frozen=copy.deepcopy(self.e.campaign['forecast_at_entry'])
+                        initial_stop=self.b.sent[0].stop
+                        self.tick(2.2*self.a)
+                        self.assertEqual(len(self.b.sent),1,'Management must not invent a new entry')
+                        self.assertGreaterEqual((self.b.positions()[0]['sl']-initial_stop)*side,-1e-10)
+                        self.e.save();self.e=Engine(self.b,self.e.store,lambda:self.now[0])
+                        self.assertFalse(self.e.auto,'Restart must preserve management without AUTO consent')
+                        self.tick(2.2*self.a)
+                        self.assertEqual(self.e.campaign['forecast_at_entry'],frozen)
+                        self.e.command('emergency',dict(command_id=str(uuid.uuid4())))
+                        self.tick(2.2*self.a)
+                        self.now[0]+=1.2;state=self.tick(2.2*self.a)
+                        self.assertFalse(self.b.positions())
+                        self.assertIsNone(self.e.campaign,state['execution'])
+                        self.assertEqual(state['all']['count'],1)
+                        self.assertEqual(len(self.b.sent),1)
+                        self.assertFalse(self.e.auto)
+                        self.assertTrue(self.e.emergency)
     def test_no_entry_without_pullback_no_duplicate_and_pause(self):
         for mode in ('NORMAL','SCALP'):
             self.start(mode)

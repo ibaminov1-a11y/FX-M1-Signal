@@ -14,8 +14,15 @@ from test_compute_core import NOW, market
 
 class ComputeReversalIntegrationTests(unittest.TestCase):
     def test_prospective_sell_cross_closes_buy_then_opens_once_after_flat_history(self):
+        self.run_reversal('EURUSD')
+
+    def test_broker_suffix_does_not_cancel_valid_reversal_for_the_selected_alias(self):
+        self.run_reversal('EURUSD.pro')
+
+    def run_reversal(self, broker_symbol):
         now=[NOW]
         broker=FakeBroker(lambda:now[0])
+        broker.symbol=lambda requested: dict(broker.info,name=broker_symbol)
         bars,m1,m15,h1,live,a=market(-1)
         trigger=min(x.low for x in m1[-5:-1])-max(a*.02,.000012)
         broker.bar_data=bars;broker.m1_data=m1;broker.ctx_data=m15;broker.h1_data=h1

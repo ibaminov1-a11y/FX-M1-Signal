@@ -57,7 +57,7 @@ public final class StableLiveTextView extends TextView {
         text.setTag("stable-live-detail-text");
         text.setTextSize(15);
         text.setTextColor(0xfff4f1ff);
-        text.setText("Снимок на момент открытия. LIVE продолжает обновляться на основном экране.\n\n" + snapshot);
+        text.setText("Снимок на момент открытия. Этот текст не обновляется; актуальность данных указана на основном экране.\n\n" + snapshot);
         text.setTextIsSelectable(true);
         int padding = Math.round(16 * getDensity(activity));
         text.setPadding(padding, padding, padding, padding);
