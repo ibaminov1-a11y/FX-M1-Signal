@@ -10,7 +10,7 @@ concurrency:
   group: r732-acceptance-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 env:
-  R732_SOURCE_SHA: 444ebf8287e953fdd659f8fba20fd42290d7f575
+  R732_SOURCE_SHA: 6652a34dbcb1fe5444bae32aabc047b75089f360
 jobs:
   python:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
