@@ -1,0 +1,13 @@
+name: R7.3 pinned native release with original signing
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/r73-pinned-build.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    uses: ibaminov1-a11y/FX-M1-Signal/.github/workflows/r73-release.yml@4b242e0a84d3c191669095a656ce30362a5f93dc
+    with:
+      source_sha: 4b242e0a84d3c191669095a656ce30362a5f93dc
