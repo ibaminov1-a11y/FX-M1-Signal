@@ -1,0 +1,169 @@
+diff --git a/app/src/main/java/com/openai/fxm1/ChartDisplayState.java b/app/src/main/java/com/openai/fxm1/ChartDisplayState.java
+new file mode 100644
+index 0000000..a22cb67
+--- /dev/null
++++ b/app/src/main/java/com/openai/fxm1/ChartDisplayState.java
+@@ -0,0 +1,55 @@
++package com.openai.fxm1;
++
++import android.content.SharedPreferences;
++import java.nio.charset.StandardCharsets;
++import java.security.MessageDigest;
++import java.util.LinkedHashSet;
++import org.json.JSONArray;
++import org.json.JSONObject;
++
++/** UI preferences only. No trading config, tokens, orders or account mutations. */
++final class ChartDisplayState {
++    static final String PATTERNS="PATTERNS", CANDLES="CANDLES";
++    String mode=PATTERNS, selectedPatternId="";
++    final LinkedHashSet<String> selectedScenarioIds=new LinkedHashSet<>();
++    boolean manualViewport=false, followingLive=true;
++    int visibleBars=36;
++    long rightEdgeTime=0;
++
++    static String key(String scope){
++        try {
++            byte[] bytes=MessageDigest.getInstance("SHA-256").digest(scope.getBytes(StandardCharsets.UTF_8));
++            StringBuilder value=new StringBuilder("chart-v1-");
++            for(byte b:bytes)value.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
++            return value.toString();
++        }catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}
++    }
++    static ChartDisplayState load(SharedPreferences prefs,String scopeKey){
++        ChartDisplayState state=new ChartDisplayState();
++        if(scopeKey==null||scopeKey.isEmpty())return state;
++        try {
++            JSONObject data=new JSONObject(prefs.getString(key(scopeKey),"{}"));
++            state.mode=CANDLES.equals(data.optString("mode"))?CANDLES:PATTERNS;
++            state.selectedPatternId=data.optString("selectedPatternId","");
++            JSONArray ids=data.optJSONArray("selectedScenarioIds");
++            if(ids!=null)for(int i=0;i<Math.min(2,ids.length());i++){
++                String id=ids.optString(i,"");if(!id.isEmpty())state.selectedScenarioIds.add(id);
++            }
++            state.manualViewport=data.optBoolean("manualViewport");
++            state.followingLive=data.optBoolean("followingLive",true);
++            state.visibleBars=Math.max(12,Math.min(5000,data.optInt("visibleBars",36)));
++            state.rightEdgeTime=Math.max(0,data.optLong("rightEdgeTime",0));
++        }catch(Exception ignored){/* A malformed UI preference is not trading state. */}
++        return state;
++    }
++    void save(SharedPreferences prefs,String scopeKey){
++        if(scopeKey==null||scopeKey.isEmpty())return;
++        try {
++            JSONObject data=new JSONObject().put("mode",CANDLES.equals(mode)?CANDLES:PATTERNS)
++                .put("selectedPatternId",selectedPatternId).put("selectedScenarioIds",new JSONArray(selectedScenarioIds))
++                .put("manualViewport",manualViewport).put("followingLive",followingLive)
++                .put("visibleBars",visibleBars).put("rightEdgeTime",rightEdgeTime);
++            prefs.edit().putString(key(scopeKey),data.toString()).apply();
++        }catch(org.json.JSONException e){throw new IllegalStateException(e);}
++    }
++}
+ diff --git a/app/src/main/java/com/openai/fxm1/PriceForecastPlot.java b/app/src/main/java/com/openai/fxm1/PriceForecastPlot.java
+index 4032d58..481ab5a 100644
+--- a/app/src/main/java/com/openai/fxm1/PriceForecastPlot.java
++++ b/app/src/main/java/com/openai/fxm1/PriceForecastPlot.java
+@@ -16,3 +16,3 @@ final class PriceForecastPlot {
+     static JSONObject visible(JSONObject f){
+-        if(f==null||!f.optBoolean("available",true)||f.optBoolean("history_only")||f.optBoolean("chart_read_only")
++        if(f==null||f.has("chart_display_mode")||!f.optBoolean("available",true)||f.optBoolean("history_only")||f.optBoolean("chart_read_only")
+             ||!f.optBoolean("show_price_forecast",true))return null;
+diff --git a/app/src/main/java/com/openai/fxm1/ScenarioMapRenderer.java b/app/src/main/java/com/openai/fxm1/ScenarioMapRenderer.java
+index 42bf4e8..60c77d8 100644
+--- a/app/src/main/java/com/openai/fxm1/ScenarioMapRenderer.java
++++ b/app/src/main/java/com/openai/fxm1/ScenarioMapRenderer.java
+@@ -100,3 +100,4 @@ final class ScenarioMapRenderer {
+         unverified=f.optBoolean("chart_read_only");
+-        boolean v3=f.optInt("map_version")>=3,valid=f.optInt("map_version")>=2&&!unverified&&!f.optBoolean("chart_forecast_rejected");
++        boolean plain="CANDLES".equals(f.optString("chart_display_mode"));
++        boolean v3=f.optInt("map_version")>=3,valid=!plain&&f.optInt("map_version")>=2&&!unverified&&!f.optBoolean("chart_forecast_rejected");
+         historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
+@@ -136,10 +137,9 @@ final class ScenarioMapRenderer {
+         if(right<=left)return;
+-        boolean futurePanel=!historical&&!unverified&&valid;
+-        // With a confirmed structural scenario the LIVE split stays near the middle.
+-        // WAIT still keeps a modest blank future area for levels/status, but gives
+-        // most of the width to factual candles instead of an invented projection.
+-        split=futurePanel?left+(right-left)*(routeCount>0?.48f:.72f):right;
++        boolean futurePanel=!historical&&!unverified&&valid&&routeCount>0;
++        // Reserve space only for actual conditional paths. WAIT does not invent
++        // a future panel or compress factual candles to make room for a fan.
++        split=futurePanel?left+(right-left)*.48f:right;
+         if(!unverified){
+         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
+-        else if(routeCount==0)text(valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
++        else if(routeCount==0)text(plain?"СВЕЧИ MT5":valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
+         else for(int i=0;i<routeCount;i++){
+diff --git a/app/src/main/java/com/openai/fxm1/ScenarioUi.java b/app/src/main/java/com/openai/fxm1/ScenarioUi.java
+index 23e304b..9198914 100644
+--- a/app/src/main/java/com/openai/fxm1/ScenarioUi.java
++++ b/app/src/main/java/com/openai/fxm1/ScenarioUi.java
+@@ -33,2 +33,5 @@ public final class ScenarioUi {
+             +s.optString("market_history_generation","UNVERIFIED")+"|"+(cfg==null?s.optString("timeframe","M5"):cfg.optString("timeframe","M5"));
++        if(cfg!=null)identity+="|"+symbolKey(cfg.optString("symbol"))+"|"+cfg.optString("mode","NORMAL");
++        try{java.net.URI address=new java.net.URI(EventClient.base());identity+="|"+new java.net.URI(address.getScheme(),null,address.getHost(),address.getPort(),address.getPath(),null,null).toString();}
++        catch(Exception ignored){identity+="|local";}
+         JSONObject raw=rawChart(s);
+@@ -230,2 +233,3 @@ public final class ScenarioUi {
+         button(a,row,"−",()->chart.zoomHistory(.8));button(a,row,"+",()->chart.zoomHistory(1.25));
++        button(a,row,"СВЕЧИ",()->chart.setChartMode("CANDLES"));
+         button(a,row,"ПРОГНОЗ",()->chart.showPriceForecast(true));
+diff --git a/app/src/main/java/com/openai/fxm1/SparklineView.java b/app/src/main/java/com/openai/fxm1/SparklineView.java
+index 3b70f7d..67cb1b9 100644
+--- a/app/src/main/java/com/openai/fxm1/SparklineView.java
++++ b/app/src/main/java/com/openai/fxm1/SparklineView.java
+@@ -2,2 +2,3 @@ package com.openai.fxm1;
+ import android.content.Context;
++import android.content.SharedPreferences;
+ import android.graphics.*;
+@@ -19,3 +20,5 @@ public class SparklineView extends View {
+     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
+-    private boolean customSelection=false,archive=false,panning=false,showPriceForecast=true;
++    private boolean customSelection=false,archive=false,panning=false;
++    private SharedPreferences chartPrefs;
++    private ChartDisplayState transientDisplay=new ChartDisplayState();
+     private float downX,downY,lastX;
+@@ -26,2 +29,3 @@ public class SparklineView extends View {
+     private void init(Context c){
++        chartPrefs=c.getApplicationContext().getSharedPreferences("fxm1_chart_v1",Context.MODE_PRIVATE);
+         setClickable(true);scale=new ScaleGestureDetector(c,new ScaleGestureDetector.SimpleOnScaleGestureListener(){
+@@ -43,5 +47,12 @@ public class SparklineView extends View {
+     public void setArchive(boolean value){archive=value;updateDescription();invalidate();}
+-    public void showPriceForecast(boolean value){showPriceForecast=value;updateDescription();invalidate();}
++    public void showPriceForecast(boolean ignored){setChartMode(ChartDisplayState.PATTERNS);}
++    private String displayScope(){return archive?"archive|"+identity:identity;}
++    private ChartDisplayState displayState(){return identity.isEmpty()?transientDisplay:ChartDisplayState.load(chartPrefs,displayScope());}
++    private void saveDisplay(ChartDisplayState state){if(identity.isEmpty())transientDisplay=state;else state.save(chartPrefs,displayScope());}
++    public void setChartMode(String value){
++        if(!ChartDisplayState.PATTERNS.equals(value)&&!ChartDisplayState.CANDLES.equals(value))return;
++        ChartDisplayState state=displayState();state.mode=value;saveDisplay(state);updateDescription();invalidate();
++    }
+     public JSONArray scenarioChoices(){JSONArray r=forecast.optJSONArray("scenarios");return r==null?new JSONArray():r;}
+-    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;showPriceForecast=false;updateDescription();invalidate();}
++    public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;ChartDisplayState state=displayState();state.mode=ChartDisplayState.PATTERNS;state.selectedScenarioIds.clear();state.selectedScenarioIds.addAll(ids);saveDisplay(state);updateDescription();invalidate();}
+     private static String key(JSONObject s,int i){return s.optString("scenario_id",s.optString("name",""+i));}
+@@ -49,2 +60,4 @@ public class SparklineView extends View {
+         try{
++            ChartDisplayState state=displayState();
++            if(!state.selectedScenarioIds.isEmpty()){selected.clear();selected.addAll(state.selectedScenarioIds);customSelection=true;}
+             JSONObject f=new JSONObject(forecast.toString());JSONArray all=scenarioChoices(),out=new JSONArray();
+@@ -55,4 +68,4 @@ public class SparklineView extends View {
+             if(customSelection&&out.length()==0&&all.length()>0){customSelection=false;for(int i=0;i<Math.min(2,all.length());i++)out.put(all.get(i));}
+-            f.put("scenarios",out).put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",showPriceForecast);
+-            if(!viewport.live())f.put("scenarios",new JSONArray());
++            f.put("scenarios",out).put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",false).put("chart_display_mode",state.mode);
++            if(!viewport.live()||ChartDisplayState.CANDLES.equals(state.mode))f.put("scenarios",new JSONArray());
+             return f;
+@@ -96,4 +109,5 @@ public class SparklineView extends View {
+         if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
+-        ScenarioMapRenderer.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density,bars,structure,
+-            forming,viewport.live()?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());
++        boolean plain=ChartDisplayState.CANDLES.equals(f.optString("chart_display_mode"));
++        ScenarioMapRenderer.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density,bars,plain?new JSONArray():structure,
++            forming,viewport.live()&&!plain?liveStructure:new JSONArray(),f,viewport.live()?positions:new JSONArray());
+     }
+@@ -111,2 +125,4 @@ public class SparklineView extends View {
+             +(f.optBoolean("client_offline")?". КЭШ · нет связи с Bridge.":". Только просмотр.");
++        if(ChartDisplayState.CANDLES.equals(f.optString("chart_display_mode")))return "Свечи MT5. Геометрия и условные маршруты скрыты."
++            +(f.optBoolean("archive")?" Архивный снимок.":f.optBoolean("client_offline")?" КЭШ · нет связи с Bridge.":f.optBoolean("stale")?" Данные устарели.":" LIVE.");
+         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время этапов условно.");
