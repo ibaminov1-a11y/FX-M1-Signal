@@ -19,15 +19,20 @@ jobs:
           test -f .ci/r732-pending.patch
           mkdir -p import-evidence
           python - <<'PY'
-          import subprocess,json,base64,zlib,hashlib
+          import subprocess,json,base64,zlib,hashlib,re
           from pathlib import Path,PurePosixPath
           raw=Path('.ci/r732-pending.patch').read_bytes()
           assert len(raw)<=2000000,'Transport too large'
           if raw.startswith(b'{'):
               envelope=json.loads(raw)
               assert envelope['encoding']=='zlib-base64-unified-diff'
+              data=envelope.get('data','')
+              if 'parts' in envelope:
+                  assert 0<len(envelope['parts'])<=20
+                  assert all(re.fullmatch(r'\.ci/r732-transfer-[0-9]+\.txt',p) for p in envelope['parts'])
+                  data=''.join(Path(p).read_text().strip() for p in envelope['parts'])
               decoder=zlib.decompressobj()
-              raw=decoder.decompress(base64.b64decode(envelope['data'],validate=True),2000001)
+              raw=decoder.decompress(base64.b64decode(data,validate=True),2000001)
               assert len(raw)<=2000000 and decoder.eof and not decoder.unused_data
               assert hashlib.sha256(raw).hexdigest()==envelope['sha256'],'Transport checksum mismatch'
           raw.decode('utf-8')
@@ -43,13 +48,14 @@ jobs:
               assert p.suffix in ('.java','.py','.xml','.json','.md','.txt','.sh','.cmd','.bat'),name
               assert not any(part in ('event_state','.venv','__pycache__') for part in p.parts),name
           PY
-          git apply --check import-evidence/REVIEWED_SOURCE.patch
-          git apply --index import-evidence/REVIEWED_SOURCE.patch
+          git apply --unidiff-zero --check import-evidence/REVIEWED_SOURCE.patch
+          git apply --unidiff-zero --index import-evidence/REVIEWED_SOURCE.patch
           git diff --cached --check
           git rm .ci/r732-pending.patch
+          git rm --ignore-unmatch '.ci/r732-transfer-*.txt'
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'dev(r732): import reviewed source change for diagnostic verification'
+          git commit -m 'dev(r732): import reviewed source change for native verification'
           test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
           git push origin HEAD:"$GITHUB_REF"
           git rev-parse HEAD > import-evidence/SOURCE_COMMIT.txt
