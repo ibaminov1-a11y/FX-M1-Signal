@@ -14,7 +14,7 @@ env:
 jobs:
   source-python:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,6 +60,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Generate numeric catalogs for native integration tests
+        run: PYTHONPATH=mt5_bridge:tests/event_core python tests/event_core/export_r732_chart_fixtures.py
       - name: Prepare diagnostic runner, no production signing access
         run: |
           mkdir -p evidence/ui
