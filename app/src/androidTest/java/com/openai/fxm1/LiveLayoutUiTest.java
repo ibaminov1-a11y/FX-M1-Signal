@@ -99,6 +99,16 @@ public class LiveLayoutUiTest {
     }
 
     @Test public void cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored()throws Exception {
+        // This test supplies its own successive snapshots. Freeze the independent
+        // viewer and drain earlier financial reads before replacing that source.
+        ui(()->{
+            ScenarioUi.setActive(rule.getActivity(),false);
+            try{Field money=MainActivity.class.getDeclaredField("lastMoneyRefreshMs");money.setAccessible(true);money.setLong(rule.getActivity(),Long.MAX_VALUE);}
+            catch(Exception e){throw new AssertionError(e);}
+        });
+        Field queue=MainActivity.class.getDeclaredField("executor");queue.setAccessible(true);
+        ((java.util.concurrent.ExecutorService)queue.get(rule.getActivity())).submit(()->{}).get(8,java.util.concurrent.TimeUnit.SECONDS);
+        settle();
         EventClient.http("POST",EventClient.base()+"/test/r5-market",new JSONObject().put("family","TRIANGLE"));
         JSONObject state=EventClient.poll();
         EventClient.prefs().edit().putBoolean("server_verified",false).putString("ec_lot_cap","0.37").commit();
@@ -118,7 +128,8 @@ public class LiveLayoutUiTest {
             assertArrayEquals("Actual cache-to-UI refresh must preserve page geometry: "+Arrays.toString(before)+" -> "+Arrays.toString(after),before,after);
             ui(()->{SparklineView chart=rule.getActivity().findViewById(R.id.sparklineView);
                 assertEquals(edge[0],chart.historyRightTime());assertFalse(chart.isFollowingLive());
-                assertTrue(((TextView)rule.getActivity().findViewById(R.id.whyWaitText)).getText().toString().contains(reason));});
+                String rendered=((TextView)rule.getActivity().findViewById(R.id.whyWaitText)).getText().toString();
+                assertTrue("Injected cache reason must remain displayed: "+rendered,rendered.contains(reason));});
             assertEquals("0.37",EventClient.prefs().getString("ec_lot_cap",""));
         }
         shot("r52-live-history-stable");

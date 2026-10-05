@@ -28,13 +28,14 @@ public class OwnRiskOnlyUiTest {
   assertTrue("Settings dialog must open",device.wait(Until.hasObject(By.text("Умные функции")),5000));
   // The old manual round-trip fee field was replaced before R7.2. Inspect the
   // entire dialog, including controls below the visible engine description.
-  UiScrollable dialog=new UiScrollable(new UiSelector().scrollable(true));dialog.scrollToBeginning(20);
+  UiScrollable dialog=new UiScrollable(new UiSelector().scrollable(true));
+  boolean scrollable=dialog.exists();if(scrollable)dialog.scrollToBeginning(20);
   boolean commissionSeen=false,more=false;
   for(int page=0;page<20;page++){
    commissionSeen|=device.hasObject(By.textContains("DEMO-комиссия: автоматически 0"));
    for(String forbidden:new String[]{"База DEMO-проверки","Предел планового риска всей кампании","Дневной лимит убытка","Предел последовательных","Проверить блокировку серии"})
     assertFalse("Forbidden account-wide control: "+forbidden,device.hasObject(By.textContains(forbidden)));
-   more=dialog.scrollForward();if(!more)break;
+   more=scrollable&&dialog.scrollForward();if(!more)break;
   }
   assertFalse("Inspect every settings page",more);
   assertTrue("Current automatic DEMO commission section remains present",commissionSeen);
