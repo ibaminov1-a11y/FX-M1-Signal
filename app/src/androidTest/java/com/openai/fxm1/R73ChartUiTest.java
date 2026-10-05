@@ -1,6 +1,7 @@
 package com.openai.fxm1;
 
 import android.content.Context;
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -18,6 +19,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.Calendar;
 import static org.junit.Assert.*;
 
 /** Real Android Canvas, self-contained market fixtures and exported chart PNGs. No trading calls. */
@@ -31,11 +33,11 @@ public class R73ChartUiTest {
         Label(String text,float x,float y,Paint paint){this.text=text;bounds=new RectF(x,y+paint.ascent(),x+paint.measureText(text),y+paint.descent());}
     }
     private static final class RecordingCanvas extends Canvas {
-        final Bitmap bitmap;final List<Label> labels=new ArrayList<>();int candles;
+        final Bitmap bitmap;final List<Label> labels=new ArrayList<>();int candles;float lastCandleRight;
         RecordingCanvas(int width,int height){this(Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888));}
         private RecordingCanvas(Bitmap bitmap){super(bitmap);this.bitmap=bitmap;drawColor(0xff141125);}
         @Override public void drawText(String text,float x,float y,Paint paint){labels.add(new Label(text,x,y,paint));super.drawText(text,x,y,paint);}
-        @Override public void drawRect(float l,float t,float r,float b,Paint paint){if(paint.getColor()==GREEN||paint.getColor()==RED)candles++;super.drawRect(l,t,r,b,paint);}
+        @Override public void drawRect(float l,float t,float r,float b,Paint paint){if(paint.getColor()==GREEN||paint.getColor()==RED){candles++;lastCandleRight=r;}super.drawRect(l,t,r,b,paint);}
         boolean has(String text){for(Label label:labels)if(label.text.contains(text))return true;return false;}
     }
     private void ui(Runnable work){InstrumentationRegistry.getInstrumentation().runOnMainSync(work);}
@@ -45,7 +47,13 @@ public class R73ChartUiTest {
     }
     private static JSONArray bars(String tf,double origin,double tick)throws Exception{
         JSONArray rows=new JSONArray();long interval=seconds(tf);
-        for(int i=0;i<36;i++)rows.put(bar(T-(36-i)*interval,origin+Math.sin(i*.6)*tick*7,tick));
+        for(int i=0;i<36;i++){
+            long time=T-(36-i)*interval;
+            if("MN1".equals(tf)){Calendar month=Calendar.getInstance(TimeZone.getTimeZone("UTC"));month.setTimeInMillis(T*1000);
+                month.set(Calendar.DAY_OF_MONTH,1);month.set(Calendar.HOUR_OF_DAY,0);month.set(Calendar.MINUTE,0);month.set(Calendar.SECOND,0);
+                month.add(Calendar.MONTH,-(36-i));time=month.getTimeInMillis()/1000;}
+            rows.put(bar(time,origin+Math.sin(i*.6)*tick*7,tick));
+        }
         return rows;
     }
     private static long seconds(String tf){switch(tf){case "M1":return 60;case "M15":return 900;case "M30":return 1800;
@@ -107,6 +115,11 @@ public class R73ChartUiTest {
             result[0]=new RecordingCanvas(720,500);chart.draw(result[0]);});
         try{assertEquals("Do not replace an available real candle with a waiting message",1,result[0].candles);}finally{result[0].bitmap.recycle();}
     }
+    @Test public void waitingCandlesUseAvailableWidthWhenThereIsNoProjection()throws Exception{
+        JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5).put("show_price_forecast",false);
+        RecordingCanvas canvas=draw(f,bars("M5",1.10324,.00001),null,320,220);
+        try{assertTrue("WAIT must not reserve over half the plot for nonexistent future paths",canvas.lastCandleRight>320*.70f);}finally{canvas.bitmap.recycle();}
+    }
     @Test public void unavailableWrongInstrumentAndWrongScopePriceForecastsAreHidden()throws Exception{
         JSONObject f=forecast("BTCUSD","M5",65850.25,.01,2);assertNotNull(PriceForecastPlot.visible(f));
         assertNull("Unavailable parent cannot advertise an available child forecast",PriceForecastPlot.visible(new JSONObject(f.toString()).put("available",false)));
@@ -166,6 +179,68 @@ public class R73ChartUiTest {
             assertEquals(2,chart.displayedForecast().optInt("chart_digits",-1));});
         assertEquals("Chart metadata is presentation-only",before,state.toString());
     }
+    @Test public void mismatchedForecastCannotOverlaySelectedTimeframeCandles()throws Exception{
+        JSONObject f=forecast("EURUSD","M15",1.10324,.00001,5);
+        f.put("scenarios",new JSONArray().put(new JSONObject().put("scenario_id","wrong-frame").put("side",1)));
+        JSONObject state=new JSONObject().put("config",new JSONObject().put("symbol","EUR/USD").put("timeframe","M5").put("mode","NORMAL"))
+            .put("market_scope","account|EURUSD").put("bars",bars("M5",1.10324,.00001)).put("forecast",f);
+        ui(()->{SparklineView chart=new SparklineView(context);ScenarioUi.populate(chart,state);
+            assertEquals("Confirmed M5 candles are still available",T-36*300,chart.oldestTime());
+            assertEquals("M15 hypotheses cannot overlay M5 candles",0,chart.scenarioChoices().length());
+            assertNull(PriceForecastPlot.visible(chart.displayedForecast()));
+            assertTrue("The mismatch is explained",chart.getContentDescription().toString().contains("не соответств"));});
+    }
+    @Test public void topLevelOfflineStatusPropagatesIntoTheCopiedChartForecast()throws Exception{
+        JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5);
+        JSONObject state=new JSONObject().put("config",new JSONObject().put("symbol","EUR/USD").put("timeframe","M5").put("mode","NORMAL"))
+            .put("client_offline",true).put("bars",bars("M5",1.10324,.00001)).put("forecast",f);
+        ui(()->{SparklineView chart=new SparklineView(context);ScenarioUi.populate(chart,state);
+            assertTrue(chart.displayedForecast().optBoolean("client_offline"));
+            assertFalse(chart.getContentDescription().toString().contains("Текущие гипотезы LIVE"));});
+        assertFalse("Server forecast remains untouched",f.optBoolean("client_offline"));
+    }
+    @Test public void connectedBridgeCannotLabelAnOldPublicationOrStaleQuoteLive()throws Exception{
+        for(String cause:new String[]{"snapshot_age","quote_fresh"}){
+            JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5);
+            JSONObject state=new JSONObject().put("config",new JSONObject().put("symbol","EUR/USD").put("timeframe","M5").put("mode","NORMAL"))
+                .put("client_offline",false).put("server_time",T).put("analysis_time",T).put("bars",bars("M5",1.10324,.00001)).put("forecast",f);
+            state.put(cause,"snapshot_age".equals(cause)?12:false);
+            ui(()->{SparklineView chart=new SparklineView(context);ScenarioUi.populate(chart,state);
+                assertTrue(cause+" is stale independently of transport",chart.displayedForecast().optBoolean("stale"));
+                assertFalse("Bridge remains connected",chart.displayedForecast().optBoolean("client_offline"));
+                assertFalse(chart.getContentDescription().toString().contains("Текущие гипотезы LIVE"));});
+            assertFalse("Chart freshness must not mutate the snapshot",f.optBoolean("stale"));
+        }
+    }
+    @Test public void equivalentSymbolFormattingDoesNotBlockTheTimeframeViewer()throws Exception{
+        EventClient.init(context);
+        String selected=EventClient.prefs().getString("selected_symbol","EUR/USD"),frame=EventClient.tf();
+        EventClient.prefs().edit().putString("selected_symbol","EUR/USD").putString("entry_tf_name","M5").commit();
+        JSONObject state=new JSONObject().put("config",new JSONObject().put("symbol","EURUSD").put("timeframe","M5"));
+        final boolean[] waiting={true};
+        try{ui(()->{TimeframeViewer viewer=new TimeframeViewer(new Activity());
+            try{viewer.update(state);java.lang.reflect.Method method=TimeframeViewer.class.getDeclaredMethod("profileWaiting");method.setAccessible(true);
+                waiting[0]=(Boolean)method.invoke(viewer);
+            }catch(Exception error){throw new AssertionError(error);}finally{viewer.close();}});
+            assertFalse("EURUSD and EUR/USD are one selected instrument",waiting[0]);
+        }finally{EventClient.prefs().edit().putString("selected_symbol",selected).putString("entry_tf_name",frame).commit();}
+    }
+    @Test public void brokerEntryAndStopAreVisibleOnlyForTheirActualInstrumentAndLiveView()throws Exception{
+        JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5);
+        JSONArray positions=new JSONArray().put(new JSONObject().put("ticket",731).put("symbol","EURUSD").put("side",1)
+            .put("volume",.02).put("price_open",1.10325).put("sl",1.10310))
+            .put(new JSONObject().put("ticket",999).put("symbol","BTCUSD").put("side",-1).put("volume",.01).put("price_open",1.10330).put("sl",1.10340));
+        for(String view:new String[]{"live","history_only","archive","chart_read_only"}){
+            JSONObject shown=new JSONObject(f.toString()).put(view,true);RecordingCanvas canvas=new RecordingCanvas(360,420);
+            try{ScenarioMapRenderer.draw(canvas,360,420,1,bars("M5",1.10324,.00001),new JSONArray(),null,new JSONArray(),shown,positions);
+                if("live".equals(view)){
+                    assertTrue("Actual broker entry is separate from hypothetical entry",canvas.has("MT5 #731 BUY 1.10325"));
+                    assertTrue("Actual broker SL is labeled",canvas.has("SL MT5 #731 1.10310"));save(canvas,"r73-chart-broker-position");
+                }else assertFalse("A live position must not overlay "+view,canvas.has("#731"));
+                assertFalse("Another instrument's trade must never overlay this chart",canvas.has("#999"));
+            }finally{canvas.bitmap.recycle();}
+        }
+    }
     @Test public void chartTimeAxisUsesUtcAndKeepsFrameIdentityAtEveryScale()throws Exception{
         TimeZone previous=TimeZone.getDefault();TimeZone.setDefault(TimeZone.getTimeZone("GMT+09:00"));
         try{for(String frame:Timeframes.CHOICES){
@@ -174,6 +249,7 @@ public class R73ChartUiTest {
             try{assertTrue("Chart identifies its instrument and selected timeframe",canvas.has("USDJPY")&&canvas.has(frame));
                 boolean timeAxis=false;for(Label label:canvas.labels)if(label.bounds.top>190&&label.text.contains("UTC"))timeAxis=true;
                 assertTrue("Actual candle time range and timezone are visible below plot on "+frame,timeAxis);
+                save(canvas,"r73-chart-frame-"+frame.toLowerCase());
             }finally{canvas.bitmap.recycle();}
         }}finally{TimeZone.setDefault(previous);}
     }
@@ -207,5 +283,15 @@ public class R73ChartUiTest {
             RecordingCanvas canvas=draw(f,bars("M15",1.10324,.00001),null,320,260);
             try{assertTrue(canvas.candles>30);save(canvas,"r73-chart-"+variant);}finally{canvas.bitmap.recycle();}
         }
+        JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5).put("show_price_forecast",false);
+        for(int side:new int[]{1,-1})f.getJSONArray("scenarios").put(new JSONObject().put("scenario_id","fixture-"+side)
+            .put("name",side>0?"PRIMARY":"ALTERNATIVE").put("title",side>0?"Пробой с подтверждением":"Возврат в диапазон")
+            .put("side",side).put("quality_score",side>0?64:58).put("stage","WATCHING").put("event_level",1.10324+side*.00006)
+            .put("invalidation",1.10324-side*.00006).put("path",new JSONArray()
+                .put(new JSONObject().put("price",1.10324).put("phase","LIVE"))
+                .put(new JSONObject().put("price",1.10324+side*.00006).put("phase","PREPARATION").put("label","Проверка"))
+                .put(new JSONObject().put("price",1.10324+side*.00010).put("phase","TRADE").put("label","T1"))));
+        RecordingCanvas canvas=draw(f,bars("M5",1.10324,.00001),null,320,260);
+        try{assertTrue(canvas.candles>30);save(canvas,"r73-chart-two-scenarios");}finally{canvas.bitmap.recycle();}
     }
 }
