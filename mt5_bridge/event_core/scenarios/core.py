@@ -13,6 +13,7 @@ from .structure import detect_patterns, value, FAMILIES, live_geometry_valid
 from .continuation import Continuation
 from .scalp import ScalpMicro
 from ..price_forecast import PriceForecaster
+from .pattern_view import PatternCatalog, display_outcome
 from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
 
 
@@ -28,6 +29,7 @@ class ScenarioCore:
         self.continuation=Continuation()
         self.micro=ScalpMicro(config)
         self.price_forecaster=PriceForecaster()
+        self.pattern_catalog=PatternCatalog()
         # Observation evidence is not an executable order after process restart.
         for s in self.scenarios.values():
             s['entry_ready']=False
@@ -139,7 +141,9 @@ class ScenarioCore:
             requirement=next_requirement(s,q.bid,price_time,a)
             item['required_event']=requirement['code'];item['event_level']=requirement['level']
             item['next_event']=requirement['text'];item['initial_activation']=s.get('initial_activation',s['activation'])
-            item['boundary_asof']=price_time;routes.append(item)
+            item['boundary_asof']=price_time
+            item['display_outcome']=display_outcome(s,bars,self.config.timeframe,price_time)
+            routes.append(item)
         recent=bars[-24:]
         support=min(b.low for b in recent);resistance=max(b.high for b in recent)
         if routes:
@@ -168,9 +172,18 @@ class ScenarioCore:
         if fast:
             forecast['execution_setup']=self.micro.status()
             forecast['addition']=self.micro.status() if campaign else None
-        archive_key=(frame,tuple(sorted((s['scenario_id'],s['status'],s['stage']) for s in self.scenarios.values())))
+        forecast['pattern_chart']=self.pattern_catalog.update(bars,live_bar,
+            symbol=self.config.symbol,timeframe=self.config.timeframe,mode=self.config.mode,
+            scope=market_scope or clock_generation,clock_generation=clock_generation,now=price_time,scenarios=self.scenarios)
+        patterns=forecast['pattern_chart'].get('patterns',[])
+        # Record emergence/confirmation/retirement, not a database copy on each
+        # changing provisional price. Entry snapshots remain frozen separately.
+        geometry_key=tuple((p['view_id'],p['geometry_state']) for p in patterns)
+        archive_key=(frame,tuple(sorted((s['scenario_id'],s['status'],s['stage']) for s in self.scenarios.values())),geometry_key)
         if archive_key!=self.archive_key:
-            frozen=dict(snapshot_id=snapshot,forecast=copy.deepcopy(forecast),bars=[b.__dict__.copy() for b in bars[-120:]],
+            start=min((p['start_at'] for p in patterns),default=bars[-min(120,len(bars))].time)
+            archive_bars=[b for b in bars[-1200:] if b.time>=min(start,bars[-min(120,len(bars))].time)]
+            frozen=dict(snapshot_id=snapshot,forecast=copy.deepcopy(forecast),bars=[b.__dict__.copy() for b in archive_bars],
                         scenario_states=[dict(scenario_id=s['scenario_id'],type=s['type'],status=s['status'],stage=s['stage']) for s in self.scenarios.values()],
                         symbol=self.config.symbol,timeframe=self.config.timeframe,data_asof=now)
             self.snapshots[snapshot]=frozen;self.pending_snapshots.append(frozen);self.archive_key=archive_key

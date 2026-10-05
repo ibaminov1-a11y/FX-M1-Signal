@@ -78,8 +78,8 @@ def _pole(bars,start,a,width,drift):
     return None
 
 
-def _lanes(bars,pts,a,symbol,tf):
-    out=[];now=bar_close_time(bars[-1].time,tf,bars[-1].clock_offset_seconds)
+def _lanes(bars,pts,a,symbol,tf,*,when=None):
+    out=[];now=bar_close_time(bars[-1].time,tf,bars[-1].clock_offset_seconds) if when is None else when
     for count in (6,8,10):
         anchors=pts[-count:]
         hs=[p for p in anchors if p['kind']=='H'];ls=[p for p in anchors if p['kind']=='L']
@@ -170,7 +170,13 @@ def detect_patterns(bars,symbol='EUR/USD',tf='M5',*,require_live_geometry=False)
     now=bar_close_time(bars[-1].time,tf,bars[-1].clock_offset_seconds)
     patterns=_lanes(bars,pts,a,symbol,tf)+_reversals(pts,a,symbol,tf)
     # Detection at bar close only. Old shapes are not fresh trading invitations.
-    patterns=[p for p in patterns if now-p['available_at']<=TF_SECONDS[tf]*8]
+    if tf=='MN1':
+        # Eight monthly observations are not 240 days. Use the same calendar
+        # closes that establish pivot availability (including broker offset).
+        closes=[bar_close_time(b.time,tf,b.clock_offset_seconds) for b in bars]
+        patterns=[p for p in patterns if sum(t>p['available_at'] for t in closes)<=8]
+    else:
+        patterns=[p for p in patterns if now-p['available_at']<=TF_SECONDS[tf]*8]
     for p in patterns:
         p['clock_offset_seconds']=bars[-1].clock_offset_seconds
         p['measurements']['width_now']=value(p['upper'],now)-value(p['lower'],now)

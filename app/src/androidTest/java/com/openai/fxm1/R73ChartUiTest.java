@@ -264,12 +264,16 @@ public class R73ChartUiTest {
     @Test public void historyAnchorSurvivesNewCandlesAndForecastStaysHidden()throws Exception{
         final JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5);final JSONArray rows=bars("M5",1.10324,.00001);
         final JSONArray update=new JSONArray().put(bar(T,1.10327,.00001));
+        f.put("scenarios",new JSONArray().put(new JSONObject().put("scenario_id","history-route").put("side",1)));
         ui(()->{SparklineView chart=new SparklineView(context);chart.setMarketIdentity("account|EURUSD|M5");
             chart.setMarket(rows,null,null,null,"SCENARIO_V2",null,null,f);chart.panHistory(12);long edge=chart.historyRightTime();
             chart.setMarket(update,null,null,null,"SCENARIO_V2",null,null,f);
             assertEquals(edge,chart.historyRightTime());assertFalse(chart.isFollowingLive());
             assertNull(PriceForecastPlot.visible(chart.displayedForecast()));
-            chart.goLive();assertEquals(T,chart.historyRightTime());assertNotNull(PriceForecastPlot.visible(chart.displayedForecast()));});
+            assertEquals(0,chart.displayedForecast().optJSONArray("scenarios").length());
+            chart.goLive();assertEquals(T,chart.historyRightTime());
+            assertEquals("LIVE restores structural routes, not the retired analogue overlay",1,chart.displayedForecast().optJSONArray("scenarios").length());
+            assertNull("LIVE must not re-enable the analogue fan",PriceForecastPlot.visible(chart.displayedForecast()));});
     }
     private void save(RecordingCanvas canvas,String name)throws Exception{
         File output=new File(context.getExternalFilesDir(null),name+".png");
