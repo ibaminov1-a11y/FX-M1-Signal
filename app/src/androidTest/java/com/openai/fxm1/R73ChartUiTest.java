@@ -115,6 +115,27 @@ public class R73ChartUiTest {
             result[0]=new RecordingCanvas(720,500);chart.draw(result[0]);});
         try{assertEquals("Do not replace an available real candle with a waiting message",1,result[0].candles);}finally{result[0].bitmap.recycle();}
     }
+    @Test public void newChartDefaultsToScenarioMapInsteadOfAnalogForecast()throws Exception{
+        final JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5);
+        ui(()->{
+            SparklineView chart=new SparklineView(context);
+            chart.setMarketIdentity("account|EURUSD|M5");
+            chart.setMarket(bars("M5",1.10324,.00001),null,null,null,"SCENARIO_V2",null,null,f);
+            assertFalse("Structural Scenario Map must be the default trading chart",chart.displayedForecast().optBoolean("show_price_forecast"));
+        });
+    }
+    @Test public void waitCannotDrawAnalogFutureEvenWhenAnalogWasRequested()throws Exception{
+        JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5);
+        f.put("scenarios",new JSONArray()).put("show_price_forecast",true);
+        RecordingCanvas canvas=draw(f,bars("M5",1.10324,.00001),null,320,220);
+        try{
+            assertFalse("WAIT must not draw analog horizon labels as a future trajectory",canvas.has("+15 мин"));
+            assertFalse("WAIT must not draw analog horizon labels as a future trajectory",canvas.has("+30 мин"));
+            assertFalse("WAIT must not draw analog horizon labels as a future trajectory",canvas.has("+60 мин"));
+            assertTrue("Without a structural future, real candles keep most of the plot",canvas.lastCandleRight>320*.70f);
+            assertTrue("WAIT state is explicit",canvas.has("WAIT"));
+        }finally{canvas.bitmap.recycle();}
+    }
     @Test public void waitingCandlesUseAvailableWidthWhenThereIsNoProjection()throws Exception{
         JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5).put("show_price_forecast",false);
         RecordingCanvas canvas=draw(f,bars("M5",1.10324,.00001),null,320,220);
