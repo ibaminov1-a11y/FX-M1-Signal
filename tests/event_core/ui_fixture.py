@@ -387,6 +387,9 @@ def r54_refresh_observer():
             if data==r54_refresh_config and data.get('marker'):
                 store.event(str(data['marker']),{'message':str(data['marker'])},time.time())
 
+from r732_ui_fixture import install as install_pattern_fixture
+install_pattern_fixture(app,engine)
+
 # Use normal state endpoint and step actual engine periodically.
 if __name__=='__main__':
     import threading

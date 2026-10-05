@@ -1,21 +1,25 @@
 """Export production catalog outputs for native UI verification; synthetic data only."""
 import argparse,json
-from dataclasses import asdict
+from dataclasses import asdict,replace
 from pathlib import Path
-from event_core.model import atr,bar_close_time
+from event_core.model import atr,bar_close_time,TF_SECONDS
 from event_core.scenarios.pattern_view import PatternCatalog
 from event_core.scenarios.structure import detect_patterns
 from event_core.scenarios.lifecycle import create_scenarios
 from pattern_fixtures_r732 import fixture,live_after,VARIANTS,FRAMES
 
 
-def state_for(family,variant,tf='M5',symbol='EURUSD',forming=False):
+def state_for(family,variant,tf='M5',symbol='EURUSD',forming=False,observed_now=None):
     rows=fixture(family,variant,tf,symbol);catalog=PatternCatalog();result=None
     cuts=range(24,len(rows)) if forming else (len(rows),)
     for n in cuts:
         bars=rows[:n]
         if n<len(rows):live=rows[n];now=bar_close_time(live.time,tf)-.001
         else:live,now=live_after(bars,tf)
+        if observed_now is not None:
+            if tf in ('W1','MN1'):raise ValueError('Live screenshot clock is used only for intraday fixtures')
+            shift=int(observed_now)//TF_SECONDS[tf]*TF_SECONDS[tf]-live.time
+            bars=[replace(b,time=b.time+shift) for b in bars];live=replace(live,time=live.time+shift);now=observed_now
         scenarios=[]
         for p in detect_patterns(bars,symbol,tf,require_live_geometry=True):
             scenarios.extend(create_scenarios(p,bars,atr(bars),live.close,now))
