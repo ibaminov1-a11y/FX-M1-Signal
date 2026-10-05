@@ -75,9 +75,10 @@ class R73InstallerTests(unittest.TestCase):
                          'Running Bridge must not have its installed dependencies replaced')
 
     def test_live_campaign_blocks_before_dependency_mutation(self):
-        with sqlite3.connect(self.target / 'event_state/campaign.sqlite3') as db:
+        with contextlib.closing(sqlite3.connect(self.target / 'event_state/campaign.sqlite3')) as db:
             db.execute('CREATE TABLE state(k TEXT PRIMARY KEY,value TEXT)')
             db.execute('INSERT INTO state VALUES (?, ?)', ('profile:a:engine', json.dumps({'campaign': {'id': 'live'}})))
+            db.commit()
         before = self.colorama.read_bytes()
         with patch.object(updater.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'COLORAMA OK\n')):
             with self.assertRaisesRegex(RuntimeError, 'campaign'):
@@ -135,7 +136,7 @@ class R73InstallerTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0, '{"version":[3,12,1],"bits":64,"platform":"win32"}')
         with patch.object(updater.subprocess, 'run', side_effect=interpreter):
             result = updater.prepare_environment(fresh)
-        self.assertEqual(result, fresh / '.venv/Scripts/python.exe')
+        self.assertTrue(result.samefile(fresh / '.venv/Scripts/python.exe'))
         self.assertTrue(result.is_file())
 
     def test_dependency_payload_rejects_unverified_extra_file(self):
@@ -274,6 +275,21 @@ class R73StartupTests(unittest.TestCase):
             log = (root / 'event_state/bridge-startup.log').read_text(encoding='utf-8')
             self.assertIn('23', log)
             self.assertNotIn('console-only-user-token', log)
+
+
+class R73GateOutputTests(unittest.TestCase):
+    def test_ci_console_can_publish_unicode_results_under_windows_legacy_encoding(self):
+        code = (
+            "import sys;sys.path.insert(0,sys.argv[1]);import windows_r7_gate;"
+            "windows_r7_gate.configure_console();"
+            "print('Windows путь');print('Ошибка окружения',file=sys.stderr)"
+        )
+        result = subprocess.run([sys.executable, '-c', code, str(ROOT / 'tools')],
+                                env=dict(os.environ, PYTHONIOENCODING='cp1252'),
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr.decode('ascii', errors='backslashreplace'))
+        self.assertEqual(result.stdout.decode('utf-8').strip(), 'Windows путь')
+        self.assertEqual(result.stderr.decode('utf-8').strip(), 'Ошибка окружения')
 
 
 @unittest.skipUnless(sys.platform == 'win32', 'Requires native cmd.exe and Windows venv')

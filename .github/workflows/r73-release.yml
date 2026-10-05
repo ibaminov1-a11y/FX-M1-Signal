@@ -1,12 +1,22 @@
 name: R7.3 exact-source verified DEMO release
 on:
-  push:
-    branches: [repair/r7.3-stability-20261005]
+  workflow_call:
+    inputs:
+      source_sha:
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      source_sha:
+        required: true
+        type: string
+env:
+  R73_SOURCE_SHA: ${{ inputs.source_sha }}
+  PYTHONUTF8: "1"
 permissions:
   contents: read
 concurrency:
-  group: r73-${{ github.ref }}-${{ github.sha }}
+  group: r73-${{ github.ref }}-${{ inputs.source_sha }}
   cancel-in-progress: false
 jobs:
   android:
@@ -15,6 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.R73_SOURCE_SHA }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -69,7 +80,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: R73-VERIFY-ANDROID-${{ github.sha }}
+          name: R73-VERIFY-ANDROID-${{ env.R73_SOURCE_SHA }}
           path: artifacts/
           if-no-files-found: error
   windows:
@@ -78,6 +89,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.R73_SOURCE_SHA }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -95,7 +107,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: R73-VERIFY-WINDOWS-${{ github.sha }}
+          name: R73-VERIFY-WINDOWS-${{ env.R73_SOURCE_SHA }}
           path: artifacts/
           if-no-files-found: error
   package:
@@ -107,6 +119,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.R73_SOURCE_SHA }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -128,7 +141,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: needs.android.result == 'success' && needs.windows.result == 'success'
         with:
-          name: FXM1-R7.3-FULL-${{ github.sha }}
+          name: FXM1-R7.3-FULL-${{ env.R73_SOURCE_SHA }}
           path: |
             evidence/FXM1_R7_3_FULL.zip
             evidence/R7_PACKAGE_SHA256.txt
@@ -153,7 +166,7 @@ jobs:
           for name in ('FXM1_R7_3_FULL.zip','R7_PACKAGE_SHA256.txt'):
               p=Path('evidence')/name
               if p.is_file():shutil.copy2(p,export/name)
-          (export/'SOURCE_COMMIT.txt').write_text(os.environ['GITHUB_SHA']+'\n')
+          (export/'SOURCE_COMMIT.txt').write_text(os.environ['R73_SOURCE_SHA']+'\n')
           PY
           git switch --orphan "$EVIDENCE_BRANCH"
           cp -r "$EXPORT_DIR"/. .
@@ -162,5 +175,5 @@ jobs:
           done
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'R7.3 native verification artifacts for ${{ github.sha }}'
+          git commit -m 'R7.3 native verification artifacts for ${{ env.R73_SOURCE_SHA }}'
           git push origin HEAD:"refs/heads/$EVIDENCE_BRANCH"

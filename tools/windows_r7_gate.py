@@ -5,6 +5,12 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 
+def configure_console():
+ # Hosted Windows redirects Python output through legacy cp1252 pipes. The child
+ # already emits UTF-8; make the gate's own stdout/stderr use the same encoding.
+ for stream in (sys.stdout,sys.stderr):
+  if hasattr(stream,'reconfigure'):stream.reconfigure(encoding='utf-8',errors='backslashreplace')
+
 def copy_colorama(pkg):
  deps=pkg/'Dependencies';deps.mkdir()
  dist=md.distribution('colorama')
@@ -20,6 +26,7 @@ def copy_colorama(pkg):
  (pkg/'DEPENDENCY_MANIFEST.json').write_text(json.dumps(manifest),encoding='utf-8')
 
 def main():
+ configure_console()
  assert sys.platform=='win32','This release gate must run on native Windows'
  evidence=ROOT/'evidence';evidence.mkdir(exist_ok=True)
  env=dict(os.environ,R7_NO_PAUSE='1',PYTHONPATH=str(ROOT/'mt5_bridge')+os.pathsep+str(ROOT/'tests/event_core'),PYTHONUTF8='1')
