@@ -1,0 +1,47 @@
+name: R7.3.1 focused Scenario Map API35
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r731-chart-focus.yml']
+permissions:
+  contents: read
+jobs:
+  chart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 641fee69705d32220cddaef954e890fd606c6c49
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: API35 R7.3 graph tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: |
+            gradle --no-daemon --stacktrace :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R73ChartUiTest
+      - name: Collect proof
+        if: always()
+        run: |
+          mkdir -p evidence
+          cp -r app/build/outputs/androidTest-results evidence/ || true
+          adb logcat -d > evidence/logcat.txt 2>&1 || true
+          git rev-parse HEAD > evidence/COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R731-CHART-FOCUS-641fee69705d32220cddaef954e890fd606c6c49
+          path: evidence/
+          if-no-files-found: error
