@@ -35,7 +35,19 @@ public class SparklineView extends View {
     }
     public void setSignal(String ignored){}
     public void setValues(List<Double> ignored){}
-    public void setMarketIdentity(String key){if(!identity.equals(key)){identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();}}
+    public void setMarketIdentity(String key){if(!identity.equals(key)){
+        // Raw broker-clock bars and verified UTC bars are different time domains.
+        // Crossing this safety boundary invalidates a saved historical edge on
+        // both surfaces; ordinary frame switches/recreation still restore it.
+        boolean domainTransition=!identity.isEmpty()&&identity.contains("|CHART|")!=key.contains("|CHART|");
+        if(domainTransition)resetDomainViewport();
+        identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
+        if(domainTransition)resetDomainViewport();
+    }}
+    private void resetDomainViewport(){
+        ChartDisplayState state=displayState();state.followingLive=true;state.rightEdgeTime=0;state.manualViewport=false;
+        saveDisplay(state);viewportPreference="";restoreViewport();
+    }
     public String marketIdentity(){return identity;}
     public void panHistory(int bars){viewport.pan(bars);saveViewport();updateDescription();invalidate();}
     public long historyRightTime(){return viewport.edge();}
@@ -70,9 +82,14 @@ public class SparklineView extends View {
     public void selectPattern(String id){ChartDisplayState state=displayState();state.selectedPatternId=id==null?"":id;state.selectedScenarioIds.clear();
         state.mode=ChartDisplayState.PATTERNS;selected.clear();customSelection=false;saveDisplay(state);updateDescription();invalidate();}
     public boolean fitSelectedPattern(){
-        JSONObject f=displayedForecast();JSONObject p=PatternChartModel.fromForecast(f).selected(f.optString("selected_pattern_id"));
+        // Explicit fit can leave historical browsing, unlike a background tick.
+        // Read the current verified catalog, not the history-only presentation.
+        ChartDisplayState state=displayState();String id=state.selectedPatternId.isEmpty()?forecast.optString("selected_pattern_id"):state.selectedPatternId;
+        JSONObject p=PatternChartModel.fromForecast(forecast).selected(id);
         if(p==null)return false;boolean complete=viewport.oldest()>0&&viewport.oldest()<=p.optLong("start_at");
-        viewport.fitRange(p.optLong("start_at"),p.optLong("end_at"));saveViewport();updateDescription();invalidate();return complete;
+        viewport.follow();long latest=viewport.edge();
+        viewport.fitRange(p.optLong("start_at"),Math.max(p.optLong("end_at"),latest));
+        saveViewport();updateDescription();invalidate();return complete;
     }
     public String patternDetails(){JSONObject f=displayedForecast();PatternChartModel m=PatternChartModel.fromForecast(f);
         String id=f.optString("selected_pattern_id");StringBuilder text=new StringBuilder(m.description(id));
@@ -165,7 +182,16 @@ public class SparklineView extends View {
             +". Только просмотр. "+ScenarioUi.chartClockLabel(f)+"; прогноз и уровни входа скрыты."
             +(f.optBoolean("client_offline")?" КЭШ · НЕТ СВЯЗИ С BRIDGE. Телефон потерял связь; текущие данные неизвестны.":"");
         if(f==null||f.optInt("map_version",0)<2)return "График MT5. Старый прогноз отключён; ожидаем карту нового движка.";
-        if(f.optBoolean("history_only"))return f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
+        if(f.optBoolean("history_only")){
+            String note=f.optBoolean("client_offline")?"История свечей MT5 из кэша. Телефон потерял связь с Bridge; его текущее состояние неизвестно.":"История свечей MT5. Текущие гипотезы скрыты; LIVE продолжает работу отдельно.";
+            String selectedId=f.optString("selected_pattern_id");JSONObject catalog=f.optJSONObject("pattern_chart");
+            if(!selectedId.isEmpty()&&catalog!=null){
+                JSONArray patterns=catalog.optJSONArray("patterns");boolean present=false;
+                if(patterns!=null)for(int i=0;i<patterns.length();i++){JSONObject row=patterns.optJSONObject(i);present|=row!=null&&selectedId.equals(row.optString("view_id"));}
+                if(!present)note+=" Выбранная фигура недоступна в текущем снимке.";
+            }
+            return note;
+        }
         if(!f.optBoolean("available",true))return "Свечи MT5. Прогноз недоступен: "+f.optString("reason","ожидаем пригодные данные выбранного периода")
             +(f.optBoolean("client_offline")?". КЭШ · нет связи с Bridge.":". Только просмотр.");
         if(ChartDisplayState.CANDLES.equals(f.optString("chart_display_mode")))return "Свечи MT5. Геометрия и условные маршруты скрыты."

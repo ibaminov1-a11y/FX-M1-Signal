@@ -29,7 +29,7 @@ final class PatternChartModel {
         boolean old=f.optBoolean("stale")||f.optBoolean("client_offline")||f.optBoolean("archive");
         PatternChartModel out=new PatternChartModel(old,"Разметка недоступна для выбранных данных");
         JSONObject raw=f.optJSONObject("pattern_chart");
-        if(raw==null||raw.optInt("version")!=1||!raw.optBoolean("available")||f.optBoolean("chart_read_only")
+        if(!f.optBoolean("available",true)||raw==null||raw.optInt("version")!=1||!raw.optBoolean("available")||f.optBoolean("chart_read_only")
             ||f.optBoolean("chart_forecast_rejected")||f.optBoolean("history_only")||"CANDLES".equals(f.optString("chart_display_mode")))return out;
         if(!symbol(symbol).equals(symbol(raw.optString("symbol")))||!frame.equals(raw.optString("timeframe"))
             ||!mode.equals(raw.optString("mode"))||scope.isEmpty()||!scope.equals(raw.optString("scope"))
