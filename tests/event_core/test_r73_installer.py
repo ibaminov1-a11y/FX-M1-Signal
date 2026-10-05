@@ -230,6 +230,38 @@ class R73InstallerTests(unittest.TestCase):
                 self.main()
         self.assertEqual(self.colorama.read_text(), 'BROKEN=True\n')
 
+    def colorama_probe_with_legacy_stdout(self, command, **kwargs):
+        # Exercise the exact production probe against staged fixture files. Only
+        # substitute the unavailable Windows interpreter with this real Python.
+        prefix = ("import sys;sys.stdout.reconfigure(encoding='cp1252');"
+                  "sys.path.insert(0,sys.argv[1]);")
+        return self.real_subprocess([sys.executable, '-I', '-c', prefix + command[-1],
+                                     str(self.colorama.parent.parent)], **kwargs)
+
+    def test_colorama_probe_does_not_print_unencodable_module_paths(self):
+        self.real_subprocess = subprocess.run
+        with patch.object(updater.subprocess, 'run', side_effect=self.colorama_probe_with_legacy_stdout):
+            try:
+                backup = updater.repair_colorama(self.package, self.target)
+            except RuntimeError as exc:
+                self.fail('A valid Colorama under a Cyrillic path failed its actual import probe: ' + str(exc))
+        self.assertTrue(backup.is_dir())
+        self.assertIn('AnsiToWin32', self.colorama.read_text())
+
+    def test_colorama_failure_reports_exception_type_without_secret_message(self):
+        dep = self.package / 'Dependencies/colorama/__init__.py'
+        dep.write_text("# AnsiToWin32\nraise ImportError('PRIVATE-DEPENDENCY-SECRET')\n")
+        (self.package / 'DEPENDENCY_MANIFEST.json').write_text(json.dumps({
+            'colorama/__init__.py': hashlib.sha256(dep.read_bytes()).hexdigest()}))
+        self.real_subprocess = subprocess.run
+        output = io.StringIO()
+        with patch.object(updater.subprocess, 'run', side_effect=self.colorama_probe_with_legacy_stdout):
+            with contextlib.redirect_stdout(output):
+                with self.assertRaisesRegex(RuntimeError, 'ImportError') as failure:
+                    updater.repair_colorama(self.package, self.target)
+        self.assertNotIn('PRIVATE-DEPENDENCY-SECRET', output.getvalue() + str(failure.exception))
+        self.assertEqual(self.colorama.read_text(), 'BROKEN=True\n')
+
 
 class R73StartupTests(unittest.TestCase):
     def setUp(self):

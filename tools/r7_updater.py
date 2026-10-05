@@ -180,9 +180,21 @@ def repair_colorama(package,target):
  try:
   for top in tops:
    _remove(site/top);_copy_item(source/top,site/top)
-  code="import colorama; assert hasattr(colorama,'AnsiToWin32'); print('COLORAMA OK',colorama.__version__,colorama.__file__)"
-  result=subprocess.run([str(python),'-I','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=30)
-  if result.returncode!=0 or 'COLORAMA OK' not in result.stdout:raise RuntimeError('Colorama verification failed')
+  code='''import contextlib,io
+try:
+ with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
+  import colorama
+  assert hasattr(colorama,'AnsiToWin32')
+except Exception as exc:
+ print('COLORAMA ERROR '+type(exc).__name__)
+ raise SystemExit(1)
+print('COLORAMA OK')
+'''
+  result=subprocess.run([str(python),'-I','-X','utf8','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=30)
+  if result.returncode!=0 or 'COLORAMA OK' not in result.stdout:
+   cause=next((line[len('COLORAMA ERROR '):] for line in result.stdout.splitlines() if line.startswith('COLORAMA ERROR ')),'')
+   if not cause.isascii() or not cause.isidentifier():cause='process exit '+str(result.returncode)
+   raise RuntimeError('Colorama verification failed ('+cause+'). Prior dependency files restored; keep .venv and check Python environment.')
   print('COLORAMA OK')
  except BaseException:
   for top in tops:_remove(site/top)
@@ -200,7 +212,7 @@ def prepare_environment(target):
   check_python(sys.executable,target)
   print('Creating a local 64-bit Python environment...',flush=True)
   try:
-   result=subprocess.run([sys.executable,'-m','venv',str(target/'.venv')],cwd=target,text=True,encoding='utf-8',errors='replace',
+   result=subprocess.run([sys.executable,'-X','utf8','-m','venv',str(target/'.venv')],cwd=target,text=True,encoding='utf-8',errors='replace',
                          stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=120)
   except (OSError,subprocess.TimeoutExpired) as exc:
    raise RuntimeError('Could not create Python environment ('+type(exc).__name__+'). Check Python venv support and folder permissions.') from None
@@ -221,7 +233,7 @@ for name,field in [('flask','Flask'),('MetaTrader5','initialize'),('colorama','A
 print(json.dumps(report))
 '''
  try:
-  result=subprocess.run([str(python),'-I','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',
+  result=subprocess.run([str(python),'-I','-X','utf8','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',
                         stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=45)
   report=json.loads(result.stdout) if result.returncode==0 else None
  except (OSError,ValueError,subprocess.TimeoutExpired) as exc:
@@ -239,7 +251,7 @@ def ensure_dependencies(source,target):
  if not requirements.is_file():raise RuntimeError('Package requirements_event.txt is missing')
  print('Installing missing or broken dependencies: '+', '.join(missing)+'. Internet access may be required.',flush=True)
  try:
-  result=subprocess.run([str(python),'-m','pip','install','--disable-pip-version-check','--no-input','-r',str(requirements)],
+  result=subprocess.run([str(python),'-X','utf8','-m','pip','install','--disable-pip-version-check','--no-input','-r',str(requirements)],
                         cwd=target,text=True,encoding='utf-8',errors='replace',stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=600)
  except (OSError,subprocess.TimeoutExpired) as exc:
   raise RuntimeError('Dependency installation failed ('+type(exc).__name__+'). Check network access and rerun INSTALL_R7_3.cmd. Existing trading state was preserved.') from None
@@ -253,7 +265,7 @@ def ensure_dependencies(source,target):
 def check_python(python,target):
  code="import json,struct,sys;print(json.dumps(dict(version=list(sys.version_info[:3]),bits=struct.calcsize('P')*8,platform=sys.platform)))"
  try:
-  result=subprocess.run([str(python),'-I','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',
+  result=subprocess.run([str(python),'-I','-X','utf8','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',
                         stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=30)
   if result.returncode!=0:raise RuntimeError('Bridge Python environment could not run. Existing .venv was preserved; check its Python installation.')
   data=json.loads(result.stdout)
@@ -271,7 +283,7 @@ def postflight(target):
  check_python(python,target)
  code="import bridge_startup,json;print(json.dumps(bridge_startup.environment_report()))"
  try:
-  result=subprocess.run([str(python),'-B','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=45)
+  result=subprocess.run([str(python),'-X','utf8','-B','-c',code],cwd=target,text=True,encoding='utf-8',errors='replace',stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=45)
   report=json.loads(result.stdout) if result.returncode==0 else {}
  except (OSError,ValueError,subprocess.TimeoutExpired) as exc:
   raise RuntimeError('R7.3 post-install check could not run ('+type(exc).__name__+')') from None
