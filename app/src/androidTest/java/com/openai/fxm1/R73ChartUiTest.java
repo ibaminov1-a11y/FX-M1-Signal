@@ -117,10 +117,11 @@ public class R73ChartUiTest {
     }
     @Test public void newChartDefaultsToScenarioMapInsteadOfAnalogForecast()throws Exception{
         final JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5);
+        final JSONArray rows=bars("M5",1.10324,.00001);
         ui(()->{
             SparklineView chart=new SparklineView(context);
             chart.setMarketIdentity("account|EURUSD|M5");
-            chart.setMarket(bars("M5",1.10324,.00001),null,null,null,"SCENARIO_V2",null,null,f);
+            chart.setMarket(rows,null,null,null,"SCENARIO_V2",null,null,f);
             assertFalse("Structural Scenario Map must be the default trading chart",chart.displayedForecast().optBoolean("show_price_forecast"));
         });
     }
