@@ -1,0 +1,49 @@
+name: R732 isolated source import
+on:
+  push:
+    branches: [feature/r732-pattern-chart-20261005]
+    paths: ['.ci/r732-pending.patch']
+permissions:
+  contents: write
+jobs:
+  import:
+    if: github.ref == 'refs/heads/feature/r732-pattern-chart-20261005'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Validate explicit source-only patch and commit its resulting tree
+        run: |
+          set -euo pipefail
+          test -f .ci/r732-pending.patch
+          python - <<'PY'
+          import subprocess
+          from pathlib import PurePosixPath
+          names=subprocess.check_output(['git','apply','--numstat','.ci/r732-pending.patch'],text=True).splitlines()
+          assert names, 'Empty patch'
+          for row in names:
+              _,_,name=row.split('\t',2)
+              p=PurePosixPath(name)
+              assert not p.is_absolute() and '..' not in p.parts
+              assert name.startswith(('app/src/','mt5_bridge/','tests/','tools/','docs/verification/')),name
+              assert p.suffix in ('.java','.py','.xml','.json','.md','.txt','.sh','.cmd','.bat'),name
+              assert not any(part in ('event_state','.venv','__pycache__') for part in p.parts),name
+          PY
+          git apply --check .ci/r732-pending.patch
+          git apply --index .ci/r732-pending.patch
+          git diff --cached --check
+          git rm .ci/r732-pending.patch
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'dev(r732): import reviewed source change for diagnostic verification'
+          test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:"$GITHUB_REF"
+          mkdir -p import-evidence
+          git rev-parse HEAD > import-evidence/SOURCE_COMMIT.txt
+          git show --stat --oneline HEAD > import-evidence/CHANGES.txt
+          git archive --format=zip HEAD > import-evidence/source.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: R732-IMPORTED-SOURCE-${{ github.sha }}
+          path: import-evidence/
