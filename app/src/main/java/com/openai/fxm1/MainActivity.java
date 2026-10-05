@@ -1470,7 +1470,7 @@ public class MainActivity extends Activity {
         statusText.setText(symbol+" · "+tf+" · "+source+" · ДАННЫЕ MT5");
 
         boolean deferredProfile=currentState.optJSONObject("campaign")!=null||currentState.optJSONObject("pending_config")!=null;
-        if (!deferredProfile&&(!symbol.equals(selectedSymbol) || !tf.equals(selectedTf))) {
+        if (!deferredProfile&&(!symbol.replace("/", "").trim().equalsIgnoreCase(selectedSymbol.replace("/", "").trim()) || !tf.equals(selectedTf))) {
             statusText.setText(selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));
             // A cached chart belongs to its recorded instrument. Clear it while the
             // selected profile awaits data, including during phone disconnection.
@@ -1495,7 +1495,7 @@ public class MainActivity extends Activity {
         signalText.setText(offline?"КЭШ":signal);
         signalText.setTextColor(offline?C_MUTED:"BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
-        confidenceText.setText("ВХОД "+(currentState.optJSONObject("config")==null?tf:currentState.optJSONObject("config").optString("timeframe",tf))+" · "+ScenarioUi.headline(forecast));
+        confidenceText.setText("ВХОД "+(currentState.optJSONObject("config")==null?tf:currentState.optJSONObject("config").optString("timeframe",tf))+" · "+ScenarioUi.headlineForState(currentState));
         int mapSide=forecast==null?0:forecast.optInt("side");
         confidenceText.setTextColor(offline?C_MUTED:mapSide>0?C_GREEN:mapSide<0?C_RED:C_PURPLE);
         if (qualityBarView != null) qualityBarView.setVisibility(View.GONE);

@@ -63,6 +63,16 @@ public final class ScenarioUi {
         case "BLOCKED":return "Вход заблокирован";
         default:return "";
     }}
+    public static String headlineForState(JSONObject state){
+        if(state==null)return headline(null);
+        try{
+            JSONObject supplied=state.optJSONObject("forecast");
+            JSONObject display=new JSONObject(supplied==null?"{}":supplied.toString());
+            chartMetadata(state,display);
+            if(state.has("available")&&!state.optBoolean("available"))display.put("available",false);
+            return headline(display);
+        }catch(JSONException error){return "КАРТА: данные недоступны";}
+    }
     public static String headline(JSONObject f){
         if(f!=null&&f.optBoolean("client_offline"))return "ПОСЛЕДНЯЯ КАРТА · КЭШ · НЕТ СВЯЗИ С BRIDGE";
         if(f==null||f.optInt("map_version")<2)return "КАРТА: ожидаем профиль / данные Bridge";

@@ -597,7 +597,7 @@ public final class EventClient {
             (scenarioMap?("SCENARIO MAP · веса: BUY "+up+" · SELL "+down+" · RANGE "+range+direction+" · не вероятность успеха"):
             ("LIVE FORECAST: UP "+up+"% · DOWN "+down+"% · RANGE "+range+"% · "+fc.optString("regime","RANGE")+direction)):
             "LIVE FORECAST: ожидаем достаточные данные";
-        if(fc.optInt("map_version")>=3)forecastText=ScenarioUi.headline(fc);
+        if(fc.optInt("map_version")>=3)forecastText=ScenarioUi.headlineForState(s);
         if(fc.optBoolean("late_entry",false))forecastText+=" · LATE ENTRY BLOCK";
         if(fc.optBoolean("exhaustion",false))forecastText+=" · EXHAUSTION";
         StringBuilder context=new StringBuilder("Вход: ").append(tf).append(" · Режим: ").append(cfg.optString("mode","NORMAL"))
