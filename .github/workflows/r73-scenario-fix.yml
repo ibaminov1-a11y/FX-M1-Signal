@@ -28,16 +28,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - uses: actions/cache/restore@v4
-        with:
-          path: ~/.fxm1-signing/ec1-demo.jks
-          key: fxm1-ec1-demo-explicit-signing-v1
-          fail-on-cache-miss: true
-      - name: Configure signing
-        run: |
-          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          sudo chmod 666 /dev/kvm
       - name: Full Android API35 regression
         uses: reactivecircus/android-emulator-runner@v2
         with:
