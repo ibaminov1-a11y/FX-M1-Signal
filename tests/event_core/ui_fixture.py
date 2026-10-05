@@ -67,6 +67,9 @@ def reset():
         broker.ctx_data=wave(anchor,tf=900,trend=.00004)
         broker.h1_data=wave(anchor,tf=3600,trend=.00008)
         engine.save();engine.step()
+        # Scene changes must update the same nonblocking cache read by the APK.
+        # Otherwise a concurrent worker makes GET /ec/state replay the old scene.
+        app.config['runtime_views'].publish()
 
 def prime_impulse(side):
     global freeze_until
@@ -164,6 +167,7 @@ def r5_market():
         engine.campaign=None;broker._positions=[];broker._orders=[]
         prime_r5_market(str(data.get('family','TRIANGLE')))
         engine.step()
+        app.config['runtime_views'].publish()
         return jsonify(ok=True,forecast=engine.forecast)
 
 
