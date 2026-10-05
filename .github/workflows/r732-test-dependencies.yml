@@ -1,0 +1,20 @@
+name: R732 public test dependencies
+on:
+  push:
+    branches: [feature/r732-pattern-chart-20261005]
+    paths: [.github/workflows/r732-test-dependencies.yml]
+permissions:
+  contents: read
+jobs:
+  wheels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip download --no-deps --only-binary=:all: --dest wheels Flask==3.1.2 Werkzeug==3.1.3 blinker==1.9.0 colorama==0.4.6
+      - run: sha256sum wheels/* > wheels/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: R732-PUBLIC-TEST-WHEELS
+          path: wheels/
