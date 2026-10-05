@@ -17,7 +17,7 @@ public class SparklineView extends View {
     public String historyFrame(){return historyFrame;}
     public String historyClock(){return historyClock;}
     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
-    private boolean customSelection=false,archive=false,panning=false,showPriceForecast=true;
+    private boolean customSelection=false,archive=false,panning=false,showPriceForecast=false;
     private float downX,downY,lastX;
     private ScaleGestureDetector scale;
     public SparklineView(Context c){super(c);init(c);}
@@ -30,7 +30,7 @@ public class SparklineView extends View {
     }
     public void setSignal(String ignored){}
     public void setValues(List<Double> ignored){}
-    public void setMarketIdentity(String key){if(!identity.equals(key)){identity=key;viewport.clear();selected.clear();customSelection=false;}}
+    public void setMarketIdentity(String key){if(!identity.equals(key)){identity=key;viewport.clear();selected.clear();customSelection=false;showPriceForecast=false;}}
     public String marketIdentity(){return identity;}
     public void panHistory(int bars){viewport.pan(bars);updateDescription();invalidate();}
     public long historyRightTime(){return viewport.edge();}
