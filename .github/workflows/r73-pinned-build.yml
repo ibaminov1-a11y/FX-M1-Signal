@@ -8,6 +8,6 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: ibaminov1-a11y/FX-M1-Signal/.github/workflows/r73-release.yml@4b242e0a84d3c191669095a656ce30362a5f93dc
+    uses: ibaminov1-a11y/FX-M1-Signal/.github/workflows/r73-release.yml@61144e1a01520017b7c623b7cb4b955688397d4e
     with:
-      source_sha: 4b242e0a84d3c191669095a656ce30362a5f93dc
+      source_sha: 61144e1a01520017b7c623b7cb4b955688397d4e
