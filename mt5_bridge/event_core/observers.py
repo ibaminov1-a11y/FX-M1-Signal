@@ -147,6 +147,8 @@ class ForecastObservers:
             entry_gate=dict(allowed=False,blocks=['VIEW_ONLY'],reason='Только наблюдение'),
             archive_scope='SELECTED_TRADE_FRAME_ONLY')
         out.update(copy.deepcopy(record))
+        if isinstance(out.get('forecast'),dict):
+            out['forecast']['show_price_forecast']=False
         if tf==engine.config.timeframe:
             out.update(bars=[asdict(b) for b in engine.bars[-1200:]],
                 live_bar=asdict(engine.live_bar) if engine.live_bar else None,
