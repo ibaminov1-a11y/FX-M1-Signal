@@ -104,6 +104,9 @@ final class ScenarioMapRenderer {
         JSONObject levels=valid&&!v3&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
         JSONObject priceForecast=PriceForecastPlot.visible(f);
         int routeCount=routes==null?0:Math.min(2,routes.length());
+        // Scenario Map owns the trading chart. An analog trajectory must never invent
+        // a future while the structural engine says WAIT / no clear scenario.
+        if(routeCount==0)priceForecast=null;
         top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:76)*d;
         for(int i=0;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null){bound(b.optDouble("low"));bound(b.optDouble("high"));}}
         if(live!=null){bound(live.optDouble("low"));bound(live.optDouble("high"));}
@@ -142,7 +145,7 @@ final class ScenarioMapRenderer {
         split=futurePanel?left+(right-left)*.44f:right;
         if(!unverified){
         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
-        else if(routeCount==0)text(priceForecast!=null?"ЦЕНОВОЙ ПРОГНОЗ · вход отдельно":valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
+        else if(routeCount==0)text(valid?"WAIT · НЕТ ЯСНОГО СЦЕНАРИЯ":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
             String name=ScenarioUi.role(r,i);
