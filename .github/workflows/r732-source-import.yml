@@ -13,25 +13,38 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: Validate explicit source-only patch and commit its resulting tree
+      - name: Validate source-only patch, without running submitted code
         run: |
           set -euo pipefail
           test -f .ci/r732-pending.patch
+          mkdir -p import-evidence
           python - <<'PY'
-          import subprocess
-          from pathlib import PurePosixPath
-          names=subprocess.check_output(['git','apply','--numstat','.ci/r732-pending.patch'],text=True).splitlines()
-          assert names, 'Empty patch'
+          import subprocess,json,base64,zlib,hashlib
+          from pathlib import Path,PurePosixPath
+          raw=Path('.ci/r732-pending.patch').read_bytes()
+          assert len(raw)<=2000000,'Transport too large'
+          if raw.startswith(b'{'):
+              envelope=json.loads(raw)
+              assert envelope['encoding']=='zlib-base64-unified-diff'
+              decoder=zlib.decompressobj()
+              raw=decoder.decompress(base64.b64decode(envelope['data'],validate=True),2000001)
+              assert len(raw)<=2000000 and decoder.eof and not decoder.unused_data
+              assert hashlib.sha256(raw).hexdigest()==envelope['sha256'],'Transport checksum mismatch'
+          raw.decode('utf-8')
+          patch=Path('import-evidence/REVIEWED_SOURCE.patch');patch.write_bytes(raw)
+          names=subprocess.check_output(['git','apply','--numstat',str(patch)],text=True).splitlines()
+          assert names,'Empty patch'
           for row in names:
-              _,_,name=row.split('\t',2)
+              added,removed,name=row.split('\t',2)
+              assert added.isdigit() and removed.isdigit(),'Binary patches forbidden'
               p=PurePosixPath(name)
               assert not p.is_absolute() and '..' not in p.parts
               assert name.startswith(('app/src/','mt5_bridge/','tests/','tools/','docs/verification/')),name
               assert p.suffix in ('.java','.py','.xml','.json','.md','.txt','.sh','.cmd','.bat'),name
               assert not any(part in ('event_state','.venv','__pycache__') for part in p.parts),name
           PY
-          git apply --check .ci/r732-pending.patch
-          git apply --index .ci/r732-pending.patch
+          git apply --check import-evidence/REVIEWED_SOURCE.patch
+          git apply --index import-evidence/REVIEWED_SOURCE.patch
           git diff --cached --check
           git rm .ci/r732-pending.patch
           git config user.name 'github-actions[bot]'
@@ -39,11 +52,11 @@ jobs:
           git commit -m 'dev(r732): import reviewed source change for diagnostic verification'
           test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
           git push origin HEAD:"$GITHUB_REF"
-          mkdir -p import-evidence
           git rev-parse HEAD > import-evidence/SOURCE_COMMIT.txt
           git show --stat --oneline HEAD > import-evidence/CHANGES.txt
           git archive --format=zip HEAD > import-evidence/source.zip
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: R732-IMPORTED-SOURCE-${{ github.sha }}
           path: import-evidence/
