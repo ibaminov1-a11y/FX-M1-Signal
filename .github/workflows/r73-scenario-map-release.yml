@@ -1,0 +1,98 @@
+name: R7.3 Scenario Map release
+on:
+  push:
+    branches: [repair/r7.3-stability-20261005]
+permissions:
+  contents: read
+jobs:
+  verify-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Full Python regression
+        run: |
+          set -euo pipefail
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Set signing and emulator
+        run: |
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - name: Android graph regression
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: |
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R7ReleaseUiTest,com.openai.fxm1.R73ChartUiTest
+            mkdir -p evidence
+            adb pull /sdcard/Download/ec1-qa/r7-wait-no-synthetic-future.png evidence/r7-wait-no-synthetic-future.png
+      - name: Verify signed APK
+        run: |
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$signer" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | tee evidence/apk-signature.txt
+          grep -q '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885' evidence/apk-signature.txt
+      - name: Build ready Bridge and APK
+        run: |
+          set -euo pipefail
+          rm -rf out
+          mkdir -p out/mt5_bridge_R73_GRAPH
+          cp -r mt5_bridge/event_core out/mt5_bridge_R73_GRAPH/
+          cp mt5_bridge/bridge_v10_0.py mt5_bridge/bridge_startup.py mt5_bridge/requirements_event.txt out/mt5_bridge_R73_GRAPH/
+          find out -type d -name __pycache__ -prune -exec rm -rf {} +
+          find out -type f -name '*.pyc' -delete
+          cat > out/mt5_bridge_R73_GRAPH/START_BRIDGE_R73_GRAPH.cmd <<'CMD'
+          @echo off
+          setlocal
+          set "HERE=%~dp0"
+          set "OLD=%HERE%..\mt5_bridge"
+          set "PY=%OLD%\.venv\Scripts\python.exe"
+          set "STATE=%OLD%\event_state"
+          if not exist "%PY%" (
+            echo ERROR: old Bridge Python not found: %PY%
+            pause
+            exit /b 1
+          )
+          if not exist "%STATE%" mkdir "%STATE%"
+          set "PYTHONPATH=%HERE%"
+          "%PY%" -B "%HERE%bridge_startup.py" --state-dir "%STATE%"
+          set "RC=%ERRORLEVEL%"
+          if not "%RC%"=="0" pause
+          exit /b %RC%
+          CMD
+          cp app/build/outputs/apk/debug/app-debug.apk out/FXM1_R7_3_GRAPH_FIX.apk
+          printf '%s\n' "R7.3 GRAPH FIX" "Put mt5_bridge_R73_GRAPH next to old mt5_bridge." "Close old Bridge and keep AUTO OFF." "Run START_BRIDGE_R73_GRAPH.cmd." > out/README.txt
+          (cd out && zip -qr ../FXM1_R7_3_GRAPH_FIX_FULL.zip .)
+          sha256sum FXM1_R7_3_GRAPH_FIX_FULL.zip out/FXM1_R7_3_GRAPH_FIX.apk > evidence/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-R7.3-GRAPH-FIX-${{ github.sha }}
+          path: |
+            FXM1_R7_3_GRAPH_FIX_FULL.zip
+            out/FXM1_R7_3_GRAPH_FIX.apk
+            out/mt5_bridge_R73_GRAPH/
+            evidence/
+          if-no-files-found: error
