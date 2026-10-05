@@ -1,0 +1,10 @@
+10-05 06:33:40.293  4072  4085 I TestRunner: started: buyFallsInNeutralPreparationThenRisesInGreen(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:33:40.312  3269  3269 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:33:40.313  3566  3614 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=54 ]
+10-05 06:33:40.314  3566  3628 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[b71021e4-c08e]>Handler" thread_id=62 ]
+10-05 06:33:40.325  1212  1765 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:33:40.325  1212  1765 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:33:40.340  1212  5156 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 360 [CONTEXT service_id=218 ]
+10-05 06:33:40.349  1212  4944 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 51 uptime_millis: 51 exec_start_elapsed_seconds: 360 [CONTEXT service_id=218 ]
+10-05 06:33:40.503  1427  1791 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:33:40.506  4072  4085 I TestRunner: finished: buyFallsInNeutralPreparationThenRisesInGreen(com.openai.fxm1.R53ScenarioDisplayUiTest)

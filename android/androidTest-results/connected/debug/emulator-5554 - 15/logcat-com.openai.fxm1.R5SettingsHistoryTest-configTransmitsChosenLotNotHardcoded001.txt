@@ -1,0 +1,4 @@
+10-05 06:38:58.442  4072  4085 I TestRunner: started: configTransmitsChosenLotNotHardcoded001(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 06:38:58.796  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:58.812  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:58.832  4072  4085 I TestRunner: finished: configTransmitsChosenLotNotHardcoded001(com.openai.fxm1.R5SettingsHistoryTest)

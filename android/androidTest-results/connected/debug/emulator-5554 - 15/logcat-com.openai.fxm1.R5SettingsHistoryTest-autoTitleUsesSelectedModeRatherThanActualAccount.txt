@@ -1,0 +1,84 @@
+10-05 06:39:14.987  4072  4085 I TestRunner: started: autoTitleUsesSelectedModeRatherThanActualAccount(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 06:39:14.988   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:14.988   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.092   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.092   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.196   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.196   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.300   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.300   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.341  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:15.358  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:15.390   561  1907 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@cb945bb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:39:15.395   910  1043 D SplashScreenView: Build android.window.SplashScreenView{477a5fd V.E...... ......ID 0,0-0,0}
+10-05 06:39:15.395   910  1043 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:39:15.395   910  1043 D SplashScreenView: Branding: view: android.view.View{a32f2f2 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:39:15.396   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:39:15.399  2448  2448 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:39:15.399  2448  2448 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:39:15.404   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.404   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.404  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=88, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:39:15.407  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@207811d in: PRE_ON_CREATE
+10-05 06:39:15.407   432   432 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:39:15.423   360   360 I netd    : tetherGetStats() -> {[]} <0.50ms>
+10-05 06:39:15.508   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.508   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.510  4072  4072 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:39:15.577  2448  2488 D EGL_emulation: app_time_stats: avg=143.67ms min=39.32ms max=638.10ms count=8
+10-05 06:39:15.612   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.615   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.645  2448  2448 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:39:15.657  2448  2448 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:39:15.692  2448  2488 D EGL_emulation: app_time_stats: avg=1177.77ms min=1177.77ms max=1177.77ms count=1
+10-05 06:39:15.704   910  1050 D EGL_emulation: app_time_stats: avg=2714.33ms min=6.54ms max=10505.62ms count=4
+10-05 06:39:15.714  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@207811d in: CREATED
+10-05 06:39:15.714  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@207811d in: STARTED
+10-05 06:39:15.752   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.752   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.753  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@207811d in: RESUMED
+10-05 06:39:15.818  4072  4072 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:39:15.823  4072  4072 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:39:15.826  4072  4072 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:39:15.860   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.860   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.953   561   581 W ziparchive: Unable to open '/data/app/~~qMaA7MRIxKVGWKFfv6VZbg==/com.openai.fxm1.ec1-XxYMURHFcrSkuJ6Ztydamw==/base.dm': No such file or directory
+10-05 06:39:15.955   561   581 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +564ms
+10-05 06:39:15.961   910  1042 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@c35a7ec
+10-05 06:39:15.962   561  1907 W InputManager-JNI: Input channel object '218b0e2 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:39:15.967   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:15.967   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:15.971   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:39:15.971  2448  2448 D BaseDepthController: setSurface:
+10-05 06:39:15.971  2448  2448 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:39:15.971  2448  2448 D BaseDepthController: 	mSurface: null
+10-05 06:39:15.971  2448  2448 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:39:15.972  2448  2448 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:39:15.972  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:39:15.972  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:39:15.972  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:39:15.972  2448  2448 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:39:15.973  2448  2448 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:39:15.973  2448  2520 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:39:15.974  2448  2656 I IPCThreadState: oneway function results for code 2 on binder at 0x78b8cd6556b0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:39:16.011  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3386KB AllocSpace bytes, 43(1200KB) LOS objects, 49% free, 3901KB/7803KB, paused 1.750ms,9.714ms total 63.405ms
+10-05 06:39:16.029  4072  6289 D TrafficStats: tagSocket(124) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:16.068  4072  6289 D TrafficStats: tagSocket(124) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:16.068   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:16.068   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:16.078  4072  6290 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:16.092  4072  6289 D TrafficStats: tagSocket(124) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:16.156   561   681 I ImeTracker: com.openai.fxm1.ec1:164e9313: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:39:16.156   561   681 I ImeTracker: com.openai.fxm1.ec1:164e9313: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:39:16.159   369  4416 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 9855104
+10-05 06:39:16.164  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:39:16.164  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:39:16.164  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:39:16.165  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:39:16.165  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:39:16.202   369  6268 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:16.202   369  6268 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:16.407  1463  1760 I BistoHotwordHelper: (REDACTED) getHotwordActive::active query: %s, watch: %s, devices connected: %s
+10-05 06:39:16.915  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@207811d in: PAUSED
+10-05 06:39:16.916  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:39:16.919  4072  4085 I TestRunner: finished: autoTitleUsesSelectedModeRatherThanActualAccount(com.openai.fxm1.R5SettingsHistoryTest)

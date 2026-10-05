@@ -1,0 +1,2 @@
+10-05 06:33:51.538  4072  4085 I TestRunner: started: explicitClockPreviewDisclosesNormalization(com.openai.fxm1.R54ChartUiTest)
+10-05 06:33:51.541  4072  4085 I TestRunner: finished: explicitClockPreviewDisclosesNormalization(com.openai.fxm1.R54ChartUiTest)

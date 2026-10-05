@@ -1,0 +1,4 @@
+10-05 06:38:28.944  4072  4085 I TestRunner: started: journalKeepsLegacyReasonsAndBoundsUntrustedText(com.openai.fxm1.R57ScalpUiTest)
+10-05 06:38:28.960   561  1747 W InputManager-JNI: Input channel object 'f34244d com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:38:29.067  4072  4085 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:38:29.067  4072  4085 I TestRunner: finished: journalKeepsLegacyReasonsAndBoundsUntrustedText(com.openai.fxm1.R57ScalpUiTest)

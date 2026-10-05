@@ -1,0 +1,10 @@
+10-05 06:33:39.903  4072  4085 I TestRunner: started: phaseWinsOverSegmentSlope(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:33:39.920  1212  4880 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 360 [CONTEXT service_id=218 ]
+10-05 06:33:39.927  1212  5156 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService started execution. cause:9 exec_start_elapsed_seconds: 360 [CONTEXT service_id=218 ]
+10-05 06:33:39.929  1212  5156 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 14 uptime_millis: 14 exec_start_elapsed_seconds: 360 [CONTEXT service_id=218 ]
+10-05 06:33:39.953   360  5316 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+10-05 06:33:39.953  2155  2229 D TrafficStats: tagSocket(126) with statsTag=0x1809, statsUid=-1
+10-05 06:33:39.964  2155  2229 W libc    : Access denied finding property "persist.adb.tls_server.enable"
+10-05 06:33:39.964  2155  2229 W libc    : Access denied finding property "service.adb.tls.port"
+10-05 06:33:39.956  2155  2155 W binder:2155_3: type=1400 audit(0.0:141): avc:  denied  { read } for  name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=318 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:system_adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+10-05 06:33:39.971  4072  4085 I TestRunner: finished: phaseWinsOverSegmentSlope(com.openai.fxm1.R53ScenarioDisplayUiTest)

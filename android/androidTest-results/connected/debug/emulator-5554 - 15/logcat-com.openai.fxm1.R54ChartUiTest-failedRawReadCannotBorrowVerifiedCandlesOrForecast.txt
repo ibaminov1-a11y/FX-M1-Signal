@@ -1,0 +1,2 @@
+10-05 06:33:40.591  4072  4085 I TestRunner: started: failedRawReadCannotBorrowVerifiedCandlesOrForecast(com.openai.fxm1.R54ChartUiTest)
+10-05 06:33:40.593  4072  4085 I TestRunner: finished: failedRawReadCannotBorrowVerifiedCandlesOrForecast(com.openai.fxm1.R54ChartUiTest)

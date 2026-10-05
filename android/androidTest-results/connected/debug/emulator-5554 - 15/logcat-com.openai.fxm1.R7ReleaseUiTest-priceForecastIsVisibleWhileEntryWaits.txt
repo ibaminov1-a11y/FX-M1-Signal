@@ -1,0 +1,7 @@
+10-05 06:40:02.490  4072  4085 I TestRunner: started: priceForecastIsVisibleWhileEntryWaits(com.openai.fxm1.R7ReleaseUiTest)
+10-05 06:40:02.705  4072  4085 D UiDevice: Executing shell command: mkdir -p /sdcard/Download/ec1-qa
+10-05 06:40:02.711  4072  4085 D UiDevice: Executing shell command: cp /storage/emulated/0/Android/data/com.openai.fxm1.ec1/files/r7-wait-price-forecast.png /sdcard/Download/ec1-qa/r7-wait-price-forecast.png
+10-05 06:40:02.718  1427  3256 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:40:02.749  1212  6046 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 743 [CONTEXT service_id=218 ]
+10-05 06:40:02.757  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 30 uptime_millis: 30 exec_start_elapsed_seconds: 743 [CONTEXT service_id=218 ]
+10-05 06:40:02.761  4072  4085 I TestRunner: finished: priceForecastIsVisibleWhileEntryWaits(com.openai.fxm1.R7ReleaseUiTest)

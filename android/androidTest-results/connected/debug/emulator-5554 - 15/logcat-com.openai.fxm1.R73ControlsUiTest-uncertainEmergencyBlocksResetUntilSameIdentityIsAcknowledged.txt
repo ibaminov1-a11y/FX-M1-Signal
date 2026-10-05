@@ -1,0 +1,100 @@
+10-05 06:39:59.920  4072  4085 I TestRunner: started: uncertainEmergencyBlocksResetUntilSameIdentityIsAcknowledged(com.openai.fxm1.R73ControlsUiTest)
+10-05 06:39:59.935   561  1655 W InputManager-JNI: Input channel object '458ac70 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:39:59.956  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:59.968  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=106
+10-05 06:39:59.968  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=106
+10-05 06:40:00.052  1425  1775 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:40:00.052  1425  1775 I AiAiEcho: EchoTargets:
+10-05 06:40:00.052  1425  1775 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:40:00.052  1425  1775 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:40:00.052  1425  1775 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:40:00.052  1425  1775 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:40:00.052  1425  1775 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:40:00.052  1425  1775 I AiAiEcho: EchoTargets:
+10-05 06:40:00.052  1425  1775 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:40:00.052  1425  1775 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:40:00.053  1425  1775 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:40:00.053  1425  1775 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:40:00.053  1425  1775 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+10-05 06:40:00.053  1425  1775 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:40:00.053  2448  2448 D SsBaseTemplateCard: No text view can be set up
+10-05 06:40:00.053  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:40:00.053  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:40:00.053  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:40:00.053  2448  2448 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:40:00.056   910   910 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:40:00.093  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:00.115   910  1050 D EGL_emulation: app_time_stats: avg=658.37ms min=52.62ms max=1264.13ms count=2
+10-05 06:40:00.154   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:40:00.154   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:40:00.158  3566  3614 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=54 ]
+10-05 06:40:00.158   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:40:00.159   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:40:00.159  3566  3628 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[b71021e4-c08e]>Handler" thread_id=62 ]
+10-05 06:40:00.160   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:40:00.175  1212  1516 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:40:00.175  1212  1516 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:40:00.175  3269  3269 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:40:00.221   561  1655 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@cb945bb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:40:00.229  2448  2448 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:40:00.229  2448  2448 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:40:00.238  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=107, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:40:00.252   910  1043 D SplashScreenView: Build android.window.SplashScreenView{9e66d1 V.E...... ......ID 0,0-0,0}
+10-05 06:40:00.252   910  1043 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:40:00.252   910  1043 D SplashScreenView: Branding: view: android.view.View{d6ba536 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:40:00.254  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@63c2f91 in: PRE_ON_CREATE
+10-05 06:40:00.259   360   360 I netd    : tetherGetStats() -> {[]} <0.28ms>
+10-05 06:40:00.272   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:40:00.273   432   432 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:40:00.388  4072  4072 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:40:00.556  2448  2448 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:40:00.578  2448  2448 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:40:00.731  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@63c2f91 in: CREATED
+10-05 06:40:00.732  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@63c2f91 in: STARTED
+10-05 06:40:00.732  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@63c2f91 in: RESUMED
+10-05 06:40:00.767  4072  4072 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:40:00.857  4072  4072 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:40:00.857  4072  4072 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:40:00.887  2448  2488 D EGL_emulation: app_time_stats: avg=627.37ms min=424.66ms max=830.08ms count=2
+10-05 06:40:00.897  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2662KB AllocSpace bytes, 52(1636KB) LOS objects, 49% free, 4596KB/9193KB, paused 278us,3.497ms total 180.755ms
+10-05 06:40:00.964   561   581 W ziparchive: Unable to open '/data/app/~~qMaA7MRIxKVGWKFfv6VZbg==/com.openai.fxm1.ec1-XxYMURHFcrSkuJ6Ztydamw==/base.dm': No such file or directory
+10-05 06:40:00.965   561   581 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +733ms
+10-05 06:40:00.979   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:40:00.984   910  1042 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@cd19f0d
+10-05 06:40:00.985   561  1655 W InputManager-JNI: Input channel object 'a16af18 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:40:01.001  4072  6599 D TrafficStats: tagSocket(124) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.013  2448  2448 D BaseDepthController: setSurface:
+10-05 06:40:01.013  2448  2448 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:40:01.013  2448  2448 D BaseDepthController: 	mSurface: null
+10-05 06:40:01.014  2448  2448 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:40:01.014  2448  2448 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:40:01.014  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:40:01.014  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:40:01.014  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:40:01.015  2448  2448 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:40:01.015  2448  2448 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:40:01.016  2448  2520 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:40:01.017  2448  4389 I IPCThreadState: oneway function results for code 2 on binder at 0x78b8cd6615f0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:40:01.108  4072  6600 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.145   910  1050 D EGL_emulation: app_time_stats: avg=342.63ms min=136.24ms max=454.51ms count=3
+10-05 06:40:01.223  4072  6599 D TrafficStats: tagSocket(124) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.268  4072  6599 D TrafficStats: tagSocket(124) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.282   561   681 I ImeTracker: com.openai.fxm1.ec1:15e919f0: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:40:01.282   561   681 I ImeTracker: com.openai.fxm1.ec1:15e919f0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:40:01.289  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:40:01.289  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:40:01.289  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:40:01.292  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:40:01.292  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:40:01.429  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 6078KB AllocSpace bytes, 17(724KB) LOS objects, 49% free, 4500KB/9001KB, paused 185us,58.754ms total 206.619ms
+10-05 06:40:01.585  4072  4085 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.640  4072  4085 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.641  4072  6601 D TrafficStats: tagSocket(141) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.659  4072  4085 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.660  4072  6601 D TrafficStats: tagSocket(141) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.671  4072  4085 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.672  4072  6601 D TrafficStats: tagSocket(141) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.680  4072  4085 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:40:01.686  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:40:01.686  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@63c2f91 in: PAUSED
+10-05 06:40:01.689  4072  4085 I TestRunner: finished: uncertainEmergencyBlocksResetUntilSameIdentityIsAcknowledged(com.openai.fxm1.R73ControlsUiTest)

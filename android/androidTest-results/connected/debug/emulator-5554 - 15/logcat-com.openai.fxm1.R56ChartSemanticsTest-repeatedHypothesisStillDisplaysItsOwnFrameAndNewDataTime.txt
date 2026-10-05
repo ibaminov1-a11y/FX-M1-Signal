@@ -1,0 +1,4 @@
+10-05 06:36:36.370  4072  4085 I TestRunner: started: repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime(com.openai.fxm1.R56ChartSemanticsTest)
+10-05 06:36:36.372  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:36:36.372  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:36:36.390  4072  4085 I TestRunner: finished: repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime(com.openai.fxm1.R56ChartSemanticsTest)

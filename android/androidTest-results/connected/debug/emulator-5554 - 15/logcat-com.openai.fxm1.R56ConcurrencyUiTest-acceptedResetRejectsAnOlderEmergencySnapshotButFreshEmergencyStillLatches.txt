@@ -1,0 +1,22 @@
+10-05 06:36:36.807  4072  4085 I TestRunner: started: acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches(com.openai.fxm1.R56ConcurrencyUiTest)
+10-05 06:36:36.807  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2826KB AllocSpace bytes, 27(1156KB) LOS objects, 49% free, 3820KB/7641KB, paused 67us,6.774ms total 33.602ms
+10-05 06:36:36.824  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.854  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.879  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.880   369  5811 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:36:36.880   369  5811 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:36:36.890  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.909  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.913  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.917  4072  5832 D TrafficStats: tagSocket(122) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.960  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.972  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.988  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:36.988   369  5811 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:36:36.988   369  5811 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:36:37.003  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:37.031  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:37.042  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:37.060  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:36:37.064  4072  4085 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:36:37.064  4072  4085 I TestRunner: finished: acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches(com.openai.fxm1.R56ConcurrencyUiTest)

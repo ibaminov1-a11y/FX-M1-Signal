@@ -1,0 +1,114 @@
+10-05 06:29:47.250  4072  4085 I TestRunner: started: openCampaignMustNotOverwriteCurrentAnalysisSignal(com.openai.fxm1.CampaignSignalUiTest)
+10-05 06:29:47.255  1399  3595 I Icing   : Indexing com.google.android.gms-apps from com.google.android.gms
+10-05 06:29:47.256  1399  3595 I Icing   : Indexing done com.google.android.gms-apps
+10-05 06:29:47.256  1514  1805 I A       : Running throttled refresh
+10-05 06:29:47.257  1514  1905 I A       : Running throttled refresh
+10-05 06:29:47.257  1514  1905 I A       : Running throttled refresh
+10-05 06:29:47.259  1514  1805 I SettingsDataLayer.ML: (REDACTED) #shouldMigrate(): allowMobileLocaleSettingsDataMigration = %b,
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/CredentialManager/CredentialManager.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/FontNotoSerifSource/FontNotoSerifSourceOverlay.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DeviceAsWebcam/DeviceAsWebcam.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/ProxyHandler/ProxyHandler.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.permission/priv-app/GoogleSafetyCenterResources@350820360/GoogleSafetyCenterResources.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/DisplayCutoutEmulationWaterfall/DisplayCutoutEmulationWaterfallOverlay.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/IntentResolver/IntentResolver.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/TransparentNavigationBar/TransparentNavigationBarOverlay.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/E2eeContactKeysProvider/E2eeContactKeysProvider.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.tethering/priv-app/ServiceConnectivityResourcesGoogle@350820300/ServiceConnectivityResourcesGoogle.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/goldfish_overlay_connectivity_google.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/GoogleFeedback/GoogleFeedback.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/GooglePrintRecommendationService/GooglePrintRecommendationService.apk' with 1 weak references
+10-05 06:29:47.259  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Photos/Photos.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/CalendarGooglePrebuilt/CalendarGooglePrebuilt.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/ManagedProvisioning/ManagedProvisioning.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/SoundPicker/SoundPicker.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DocumentsUIGoogle/DocumentsUIGoogle.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGoogleTelemetryTvp/PrebuiltGoogleTelemetryTvp.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/MultiDisplayProvider/MultiDisplayProvider.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DeviceDiagnostics/DeviceDiagnostics.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/DeviceDiagnostics__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/NotesRoleEnabled/NotesRoleEnabledOverlay.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/LiveWallpapersPicker/LiveWallpapersPicker.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGoogleAdservicesTvp/PrebuiltGoogleAdservicesTvp.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.healthfitness/priv-app/HealthConnectControllerGoogle@350820300/HealthConnectControllerGoogle.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/KidsSupervisionStub/KidsSupervisionStub.apk' with 1 weak references
+10-05 06:29:47.260  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/StorageManager/StorageManager.apk' with 1 weak references
+10-05 06:29:47.264  1514  1905 I A       : Running throttled refresh
+10-05 06:29:47.264  1514  1905 I A       : Running throttled refresh
+10-05 06:29:47.284  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/StorageManager__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:29:47.284  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/BookmarkProvider/BookmarkProvider.apk' with 1 weak references
+10-05 06:29:47.285  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SettingsGoogle/SettingsGoogle.apk' with 1 weak references
+10-05 06:29:47.290  1399  3595 I Icing   : Indexing com.google.android.gms-apps from com.google.android.gms
+10-05 06:29:47.290  1399  3595 I Icing   : Indexing done com.google.android.gms-apps
+10-05 06:29:47.292  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.292  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.292  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.292  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.292  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.292  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.292  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.292  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.292  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.292  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.292  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.292  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.292  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.293  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.293  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.293  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.293  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.293  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.293  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.293  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.293  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.293  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.293  1425  1838 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+10-05 06:29:47.293  1425  1838 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+10-05 06:29:47.303  1514  1826 W MDD     : GddFileGroupPopulator: Account was not provided, skipping private sync for corpus: GDD_APA_HEAD_SUGGEST, configuration: GddAgsaApaHeadSuggest
+10-05 06:29:47.304  1514  1745 W MDD     : GddFileGroupPopulator: Account was not provided, skipping private sync for corpus: GDD_AIP_TOAST_QUALITY, configuration: GddAipToastQuality
+10-05 06:29:47.304  1514  1825 W MDD     : GddFileGroupPopulator: Account was not provided, skipping private sync for corpus: GDD_APA_BISTO, configuration: GddAgsaApaBisto
+10-05 06:29:47.305  1514  1774 W MDD     : GddFileGroupPopulator: Account was not provided, skipping private sync for corpus: GDD_APA_LIGHTWEIGHT_TOKENS, configuration: GddAgsaApaLightweightTokens
+10-05 06:29:47.307  1514  1774 W A       : (REDACTED) Corpus: %s is disabled
+10-05 06:29:47.311  1514  1774 W MDD     : GddFileGroupPopulator: Account was not provided, skipping private sync for corpus: GDD_APA_HOTWORD_MODEL, configuration: GddAgsaApaHotword
+10-05 06:29:47.311  1514  1905 I A       : (REDACTED) Starting batch sync for corpora: %s
+10-05 06:29:47.311  1514  1805 I A       : (REDACTED) Starting batch sync for corpora: %s
+10-05 06:29:47.312  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/SettingsGoogle__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:29:47.312  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SettingsIntelligenceGooglePrebuilt/SettingsIntelligenceGooglePrebuilt.apk' with 1 weak references
+10-05 06:29:47.312  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.uwb/priv-app/ServiceUwbResourcesGoogle@350820300/ServiceUwbResourcesGoogle.apk' with 1 weak references
+10-05 06:29:47.312  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.wifi/priv-app/ServiceWifiResourcesGoogle@350820300/ServiceWifiResourcesGoogle.apk' with 1 weak references
+10-05 06:29:47.312  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/ThemePicker/ThemePicker.apk' with 1 weak references
+10-05 06:29:47.312  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/WallpaperPickerGoogleRelease/WallpaperPickerGoogleRelease.apk' with 1 weak references
+10-05 06:29:47.312  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/OdadPrebuilt/OdadPrebuilt.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/TeleService/TeleService.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/TeleService__sdk_gphone64_x86_64__auto_generated_rro_vendor.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/TeleService__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/Shell/Shell.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/BlockedNumberProvider/BlockedNumberProvider.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/UserDictionaryProvider/UserDictionaryProvider.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/EmergencyInfoGoogleNoUi/EmergencyInfoGoogleNoUi.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/NavigationBarModeGestural/NavigationBarModeGesturalOverlay.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/FusedLocation/FusedLocation.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SystemUIGoogle/SystemUIGoogle.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/SystemUIGoogle__sdk_gphone64_x86_64__auto_generated_rro_vendor.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/SystemUIGoogle__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/SystemUIEmulationPixel6/SystemUIEmulationPixel6Overlay.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/YouTubeMusicPrebuilt/YouTubeMusicPrebuilt.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/BluetoothMidiService/BluetoothMidiService.apk' with 1 weak references
+10-05 06:29:47.313  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/Traceur/Traceur.apk' with 1 weak references
+10-05 06:29:47.314  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.cellbroadcast/priv-app/GoogleCellBroadcastApp@350820300/GoogleCellBroadcastApp.apk' with 1 weak references
+10-05 06:29:47.314  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/ContactsProvider/ContactsProvider.apk' with 1 weak references
+10-05 06:29:47.314  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/ContactsProvider__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:29:47.314  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk' with 1 weak references
+10-05 06:29:47.314  1356  1373 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/GoogleRestorePrebuilt-v526684/GoogleRestorePrebuilt-v526684.apk' with 1 weak references
+10-05 06:29:47.315  1514  1905 I A       : (REDACTED) Starting batch sync for corpora: %s
+10-05 06:29:47.333  1514  1805 I A       : (REDACTED) Starting batch sync for corpora: %s
+10-05 06:29:47.340  1514  1774 I AppStateUtil: (REDACTED) getting App Capabilities %s
+10-05 06:29:47.341  1514  1774 I DPContextParams: Building Device Properties.
+10-05 06:29:47.341  1514  1774 I AppStateUtil: (REDACTED) getting App Capabilities %s
+10-05 06:29:47.341  1514  1774 I DPContextParams: Building Device Properties.
+10-05 06:29:47.366  1514  1774 I A       : (REDACTED) Setting isLegacySQLite mode to %s.
+10-05 06:29:47.378  1514  3202 I A       : The GellerConfig is not present, returning null.
+10-05 06:29:47.379  1514  3202 I A       : (REDACTED) The GellerConfig is not present, defaulting isUploadEnabled for corpus %s to true.
+10-05 06:29:47.382  1514  2563 I A       : (REDACTED) No previous syncToken for corpus %s found.
+10-05 06:29:47.384  1212  3797 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.pay.gcmtask.PayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 127 [CONTEXT service_id=218 ]
+10-05 06:29:47.387  4072  4085 I TestRunner: finished: openCampaignMustNotOverwriteCurrentAnalysisSignal(com.openai.fxm1.CampaignSignalUiTest)

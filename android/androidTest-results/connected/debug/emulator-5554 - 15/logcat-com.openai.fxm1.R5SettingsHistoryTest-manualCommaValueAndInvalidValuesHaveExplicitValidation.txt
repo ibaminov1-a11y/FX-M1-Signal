@@ -1,0 +1,7 @@
+10-05 06:38:52.313  4072  4085 I TestRunner: started: manualCommaValueAndInvalidValuesHaveExplicitValidation(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 06:38:52.344   561  1655 W InputManager-JNI: Input channel object 'a0f7633 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:38:52.350  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=84
+10-05 06:38:52.350  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=84
+10-05 06:38:52.688  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:52.704  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:52.722  4072  4085 I TestRunner: finished: manualCommaValueAndInvalidValuesHaveExplicitValidation(com.openai.fxm1.R5SettingsHistoryTest)

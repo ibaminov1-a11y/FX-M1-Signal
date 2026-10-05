@@ -1,0 +1,270 @@
+10-05 06:37:03.038  4072  4085 I TestRunner: started: observerLivePriceUpdatesWhilePhoneMonitoringIsStopped(com.openai.fxm1.R56TimeframesUiTest)
+10-05 06:37:03.040  4072  4085 D UiDevice: Turning on screen.
+10-05 06:37:03.080   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.080   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.180   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.180   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.284   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.284   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.388   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.388   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.426  4072  4085 D UiDevice: Pressing home button.
+10-05 06:37:03.457   561   582 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10178, packageName = null, attributionTag = null, token = android.os.Binder@cb945bb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:37:03.459   910   910 I vol.VolumeDialogImpl: mDialog.dismiss() reason: volume_controller from: com.android.systemui.volume.VolumeDialogImpl$7.onDismissRequested:3
+10-05 06:37:03.459   910  1511 D KeyguardService: setOccluded(false)
+10-05 06:37:03.459   910  1511 D KeyguardViewMediator: setOccluded(false)
+10-05 06:37:03.459   910   910 D KeyguardViewMediator: handleSetOccluded(false)
+10-05 06:37:03.459   910   910 D KeyguardViewMediator: KeyguardViewMediator queue processing message: SET_OCCLUDED
+10-05 06:37:03.460  2448  2448 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:37:03.460  2448  2448 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:37:03.460  2448  2448 D OverviewCommandHelper: clearing pending commands - size: 0
+10-05 06:37:03.460  2448  2448 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:37:03.468   561  1486 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:37:03.469  2448  2497 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:37:03.473  2448  2520 D OneSearchSuggestProvider: Established or reuse existing binder channel authority=com.google.android.googlequicksearchbox
+10-05 06:37:03.484  1425  1775 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:37:03.484  1425  1775 I AiAiEcho: EchoTargets:
+10-05 06:37:03.484  1425  1775 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:37:03.484  1425  1775 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:37:03.484  1425  1775 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:37:03.484  1425  1775 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:37:03.485  1425  1775 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:37:03.485  2448  2448 D SsBaseTemplateCard: No text view can be set up
+10-05 06:37:03.485  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:37:03.485  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:37:03.486  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:37:03.486  2448  2448 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:37:03.495   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.495   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: query= size=15
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=gold nuclei collisions particle physics,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=gold nuclei collisions particle physics searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 4a2538e1-2d69-4d06-be96-447b95790d81
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=shane lilly dog legal battle,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=shane lilly dog legal battle searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 3a574aee-cf4c-4359-871a-963c4039b007
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=godzilla minus zero popcorn bucket,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=godzilla minus zero popcorn bucket searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: e242ce5b-d4ac-4976-a0f0-9232621ef511
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=karl burke horse fallen angel,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=karl burke horse fallen angel searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 1bc4377d-6937-499e-a812-f0b7f20c9341
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=australia mountain ash forest thinning experiment,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=australia mountain ash forest thinning experiment searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 62d68413-3505-4cd3-be1b-4e9ddc62a156
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=usgs el nino winter snowfall map,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=usgs el nino winter snowfall map searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 981cc2a5-7723-4b3a-9f82-1e0f968a54a7
+10-05 06:37:03.499  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=jagex runescape 4,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=jagex runescape 4 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: a69d0f97-55b0-440e-aa91-74553248891d
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,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
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=uss dwight d eisenhower cvn 69,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=uss dwight d eisenhower cvn 69 searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 7be1583d-0169-459b-bd8d-1404c2f55802
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=cryptocurrency,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=cryptocurrency searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: da433482-8a3f-4627-b6f2-1c9164ce2fcd
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=espn ncaa football rankings,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=espn ncaa football rankings searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 97c780ac-df91-467e-aacc-0d0fc0f1a1bc
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,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
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=lagoon amusement park,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=lagoon amusement park searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: ec10d102-668b-41b0-bb65-0d643bf2e07d
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=google fitbit edge,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=google fitbit edge searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 4994334e-9144-480b-83af-bae06750e44a
+10-05 06:37:03.500  2448  2448 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=stock market,input_query=android.app.search.Query@2703e0a,group_id=web564110,response_id=4ee1c16d-fe52-4ba2-a40b-0a05bef58249,support_query_builder=false,} searchAction=stock market searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 1034ab73-3aff-4da8-b17c-421684218a0a
+10-05 06:37:03.544  2448  2468 W System  : A resource failed to call release.
+10-05 06:37:03.544  2448  2468 W System  : A resource failed to call release.
+10-05 06:37:03.545  2448  2468 W System  : A resource failed to call release.
+10-05 06:37:03.596   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.596   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.643  1427  1427 D WM-DelayedWorkTracker: Scheduling work b51eb1f2-0e22-4069-8cb0-512561e81391
+10-05 06:37:03.643  1427  1427 D WM-GreedyScheduler: Starting tracking for b51eb1f2-0e22-4069-8cb0-512561e81391
+10-05 06:37:03.645  1427  1660 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:37:03.645  1427  1660 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:37:03.645  1427  1660 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=b51eb1f2-0e22-4069-8cb0-512561e81391, generation=0)
+10-05 06:37:03.646  1427  1660 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=b51eb1f2-0e22-4069-8cb0-512561e81391, generation=0)
+10-05 06:37:03.647  1427  1427 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:37:03.648  1427  4769 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:37:03.648  1427  4769 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@d61b49[Not completed, 1 dependents]. Future map: {b51eb1f2-0e22-4069-8cb0-512561e81391=java.util.concurrent.CompletableFuture@d61b49[Not completed, 1 dependents]}
+10-05 06:37:03.648  1427  4769 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:37:03.648  1427  4769 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:37:03.650  1427  4769 D PickerSyncController:    Latest ID/Gen=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary/179
+10-05 06:37:03.650  1427  4769 D PickerSyncController:    Cached ID/Gen=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary/171
+10-05 06:37:03.650  1427  4769 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=171, latest=Bundle[{last_media_sync_generation=179, media_collection_id=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary}], pageSize=1000}
+10-05 06:37:03.650  1427  4769 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:37:03.650  1427  4769 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:37:03.650  1427  4769 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-3]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.651  1427  4769 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.651  1427  4769 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:37:03.656  1427  4769 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:37:03.657  1427  4769 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-3]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.657  1427  4769 D PickerSyncController: Saving next page token: 1791182222000|1000000047 for key: local_provider:media_add:resume
+10-05 06:37:03.657  1427  4769 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.657  1427  4769 D PickerNotificationSender: Sending a notification for media update
+10-05 06:37:03.658  1427  4769 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:37:03.658  1427  4769 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:37:03.658  1427  4769 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:37:03.658  1427  4769 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:37:03.658  1427  4769 D ExternalDbFacade: Token received for queryMedia = 1791182222000|1000000047
+10-05 06:37:03.659  1427  4769 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:37:03.660  1427  4769 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-3]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.660  1427  4769 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:37:03.660  1427  4769 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.660  1427  4769 D PickerNotificationSender: Sending a notification for media update
+10-05 06:37:03.660  1427  4769 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:37:03.660  1427  4769 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:37:03.660  1427  4769 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:37:03.660  1427  4769 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:37:03.661  1427  4769 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791182222000|1000000047, android.provider.extra.SYNC_GENERATION=171, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 1
+10-05 06:37:03.661  1427  4769 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:37:03.661  1427  4769 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:37:03.661  1427  4769 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-3]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.661  1427  4769 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.662  1427  4769 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:37:03.662  1427  4769 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-3]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.662  1427  4769 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:37:03.662  1427  4769 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:37:03.662  1427  4769 D PickerNotificationSender: Sending a notification for media update
+10-05 06:37:03.662  1427  4769 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:37:03.662  1427  4769 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:37:03.663  1427  4769 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:37:03.663  1427  4769 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:37:03.664  1427  4769 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791182222000|1000000047, android.provider.extra.SYNC_GENERATION=171, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:37:03.664  1427  4769 I PickerSyncTracker: Marked sync future complete for work id: b51eb1f2-0e22-4069-8cb0-512561e81391. Future map: {}
+10-05 06:37:03.664  1427  4769 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:37:03.666  1427  1695 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=b51eb1f2-0e22-4069-8cb0-512561e81391, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:37:03.667  1427  1427 D WM-Processor: Processor b51eb1f2-0e22-4069-8cb0-512561e81391 executed; reschedule = false
+10-05 06:37:03.667  1427  1427 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=b51eb1f2-0e22-4069-8cb0-512561e81391, generation=0)
+10-05 06:37:03.669  1427  1660 D WM-GreedyScheduler: Cancelling work ID b51eb1f2-0e22-4069-8cb0-512561e81391
+10-05 06:37:03.670  1427  1660 D WM-GreedyScheduler: Ignoring {WorkSpec: 4eafc429-d1fa-4e83-86d5-c06d5053dd61}. Requires device idle.
+10-05 06:37:03.670  1427  1660 D WM-GreedyScheduler: Ignoring {WorkSpec: f6faa6e3-9d7b-4e55-81f9-1c020c77092e}. Requires device idle.
+10-05 06:37:03.670  1427  1660 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:37:03.700   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.700   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.804   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.804   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.908   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:03.908   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:03.931  2448  2488 D EGL_emulation: app_time_stats: avg=204.66ms min=39.07ms max=554.63ms count=7
+10-05 06:37:04.012   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.012   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.116   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.116   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.166  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:04.187  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:04.220   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.220   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.250  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:04.292   561  1907 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@cb945bb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:37:04.298  2448  2448 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:37:04.298  2448  2448 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:37:04.302   910  1043 D SplashScreenView: Build android.window.SplashScreenView{8217e28 V.E...... ......ID 0,0-0,0}
+10-05 06:37:04.302   910  1043 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:37:04.302   910  1043 D SplashScreenView: Branding: view: android.view.View{5a31741 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:37:04.307   432   432 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:37:04.308  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=71, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:37:04.310  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@61c7975 in: PRE_ON_CREATE
+10-05 06:37:04.315   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:37:04.318  4072  4072 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:37:04.328   360   360 I netd    : tetherGetStats() -> {[]} <2.36ms>
+10-05 06:37:04.328   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.330   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.463   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.463   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.548  2448  2488 D EGL_emulation: app_time_stats: avg=2034.45ms min=2034.45ms max=2034.45ms count=1
+10-05 06:37:04.552  2448  2448 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:37:04.557  2448  2448 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:37:04.596   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.597   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.602   910  1050 D EGL_emulation: app_time_stats: avg=4565.75ms min=4565.75ms max=4565.75ms count=1
+10-05 06:37:04.705   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.705   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.781  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@61c7975 in: CREATED
+10-05 06:37:04.781  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@61c7975 in: STARTED
+10-05 06:37:04.782  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@61c7975 in: RESUMED
+10-05 06:37:04.813   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.813   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.872  4072  4072 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:37:04.873  4072  4072 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:37:04.873  4072  4072 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:37:04.900  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4076KB AllocSpace bytes, 59(2348KB) LOS objects, 49% free, 7248KB/14MB, paused 255us,9.681ms total 356.595ms
+10-05 06:37:04.916   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:04.916   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:04.996   561   581 W ziparchive: Unable to open '/data/app/~~qMaA7MRIxKVGWKFfv6VZbg==/com.openai.fxm1.ec1-XxYMURHFcrSkuJ6Ztydamw==/base.dm': No such file or directory
+10-05 06:37:05.002   561   581 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +705ms
+10-05 06:37:05.017   910  1042 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@32454d4
+10-05 06:37:05.018   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:37:05.020   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:05.020   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:05.021   561  1209 W InputManager-JNI: Input channel object 'e2b8c09 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:37:05.031  2448  2448 D BaseDepthController: setSurface:
+10-05 06:37:05.031  2448  2448 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:37:05.031  2448  2448 D BaseDepthController: 	mSurface: null
+10-05 06:37:05.031  2448  2448 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:37:05.031  2448  2448 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:37:05.031  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:37:05.031  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:37:05.031  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:37:05.031  2448  2448 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:37:05.033  2448  2520 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:37:05.035  2448  2448 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:37:05.037  2448  2688 I IPCThreadState: oneway function results for code 2 on binder at 0x78b8cd62b170 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:37:05.111  4072  5924 D TrafficStats: tagSocket(126) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:05.125   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:05.125   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:05.182  4072  5924 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:05.197  4072  5924 D TrafficStats: tagSocket(126) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:05.228   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:05.228   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:05.247  4072  5925 D TrafficStats: tagSocket(126) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:05.292   369  4416 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 5783808
+10-05 06:37:05.309  4072  4072 I Choreographer: Skipped 31 frames!  The application may be doing too much work on its main thread.
+10-05 06:37:05.332   369  5897 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:37:05.332   369  5897 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:37:05.349   561   681 I ImeTracker: com.openai.fxm1.ec1:c9b46db0: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:37:05.350   561   681 I ImeTracker: com.openai.fxm1.ec1:c9b46db0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:37:05.354  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:37:05.354  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:37:05.354  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:37:05.354  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:37:05.354  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:37:05.677   428  2697 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 06:37:05.677   561  2070 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 17
+10-05 06:37:05.696  4072  4085 D UiDevice: Waiting 4000ms for SearchCondition[findObject=BySelector [TEXT='\QM1\E']].
+10-05 06:37:05.696  4072  4085 D UiDevice: Retrieving node with selector: BySelector [TEXT='\QM1\E'].
+10-05 06:37:05.958   428   535 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 06:37:06.450  4072  4122 D EGL_emulation: app_time_stats: avg=242.51ms min=60.36ms max=395.79ms count=6
+10-05 06:37:07.030  4072  4085 D UiObject2: Clicking on (540, 712).
+10-05 06:37:07.086  4072  4122 D EGL_emulation: app_time_stats: avg=221.00ms min=24.32ms max=906.43ms count=6
+10-05 06:37:07.110  4072  4085 W GestureController: Gestures took longer than expected (80ms >> 16ms), device might be in a busy state.
+10-05 06:37:07.253   428  2697 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 06:37:07.253   561  1655 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 17
+10-05 06:37:07.256  4072  4072 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@e52af9e
+10-05 06:37:07.261   561  1907 W InputManager-JNI: Input channel object '72fe621 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:37:07.273  4072  5928 D TrafficStats: tagSocket(134) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:07.314   428   535 D AudioFlinger: mixer(0x7365ae2ba8e0) throttle end: throttle time(40)
+10-05 06:37:07.362   561   681 I ImeTracker: com.openai.fxm1.ec1:84410ee1: onRequestHide at ORIGIN_SERVER reason HIDE_SAME_WINDOW_FOCUSED_WITHOUT_EDITOR fromUser false
+10-05 06:37:07.363   561   681 I ImeTracker: com.openai.fxm1.ec1:84410ee1: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:37:07.364  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:37:07.367  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:37:07.367  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:37:07.367  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:37:07.367  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:37:07.369   428   535 D AudioFlinger: mixer(0x7365ae2ba8e0) throttle end: throttle time(24)
+10-05 06:37:07.497   428   535 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 06:37:07.520  4072  4122 D EGL_emulation: app_time_stats: avg=96.25ms min=55.44ms max=176.83ms count=11
+10-05 06:37:07.566  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 6346KB AllocSpace bytes, 26(1188KB) LOS objects, 49% free, 5205KB/10MB, paused 516us,2.989ms total 151.809ms
+10-05 06:37:07.573  4072  5928 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:07.720  4072  4085 D TrafficStats: tagSocket(126) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:08.776  4072  4122 D EGL_emulation: app_time_stats: avg=418.45ms min=95.31ms max=1035.81ms count=3
+10-05 06:37:09.802  4072  5925 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:09.892  4072  4122 D EGL_emulation: app_time_stats: avg=558.25ms min=95.18ms max=1021.32ms count=2
+10-05 06:37:09.921  4072  5925 D TrafficStats: tagSocket(131) with statsTag=0xffffffff, statsUid=-1
+10-05 06:37:10.048  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:37:10.051  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@61c7975 in: PAUSED
+10-05 06:37:10.062  2448  2448 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=false newVisibility=true
+10-05 06:37:10.062  2448  2448 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+10-05 06:37:10.073  2448  2448 D BaseDepthController: setSurface:
+10-05 06:37:10.073  2448  2448 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:37:10.073  2448  2448 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0xf8427ba
+10-05 06:37:10.093  4072  4085 I TestRunner: finished: observerLivePriceUpdatesWhilePhoneMonitoringIsStopped(com.openai.fxm1.R56TimeframesUiTest)

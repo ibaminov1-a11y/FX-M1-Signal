@@ -1,0 +1,1 @@
+{"ok": true, "platform": "win32", "commit": "61144e1a01520017b7c623b7cb4b955688397d4e", "tests": 43, "cmd_install": true, "broken_colorama_repaired": true, "mixed_event_core_replaced": true, "installed_help": true, "fresh_environment": true, "installed_launcher_check": true, "read_only_diagnostics": true, "live_mt5": false}

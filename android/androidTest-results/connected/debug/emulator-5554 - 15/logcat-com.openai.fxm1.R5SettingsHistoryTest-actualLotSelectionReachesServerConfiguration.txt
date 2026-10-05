@@ -1,0 +1,154 @@
+10-05 06:38:53.115  4072  4085 I TestRunner: started: actualLotSelectionReachesServerConfiguration(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 06:38:53.469  4072  4085 D TrafficStats: tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:53.493  4072  4085 D TrafficStats: tagSocket(6) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:53.512   561  1907 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@cb945bb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:38:53.517   910  1043 D SplashScreenView: Build android.window.SplashScreenView{1cb4e11 V.E...... ......ID 0,0-0,0}
+10-05 06:38:53.517   910  1043 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:38:53.517   910  1043 D SplashScreenView: Branding: view: android.view.View{77f9b76 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:38:53.519   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:53.521  2448  2448 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:38:53.522  2448  2448 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:38:53.524   432   432 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:38:53.530  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=85, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:38:53.537  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@75bfbd6 in: PRE_ON_CREATE
+10-05 06:38:53.541   360   360 I netd    : tetherGetStats() -> {[]} <0.34ms>
+10-05 06:38:53.622  4072  4072 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:38:53.639  2448  2488 D EGL_emulation: app_time_stats: avg=245.46ms min=36.45ms max=1299.18ms count=7
+10-05 06:38:53.840  2448  2488 D EGL_emulation: app_time_stats: avg=1846.89ms min=1846.89ms max=1846.89ms count=1
+10-05 06:38:53.842  2448  2448 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:38:53.844   910  1050 D EGL_emulation: app_time_stats: avg=777.98ms min=6.38ms max=2644.58ms count=4
+10-05 06:38:53.873  2448  2448 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:38:53.926  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@75bfbd6 in: CREATED
+10-05 06:38:53.926  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@75bfbd6 in: STARTED
+10-05 06:38:53.927  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@75bfbd6 in: RESUMED
+10-05 06:38:53.959  4072  4122 I EGL_emulation: Opening libGLESv1_CM_emulation.so
+10-05 06:38:53.960  4072  4122 I EGL_emulation: Opening libGLESv2_emulation.so
+10-05 06:38:53.964  4072  4072 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:38:53.965  4072  4072 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:38:53.965  4072  4072 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:38:53.979  4072  4122 W HWUI    : Failed to initialize 101010-2 format, error = EGL_SUCCESS
+10-05 06:38:54.120   360   360 I netd    : tetherGetStats() -> {[]} <0.24ms>
+10-05 06:38:54.122   360   360 I netd    : bandwidthSetGlobalAlert(2097152) <0.09ms>
+10-05 06:38:54.936   561   581 W ziparchive: Unable to open '/data/app/~~qMaA7MRIxKVGWKFfv6VZbg==/com.openai.fxm1.ec1-XxYMURHFcrSkuJ6Ztydamw==/base.dm': No such file or directory
+10-05 06:38:54.937   561   581 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +1s425ms
+10-05 06:38:54.948   910  1042 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@67a6c50
+10-05 06:38:54.949   561  1907 W InputManager-JNI: Input channel object '23f9357 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:38:54.958  2448  2448 D BaseDepthController: setSurface:
+10-05 06:38:54.958  2448  2448 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:38:54.958  2448  2448 D BaseDepthController: 	mSurface: null
+10-05 06:38:54.958  2448  2448 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:38:54.959  2448  2448 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:38:54.959  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:38:54.959  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:38:54.959  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:38:54.959  2448  2448 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:38:54.961  2448  2520 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:38:54.961  2448  2471 I IPCThreadState: oneway function results for code 2 on binder at 0x78b8cd60fea0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:38:54.965  2448  2448 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:38:54.965  4072  4083 I HWUI    : Davey! duration=1266ms; Flags=1, FrameTimelineVsyncId=102996, IntendedVsync=674321702259, Vsync=674571702249, InputEventId=0, HandleInputStart=674582108559, AnimationStart=674582109681, PerformTraversalsStart=674582116133, DrawStart=674649641057, FrameDeadline=674338368925, FrameInterval=674581931137, FrameStartTime=16666666, SyncQueued=674657611304, SyncStart=674657808922, IssueDrawCommandsStart=674658088353, SwapBuffers=675466672519, FrameCompleted=675588561105, DequeueBufferDuration=3096, QueueBufferDuration=141403, GpuCompleted=675588561105, SwapBuffersCompleted=675575508290, DisplayPresentTime=0, CommandSubmissionCompleted=675466672519,
+10-05 06:38:54.967  4072  6207 D TrafficStats: tagSocket(126) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:54.970   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:54.977   360   360 I netd    : tetherGetStats() -> {[]} <0.69ms>
+10-05 06:38:55.004  4072  6208 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:55.021   910  1050 D EGL_emulation: app_time_stats: avg=588.34ms min=65.36ms max=1111.32ms count=2
+10-05 06:38:55.067  4072  6207 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:55.098  4072  4072 I Choreographer: Skipped 69 frames!  The application may be doing too much work on its main thread.
+10-05 06:38:55.098  2448  2488 D EGL_emulation: app_time_stats: avg=628.77ms min=65.58ms max=1191.95ms count=2
+10-05 06:38:55.106  4072  6207 D TrafficStats: tagSocket(126) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:55.151   561   681 I ImeTracker: com.openai.fxm1.ec1:58e344da: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:38:55.151   561   681 I ImeTracker: com.openai.fxm1.ec1:58e344da: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:38:55.156  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:38:55.157  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:38:55.161  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:38:55.161  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:38:55.161  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:38:55.274  4072  4628 I HWUI    : Davey! duration=1267ms; Flags=0, FrameTimelineVsyncId=103082, IntendedVsync=674588368915, Vsync=675738368869, InputEventId=0, HandleInputStart=675746909931, AnimationStart=675746911084, PerformTraversalsStart=675747142925, DrawStart=675748300452, FrameDeadline=675621702207, FrameInterval=675746353916, FrameStartTime=16666666, SyncQueued=675766501948, SyncStart=675766562810, IssueDrawCommandsStart=675766787718, SwapBuffers=675775709508, FrameCompleted=675855659271, DequeueBufferDuration=3997, QueueBufferDuration=262109, GpuCompleted=675855598168, SwapBuffersCompleted=675855659271, DisplayPresentTime=0, CommandSubmissionCompleted=675775709508,
+10-05 06:38:55.391  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5849KB AllocSpace bytes, 17(760KB) LOS objects, 49% free, 5792KB/11MB, paused 35.623ms,3.422ms total 346.907ms
+10-05 06:38:55.417   561  1907 D WifiNl80211Manager: Scan result ready event
+10-05 06:38:55.417   561  1907 D WifiNative: Scan result ready event
+10-05 06:38:55.422   561   824 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+10-05 06:38:56.531  4072  4085 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:56.579  4072  6209 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:56.595  4072  4122 D EGL_emulation: app_time_stats: avg=117.10ms min=54.92ms max=386.95ms count=14
+10-05 06:38:56.687  4072  6209 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:56.707  4072  6209 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:56.717  4072  6209 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:56.832  4072  4085 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:56.903   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:56.912  3269  3269 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:38:56.916  1212  1516 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:38:56.916  1212  1516 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:38:56.919   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:56.919   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:56.919   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:56.919   561   831 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:56.928  3566  3628 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[b71021e4-c08e]>Handler" thread_id=62 ]
+10-05 06:38:56.929  3566  3614 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=54 ]
+10-05 06:38:57.065  6214  6214 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-05 06:38:57.065  6214  6214 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-05 06:38:57.074   151   151 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-05 06:38:57.074  6214  6217 I Gralloc4: mapper 4.x is not supported
+10-05 06:38:57.111  1427  1791 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:38:57.147  1212  6042 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 677 [CONTEXT service_id=218 ]
+10-05 06:38:57.172  1212  6042 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 40 uptime_millis: 40 exec_start_elapsed_seconds: 677 [CONTEXT service_id=218 ]
+10-05 06:38:57.204  4072  6219 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:57.323   561  1508 I ActivityManager: Broadcasting: Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x400000 }
+10-05 06:38:57.325   561  1907 W JobInfo : Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+10-05 06:38:57.330   561   581 I ActivityManager: Broadcast completed: result=0
+10-05 06:38:57.332  1427  2100 I MediaProvider: Begin Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:38:57.365  1427  1489 I FuseDaemon: Waiting for a blocking GC ProfileSaver
+10-05 06:38:57.381  1427  1489 I FuseDaemon: WaitForGcToComplete blocked ProfileSaver on Background for 16.044ms
+10-05 06:38:57.400  1427  2100 I MediaProvider: End Intent { act=android.intent.action.MEDIA_SCANNER_SCAN_FILE dat=file:///... flg=0x1400010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService }
+10-05 06:38:57.403  1427  1695 D WM-SystemJobScheduler: Scheduling work ID c5b75750-e37d-4db7-9a9c-418bf6646498Job ID 32
+10-05 06:38:57.406  1427  1695 D WM-GreedyScheduler: Ignoring {WorkSpec: 4eafc429-d1fa-4e83-86d5-c06d5053dd61}. Requires device idle.
+10-05 06:38:57.406  1427  1695 D WM-GreedyScheduler: Ignoring {WorkSpec: f6faa6e3-9d7b-4e55-81f9-1c020c77092e}. Requires device idle.
+10-05 06:38:57.437  1212  6218 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 678 [CONTEXT service_id=218 ]
+10-05 06:38:57.445  1212  6046 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 21 uptime_millis: 21 exec_start_elapsed_seconds: 678 [CONTEXT service_id=218 ]
+10-05 06:38:57.448  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:38:57.459   432   432 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:38:57.521  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 8385KB AllocSpace bytes, 44(2460KB) LOS objects, 49% free, 9204KB/17MB, paused 853us,1.682ms total 353.453ms
+10-05 06:38:57.553  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@75bfbd6 in: PAUSED
+10-05 06:38:57.561  2448  2448 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:38:57.565   561  1486 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:38:57.568  2448  2520 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:38:57.569  2448  2520 D OneSearchSuggestProvider: Created the binder channel successfully for end point service =com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService , mChannel=i1{delegate=f{logId=315, target=directaddress:///AndroidComponentAddress%5BIntent%20%7B%20act=grpc.io.action.BIND%20cmp=com.google.android.googlequicksearchbox/com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService%20%7D%5D}} , mOneSearchConnection=l2.Z@8daab05
+10-05 06:38:57.570  2448  2497 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:38:57.573  1514  1514 I A       : (REDACTED) Created gRPC endpoint for service %s
+10-05 06:38:57.574  2448  2448 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+10-05 06:38:57.582   360   360 I netd    : tetherGetStats() -> {[]} <0.57ms>
+10-05 06:38:57.634  2448  2448 D BaseDepthController: setSurface:
+10-05 06:38:57.634  2448  2448 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:38:57.634  2448  2448 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0xf8427ba
+10-05 06:38:57.669  1425  1775 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:38:57.669  1425  1775 I AiAiEcho: EchoTargets:
+10-05 06:38:57.669  1425  1775 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:38:57.669  1425  1775 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:38:57.669  1425  1775 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:38:57.669  1425  1775 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:38:57.669  1425  1775 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:38:57.671  4072  4122 D EGL_emulation: app_time_stats: avg=214.01ms min=63.64ms max=467.97ms count=5
+10-05 06:38:57.699  2448  2448 D SsBaseTemplateCard: No text view can be set up
+10-05 06:38:57.699  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:38:57.699  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:38:57.699  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:38:57.699  2448  2448 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:38:57.764  4072  4085 I TestRunner: finished: actualLotSelectionReachesServerConfiguration(com.openai.fxm1.R5SettingsHistoryTest)

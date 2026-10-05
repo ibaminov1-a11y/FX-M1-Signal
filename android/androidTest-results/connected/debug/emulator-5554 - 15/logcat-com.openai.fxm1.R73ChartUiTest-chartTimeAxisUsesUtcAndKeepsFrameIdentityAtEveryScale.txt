@@ -1,0 +1,25 @@
+10-05 06:39:18.239  4072  4085 I TestRunner: started: chartTimeAxisUsesUtcAndKeepsFrameIdentityAtEveryScale(com.openai.fxm1.R73ChartUiTest)
+10-05 06:39:18.267  1427  3256 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.290  1212  6046 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 698 [CONTEXT service_id=218 ]
+10-05 06:39:18.291  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 12 uptime_millis: 12 exec_start_elapsed_seconds: 698 [CONTEXT service_id=218 ]
+10-05 06:39:18.300  1427  4963 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.311  1212  6267 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 698 [CONTEXT service_id=218 ]
+10-05 06:39:18.314  1212  6042 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 6 uptime_millis: 6 exec_start_elapsed_seconds: 698 [CONTEXT service_id=218 ]
+10-05 06:39:18.327  1427  3256 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.338  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 698 [CONTEXT service_id=218 ]
+10-05 06:39:18.341  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 6 uptime_millis: 6 exec_start_elapsed_seconds: 698 [CONTEXT service_id=218 ]
+10-05 06:39:18.360  1427  1791 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.383  1427  4963 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.404  1212  6046 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.410  1212  6046 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 12 uptime_millis: 12 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.412  1427  4963 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.428  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.431  1212  6046 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 8 uptime_millis: 8 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.438  1427  3256 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.449  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.452  1212  6267 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 6 uptime_millis: 6 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.463  1427  1791 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.475  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.477  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 5 uptime_millis: 5 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.489  1427  1792 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:39:18.492  4072  4085 I TestRunner: finished: chartTimeAxisUsesUtcAndKeepsFrameIdentityAtEveryScale(com.openai.fxm1.R73ChartUiTest)

@@ -1,0 +1,3 @@
+10-05 06:40:02.762  4072  4085 I TestRunner: started: signalDetailsUseCompactStableHeights(com.openai.fxm1.R7ReleaseUiTest)
+10-05 06:40:02.788  4072  4072 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:40:02.810  4072  4085 I TestRunner: finished: signalDetailsUseCompactStableHeights(com.openai.fxm1.R7ReleaseUiTest)

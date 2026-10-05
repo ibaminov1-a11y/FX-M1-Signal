@@ -1,0 +1,5 @@
+10-05 06:33:40.198  4072  4085 I TestRunner: started: watchingLiveHypothesisDoesNotReplaceFrozenEntryIdentity(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:33:40.213  1212  5156 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 360 [CONTEXT service_id=218 ]
+10-05 06:33:40.216  1212  4944 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 6 uptime_millis: 6 exec_start_elapsed_seconds: 360 [CONTEXT service_id=218 ]
+10-05 06:33:40.285  1427  3256 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:33:40.288  4072  4085 I TestRunner: finished: watchingLiveHypothesisDoesNotReplaceFrozenEntryIdentity(com.openai.fxm1.R53ScenarioDisplayUiTest)

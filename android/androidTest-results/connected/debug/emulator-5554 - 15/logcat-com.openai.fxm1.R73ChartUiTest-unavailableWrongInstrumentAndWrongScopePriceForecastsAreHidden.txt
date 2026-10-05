@@ -1,0 +1,2 @@
+10-05 06:39:17.663  4072  4085 I TestRunner: started: unavailableWrongInstrumentAndWrongScopePriceForecastsAreHidden(com.openai.fxm1.R73ChartUiTest)
+10-05 06:39:17.670  4072  4085 I TestRunner: finished: unavailableWrongInstrumentAndWrongScopePriceForecastsAreHidden(com.openai.fxm1.R73ChartUiTest)

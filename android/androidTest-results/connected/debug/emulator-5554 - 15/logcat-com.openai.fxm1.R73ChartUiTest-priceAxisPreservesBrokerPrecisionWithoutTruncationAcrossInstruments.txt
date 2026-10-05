@@ -1,0 +1,4 @@
+10-05 06:39:18.504  4072  4085 I TestRunner: started: priceAxisPreservesBrokerPrecisionWithoutTruncationAcrossInstruments(com.openai.fxm1.R73ChartUiTest)
+10-05 06:39:18.505  1212  6267 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.508  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 7 uptime_millis: 7 exec_start_elapsed_seconds: 699 [CONTEXT service_id=218 ]
+10-05 06:39:18.514  4072  4085 I TestRunner: finished: priceAxisPreservesBrokerPrecisionWithoutTruncationAcrossInstruments(com.openai.fxm1.R73ChartUiTest)

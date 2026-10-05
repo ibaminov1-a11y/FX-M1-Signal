@@ -1,0 +1,3 @@
+10-05 06:40:02.974  4072  4085 I TestRunner: started: unclearMapShowsSharedEntryLevelsWithoutFakePaths(com.openai.fxm1.ScenarioMapUiTest)
+10-05 06:40:03.027  1427  1792 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:40:03.030  4072  4085 I TestRunner: finished: unclearMapShowsSharedEntryLevelsWithoutFakePaths(com.openai.fxm1.ScenarioMapUiTest)

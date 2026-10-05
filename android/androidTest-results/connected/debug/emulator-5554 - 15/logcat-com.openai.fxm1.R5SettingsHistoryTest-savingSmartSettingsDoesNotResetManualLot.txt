@@ -1,0 +1,252 @@
+10-05 06:38:58.833  4072  4085 I TestRunner: started: savingSmartSettingsDoesNotResetManualLot(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 06:38:58.902  1427  1427 D WM-DelayedWorkTracker: Scheduling work c5b75750-e37d-4db7-9a9c-418bf6646498
+10-05 06:38:58.902  1427  1427 D WM-GreedyScheduler: Starting tracking for c5b75750-e37d-4db7-9a9c-418bf6646498
+10-05 06:38:58.903  1427  1660 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:38:58.903  1427  1660 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:38:58.905  1427  1660 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=c5b75750-e37d-4db7-9a9c-418bf6646498, generation=0)
+10-05 06:38:58.905  1427  1427 D WM-SystemJobService: onStartJob for WorkGenerationalId(workSpecId=c5b75750-e37d-4db7-9a9c-418bf6646498, generation=0)
+10-05 06:38:58.905  1427  1695 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=c5b75750-e37d-4db7-9a9c-418bf6646498, generation=0)
+10-05 06:38:58.906  1427  1695 D WM-Processor: Work WorkGenerationalId(workSpecId=c5b75750-e37d-4db7-9a9c-418bf6646498, generation=0) is already enqueued for processing
+10-05 06:38:58.907  1427  1427 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:38:58.907  1427  4801 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:38:58.907  1427  4801 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@17b50c2[Not completed, 1 dependents]. Future map: {c5b75750-e37d-4db7-9a9c-418bf6646498=java.util.concurrent.CompletableFuture@17b50c2[Not completed, 1 dependents]}
+10-05 06:38:58.908  1427  4801 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:38:58.908  1427  4801 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:38:58.909  1427  4801 D PickerSyncController:    Latest ID/Gen=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary/235
+10-05 06:38:58.909  1427  4801 D PickerSyncController:    Cached ID/Gen=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary/227
+10-05 06:38:58.909  1427  4801 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=227, latest=Bundle[{last_media_sync_generation=235, media_collection_id=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary}], pageSize=1000}
+10-05 06:38:58.909  1427  4801 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:38:58.909  1427  4801 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:38:58.909  1427  4801 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.909  1427  4801 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.909  1427  4801 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: Failed to insert picker db media. ContentValues: standard_mime_type_extension=0 size_bytes=0 orientation=0 height=2400 date_taken_ms=1791182337000 duration_ms=0 sync_generation=235 mime_type=image/png width=1080 is_favorite=0 local_id=1000000054 is_visible=1
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: android.database.sqlite.SQLiteConstraintException: CHECK constraint failed: size_bytes > 0 (code 275 SQLITE_CONSTRAINT_CHECK)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteConnection.nativeExecuteForLastInsertedRowId(Native Method)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteConnection.executeForLastInsertedRowId(SQLiteConnection.java:974)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteSession.executeForLastInsertedRowId(SQLiteSession.java:814)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteStatement.executeInsert(SQLiteStatement.java:89)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at android.database.DatabaseUtils.executeInsert(DatabaseUtils.java:212)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteQueryBuilder.insert(SQLiteQueryBuilder.java:638)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$AddMediaOperation.insertMedia(PickerDbFacade.java:520)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$AddMediaOperation.upsertMedia(PickerDbFacade.java:534)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$AddMediaOperation.executeInternal(PickerDbFacade.java:492)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$DbWriteOperation.execute(PickerDbFacade.java:360)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.executePagedSync(PickerSyncController.java:1493)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.executePagedSync(PickerSyncController.java:1412)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.executeSyncAdd(PickerSyncController.java:941)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.syncAllMediaFromProvider(PickerSyncController.java:789)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.syncAllMediaFromLocalProvider(PickerSyncController.java:299)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.sync.ProactiveSyncWorker.doWork(ProactiveSyncWorker.java:89)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at androidx.work.Worker$startWork$1.invoke(Worker.kt:64)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at androidx.work.Worker$startWork$1.invoke(Worker.kt:64)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at androidx.work.WorkerKt.future$lambda$2$lambda$1(Worker.kt:100)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at androidx.work.WorkerKt.$r8$lambda$06LNzu7McnKR6G06fSbfQ2BCegc(Worker.kt:0)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at androidx.work.WorkerKt$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: Retrying failed insert as update. ContentValues: standard_mime_type_extension=0 size_bytes=0 orientation=0 height=2400 date_taken_ms=1791182337000 duration_ms=0 sync_generation=235 mime_type=image/png width=1080 is_favorite=0 local_id=1000000054 is_visible=1
+10-05 06:38:58.910  1427  4801 V PickerDbFacade: Failed to update picker db media. ContentValues: standard_mime_type_extension=0 size_bytes=0 orientation=0 height=2400 date_taken_ms=1791182337000 duration_ms=0 sync_generation=235 mime_type=image/png width=1080 is_favorite=0 local_id=1000000054 is_visible=1
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: Failed to insert picker db media. ContentValues: standard_mime_type_extension=0 size_bytes=0 orientation=0 height=2400 date_taken_ms=1791182337000 duration_ms=0 sync_generation=235 mime_type=image/png width=1080 is_favorite=0 local_id=1000000054 is_visible=1
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: android.database.sqlite.SQLiteConstraintException: CHECK constraint failed: size_bytes > 0 (code 275 SQLITE_CONSTRAINT_CHECK)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteConnection.nativeExecuteForLastInsertedRowId(Native Method)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteConnection.executeForLastInsertedRowId(SQLiteConnection.java:974)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteSession.executeForLastInsertedRowId(SQLiteSession.java:814)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteStatement.executeInsert(SQLiteStatement.java:89)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at android.database.DatabaseUtils.executeInsert(DatabaseUtils.java:212)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at android.database.sqlite.SQLiteQueryBuilder.insert(SQLiteQueryBuilder.java:638)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$AddMediaOperation.insertMedia(PickerDbFacade.java:520)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$AddMediaOperation.upsertMedia(PickerDbFacade.java:534)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$AddMediaOperation.executeInternal(PickerDbFacade.java:509)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.data.PickerDbFacade$DbWriteOperation.execute(PickerDbFacade.java:360)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.executePagedSync(PickerSyncController.java:1493)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.executePagedSync(PickerSyncController.java:1412)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.executeSyncAdd(PickerSyncController.java:941)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.syncAllMediaFromProvider(PickerSyncController.java:789)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.PickerSyncController.syncAllMediaFromLocalProvider(PickerSyncController.java:299)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at com.android.providers.media.photopicker.sync.ProactiveSyncWorker.doWork(ProactiveSyncWorker.java:89)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at androidx.work.Worker$startWork$1.invoke(Worker.kt:64)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at androidx.work.Worker$startWork$1.invoke(Worker.kt:64)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at androidx.work.WorkerKt.future$lambda$2$lambda$1(Worker.kt:100)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at androidx.work.WorkerKt.$r8$lambda$06LNzu7McnKR6G06fSbfQ2BCegc(Worker.kt:0)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at androidx.work.WorkerKt$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: Retrying failed insert as update. ContentValues: standard_mime_type_extension=0 size_bytes=0 orientation=0 height=2400 date_taken_ms=1791182337000 duration_ms=0 sync_generation=235 mime_type=image/png width=1080 is_favorite=0 local_id=1000000054 is_visible=1
+10-05 06:38:58.911  1427  4801 V PickerDbFacade: Failed to update picker db media. ContentValues: standard_mime_type_extension=0 size_bytes=0 orientation=0 height=2400 date_taken_ms=1791182337000 duration_ms=0 sync_generation=235 mime_type=image/png width=1080 is_favorite=0 local_id=1000000054 is_visible=1
+10-05 06:38:58.911  1427  4801 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:38:58.911  1427  4801 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.911  1427  4801 D PickerSyncController: Saving next page token: 1791182337000|1000000054 for key: local_provider:media_add:resume
+10-05 06:38:58.911  1427  4801 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.911  1427  4801 D PickerNotificationSender: Sending a notification for media update
+10-05 06:38:58.911  1427  4801 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:38:58.911  1427  4801 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:38:58.911  1427  4801 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:38:58.911  1427  4801 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:38:58.912  1427  4801 D ExternalDbFacade: Token received for queryMedia = 1791182337000|1000000054
+10-05 06:38:58.912  1427  4801 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:38:58.912  1427  4801 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.912  1427  4801 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:38:58.912  1427  4801 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.912  1427  4801 D PickerNotificationSender: Sending a notification for media update
+10-05 06:38:58.912  1427  4801 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:38:58.912  1427  4801 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:38:58.912  1427  4801 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:38:58.912  1427  4801 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:38:58.913  1427  4801 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791182337000|1000000054, android.provider.extra.SYNC_GENERATION=227, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:38:58.913  1427  4801 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:38:58.913  1427  4801 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:38:58.913  1427  4801 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.913  1427  4801 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.913  1427  4801 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:38:58.913  1427  4801 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-4]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.913  1427  4801 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:38:58.913  1427  4801 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:38:58.913  1427  4801 D PickerNotificationSender: Sending a notification for media update
+10-05 06:38:58.914  1427  4801 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:38:58.914  1427  4801 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:38:58.914  1427  4801 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:38:58.914  1427  4801 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:38:58.914  1427  4801 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791182337000|1000000054, android.provider.extra.SYNC_GENERATION=227, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:38:58.914  1427  4801 I PickerSyncTracker: Marked sync future complete for work id: c5b75750-e37d-4db7-9a9c-418bf6646498. Future map: {}
+10-05 06:38:58.914  1427  4801 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:38:58.914  1427  1660 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=c5b75750-e37d-4db7-9a9c-418bf6646498, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:38:58.915  1427  1427 D WM-Processor: Processor c5b75750-e37d-4db7-9a9c-418bf6646498 executed; reschedule = false
+10-05 06:38:58.915  1427  1427 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=c5b75750-e37d-4db7-9a9c-418bf6646498, generation=0)
+10-05 06:38:58.915  1427  1427 D WM-SystemJobService: c5b75750-e37d-4db7-9a9c-418bf6646498 executed on JobScheduler
+10-05 06:38:58.916  1427  1695 D WM-GreedyScheduler: Cancelling work ID c5b75750-e37d-4db7-9a9c-418bf6646498
+10-05 06:38:58.917  1427  1695 D WM-GreedyScheduler: Ignoring {WorkSpec: 4eafc429-d1fa-4e83-86d5-c06d5053dd61}. Requires device idle.
+10-05 06:38:58.917  1427  1695 D WM-GreedyScheduler: Ignoring {WorkSpec: f6faa6e3-9d7b-4e55-81f9-1c020c77092e}. Requires device idle.
+10-05 06:38:58.917  1427  1660 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:38:59.186  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:59.203  4072  4085 D TrafficStats: tagSocket(109) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:59.227   561  1508 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@cb945bb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:38:59.231   910  1043 D SplashScreenView: Build android.window.SplashScreenView{8acca28 V.E...... ......ID 0,0-0,0}
+10-05 06:38:59.231   910  1043 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:38:59.231   910  1043 D SplashScreenView: Branding: view: android.view.View{a1a7341 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:38:59.233  2448  2448 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:38:59.234  2448  2448 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:38:59.234   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:59.237  2448  2448 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=86, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:38:59.241   432   432 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:38:59.242  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4ef7ad3 in: PRE_ON_CREATE
+10-05 06:38:59.284   360   360 I netd    : tetherGetStats() -> {[]} <0.35ms>
+10-05 06:38:59.289  4072  4072 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:38:59.384  2448  2488 D EGL_emulation: app_time_stats: avg=211.49ms min=16.92ms max=1092.87ms count=8
+10-05 06:38:59.504  2448  2448 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:38:59.506  2448  2488 D EGL_emulation: app_time_stats: avg=1572.35ms min=1572.35ms max=1572.35ms count=1
+10-05 06:38:59.533  2448  2448 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:38:59.612  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4ef7ad3 in: CREATED
+10-05 06:38:59.612  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4ef7ad3 in: STARTED
+10-05 06:38:59.620  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4ef7ad3 in: RESUMED
+10-05 06:38:59.672  4072  4072 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:38:59.673  4072  4072 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:38:59.682  4072  4072 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:38:59.748   910  1050 D EGL_emulation: app_time_stats: avg=2363.60ms min=64.25ms max=4662.95ms count=2
+10-05 06:38:59.800  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 8946KB AllocSpace bytes, 105(4492KB) LOS objects, 49% free, 4741KB/9482KB, paused 122us,7.582ms total 124.964ms
+10-05 06:38:59.804   561   581 W ziparchive: Unable to open '/data/app/~~qMaA7MRIxKVGWKFfv6VZbg==/com.openai.fxm1.ec1-XxYMURHFcrSkuJ6Ztydamw==/base.dm': No such file or directory
+10-05 06:38:59.817   561   581 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +578ms
+10-05 06:38:59.834   910  1042 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@1e04dc3
+10-05 06:38:59.836   561  1655 W InputManager-JNI: Input channel object '46adc32 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:38:59.838  2448  2448 D BaseDepthController: setSurface:
+10-05 06:38:59.838  2448  2448 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:38:59.838  2448  2448 D BaseDepthController: 	mSurface: null
+10-05 06:38:59.839  2448  2448 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:38:59.839  2448  2448 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:38:59.839  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:38:59.839  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:38:59.839  2448  2448 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:38:59.839  2448  2448 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:38:59.840  2448  2520 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:38:59.840  2448  2448 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:38:59.841  4072  6232 D TrafficStats: tagSocket(123) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:59.842   484  2333 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:38:59.866  2448  2688 I IPCThreadState: oneway function results for code 2 on binder at 0x78b8cd664aa0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:38:59.912  4072  6234 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:38:59.964  4072  6232 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:00.125  4072  6232 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:00.136  1425  1775 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:39:00.136  1425  1775 I AiAiEcho: EchoTargets:
+10-05 06:39:00.136  1425  1775 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:39:00.136  1425  1775 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:39:00.136  1425  1775 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:39:00.137  1425  1775 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:39:00.137  1425  1775 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:39:00.137  1425  1775 I AiAiEcho: EchoTargets:
+10-05 06:39:00.137  1425  1775 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:39:00.137  1425  1775 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:39:00.138  1425  1775 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:39:00.143  1425  1775 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:39:00.143   561   681 I ImeTracker: com.openai.fxm1.ec1:e1da6ed8: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:39:00.152  4072  4077 W openai.fxm1.ec1: Suspending all threads took: 12.451ms
+10-05 06:39:00.161   561   681 I ImeTracker: com.openai.fxm1.ec1:e1da6ed8: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:39:00.162  1425  1775 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+10-05 06:39:00.162   910   910 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:39:00.164  1425  1775 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:39:00.165  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:39:00.166  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:39:00.166  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:39:00.166  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:39:00.166  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:39:00.167  2448  2448 D SsBaseTemplateCard: No text view can be set up
+10-05 06:39:00.167  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:39:00.167  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:39:00.167  2448  2448 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:39:00.167  2448  2448 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:39:00.180  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5862KB AllocSpace bytes, 14(588KB) LOS objects, 49% free, 4064KB/8129KB, paused 12.982ms,9.349ms total 167.041ms
+10-05 06:39:00.333  4072  6232 W openai.fxm1.ec1: Long monitor contention with owner pool-353-thread-1 (6234) at boolean com.openai.fxm1.EventClient.publishSnapshot(com.openai.fxm1.EventClient$ReadRequest, org.json.JSONObject)(EventClient.java:65) waiters=0 in org.json.JSONObject com.openai.fxm1.EventClient.refreshSnapshot(com.openai.fxm1.EventClient$ReadRequest, boolean) for 140ms
+10-05 06:39:00.574   910   910 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@4fcf93f
+10-05 06:39:00.576   561  1655 W InputManager-JNI: Input channel object '621a228 Toast (client)' was disposed without first being removed with the input manager!
+10-05 06:39:00.987   428   642 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 06:39:00.987   561  1658 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 18
+10-05 06:39:00.989   428   535 D AudioFlinger: mixer(0x7365ae2ba8e0) throttle end: throttle time(65)
+10-05 06:39:01.035   428   535 D AudioFlinger: mixer(0x7365ae2ba8e0) throttle end: throttle time(33)
+10-05 06:39:01.041  4072  4085 D UiDevice: Waiting 5000ms for SearchCondition[findObject=BySelector [TEXT='\QСОХРАНИТЬ\E']].
+10-05 06:39:01.042  4072  4085 D UiDevice: Retrieving node with selector: BySelector [TEXT='\QСОХРАНИТЬ\E'].
+10-05 06:39:01.090  4072  4072 D AutofillManager: notifyViewReadyInner:1073741833
+10-05 06:39:01.149   428   535 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 06:39:01.358  4072  4122 D EGL_emulation: app_time_stats: avg=260.01ms min=79.22ms max=573.67ms count=6
+10-05 06:39:02.150  4072  6238 D TrafficStats: tagSocket(131) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:02.192   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.192   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.252  4072  4085 D UiObject2: Clicking on (840, 1880).
+10-05 06:39:02.297   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.297   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.393  4072  4085 W GestureController: Gestures took longer than expected (141ms >> 16ms), device might be in a busy state.
+10-05 06:39:02.404   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.404   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.493  4072  4122 D EGL_emulation: app_time_stats: avg=138.96ms min=60.97ms max=226.19ms count=8
+10-05 06:39:02.504   428   642 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 06:39:02.507   561  1655 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 18
+10-05 06:39:02.509   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.509   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.580   428   535 D AudioFlinger: mixer(0x7365ae2ba8e0) throttle end: throttle time(21)
+10-05 06:39:02.616   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.616   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.692   428   535 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 06:39:02.701  4072  4122 D EGL_emulation: app_time_stats: avg=289.45ms min=168.95ms max=381.45ms count=5
+10-05 06:39:02.713  4072  4072 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@741666e
+10-05 06:39:02.716   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.716   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.717  4072  6239 D TrafficStats: tagSocket(150) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:02.742   561  1655 W InputManager-JNI: Input channel object 'f3abb6 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:39:02.828   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.828   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.882   561   681 I ImeTracker: com.openai.fxm1.ec1:d76a12f0: onRequestHide at ORIGIN_SERVER reason HIDE_SAME_WINDOW_FOCUSED_WITHOUT_EDITOR fromUser false
+10-05 06:39:02.883   561   681 I ImeTracker: com.openai.fxm1.ec1:d76a12f0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:39:02.884  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:39:02.884  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:39:02.885  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:39:02.885  1324  1324 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:39:02.885  1324  1324 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:39:02.888  4072  6239 D TrafficStats: tagSocket(123) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:02.934   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:02.934   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:02.936  4072  6239 D TrafficStats: tagSocket(123) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:02.972  4072  6239 D TrafficStats: tagSocket(136) with statsTag=0xffffffff, statsUid=-1
+10-05 06:39:03.036   369  6236 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:39:03.037   369  6236 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:39:03.100  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@4ef7ad3 in: PAUSED
+10-05 06:39:03.107  4072  4085 I TestRunner: finished: savingSmartSettingsDoesNotResetManualLot(com.openai.fxm1.R5SettingsHistoryTest)

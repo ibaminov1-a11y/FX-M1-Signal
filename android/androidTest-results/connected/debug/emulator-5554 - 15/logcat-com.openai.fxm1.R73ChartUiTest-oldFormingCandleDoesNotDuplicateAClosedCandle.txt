@@ -1,0 +1,12 @@
+10-05 06:39:17.585  4072  4085 I TestRunner: started: oldFormingCandleDoesNotDuplicateAClosedCandle(com.openai.fxm1.R73ChartUiTest)
+10-05 06:39:17.611  2448  2466 I s.nexuslauncher: Background concurrent mark compact GC freed 4074KB AllocSpace bytes, 127(2804KB) LOS objects, 49% free, 5976KB/11MB, paused 380us,6.001ms total 378.712ms
+10-05 06:39:17.612  2448  2468 W System  : A resource failed to call release.
+10-05 06:39:17.612  2448  2468 W System  : A resource failed to call release.
+10-05 06:39:17.612  2448  2468 W System  : A resource failed to call release.
+10-05 06:39:17.612  2448  2468 W System  : A resource failed to call release.
+10-05 06:39:17.612  2448  2468 W System  : A resource failed to call release.
+10-05 06:39:17.612  2448  2468 W System  : A resource failed to call release.
+10-05 06:39:17.618   561  1915 W InputManager-JNI: Input channel object 'eb9941d com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:39:17.627  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=88
+10-05 06:39:17.627  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=88
+10-05 06:39:17.634  4072  4085 I TestRunner: finished: oldFormingCandleDoesNotDuplicateAClosedCandle(com.openai.fxm1.R73ChartUiTest)

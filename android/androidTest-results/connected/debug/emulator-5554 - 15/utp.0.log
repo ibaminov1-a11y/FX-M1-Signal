@@ -1,0 +1,256 @@
+INFO: Constructing runner from config.
+INFO: Configuring Android Instrumentation driver: android_instrumentation_runtime {
+  instrumentation_info {
+    app_package: "com.openai.fxm1.ec1"
+    test_package: "com.openai.fxm1.ec1.test"
+    test_runner_class: "androidx.test.runner.AndroidJUnitRunner"
+  }
+  instrumentation_args {
+    args_map {
+      key: "additionalTestOutputDir"
+      value: "/sdcard/Android/media/com.openai.fxm1.ec1/additional_test_output"
+    }
+    args_map {
+      key: "class"
+      value: "com.openai.fxm1.CampaignSignalUiTest,com.openai.fxm1.EventCoreUiTest,com.openai.fxm1.LiveLayoutUiTest,com.openai.fxm1.OwnRiskOnlyUiTest,com.openai.fxm1.R51RepairUiTest,com.openai.fxm1.R53ControlsUiTest,com.openai.fxm1.R53ScenarioDisplayUiTest,com.openai.fxm1.R54ChartUiTest,com.openai.fxm1.R54RefreshUiTest,com.openai.fxm1.R55ControlsUiTest,com.openai.fxm1.R56ChartSemanticsTest,com.openai.fxm1.R56ConcurrencyUiTest,com.openai.fxm1.R56TimeframesUiTest,com.openai.fxm1.R57ScalpUiTest,com.openai.fxm1.R5RedContractUiTest,com.openai.fxm1.R5SettingsHistoryTest,com.openai.fxm1.R73ChartUiTest,com.openai.fxm1.R73ControlsUiTest,com.openai.fxm1.R7ProfileReadUiTest,com.openai.fxm1.R7ReleaseUiTest,com.openai.fxm1.ScenarioMapUiTest,com.openai.fxm1.ScenarioUpgradeUiTest"
+    }
+  }
+}
+am_instrument_timeout: 31536000
+
+INFO: Configuring AndroidTestApkInstallerPlugin: apks_to_install {
+  apk_paths: "/home/runner/work/FX-M1-Signal/FX-M1-Signal/app/build/outputs/apk/debug/app-debug.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+apks_to_install {
+  apk_paths: "/home/runner/work/FX-M1-Signal/FX-M1-Signal/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+
+INFO: No installables found in test fixture. Nothing to install.
+INFO: Installing [/home/runner/work/FX-M1-Signal/FX-M1-Signal/app/build/outputs/apk/debug/app-debug.apk] on device emulator-5554.
+INFO: Installing [/home/runner/work/FX-M1-Signal/FX-M1-Signal/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk] on device emulator-5554.
+INFO: Start logcat streaming.
+INFO: Running Android Instrumentation driver.
+INFO: Copying files from device to host: /sdcard/Android/media/com.openai.fxm1.ec1/additional_test_output to /home/runner/work/FX-M1-Signal/FX-M1-Signal/app/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/emulator-5554 - 15
+INFO: Stop logcat streaming.
+INFO: Uninstalling com.openai.fxm1.ec1 for device emulator-5554.
+INFO: Uninstalling com.openai.fxm1.ec1.test for device emulator-5554.
+INFO: Execute com.openai.fxm1.CampaignSignalUiTest.openCampaignMustNotOverwriteCurrentAnalysisSignal: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.transientOfflineAndActivityReturnDoNotDisableBridgeAuto: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.legacyUiActualBalanceAndModesArePreserved: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.candidateForecastUsesDirectionalLabelAndNoEdgeDrawsNoProjection: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.legacyFiveMinuteProjectionStaysDisabledDuringUpgrade: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.notificationIsInformationOnlyAndCannotControlTrading: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.r3LiveStructureIsVisibleBeforeSwingConfirmation: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.accountModeAndCommissionProfileAreAutomatic: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.configurePreservesSelectedScalpWhileUpgradingScenarioEngine: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.r3DecisionPathAndStructureComeFromActualBridgeState: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.r3StructureAndPathAreRenderedFromBridgeState: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.obsoleteMapWithoutSchemaDoesNotRenderGuessedRoutes: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.actualCandlesAreGreenAndRed: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.noEdgeForecastDoesNotPretendBuyOrSellDirection: PASSED
+INFO: Execute com.openai.fxm1.EventCoreUiTest.autoUiUsesBridgeStateAndAddsAreRiskOnly: PASSED
+INFO: Execute com.openai.fxm1.LiveLayoutUiTest.lateServerCallbackAfterDestroyIsIgnored: PASSED
+INFO: Execute com.openai.fxm1.LiveLayoutUiTest.changingLiveTextKeepsGeometryAndScroll: PASSED
+INFO: Execute com.openai.fxm1.LiveLayoutUiTest.offlineInstrumentChangeClearsUnrelatedLiveChart: PASSED
+INFO: Execute com.openai.fxm1.LiveLayoutUiTest.shrinkingStatusesAtPageBottomDoesNotSnap: PASSED
+SEVERE: Execute com.openai.fxm1.LiveLayoutUiTest.cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored: FAILED
+java.lang.AssertionError
+at org.junit.Assert.fail(Assert.java: java.lang.AssertionError
+at org.junit.Assert.fail(Assert.java:87)
+at org.junit.Assert.assertTrue(Assert.java:42)
+at org.junit.Assert.assertTrue(Assert.java:53)
+at com.openai.fxm1.LiveLayoutUiTest.lambda$cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored$14$com-openai-fxm1-LiveLayoutUiTest(LiveLayoutUiTest.java:121)
+at com.openai.fxm1.LiveLayoutUiTest$$ExternalSyntheticLambda7.run(D8$$SyntheticClass:0)
+at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2612)
+at android.os.Handler.handleCallback(Handler.java:959)
+at android.os.Handler.dispatchMessage(Handler.java:100)
+at android.os.Looper.loopOnce(Looper.java:232)
+at android.os.Looper.loop(Looper.java:317)
+at android.app.ActivityThread.main(ActivityThread.java:8705)
+at java.lang.reflect.Method.invoke(Native Method)
+at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+
+java.lang.AssertionError
+at org.junit.Assert.fail(Assert.java:87)
+at org.junit.Assert.assertTrue(Assert.java:42)
+at org.junit.Assert.assertTrue(Assert.java:53)
+at com.openai.fxm1.LiveLayoutUiTest.lambda$cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored$14$com-openai-fxm1-LiveLayoutUiTest(LiveLayoutUiTest.java:121)
+at com.openai.fxm1.LiveLayoutUiTest$$ExternalSyntheticLambda7.run(D8$$SyntheticClass:0)
+at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2612)
+at android.os.Handler.handleCallback(Handler.java:959)
+at android.os.Handler.dispatchMessage(Handler.java:100)
+at android.os.Looper.loopOnce(Looper.java:232)
+at android.os.Looper.loop(Looper.java:317)
+at android.app.ActivityThread.main(ActivityThread.java:8705)
+at java.lang.reflect.Method.invoke(Native Method)
+at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+INFO: Execute com.openai.fxm1.LiveLayoutUiTest.fullTextRemainsReadableInFrozenSnapshot: PASSED
+SEVERE: Execute com.openai.fxm1.OwnRiskOnlyUiTest.accountWideRiskControlsAreAbsent: FAILED
+androidx.test.uiautomator.UiObjectNotFoundException: androidx.test.uiautomator.UiObjectNotFoundException: UiSelector[SCROLLABLE=true]
+at androidx.test.uiautomator.UiScrollable.scrollBackward(UiScrollable.java:427)
+at androidx.test.uiautomator.UiScrollable.scrollToBeginning(UiScrollable.java:472)
+at androidx.test.uiautomator.UiScrollable.scrollToBeginning(UiScrollable.java:489)
+at com.openai.fxm1.OwnRiskOnlyUiTest.accountWideRiskControlsAreAbsent(OwnRiskOnlyUiTest.java:31)
+
+androidx.test.uiautomator.UiObjectNotFoundException: UiSelector[SCROLLABLE=true]
+at androidx.test.uiautomator.UiScrollable.scrollBackward(UiScrollable.java:427)
+at androidx.test.uiautomator.UiScrollable.scrollToBeginning(UiScrollable.java:472)
+at androidx.test.uiautomator.UiScrollable.scrollToBeginning(UiScrollable.java:489)
+at com.openai.fxm1.OwnRiskOnlyUiTest.accountWideRiskControlsAreAbsent(OwnRiskOnlyUiTest.java:31)
+INFO: Execute com.openai.fxm1.R51RepairUiTest.tiedForecastIsNotLabelledMainAndMissingT2IsNotFabricated: PASSED
+INFO: Execute com.openai.fxm1.R51RepairUiTest.denseAnnotationPlacementNeverOverlapsOrEscapesBounds: PASSED
+INFO: Execute com.openai.fxm1.R51RepairUiTest.legacyCatalogueIsRemovedWithoutChangingChosenSymbolOrLot: PASSED
+INFO: Execute com.openai.fxm1.R51RepairUiTest.liveCatalogueSyncDoesNotReplaceTheWatchlist: PASSED
+INFO: Execute com.openai.fxm1.R51RepairUiTest.historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles: PASSED
+INFO: Execute com.openai.fxm1.R51RepairUiTest.compactChartShowsNoMoreThanTwoSelectedPaths: PASSED
+INFO: Execute com.openai.fxm1.R51RepairUiTest.repairedWatchlistAndMapAreCapturedFromRunningActivity: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.symbolRiskAndLotControlsReachTheActualConfiguration: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.allNineteenLiveFieldsRenderRealChangingBridgeData: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.navigationDetailsAndSettingsButtonsOpenTheirDestinations: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.scalpSelectionReachesBridgeAndSurvivesActivityRecreation: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.failedResetPreservesEmergencyLatch: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.selectedRealModeStaysBlockedEvenWhileMt5IsStillDemo: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.emergencyNeedsDoubleTapAndSuccessfulSettingsResetClearsBothLatches: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.autoConfirmationPauseAndMonitoringStopHaveDistinctEffects: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.lockedBridgeProfileSynchronizesSavedModeWithoutCreatingADeferredChange: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.missingQuoteReplacesPreviouslyDisplayedPriceWithUnavailableMarker: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.destroyedMonitoringServiceClearsItsRunningIndicator: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.offlineRefreshDisablesControlsAndRecoveryRefreshRestoresThem: PASSED
+INFO: Execute com.openai.fxm1.R53ControlsUiTest.offlineCachedForecastIsExplicitAndRecoveryRestoresLive: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.missingFrozenForecastDoesNotBorrowWatchingHypothesis: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.cachedOfflineRouteIsNeutralAndDoesNotClaimBridgeStopped: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.phaseWinsOverSegmentSlope: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.sellRisesInNeutralPreparationThenFallsInRed: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.watchingLiveHypothesisDoesNotReplaceFrozenEntryIdentity: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.entryIdentitySurvivesUnavailableLiveForecast: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.buyFallsInNeutralPreparationThenRisesInGreen: PASSED
+INFO: Execute com.openai.fxm1.R53ScenarioDisplayUiTest.oldV3AnchorsStillSeparatePreparationFromTargets: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.failedRawReadCannotBorrowVerifiedCandlesOrForecast: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.futureTerminalCandlesReachEmbeddedAndFullscreenViews: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.cachedRawChartRemainsExplicitlyOffline: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.blockedClockRendersRealCandlesWithoutTradingPaths: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.explicitClockPreviewDisclosesNormalization: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.rawRowsFromAnotherInstrumentScopeOrTimeframeAreRejected: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.rawHistoryCannotMergeVerifiedRowsAndRecoveryRestoresVerifiedMap: PASSED
+INFO: Execute com.openai.fxm1.R54ChartUiTest.historyUsesDisplayedFrameAndRejectsOtherMarketClock: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.downwardSwipeRefreshesWholeScreenWhileMonitoringIsStoppedWithoutCommands: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.busyClientQueueHasBoundedLoadingAndDoesNotSendCancelledRefreshLater: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.slowRefreshDoesNotBlockMonitoringOrEmergencyAndCannotOverwriteNewState: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.repeatedPullsCoalesceWhileVisibleProgressIsRunning: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.changedSourceRejectsOldRefreshWithoutInvalidatingNewSnapshot: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.failedAndTimedOutRefreshesClearProgressAndRecoveryShowsFreshSuccess: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.shortHorizontalMultitouchAndScrolledGesturesDoNotRefresh: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.partialHistoryFailureIsVisibleWithoutDiscardingFreshAccount: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.oldManualFailureDoesNotDisconnectSuccessfulConcurrentPolling: PASSED
+INFO: Execute com.openai.fxm1.R54RefreshUiTest.finishingDuringRefreshDoesNotDeliverToDestroyedActivity: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.acceptedEnableClearsMatchingDraftButOlderSnapshotKeepsNewerChoice: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.explicitDraftSurvivesPollBeforeItsCommandIsSent: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.smartStatusDetailsShowFullCurrentBridgeStateWithoutResizingPreview: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.twoClosedTradesAgreeInMoneyStatisticsAndTradeJournal: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.armedAutoWithInvalidQuoteKeepsAllProfileSelectorsUsable: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.refreshingWithArmedAutoDoesNotIssueCommandsOrEraseChoice: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.selectedEntryTimeframeReachesTheBridgeProfile: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.pendingSpinnerSelectionSurvivesUnchangedAuthoritativeRepaint: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.campaignKeepsActiveProfileAndShowsDeferredChoiceAcrossPolls: PASSED
+INFO: Execute com.openai.fxm1.R55ControlsUiTest.symbolAndModeChangesReachArmedBridgeWhilePhoneMonitoringIsStopped: PASSED
+INFO: Execute com.openai.fxm1.R56ChartSemanticsTest.falseReturnDoesNotAdvertiseUnrelatedGenericEntryLevels: PASSED
+INFO: Execute com.openai.fxm1.R56ChartSemanticsTest.repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime: PASSED
+INFO: Execute com.openai.fxm1.R56ConcurrencyUiTest.rejectedResetPreservesEmergencyLatchAndPendingRetry: PASSED
+INFO: Execute com.openai.fxm1.R56ConcurrencyUiTest.acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches: PASSED
+INFO: Execute com.openai.fxm1.R56ConcurrencyUiTest.acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft: PASSED
+INFO: Execute com.openai.fxm1.R56ConcurrencyUiTest.runningFlagIsPublishedOnlyAfterNativeForegroundPromotion: PASSED
+INFO: Execute com.openai.fxm1.R56ConcurrencyUiTest.newerOrdinaryPollDoesNotDiscardAnExplicitProfileSelection: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.contentRemainsBelowSystemStatusBarAfterInsets: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.tradeFrameAndOverviewRecoverWithoutMonitoringOrSendingPendingCommands: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.enlargedChartSharesViewingFrameAndKeepsHistoryControls: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.observerLivePriceUpdatesWhilePhoneMonitoringIsStopped: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.delayedOldFrameCannotReplaceNewerSelection: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.unavailableFrameHasReasonAndCannotShowAnotherFramesCandles: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.changingSourceClearsObserverCacheBeforeDelayedReply: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.oldTradeSnapshotNeverClaimsLiveWhileStateRefreshIsUnavailable: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.v3AccessibilityUsesScenarioEventInsteadOfGenericEntryTriggers: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.wrongFrameScopeClockOrAccountNeverReachesChart: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.chartFramesHaveIndependentForecastsWithoutChangingTradeProfile: PASSED
+INFO: Execute com.openai.fxm1.R56TimeframesUiTest.oldNumericEntryPreferencesPreserveTheirNamedFrames: PASSED
+INFO: Execute com.openai.fxm1.R57ScalpUiTest.journalKeepsLegacyReasonsAndBoundsUntrustedText: PASSED
+INFO: Execute com.openai.fxm1.R57ScalpUiTest.journalExplainsNestedAnalysisAndCommandWithoutDumpingCredentials: PASSED
+INFO: Execute com.openai.fxm1.R57ScalpUiTest.executionRequirementDoesNotLeakIntoNormalOtherFramesOrPendingProfile: PASSED
+INFO: Execute com.openai.fxm1.R57ScalpUiTest.nullLevelsBlockedAddsAndCachedRequirementsStayTruthful: PASSED
+INFO: Execute com.openai.fxm1.R57ScalpUiTest.executionRequirementPrecedesHypothesesAndHasExactTradePrices: PASSED
+INFO: Execute com.openai.fxm1.R57ScalpUiTest.nativeWaitAndSignalDetailsUseActiveTradeFrame: PASSED
+INFO: Execute com.openai.fxm1.R5RedContractUiTest.chartHasLiveHistoryNavigation: PASSED
+INFO: Execute com.openai.fxm1.R5RedContractUiTest.selectedLotReachesConfiguration: PASSED
+INFO: Execute com.openai.fxm1.R5RedContractUiTest.targetRealHeaderFollowsSavedSettings: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.lotSelectorHasPresetsAndCustomChoice: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.manualCommaValueAndInvalidValuesHaveExplicitValidation: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.singleBarHistoryDoesNotThrow: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.actualLotSelectionReachesServerConfiguration: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.historyViewportStaysAnchoredWhileNewBarsArrive: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.configTransmitsChosenLotNotHardcoded001: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.savingSmartSettingsDoesNotResetManualLot: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.actualV2MapSupportsHistoryAndImmutableArchive: PASSED
+INFO: Execute com.openai.fxm1.R5SettingsHistoryTest.autoTitleUsesSelectedModeRatherThanActualAccount: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.oldFormingCandleDoesNotDuplicateAClosedCandle: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.staleAndArchiveMarkersNeverClaimLive: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.mismatchedForecastCannotOverlaySelectedTimeframeCandles: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.unavailableWrongInstrumentAndWrongScopePriceForecastsAreHidden: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.equivalentSymbolFormattingDoesNotBlockTheTimeframeViewer: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.flatRealCandlesStillRenderInsteadOfABlankChart: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.connectedBridgeCannotLabelAnOldPublicationOrStaleQuoteLive: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.singleAvailableCandleIsVisibleWhileHistoryLoads: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.historyAnchorSurvivesNewCandlesAndForecastStaysHidden: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.nativeChartScreenshotsCoverInstrumentScaleSmallScreensAndHistory: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.invalidZoomDoesNotCollapseAnExistingViewport: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.brokerEntryAndStopAreVisibleOnlyForTheirActualInstrumentAndLiveView: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.forecastLabelsDoNotOverlapAndExpiredPointsDoNotBecomeFutureTicks: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.topLevelOfflineStatusPropagatesIntoTheCopiedChartForecast: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.chartTimeAxisUsesUtcAndKeepsFrameIdentityAtEveryScale: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.selectedInstrumentMetadataDoesNotMutateTheServerSnapshot: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.waitingCandlesUseAvailableWidthWhenThereIsNoProjection: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.priceAxisPreservesBrokerPrecisionWithoutTruncationAcrossInstruments: PASSED
+INFO: Execute com.openai.fxm1.R73ChartUiTest.malformedCandleCannotOverwriteTheLastValidHistoryRow: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.acceptedDisableRejectsOlderAutoSnapshot: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.reachableBridgeWithStaleMt5DoesNotBecomePhoneOffline: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.pollingNeverReplaysLegacyPauseOrUnsentProfileSelection: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.resetWaitsForInFlightEmergencyAcknowledgement: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.queuedCommandCannotMoveToChangedProfile: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.commandDoesNotWaitBehindMoneyRead: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.pendingDisableKeepsConfirmedSwitchAndBlocksDuplicateTap: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.queuedCommandCannotMoveToChangedServer: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.emergencyRetryRetainsIdentityAndResetCancelsOldRetry: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.campaignPricesUseBrokerDigitsForJpyMetalsAndBitcoin: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.explicitEmergencyOnNewBridgePreservesOldUncertainIdentityAndResetGate: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.busyBridgeRemainsReachableWhileExpiredAccountIsLabelledCached: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.emergencyRetryCapturedAfterResetPreparationCannotRunAfterAcceptedReset: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.legacyEmergencyFlagCannotAcquireANewDestinationOnRestart: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.emergencyReachesBridgeWhileServiceReadIsHeld: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.resettingNewBridgeDirectlyCannotDiscardOldUncertainEmergency: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.offlineFinancialCardExplicitlyLabelsCachedNumbers: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.stoppedServiceForegroundFailureMarksCachedFinancialStateOffline: PASSED
+INFO: Execute com.openai.fxm1.R73ControlsUiTest.uncertainEmergencyBlocksResetUntilSameIdentityIsAcknowledged: PASSED
+INFO: Execute com.openai.fxm1.R7ProfileReadUiTest.oldProfileFailureDoesNotInvalidateCurrentProfile: PASSED
+INFO: Execute com.openai.fxm1.R7ProfileReadUiTest.selectingKnownInstrumentRestoresItsOwnFrameModeAndLot: PASSED
+INFO: Execute com.openai.fxm1.R7ReleaseUiTest.entryPlanIsVisibleForNormalAndScalpAcrossWorkingFrames: PASSED
+INFO: Execute com.openai.fxm1.R7ReleaseUiTest.priceForecastIsVisibleWhileEntryWaits: PASSED
+INFO: Execute com.openai.fxm1.R7ReleaseUiTest.signalDetailsUseCompactStableHeights: PASSED
+INFO: Execute com.openai.fxm1.R7ReleaseUiTest.explicitProfileIsNotReplacedAndMissingProfileFailsClosed: PASSED
+INFO: Execute com.openai.fxm1.R7ReleaseUiTest.commandEnvelopeCapturesProfileBeforeViewChanges: PASSED
+INFO: Execute com.openai.fxm1.R7ReleaseUiTest.wrongFrameHistoryAndExpiredForecastAreNotDrawn: PASSED
+INFO: Execute com.openai.fxm1.ScenarioMapUiTest.summaryUsesWeightsAndActualReversalStage: PASSED
+INFO: Execute com.openai.fxm1.ScenarioMapUiTest.mapExplainsWeightsAndKeepsActiveInvalidationSeparate: PASSED
+INFO: Execute com.openai.fxm1.ScenarioMapUiTest.unclearMapShowsSharedEntryLevelsWithoutFakePaths: PASSED
+INFO: Execute com.openai.fxm1.ScenarioUpgradeUiTest.legacyProjectionCannotReappearDuringAnUpgrade: PASSED
+INFO: Execute com.openai.fxm1.ScenarioUpgradeUiTest.actualAutoButtonAcceptsOldCampaignThenActivatesStructuralMap: PASSED

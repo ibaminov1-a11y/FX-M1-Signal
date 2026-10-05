@@ -1,0 +1,2 @@
+10-05 06:40:02.811  4072  4085 I TestRunner: started: explicitProfileIsNotReplacedAndMissingProfileFailsClosed(com.openai.fxm1.R7ReleaseUiTest)
+10-05 06:40:02.817  4072  4085 I TestRunner: finished: explicitProfileIsNotReplacedAndMissingProfileFailsClosed(com.openai.fxm1.R7ReleaseUiTest)

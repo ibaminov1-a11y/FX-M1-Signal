@@ -1,0 +1,4 @@
+10-05 06:33:51.553  4072  4085 I TestRunner: started: historyUsesDisplayedFrameAndRejectsOtherMarketClock(com.openai.fxm1.R54ChartUiTest)
+10-05 06:33:51.560  1212  5156 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 372 [CONTEXT service_id=218 ]
+10-05 06:33:51.562  1212  5156 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 9 uptime_millis: 9 exec_start_elapsed_seconds: 372 [CONTEXT service_id=218 ]
+10-05 06:33:51.569  4072  4085 I TestRunner: finished: historyUsesDisplayedFrameAndRejectsOtherMarketClock(com.openai.fxm1.R54ChartUiTest)

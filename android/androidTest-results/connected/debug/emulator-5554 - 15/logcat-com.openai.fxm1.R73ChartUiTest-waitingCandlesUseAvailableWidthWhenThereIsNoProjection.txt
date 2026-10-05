@@ -1,0 +1,2 @@
+10-05 06:39:18.500  4072  4085 I TestRunner: started: waitingCandlesUseAvailableWidthWhenThereIsNoProjection(com.openai.fxm1.R73ChartUiTest)
+10-05 06:39:18.503  4072  4085 I TestRunner: finished: waitingCandlesUseAvailableWidthWhenThereIsNoProjection(com.openai.fxm1.R73ChartUiTest)

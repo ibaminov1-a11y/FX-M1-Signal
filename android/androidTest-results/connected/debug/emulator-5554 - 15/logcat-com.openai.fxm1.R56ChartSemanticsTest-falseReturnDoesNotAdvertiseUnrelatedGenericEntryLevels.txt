@@ -1,0 +1,8 @@
+10-05 06:36:36.269  4072  4085 I TestRunner: started: falseReturnDoesNotAdvertiseUnrelatedGenericEntryLevels(com.openai.fxm1.R56ChartSemanticsTest)
+10-05 06:36:36.315   369  5811 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:36:36.315   369  5811 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:36:36.315   561   681 I ImeTracker: com.google.android.apps.nexuslauncher:cf862f74: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:36:36.315   561   681 I ImeTracker: com.google.android.apps.nexuslauncher:cf862f74: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:36:36.331  4072  4072 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@dbc91a7 in: DESTROYED
+10-05 06:36:36.331  4072  4072 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@a911ec6
+10-05 06:36:36.335  4072  4085 I TestRunner: finished: falseReturnDoesNotAdvertiseUnrelatedGenericEntryLevels(com.openai.fxm1.R56ChartSemanticsTest)

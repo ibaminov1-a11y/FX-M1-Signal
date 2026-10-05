@@ -1,0 +1,35 @@
+EXECUTING: /usr/local/lib/android/sdk/build-tools/34.0.0/aapt dump badging /home/runner/work/FX-M1-Signal/FX-M1-Signal/app/build/outputs/apk/debug/app-debug.apk
+CURRENT_WORKING_DIRECTORY: /home/runner/work/FX-M1-Signal/FX-M1-Signal
+START_TIME: 2026-10-05 06:40:22.602
+START_TIME-NANOS: 2026-10-05 06:40:22.602992018
+ENVIRONMENT:
+
+*****************************************
+STDOUT/STDERR BELOW
+===================
+package: name='com.openai.fxm1.ec1' versionCode='931' versionName='10.9-EC1-R7.3' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+sdkVersion:'26'
+targetSdkVersion:'35'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.POST_NOTIFICATIONS'
+uses-permission: name='android.permission.FOREGROUND_SERVICE'
+uses-permission: name='android.permission.FOREGROUND_SERVICE_SPECIAL_USE'
+application-label:'FX M1 EC1'
+application-icon-160:'res/drawable/app_icon.png'
+application: label='FX M1 EC1' icon='res/drawable/app_icon.png'
+application-debuggable
+launchable-activity: name='com.openai.fxm1.MainActivity'  label='' icon=''
+feature-group: label=''
+  uses-feature: name='android.hardware.faketouch'
+  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'
+main
+other-services
+supports-screens: 'small' 'normal' 'large' 'xlarge'
+supports-any-density: 'true'
+locales: '--_--'
+densities: '160'
+===================
+END_TIME: 2026-10-05 06:40:22.813
+END_TIME-NANOS: 2026-10-05 06:40:22.813309634
+DURATION: 210ms
+EXIT CODE: 0

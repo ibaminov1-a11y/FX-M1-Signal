@@ -1,0 +1,7 @@
+10-05 06:32:00.986  4072  4085 I TestRunner: started: historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles(com.openai.fxm1.R51RepairUiTest)
+10-05 06:32:00.993   561  1655 W InputManager-JNI: Input channel object 'bd79c8e com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:32:01.001  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=31
+10-05 06:32:01.001  2448  2448 I TopTaskTracker: onTaskRemoved: taskId=31
+10-05 06:32:01.189  4072  4085 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:32:01.208  4072  4085 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:32:01.225  4072  4085 I TestRunner: finished: historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles(com.openai.fxm1.R51RepairUiTest)

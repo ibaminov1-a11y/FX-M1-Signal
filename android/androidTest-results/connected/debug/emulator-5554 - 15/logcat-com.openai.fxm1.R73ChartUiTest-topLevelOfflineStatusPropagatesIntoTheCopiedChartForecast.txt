@@ -1,0 +1,3 @@
+10-05 06:39:18.233  4072  4085 I TestRunner: started: topLevelOfflineStatusPropagatesIntoTheCopiedChartForecast(com.openai.fxm1.R73ChartUiTest)
+10-05 06:39:18.237  1212  6266 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 11 uptime_millis: 11 exec_start_elapsed_seconds: 698 [CONTEXT service_id=218 ]
+10-05 06:39:18.238  4072  4085 I TestRunner: finished: topLevelOfflineStatusPropagatesIntoTheCopiedChartForecast(com.openai.fxm1.R73ChartUiTest)

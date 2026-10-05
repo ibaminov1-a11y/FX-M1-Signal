@@ -1,0 +1,75 @@
+10-05 06:33:51.082  4072  4085 I TestRunner: started: blockedClockRendersRealCandlesWithoutTradingPaths(com.openai.fxm1.R54ChartUiTest)
+10-05 06:33:51.128   369  5376 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:33:51.129   369  5376 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:33:51.170  4072  4077 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5633KB AllocSpace bytes, 34(1752KB) LOS objects, 49% free, 4680KB/9360KB, paused 363us,6.558ms total 131.890ms
+10-05 06:33:51.218   910   928 I ndroid.systemui: NativeAlloc concurrent mark compact GC freed 12MB AllocSpace bytes, 6(120KB) LOS objects, 49% free, 23MB/46MB, paused 741us,4.198ms total 694.168ms
+10-05 06:33:51.232   369  5376 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:33:51.232   369  5376 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:33:51.332  1427  1427 D WM-DelayedWorkTracker: Scheduling work 850de356-64c3-4621-8000-869565081615
+10-05 06:33:51.332  1427  1427 D WM-GreedyScheduler: Starting tracking for 850de356-64c3-4621-8000-869565081615
+10-05 06:33:51.333  1427  1695 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:33:51.334  1427  1695 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:33:51.334  1427  1695 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=850de356-64c3-4621-8000-869565081615, generation=0)
+10-05 06:33:51.335  1427  1660 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=850de356-64c3-4621-8000-869565081615, generation=0)
+10-05 06:33:51.336   369  5376 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:33:51.336   369  5376 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:33:51.337  1427  1427 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:33:51.337  1427  4824 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:33:51.338  1427  4824 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@d059465[Not completed, 1 dependents]. Future map: {850de356-64c3-4621-8000-869565081615=java.util.concurrent.CompletableFuture@d059465[Not completed, 1 dependents]}
+10-05 06:33:51.338  1427  4824 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:33:51.338  1427  4824 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:33:51.339  1427  4824 D PickerSyncController:    Latest ID/Gen=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary/94
+10-05 06:33:51.340  1427  4824 D PickerSyncController:    Cached ID/Gen=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary/86
+10-05 06:33:51.340  1427  4824 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=86, latest=Bundle[{last_media_sync_generation=94, media_collection_id=1409:446d25cb-d3a8-42e0-ab49-0c1b6f71e201:external_primary}], pageSize=1000}
+10-05 06:33:51.340  1427  4824 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:33:51.340  1427  4824 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:33:51.340  1427  4824 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.340  1427  4824 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.340  1427  4824 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:33:51.342  1427  4824 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:33:51.342  1427  4824 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.342  1427  4824 D PickerSyncController: Saving next page token: 1791182029000|1000000035 for key: local_provider:media_add:resume
+10-05 06:33:51.342  1427  4824 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.343  1427  4824 D PickerNotificationSender: Sending a notification for media update
+10-05 06:33:51.344  1427  4824 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:33:51.344  1427  4824 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:33:51.344  1427  4824 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:33:51.345  1427  4824 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:33:51.345  1427  4824 D ExternalDbFacade: Token received for queryMedia = 1791182029000|1000000035
+10-05 06:33:51.346  1427  4824 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:33:51.346  1427  4824 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.346  1427  4824 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:33:51.346  1427  4824 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.346  1427  4824 D PickerNotificationSender: Sending a notification for media update
+10-05 06:33:51.347  1427  4824 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:33:51.347  1427  4824 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:33:51.347  1427  4824 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:33:51.347  1427  4824 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:33:51.348  1427  4824 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791182029000|1000000035, android.provider.extra.SYNC_GENERATION=86, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 1
+10-05 06:33:51.348  1427  4824 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:33:51.348  1427  4824 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:33:51.348  1427  4824 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.348  1427  4824 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.349  1427  4824 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:33:51.349  1427  4824 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Locked by thread pool-3-thread-5]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.349  1427  4824 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:33:51.349  1427  4824 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@20df1db[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:33:51.349  1427  4824 D PickerNotificationSender: Sending a notification for media update
+10-05 06:33:51.349  1427  4824 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:33:51.349  1427  4824 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:33:51.350  1427  4824 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:33:51.350  1427  4824 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:33:51.350  1427  4824 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791182029000|1000000035, android.provider.extra.SYNC_GENERATION=86, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:33:51.351  1427  4824 I PickerSyncTracker: Marked sync future complete for work id: 850de356-64c3-4621-8000-869565081615. Future map: {}
+10-05 06:33:51.351  1427  4824 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:33:51.351  1427  1695 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=850de356-64c3-4621-8000-869565081615, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:33:51.353  1427  1427 D WM-Processor: Processor 850de356-64c3-4621-8000-869565081615 executed; reschedule = false
+10-05 06:33:51.353  1427  1427 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=850de356-64c3-4621-8000-869565081615, generation=0)
+10-05 06:33:51.354  1427  1660 D WM-GreedyScheduler: Cancelling work ID 850de356-64c3-4621-8000-869565081615
+10-05 06:33:51.355  1427  1660 D WM-GreedyScheduler: Ignoring {WorkSpec: 4eafc429-d1fa-4e83-86d5-c06d5053dd61}. Requires device idle.
+10-05 06:33:51.355  1427  1660 D WM-GreedyScheduler: Ignoring {WorkSpec: f6faa6e3-9d7b-4e55-81f9-1c020c77092e}. Requires device idle.
+10-05 06:33:51.356  1427  1660 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:33:51.440   369  5376 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:33:51.440   369  5376 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:33:51.534  1427  4963 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:33:51.536  4072  4085 I TestRunner: finished: blockedClockRendersRealCandlesWithoutTradingPaths(com.openai.fxm1.R54ChartUiTest)

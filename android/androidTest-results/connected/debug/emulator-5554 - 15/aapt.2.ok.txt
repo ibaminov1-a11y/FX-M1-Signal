@@ -1,0 +1,29 @@
+EXECUTING: /usr/local/lib/android/sdk/build-tools/34.0.0/aapt dump badging /home/runner/work/FX-M1-Signal/FX-M1-Signal/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+CURRENT_WORKING_DIRECTORY: /home/runner/work/FX-M1-Signal/FX-M1-Signal
+START_TIME: 2026-10-05 06:40:22.952
+START_TIME-NANOS: 2026-10-05 06:40:22.952883025
+ENVIRONMENT:
+
+*****************************************
+STDOUT/STDERR BELOW
+===================
+package: name='com.openai.fxm1.ec1.test' versionCode='' versionName='' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+sdkVersion:'26'
+targetSdkVersion:'35'
+uses-permission: name='android.permission.REORDER_TASKS'
+application: label='' icon=''
+application-debuggable
+uses-library:'android.test.runner'
+feature-group: label=''
+  uses-feature: name='android.hardware.faketouch'
+  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'
+other-activities
+supports-screens: 'small' 'normal' 'large' 'xlarge'
+supports-any-density: 'true'
+locales: '--_--'
+densities: '160'
+===================
+END_TIME: 2026-10-05 06:40:22.958
+END_TIME-NANOS: 2026-10-05 06:40:22.958410344
+DURATION: 5ms
+EXIT CODE: 0

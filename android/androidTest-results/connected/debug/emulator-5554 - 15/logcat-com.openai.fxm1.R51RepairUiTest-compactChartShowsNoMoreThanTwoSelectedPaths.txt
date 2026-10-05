@@ -1,0 +1,4 @@
+10-05 06:32:01.226  4072  4085 I TestRunner: started: compactChartShowsNoMoreThanTwoSelectedPaths(com.openai.fxm1.R51RepairUiTest)
+10-05 06:32:01.429  4072  4085 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:32:01.447  4072  4085 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:32:01.465  4072  4085 I TestRunner: finished: compactChartShowsNoMoreThanTwoSelectedPaths(com.openai.fxm1.R51RepairUiTest)
