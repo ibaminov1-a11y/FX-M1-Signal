@@ -1,0 +1,26 @@
+10-05 06:14:20.864  3879  3893 I TestRunner: started: acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft(com.openai.fxm1.R56ConcurrencyUiTest)
+10-05 06:14:20.866  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.877  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.890  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.914  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.923  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.931  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.935  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.942  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.944  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.946  3879  5795 D TrafficStats: tagSocket(121) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.988  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.993  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.998  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.011  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.021  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.027  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.034  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.037  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.039  3879  5796 D TrafficStats: tagSocket(121) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.088  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.093  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.102  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.106  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:21.109  3879  3893 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:14:21.109  3879  3893 I TestRunner: finished: acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft(com.openai.fxm1.R56ConcurrencyUiTest)

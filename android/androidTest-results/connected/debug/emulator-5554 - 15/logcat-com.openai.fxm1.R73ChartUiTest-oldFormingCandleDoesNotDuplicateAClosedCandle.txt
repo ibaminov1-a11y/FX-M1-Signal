@@ -1,0 +1,2 @@
+10-05 06:16:54.714  3879  3893 I TestRunner: started: oldFormingCandleDoesNotDuplicateAClosedCandle(com.openai.fxm1.R73ChartUiTest)
+10-05 06:16:54.732  3879  3893 I TestRunner: finished: oldFormingCandleDoesNotDuplicateAClosedCandle(com.openai.fxm1.R73ChartUiTest)

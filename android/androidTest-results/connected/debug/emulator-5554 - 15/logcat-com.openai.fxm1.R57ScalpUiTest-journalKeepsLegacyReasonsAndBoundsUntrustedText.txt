@@ -1,0 +1,4 @@
+10-05 06:16:00.871  3879  3893 I TestRunner: started: journalKeepsLegacyReasonsAndBoundsUntrustedText(com.openai.fxm1.R57ScalpUiTest)
+10-05 06:16:00.934   576   588 I system_server: NativeAlloc concurrent mark compact GC freed 17MB AllocSpace bytes, 18(360KB) LOS objects, 44% free, 29MB/53MB, paused 658us,2.928ms total 187.423ms
+10-05 06:16:00.938  3879  3893 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:16:00.939  3879  3893 I TestRunner: finished: journalKeepsLegacyReasonsAndBoundsUntrustedText(com.openai.fxm1.R57ScalpUiTest)

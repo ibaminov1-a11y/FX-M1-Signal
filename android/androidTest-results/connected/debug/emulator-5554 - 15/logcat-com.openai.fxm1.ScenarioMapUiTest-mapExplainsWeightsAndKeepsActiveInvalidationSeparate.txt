@@ -1,0 +1,6 @@
+10-05 06:17:48.119  3879  3893 I TestRunner: started: mapExplainsWeightsAndKeepsActiveInvalidationSeparate(com.openai.fxm1.ScenarioMapUiTest)
+10-05 06:17:48.186  1433  3686 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:17:48.200  1224  6143 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 696 [CONTEXT service_id=218 ]
+10-05 06:17:48.202  1224  6222 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 8 uptime_millis: 8 exec_start_elapsed_seconds: 696 [CONTEXT service_id=218 ]
+10-05 06:17:48.232  1188  1769 D EGL_emulation: app_time_stats: avg=160.70ms min=10.30ms max=469.83ms count=9
+10-05 06:17:48.282  3879  3893 I TestRunner: finished: mapExplainsWeightsAndKeepsActiveInvalidationSeparate(com.openai.fxm1.ScenarioMapUiTest)

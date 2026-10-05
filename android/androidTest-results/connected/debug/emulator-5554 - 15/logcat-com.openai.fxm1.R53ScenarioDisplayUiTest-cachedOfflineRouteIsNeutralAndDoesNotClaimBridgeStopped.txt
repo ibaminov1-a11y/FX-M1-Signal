@@ -1,0 +1,16 @@
+10-05 06:11:31.286  3879  3893 I TestRunner: started: cachedOfflineRouteIsNeutralAndDoesNotClaimBridgeStopped(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:11:31.294   576  1760 W InputManager-JNI: Input channel object 'e2bc9ce com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:11:31.337  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=45
+10-05 06:11:31.337  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=45
+10-05 06:11:31.453  3240  3240 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:11:31.454   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:31.454   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:31.457   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:31.458   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:31.458   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:31.463  3603  3638 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=60 ]
+10-05 06:11:31.464  3603  3691 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[8d692bde-74ec]>Handler" thread_id=65 ]
+10-05 06:11:31.494  1224  2354 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:11:31.494  1224  2354 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:11:31.553  1433  3686 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:11:31.557  3879  3893 I TestRunner: finished: cachedOfflineRouteIsNeutralAndDoesNotClaimBridgeStopped(com.openai.fxm1.R53ScenarioDisplayUiTest)

@@ -1,0 +1,3 @@
+10-05 06:16:00.986  3879  3893 I TestRunner: started: nullLevelsBlockedAddsAndCachedRequirementsStayTruthful(com.openai.fxm1.R57ScalpUiTest)
+10-05 06:16:00.990  3879  3893 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:16:00.990  3879  3893 I TestRunner: finished: nullLevelsBlockedAddsAndCachedRequirementsStayTruthful(com.openai.fxm1.R57ScalpUiTest)

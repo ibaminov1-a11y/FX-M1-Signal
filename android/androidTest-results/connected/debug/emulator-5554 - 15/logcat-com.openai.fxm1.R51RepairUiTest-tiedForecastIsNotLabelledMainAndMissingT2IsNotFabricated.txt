@@ -1,0 +1,33 @@
+10-05 06:09:47.509  3879  3893 I TestRunner: started: tiedForecastIsNotLabelledMainAndMissingT2IsNotFabricated(com.openai.fxm1.R51RepairUiTest)
+10-05 06:09:47.517   576  1771 W InputManager-JNI: Input channel object 'fe2dc4a com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:09:47.519  3879  3879 E WindowManager: android.view.WindowLeaked: Activity com.openai.fxm1.MainActivity has leaked window com.android.internal.policy.DecorView{a8d0ded V.E...... R.....ID 0,0-1024,1544}[MainActivity] that was originally added here
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.view.ViewRootImpl.<init>(ViewRootImpl.java:1246)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.view.ViewRootImpl.<init>(ViewRootImpl.java:1232)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.view.WindowManagerGlobal.addView(WindowManagerGlobal.java:428)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.view.WindowManagerImpl.addView(WindowManagerImpl.java:158)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.app.Dialog.show(Dialog.java:352)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.app.AlertDialog$Builder.show(AlertDialog.java:1131)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at com.openai.fxm1.MainActivity.showSmartFeaturesDialog(MainActivity.java:1169)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at com.openai.fxm1.MainActivity.lambda$onCreate$9$com-openai-fxm1-MainActivity(MainActivity.java:414)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at com.openai.fxm1.MainActivity$$ExternalSyntheticLambda68.onClick(D8$$SyntheticClass:0)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.view.View.performClick(View.java:8028)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at com.openai.fxm1.OwnRiskOnlyUiTest.lambda$accountWideRiskControlsAreAbsent$0$com-openai-fxm1-OwnRiskOnlyUiTest(OwnRiskOnlyUiTest.java:27)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at com.openai.fxm1.OwnRiskOnlyUiTest$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2612)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at java.lang.reflect.Method.invoke(Native Method)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+10-05 06:09:47.519  3879  3879 E WindowManager: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+10-05 06:09:47.520  3879  3879 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@ec82279
+10-05 06:09:47.526   576  1667 W InputManager-JNI: Input channel object 'd5d0fb2 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:09:47.532  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=29
+10-05 06:09:47.532  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=29
+10-05 06:09:47.715  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:47.727  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:47.738  3879  3893 I TestRunner: finished: tiedForecastIsNotLabelledMainAndMissingT2IsNotFabricated(com.openai.fxm1.R51RepairUiTest)

@@ -1,0 +1,2 @@
+10-05 06:16:54.809  3879  3893 I TestRunner: started: equivalentSymbolFormattingDoesNotBlockTheTimeframeViewer(com.openai.fxm1.R73ChartUiTest)
+10-05 06:16:54.816  3879  3893 I TestRunner: finished: equivalentSymbolFormattingDoesNotBlockTheTimeframeViewer(com.openai.fxm1.R73ChartUiTest)

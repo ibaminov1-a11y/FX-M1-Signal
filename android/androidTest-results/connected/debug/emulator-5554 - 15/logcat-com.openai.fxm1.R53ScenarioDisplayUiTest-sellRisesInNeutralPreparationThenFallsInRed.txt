@@ -1,0 +1,61 @@
+10-05 06:11:31.614  3879  3893 I TestRunner: started: sellRisesInNeutralPreparationThenFallsInRed(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:11:31.616  1224  5247 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 17 uptime_millis: 17 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.631  1224  5247 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 32 uptime_millis: 32 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.637  1406  5248 I TelephonySpamChimeraSer: Running Telephony Spam Chimera Service [CONTEXT service_id=150 ]
+10-05 06:11:31.644  1224  5247 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.telephonyspam.sync.SpamListSyncTaskService started execution. cause:5 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.645  1224  5247 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.telephonyspam.sync.SpamListSyncTaskService finished executing. cause:5 result: 2 elapsed_millis: 5 uptime_millis: 5 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.654  1224  4988 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService started execution. cause:5 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.696   378  5251 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+10-05 06:11:31.696  2337  4784 D TrafficStats: tagSocket(83) with statsTag=0x1809, statsUid=-1
+10-05 06:11:31.703  2337  4784 W libc    : Access denied finding property "persist.adb.tls_server.enable"
+10-05 06:11:31.703  2337  4784 W libc    : Access denied finding property "service.adb.tls.port"
+10-05 06:11:31.703   576  1759 D FileUtils: Rounded bytes from 2593193984 to 4000000000
+10-05 06:11:31.696  2337  2337 W binder:2337_8: type=1400 audit(0.0:141): avc:  denied  { read } for  name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=318 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:system_adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+10-05 06:11:31.700  2337  2337 W binder:2337_8: type=1400 audit(0.0:142): avc:  denied  { read } for  name="u:object_r:adbd_prop:s0" dev="tmpfs" ino=63 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+10-05 06:11:31.713  1224  1867 W GmsUrlRequestImpl: Content-Type header is overwritten.
+10-05 06:11:31.714   378  5252 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+10-05 06:11:31.715   378  5254 I resolv  : res_nmkquery: (QUERY, IN, A)
+10-05 06:11:31.715   378  5254 I resolv  : resolv_cache_lookup: FOUND IN CACHE entry=0x7505e02d20b0
+10-05 06:11:31.715   378  5254 I resolv  : doQuery: rcode=0, ancount=8, return value=168
+10-05 06:11:31.715   378  5253 I resolv  : res_nmkquery: (QUERY, IN, AAAA)
+10-05 06:11:31.715   378  5253 I resolv  : resolv_cache_lookup: FOUND IN CACHE entry=0x7506b02dbb50
+10-05 06:11:31.715   378  5253 I resolv  : doQuery: rcode=0, ancount=8, return value=264
+10-05 06:11:31.716  1224  2336 D TrafficStats: tagSocket(132) with statsTag=0x401, statsUid=10143
+10-05 06:11:31.776  1224  1867 W GLSUser : [AppCertManager] Exception while requesting key:
+10-05 06:11:31.776  1224  1867 W GLSUser : java.util.concurrent.ExecutionException: bpcw: Parse Proto Exception with response code 400
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at etvr.s(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at etvr.get(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at yfw.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):477)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at yfu.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):31)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at yfp.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at yfs.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):58)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at uou.call(:com.google.android.gms@242335041@24.23.35 (190800-646585959):56)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:11:31.776  1224  1867 W GLSUser : Caused by: bpcw: Parse Proto Exception with response code 400
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at bpdw.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):80)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at bpgb.e(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at bpgp.onSucceeded(:com.google.android.gms@242335041@24.23.35 (190800-646585959):7)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at m.mw.onSucceeded(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):3)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at m.lt.run(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):25)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	... 6 more
+10-05 06:11:31.776  1224  1867 W GLSUser : Caused by: fkhe: Protocol message contained an invalid tag (zero).
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkea.k(:com.google.android.gms@242335041@24.23.35 (190800-646585959):39)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkid.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):309)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkid.i(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkgi.fe(:com.google.android.gms@242335041@24.23.35 (190800-646585959):25)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkgc.g(:com.google.android.gms@242335041@24.23.35 (190800-646585959):3)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkdw.e(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkdw.d(:com.google.android.gms@242335041@24.23.35 (190800-646585959):3)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at fkdw.p(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at bpdw.g(:com.google.android.gms@242335041@24.23.35 (190800-646585959):68)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	at bpdw.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+10-05 06:11:31.776  1224  1867 W GLSUser : 	... 10 more
+10-05 06:11:31.778  1433  3686 W MediaProvider: isAppCloneUserPair for user 0: false
+10-05 06:11:31.780  1224  4988 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService finished executing. cause:5 result: 3 elapsed_millis: 131 uptime_millis: 131 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.780  3879  3893 I TestRunner: finished: sellRisesInNeutralPreparationThenFallsInRed(com.openai.fxm1.R53ScenarioDisplayUiTest)

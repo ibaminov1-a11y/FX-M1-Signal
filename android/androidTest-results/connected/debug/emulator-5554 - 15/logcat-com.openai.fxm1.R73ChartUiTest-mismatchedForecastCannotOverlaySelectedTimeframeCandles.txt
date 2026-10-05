@@ -1,0 +1,2 @@
+10-05 06:16:54.798  3879  3893 I TestRunner: started: mismatchedForecastCannotOverlaySelectedTimeframeCandles(com.openai.fxm1.R73ChartUiTest)
+10-05 06:16:54.800  3879  3893 I TestRunner: finished: mismatchedForecastCannotOverlaySelectedTimeframeCandles(com.openai.fxm1.R73ChartUiTest)

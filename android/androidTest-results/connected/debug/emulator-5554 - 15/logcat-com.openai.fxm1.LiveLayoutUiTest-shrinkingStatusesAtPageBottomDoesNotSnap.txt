@@ -1,0 +1,117 @@
+10-05 06:09:23.143  3879  3893 I TestRunner: started: shrinkingStatusesAtPageBottomDoesNotSnap(com.openai.fxm1.LiveLayoutUiTest)
+10-05 06:09:23.156  3879  3879 E WindowManager: android.view.WindowLeaked: Activity com.openai.fxm1.MainActivity has leaked window com.android.internal.policy.DecorView{1fb8020 V.E...... R....... 0,0-1024,505}[MainActivity] that was originally added here
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.view.ViewRootImpl.<init>(ViewRootImpl.java:1246)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.view.ViewRootImpl.<init>(ViewRootImpl.java:1232)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.view.WindowManagerGlobal.addView(WindowManagerGlobal.java:428)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.view.WindowManagerImpl.addView(WindowManagerImpl.java:158)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.app.Dialog.show(Dialog.java:352)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.app.AlertDialog$Builder.show(AlertDialog.java:1131)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at com.openai.fxm1.MainActivity.lambda$onProfileChanged$25$com-openai-fxm1-MainActivity(MainActivity.java:758)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at com.openai.fxm1.MainActivity$$ExternalSyntheticLambda40.run(D8$$SyntheticClass:0)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at com.openai.fxm1.MainActivity.lambda$deliverUi$27$com-openai-fxm1-MainActivity(MainActivity.java:793)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at com.openai.fxm1.MainActivity$$ExternalSyntheticLambda18.run(D8$$SyntheticClass:0)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at java.lang.reflect.Method.invoke(Native Method)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+10-05 06:09:23.156  3879  3879 E WindowManager: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+10-05 06:09:23.230  3879  3879 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@6afb808
+10-05 06:09:23.231   576  1765 W InputManager-JNI: Input channel object '980d999 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:09:23.238  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=25
+10-05 06:09:23.238  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=25
+10-05 06:09:23.434  1188  1769 D EGL_emulation: app_time_stats: avg=104.29ms min=32.00ms max=181.11ms count=10
+10-05 06:09:23.566  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:23.621  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SettingsGoogle/SettingsGoogle.apk' with 1 weak references
+10-05 06:09:23.622  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '/product/overlay/SettingsGoogle__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:09:23.622  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Drive/Drive.apk' with 1 weak references
+10-05 06:09:23.622  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Maps/Maps.apk' with 1 weak references
+10-05 06:09:23.627  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltBugle/PrebuiltBugle.apk' with 1 weak references
+10-05 06:09:23.629  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Photos/Photos.apk' with 1 weak references
+10-05 06:09:23.630  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/YouTubeMusicPrebuilt/YouTubeMusicPrebuilt.apk' with 1 weak references
+10-05 06:09:23.631  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/CalendarGooglePrebuilt/CalendarGooglePrebuilt.apk' with 1 weak references
+10-05 06:09:23.631  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleContacts/GoogleContacts.apk' with 1 weak references
+10-05 06:09:23.631  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltDeskClockGoogle/PrebuiltDeskClockGoogle.apk' with 1 weak references
+10-05 06:09:23.631  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/GoogleDialer/GoogleDialer.apk' with 1 weak references
+10-05 06:09:23.632  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGmail/PrebuiltGmail.apk' with 1 weak references
+10-05 06:09:23.632  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/YouTube/YouTube.apk' with 1 weak references
+10-05 06:09:23.632  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/Stk/Stk.apk' with 1 weak references
+10-05 06:09:23.632  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SafetyHubPrebuilt/SafetyHubPrebuilt.apk' with 1 weak references
+10-05 06:09:23.633  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DocumentsUIGoogle/DocumentsUIGoogle.apk' with 1 weak references
+10-05 06:09:23.633  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Velvet/Velvet.apk' with 1 weak references
+10-05 06:09:23.633  1406  1418 W gle.android.gms: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~NhyToYm_AVl1NmPOTIZ16g==/com.openai.fxm1.ec1-slg5dS01W3iyzA6i1yXs0w==/base.apk' with 1 weak references
+10-05 06:09:23.680  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:23.793   576  1765 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@2b9f0a0, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:09:23.834   920  1039 D SplashScreenView: Build android.window.SplashScreenView{50b8dc6 V.E...... ......ID 0,0-0,0}
+10-05 06:09:23.834   920  1039 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:09:23.834   920  1039 D SplashScreenView: Branding: view: android.view.View{841e187 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:09:23.842   496   553 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:09:23.862   378   378 I netd    : tetherGetStats() -> {[]} <0.41ms>
+10-05 06:09:23.868   447   447 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:09:23.922  1188  1188 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:09:23.922  1188  1188 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:09:23.969  1188  1188 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=26, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:09:23.976  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@d730ef3 in: PRE_ON_CREATE
+10-05 06:09:24.028  3879  3879 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:09:24.100   920   924 W ndroid.systemui: Missing inline cache for void com.android.wm.shell.transition.Transitions.processReadyQueue(com.android.wm.shell.transition.Transitions$Track)
+10-05 06:09:24.100   920   924 W ndroid.systemui: Missing inline cache for void com.android.wm.shell.transition.Transitions.processReadyQueue(com.android.wm.shell.transition.Transitions$Track)
+10-05 06:09:24.209   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:09:24.210   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:09:24.213   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10131} in 5ms
+10-05 06:09:24.217  1224  2252 I ActivityScheduler: nextTriggerTime: 428039, in 235299ms, detectorType: 39, FULL_TYPE alarmWindowMillis: 30000
+10-05 06:09:24.238  1188  1769 D EGL_emulation: app_time_stats: avg=451.21ms min=64.53ms max=1266.27ms count=4
+10-05 06:09:24.286  1188  1188 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:09:24.287  1188  1188 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:09:24.289  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@d730ef3 in: CREATED
+10-05 06:09:24.290  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@d730ef3 in: STARTED
+10-05 06:09:24.290  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@d730ef3 in: RESUMED
+10-05 06:09:24.294   920  1057 D EGL_emulation: app_time_stats: avg=1295.44ms min=4.65ms max=4822.35ms count=4
+10-05 06:09:24.374  3879  3879 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:09:24.386  3879  3879 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:09:24.386  3879  3879 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:09:24.413   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:09:24.420   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:09:24.421   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10199} in 8ms
+10-05 06:09:24.448  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5856KB AllocSpace bytes, 55(2028KB) LOS objects, 49% free, 4494KB/8989KB, paused 101us,2.589ms total 189.869ms
+10-05 06:09:24.583   576   596 W ziparchive: Unable to open '/data/app/~~NhyToYm_AVl1NmPOTIZ16g==/com.openai.fxm1.ec1-slg5dS01W3iyzA6i1yXs0w==/base.dm': No such file or directory
+10-05 06:09:24.585   576   596 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +783ms
+10-05 06:09:24.602   920  1038 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@e22c052
+10-05 06:09:24.609  3240  3240 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:09:24.624   576  1030 W InputManager-JNI: Input channel object '1f64759 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:09:24.624  3879  4786 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:24.631  3603  3638 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=60 ]
+10-05 06:09:24.634  3603  3691 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[8d692bde-74ec]>Handler" thread_id=65 ]
+10-05 06:09:24.635   496   496 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:09:24.640  1188  1188 D BaseDepthController: setSurface:
+10-05 06:09:24.640  1188  1188 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:09:24.640  1188  1188 D BaseDepthController: 	mSurface: null
+10-05 06:09:24.640  1188  1188 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:09:24.640  1188  1188 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:09:24.640  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:09:24.640  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:09:24.640  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:09:24.640  1188  1188 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:09:24.642  1188  1188 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:09:24.642  1188  2070 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:09:24.643  1188  1205 I IPCThreadState: oneway function results for code 2 on binder at 0x7ba94b49ed40 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:09:24.648  1224  1617 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:09:24.648  1224  1617 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:09:24.702  3879  4788 D TrafficStats: tagSocket(127) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:24.706  3879  4786 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:24.731  3879  4786 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:24.777   576   697 I ImeTracker: com.openai.fxm1.ec1:800b5490: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:09:24.777   576   697 I ImeTracker: com.openai.fxm1.ec1:800b5490: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:09:24.784  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:09:24.786  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:09:24.786  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:09:24.789  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:09:24.790  1343  1343 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:09:24.890  3879  3884 W openai.fxm1.ec1: Suspending all threads took: 7.961ms
+10-05 06:09:24.918  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 6638KB AllocSpace bytes, 20(836KB) LOS objects, 49% free, 4798KB/9597KB, paused 9.037ms,3.867ms total 217.809ms
+10-05 06:09:25.063  1406  4789 I GmscoreIpa: Starting mediastore instant index [CONTEXT service_id=255 ]
+10-05 06:09:25.762   378   378 I netd    : tetherGetStats() -> {[]} <0.28ms>
+10-05 06:09:25.814  3879  3951 D EGL_emulation: app_time_stats: avg=209.41ms min=44.13ms max=716.13ms count=6
+10-05 06:09:26.731  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@d730ef3 in: PAUSED
+10-05 06:09:26.735  3879  3893 I TestRunner: finished: shrinkingStatusesAtPageBottomDoesNotSnap(com.openai.fxm1.LiveLayoutUiTest)

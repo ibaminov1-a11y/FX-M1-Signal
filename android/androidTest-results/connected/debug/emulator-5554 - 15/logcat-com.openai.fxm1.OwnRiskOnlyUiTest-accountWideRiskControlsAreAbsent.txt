@@ -1,0 +1,308 @@
+10-05 06:09:40.168  3879  3893 I TestRunner: started: accountWideRiskControlsAreAbsent(com.openai.fxm1.OwnRiskOnlyUiTest)
+10-05 06:09:40.172  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@e773f9b in: DESTROYED
+10-05 06:09:40.173  3879  3879 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@d842537
+10-05 06:09:40.192   576   827 W InputManager-JNI: Input channel object 'bf88372 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:09:40.198  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=28
+10-05 06:09:40.198  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=28
+10-05 06:09:40.205   576   827 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@2b9f0a0, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:09:40.218   920  1039 D SplashScreenView: Build android.window.SplashScreenView{2597691 V.E...... ......ID 0,0-0,0}
+10-05 06:09:40.218   920  1039 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:09:40.218   920  1039 D SplashScreenView: Branding: view: android.view.View{75dd9f6 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:09:40.221   496   496 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:09:40.221   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:40.222   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:40.226   447   447 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:09:40.229  1188  1188 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:09:40.229  1188  1188 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:09:40.259   378   378 I netd    : tetherGetStats() -> {[]} <1.37ms>
+10-05 06:09:40.311  1188  1188 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=29, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:09:40.324  1433  1433 D WM-DelayedWorkTracker: Scheduling work 315c2bb3-f298-48db-b350-491b4a67ca2e
+10-05 06:09:40.324  1433  1433 D WM-GreedyScheduler: Starting tracking for 315c2bb3-f298-48db-b350-491b4a67ca2e
+10-05 06:09:40.326   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:40.327   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:40.332  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@749d255 in: PRE_ON_CREATE
+10-05 06:09:40.358  1433  1645 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:09:40.358  1433  1645 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:09:40.358  3879  3879 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:09:40.365  1188  1188 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:09:40.369  1433  1610 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=315c2bb3-f298-48db-b350-491b4a67ca2e, generation=0)
+10-05 06:09:40.370  1433  1610 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=315c2bb3-f298-48db-b350-491b4a67ca2e, generation=0)
+10-05 06:09:40.374  1433  1433 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:09:40.374  1433  4162 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:09:40.374  1433  4162 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@3d6fca7[Not completed, 1 dependents]. Future map: {315c2bb3-f298-48db-b350-491b4a67ca2e=java.util.concurrent.CompletableFuture@3d6fca7[Not completed, 1 dependents]}
+10-05 06:09:40.374  1433  4162 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:09:40.374  1433  4162 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:09:40.378  1188  1188 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:09:40.385  1433  4162 D PickerSyncController:    Latest ID/Gen=1409:96b585ec-2891-4296-882b-6ef945f9c7d5:external_primary/58
+10-05 06:09:40.385  1433  4162 D PickerSyncController:    Cached ID/Gen=1409:96b585ec-2891-4296-882b-6ef945f9c7d5:external_primary/50
+10-05 06:09:40.386  1433  4162 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=50, latest=Bundle[{last_media_sync_generation=58, media_collection_id=1409:96b585ec-2891-4296-882b-6ef945f9c7d5:external_primary}], pageSize=1000}
+10-05 06:09:40.386  1433  4162 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:09:40.386  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:09:40.386  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.386  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.386  1433  4162 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:09:40.437   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:40.437   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:40.474  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@749d255 in: CREATED
+10-05 06:09:40.475  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@749d255 in: STARTED
+10-05 06:09:40.478  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@749d255 in: RESUMED
+10-05 06:09:40.485  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:09:40.485  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.485  1433  4162 D PickerSyncController: Saving next page token: 1791180578000|1000000027 for key: local_provider:media_add:resume
+10-05 06:09:40.485  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.492  1433  4162 D PickerNotificationSender: Sending a notification for media update
+10-05 06:09:40.506  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:09:40.506  1433  4162 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:09:40.508  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:09:40.508  1433  4162 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:09:40.539  1433  4162 D ExternalDbFacade: Token received for queryMedia = 1791180578000|1000000027
+10-05 06:09:40.540  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:09:40.540  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.540  1433  4162 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:09:40.540  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.540  1433  4162 D PickerNotificationSender: Sending a notification for media update
+10-05 06:09:40.548  1188  1769 D EGL_emulation: app_time_stats: avg=141.66ms min=3.24ms max=450.02ms count=7
+10-05 06:09:40.556  3879  3879 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:09:40.563   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:40.563   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:40.566  3879  3879 D AutofillManager: notifyViewReadyInner:1073741825
+10-05 06:09:40.567  3879  3879 D AutofillManager: Triggering pre-emptive request for fill dialog.
+10-05 06:09:40.569  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:09:40.569  1433  4162 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:09:40.569  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:09:40.569  1433  4162 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:09:40.570  1433  4162 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791180578000|1000000027, android.provider.extra.SYNC_GENERATION=50, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 1
+10-05 06:09:40.570  1433  4162 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:09:40.570  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:09:40.570  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.570  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.570  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:09:40.570  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.570  1433  4162 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:09:40.570  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:09:40.570  1433  4162 D PickerNotificationSender: Sending a notification for media update
+10-05 06:09:40.571  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:09:40.571  1433  4162 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:09:40.574  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:09:40.574  1433  4162 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:09:40.575  1433  4162 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791180578000|1000000027, android.provider.extra.SYNC_GENERATION=50, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:09:40.575  1433  4162 I PickerSyncTracker: Marked sync future complete for work id: 315c2bb3-f298-48db-b350-491b4a67ca2e. Future map: {}
+10-05 06:09:40.575  1433  4162 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:09:40.582  1433  1610 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=315c2bb3-f298-48db-b350-491b4a67ca2e, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:09:40.589  1433  1433 D WM-Processor: Processor 315c2bb3-f298-48db-b350-491b4a67ca2e executed; reschedule = false
+10-05 06:09:40.589  1433  1433 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=315c2bb3-f298-48db-b350-491b4a67ca2e, generation=0)
+10-05 06:09:40.598  1433  1610 D WM-GreedyScheduler: Cancelling work ID 315c2bb3-f298-48db-b350-491b4a67ca2e
+10-05 06:09:40.601  1433  1610 D WM-GreedyScheduler: Ignoring {WorkSpec: 055aaabf-a582-4928-b156-62c43ae4171a}. Requires device idle.
+10-05 06:09:40.601  1433  1610 D WM-GreedyScheduler: Ignoring {WorkSpec: 8c61511e-1865-49ab-a573-96495a07b31b}. Requires device idle.
+10-05 06:09:40.602  1433  1610 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:09:40.654  3879  3879 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:09:40.658  3879  3879 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:09:40.678   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:40.678   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:40.785   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:40.785   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:40.909   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:40.909   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:40.955   576   596 W ziparchive: Unable to open '/data/app/~~NhyToYm_AVl1NmPOTIZ16g==/com.openai.fxm1.ec1-slg5dS01W3iyzA6i1yXs0w==/base.dm': No such file or directory
+10-05 06:09:40.963   576   596 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +751ms
+10-05 06:09:40.970   496   496 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:09:40.972   920  1038 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@58deacd
+10-05 06:09:40.974   576  1774 W InputManager-JNI: Input channel object 'edd718e Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:09:40.976  1188  1188 D BaseDepthController: setSurface:
+10-05 06:09:40.976  1188  1188 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:09:40.976  1188  1188 D BaseDepthController: 	mSurface: null
+10-05 06:09:40.976  1188  1188 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:09:40.976  1188  1188 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:09:40.976  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:09:40.976  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:09:40.976  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:09:40.976  1188  1188 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:09:40.978  1188  1188 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:09:40.984  1188  2070 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:09:40.989  1188  1205 I IPCThreadState: oneway function results for code 2 on binder at 0x7ba94b4a3150 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:09:41.017   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.018   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.095  3879  3879 I AssistStructure: Flattened final assist data: 15816 bytes, containing 1 windows, 98 views
+10-05 06:09:41.123   920  1057 D EGL_emulation: app_time_stats: avg=403.61ms min=10.61ms max=614.08ms count=3
+10-05 06:09:41.127   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.127   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.138   576   697 I ImeTracker: com.openai.fxm1.ec1:e150879c: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:09:41.138   576   697 I ImeTracker: com.openai.fxm1.ec1:e150879c: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:09:41.159  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:09:41.229  1343  1343 W NotificationCenter: NotificationCenter$ListenerData.notifyOnExecutor():672 Heavy notify work detected on UI thread: |kga->juf| takes 70ms
+10-05 06:09:41.235   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.235   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.259  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:09:41.271  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:09:41.338   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.338   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.343  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:09:41.343  1343  1343 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:09:41.350  1224  1224 I GmsCoreXrpcWrapper: Returning a channel provider with trafficStatsTag=18692 trafficStatsUid=-1
+10-05 06:09:41.376  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 2796KB AllocSpace bytes, 48(1520KB) LOS objects, 49% free, 4404KB/8808KB, paused 163us,2.717ms total 374.863ms
+10-05 06:09:41.381   443  1604 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-05 06:09:41.383   576   654 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 15
+10-05 06:09:41.406  3879  3893 D UiDevice: Waiting 5000ms for SearchCondition[hasObject=BySelector [TEXT='^.*\QКомиссия полного круга\E.*$']].
+10-05 06:09:41.406  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:41.407  1406  1406 D BoundBrokerSvc: onBind: Intent { act=com.google.android.mdd.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+10-05 06:09:41.407  1406  1406 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.mdd.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+10-05 06:09:41.424  3879  3879 D AutofillManager: notifyViewReadyInner:1073741922
+10-05 06:09:41.436   443   548 D AudioFlinger: mixer(0x7e4c085948e0) throttle end: throttle time(33)
+10-05 06:09:41.445   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.446   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.448  1224  1224 W Glide   : Failed to find GeneratedAppGlideModule. You should include an annotationProcessor compile dependency on com.github.bumptech.glide:compiler in your application and a @GlideModule annotated AppGlideModule implementation or LibraryGlideModules will be silently ignored
+10-05 06:09:41.451   576  1654 D ConnectivityService: requestNetwork for uid/pid:10143/1224 activeRequest: null callbackRequest: 143 [NetworkRequest [ REQUEST id=144, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10143 RequestorUid: 10143 RequestorPkg: com.google.android.gms UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false
+10-05 06:09:41.452   576   843 D ConnectivityService: NetReassign [144 : null → 100] [c 0] [a 0] [i 1]
+10-05 06:09:41.456   576   836 D OemPaidWifiNetworkFactory: got request NetworkRequest [ REQUEST id=144, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10143 RequestorUid: 10143 RequestorPkg: com.google.android.gms UnderlyingNetworks: Null] ]
+10-05 06:09:41.456   576   836 D MultiInternetWifiNetworkFactory: got request NetworkRequest [ REQUEST id=144, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10143 RequestorUid: 10143 RequestorPkg: com.google.android.gms UnderlyingNetworks: Null] ]
+10-05 06:09:41.456   576   836 D WifiNetworkFactory: got request NetworkRequest [ REQUEST id=144, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10143 RequestorUid: 10143 RequestorPkg: com.google.android.gms UnderlyingNetworks: Null] ]
+10-05 06:09:41.456   576   836 D UntrustedWifiNetworkFactory: got request NetworkRequest [ REQUEST id=144, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10143 RequestorUid: 10143 RequestorPkg: com.google.android.gms UnderlyingNetworks: Null] ]
+10-05 06:09:41.457  3704  3704 V InlineSuggestionRenderService: handleDestroySuggestionViews called for 0:1099290682
+10-05 06:09:41.549   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.549   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.628   443   548 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-05 06:09:41.653   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.653   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.757   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.758   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.861   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.861   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:41.940  1455  1994 I BistoHotwordHelper: (REDACTED) getHotwordActive::active query: %s, watch: %s, devices connected: %s
+10-05 06:09:41.967   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:41.967   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.069   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.069   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.125  3879  3951 D EGL_emulation: app_time_stats: avg=145.10ms min=66.46ms max=277.67ms count=8
+10-05 06:09:42.173   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.173   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.277   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.277   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.382   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.382   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.490   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.491   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.530  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:42.593   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.593   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.639  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:42.697   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.697   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.742  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:42.801   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.801   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.846  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:42.905   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:42.905   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:42.949  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:43.032   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.032   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.082  3879  3951 D EGL_emulation: app_time_stats: avg=384.07ms min=32.91ms max=1280.91ms count=4
+10-05 06:09:43.095  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:43.179   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.180   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.290   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.290   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.366  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:43.407   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.407   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.511   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.513   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.582  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:43.613   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.613   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.685  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:43.717   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.717   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.788  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:43.821   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.821   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.891  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:43.925   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:43.925   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:43.992  3879  3951 D EGL_emulation: app_time_stats: avg=205.44ms min=39.89ms max=960.59ms count=9
+10-05 06:09:43.994  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.032   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:44.032   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:44.102  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.133   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:44.133   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:44.205  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.237   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:44.237   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:44.308  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.341   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:44.341   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:44.411  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.439   387  1576 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 739840
+10-05 06:09:44.445   387  4834 W android.hardware.audio@7.1-impl.ranchu: pcmWrite:259 pcm_writei failed with 'cannot read/write stream data: I/O error' (-1)
+10-05 06:09:44.445   387  4834 E android.hardware.audio@7.1-impl.ranchu: pcmWrite:260 failure: -1
+10-05 06:09:44.514  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.616  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.719  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.821  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:44.924  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.028  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.031  3879  3951 D EGL_emulation: app_time_stats: avg=344.92ms min=39.32ms max=955.39ms count=3
+10-05 06:09:45.133  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.236  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.338  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.441  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.544  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.647  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.749  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.852  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:45.864  1224  4819 I GMS_MM_Logger: Memory Metric Logging not allowed. Stopping.
+10-05 06:09:45.954  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:46.054  3879  3951 D EGL_emulation: app_time_stats: avg=511.15ms min=63.49ms max=958.80ms count=2
+10-05 06:09:46.064  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:46.176  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:46.279  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:46.381  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:46.484  3879  3893 D UiDevice: Searching for node with selector: BySelector [TEXT='^.*\QКомиссия полного круга\E.*$'].
+10-05 06:09:46.490  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@749d255 in: PAUSED
+10-05 06:09:46.490  1188  1188 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:09:46.492   447   447 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:09:46.500  3879  3893 E TestRunner: failed: accountWideRiskControlsAreAbsent(com.openai.fxm1.OwnRiskOnlyUiTest)
+10-05 06:09:46.500  3879  3893 E TestRunner: ----- begin exception -----
+10-05 06:09:46.500  3879  3893 E TestRunner: java.lang.AssertionError
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.Assert.fail(Assert.java:87)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.Assert.assertTrue(Assert.java:42)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.Assert.assertTrue(Assert.java:53)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at com.openai.fxm1.OwnRiskOnlyUiTest.accountWideRiskControlsAreAbsent(OwnRiskOnlyUiTest.java:28)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at java.lang.reflect.Method.invoke(Native Method)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at androidx.test.internal.runner.junit4.statement.RunBefores.evaluate(RunBefores.java:80)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at androidx.test.rule.ActivityTestRule$ActivityStatement.evaluate(ActivityTestRule.java:522)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:463)
+10-05 06:09:46.500  3879  3893 E TestRunner: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2594)
+10-05 06:09:46.500  3879  3893 E TestRunner: ----- end exception -----
+10-05 06:09:46.501  3879  3893 I TestRunner: finished: accountWideRiskControlsAreAbsent(com.openai.fxm1.OwnRiskOnlyUiTest)

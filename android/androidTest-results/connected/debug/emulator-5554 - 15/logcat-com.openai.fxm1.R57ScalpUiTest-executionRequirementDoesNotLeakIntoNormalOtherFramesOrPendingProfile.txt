@@ -1,0 +1,3 @@
+10-05 06:16:00.957  3879  3893 I TestRunner: started: executionRequirementDoesNotLeakIntoNormalOtherFramesOrPendingProfile(com.openai.fxm1.R57ScalpUiTest)
+10-05 06:16:00.984  3879  3893 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:16:00.984  3879  3893 I TestRunner: finished: executionRequirementDoesNotLeakIntoNormalOtherFramesOrPendingProfile(com.openai.fxm1.R57ScalpUiTest)

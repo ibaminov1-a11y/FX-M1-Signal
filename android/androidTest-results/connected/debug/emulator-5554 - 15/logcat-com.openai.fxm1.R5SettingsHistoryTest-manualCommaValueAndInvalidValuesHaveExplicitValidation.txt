@@ -1,0 +1,7 @@
+10-05 06:16:28.568  3879  3893 I TestRunner: started: manualCommaValueAndInvalidValuesHaveExplicitValidation(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 06:16:28.571  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=84
+10-05 06:16:28.571  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=84
+10-05 06:16:28.778   576   588 I system_server: NativeAlloc concurrent mark compact GC freed 12MB AllocSpace bytes, 6(120KB) LOS objects, 45% free, 28MB/52MB, paused 482us,1.458ms total 144.527ms
+10-05 06:16:28.923  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:16:28.937  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:16:28.950  3879  3893 I TestRunner: finished: manualCommaValueAndInvalidValuesHaveExplicitValidation(com.openai.fxm1.R5SettingsHistoryTest)

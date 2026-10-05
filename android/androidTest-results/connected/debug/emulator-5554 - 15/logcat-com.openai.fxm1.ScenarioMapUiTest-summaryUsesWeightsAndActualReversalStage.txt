@@ -1,0 +1,2 @@
+10-05 06:17:48.116  3879  3893 I TestRunner: started: summaryUsesWeightsAndActualReversalStage(com.openai.fxm1.ScenarioMapUiTest)
+10-05 06:17:48.118  3879  3893 I TestRunner: finished: summaryUsesWeightsAndActualReversalStage(com.openai.fxm1.ScenarioMapUiTest)

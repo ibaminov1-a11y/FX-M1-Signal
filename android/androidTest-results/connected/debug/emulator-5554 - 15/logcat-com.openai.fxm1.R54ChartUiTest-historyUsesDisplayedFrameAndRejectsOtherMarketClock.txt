@@ -1,0 +1,2 @@
+10-05 06:11:41.628  3879  3893 I TestRunner: started: historyUsesDisplayedFrameAndRejectsOtherMarketClock(com.openai.fxm1.R54ChartUiTest)
+10-05 06:11:41.631  3879  3893 I TestRunner: finished: historyUsesDisplayedFrameAndRejectsOtherMarketClock(com.openai.fxm1.R54ChartUiTest)

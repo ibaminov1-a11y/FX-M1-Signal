@@ -1,0 +1,6 @@
+10-05 06:16:33.849  3879  3893 I TestRunner: started: historyViewportStaysAnchoredWhileNewBarsArrive(com.openai.fxm1.R5SettingsHistoryTest)
+10-05 06:16:33.853  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=85
+10-05 06:16:33.853  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=85
+10-05 06:16:34.203  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:16:34.215  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:16:34.227  3879  3893 I TestRunner: finished: historyViewportStaysAnchoredWhileNewBarsArrive(com.openai.fxm1.R5SettingsHistoryTest)

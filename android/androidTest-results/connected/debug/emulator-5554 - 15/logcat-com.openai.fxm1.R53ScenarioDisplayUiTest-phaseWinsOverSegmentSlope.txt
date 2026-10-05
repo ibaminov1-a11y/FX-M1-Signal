@@ -1,0 +1,11 @@
+10-05 06:11:31.559  3879  3893 I TestRunner: started: phaseWinsOverSegmentSlope(com.openai.fxm1.R53ScenarioDisplayUiTest)
+10-05 06:11:31.599   378  5244 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+10-05 06:11:31.600   378  5246 I resolv  : res_nmkquery: (QUERY, IN, A)
+10-05 06:11:31.600   378  5246 I resolv  : resolv_cache_lookup: FOUND IN CACHE entry=0x7505e02cf8d0
+10-05 06:11:31.600   378  5246 I resolv  : doQuery: rcode=0, ancount=8, return value=178
+10-05 06:11:31.600   378  5245 I resolv  : res_nmkquery: (QUERY, IN, AAAA)
+10-05 06:11:31.600   378  5245 I resolv  : resolv_cache_lookup: FOUND IN CACHE entry=0x7506b02db990
+10-05 06:11:31.600   378  5245 I resolv  : doQuery: rcode=0, ancount=8, return value=274
+10-05 06:11:31.604  1224  2858 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.604  1224  2858 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 320 [CONTEXT service_id=218 ]
+10-05 06:11:31.612  3879  3893 I TestRunner: finished: phaseWinsOverSegmentSlope(com.openai.fxm1.R53ScenarioDisplayUiTest)

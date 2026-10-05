@@ -1,0 +1,210 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.openai.fxm1.CampaignSignalUiTest" tests="167" failures="5" errors="0" skipped="0" time="628.237" timestamp="2026-10-05T06:18:08" hostname="localhost">
+  <properties>
+    <property name="device" value="emulator-5554 - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="openCampaignMustNotOverwriteCurrentAnalysisSignal" classname="com.openai.fxm1.CampaignSignalUiTest" time="0.03" />
+  <testcase name="transientOfflineAndActivityReturnDoNotDisableBridgeAuto" classname="com.openai.fxm1.EventCoreUiTest" time="8.853" />
+  <testcase name="legacyUiActualBalanceAndModesArePreserved" classname="com.openai.fxm1.EventCoreUiTest" time="7.594" />
+  <testcase name="openCampaignSummaryShowsActualMt5EntryStopAndPlEvenWhenAnalysisWaits" classname="com.openai.fxm1.EventCoreUiTest" time="3.228" />
+  <testcase name="candidateForecastUsesDirectionalLabelAndNoEdgeDrawsNoProjection" classname="com.openai.fxm1.EventCoreUiTest" time="4.274" />
+  <testcase name="legacyFiveMinuteProjectionStaysDisabledDuringUpgrade" classname="com.openai.fxm1.EventCoreUiTest" time="3.928">
+    <failure>java.lang.AssertionError: Old BUY +5/+10/+15 projection must be absent expected:&lt;0&gt; but was:&lt;272&gt;
+at org.junit.Assert.fail(Assert.java:89)
+at org.junit.Assert.failNotEquals(Assert.java:835)
+at org.junit.Assert.assertEquals(Assert.java:647)
+at com.openai.fxm1.EventCoreUiTest.legacyFiveMinuteProjectionStaysDisabledDuringUpgrade(EventCoreUiTest.java:203)
+</failure>
+  </testcase>
+  <testcase name="notificationIsInformationOnlyAndCannotControlTrading" classname="com.openai.fxm1.EventCoreUiTest" time="9.332" />
+  <testcase name="r3LiveStructureIsVisibleBeforeSwingConfirmation" classname="com.openai.fxm1.EventCoreUiTest" time="4.545" />
+  <testcase name="accountModeAndCommissionProfileAreAutomatic" classname="com.openai.fxm1.EventCoreUiTest" time="5.235" />
+  <testcase name="configurePreservesSelectedScalpWhileUpgradingScenarioEngine" classname="com.openai.fxm1.EventCoreUiTest" time="4.278" />
+  <testcase name="r3DecisionPathAndStructureComeFromActualBridgeState" classname="com.openai.fxm1.EventCoreUiTest" time="3.612" />
+  <testcase name="r3StructureAndPathAreRenderedFromBridgeState" classname="com.openai.fxm1.EventCoreUiTest" time="3.759" />
+  <testcase name="obsoleteMapWithoutSchemaDoesNotRenderGuessedRoutes" classname="com.openai.fxm1.EventCoreUiTest" time="3.745">
+    <failure>java.lang.AssertionError: Old unversioned map is not the new structural contract expected:&lt;0&gt; but was:&lt;488&gt;
+at org.junit.Assert.fail(Assert.java:89)
+at org.junit.Assert.failNotEquals(Assert.java:835)
+at org.junit.Assert.assertEquals(Assert.java:647)
+at com.openai.fxm1.EventCoreUiTest.obsoleteMapWithoutSchemaDoesNotRenderGuessedRoutes(EventCoreUiTest.java:179)
+</failure>
+  </testcase>
+  <testcase name="actualCandlesAreGreenAndRed" classname="com.openai.fxm1.EventCoreUiTest" time="3.534" />
+  <testcase name="noEdgeForecastDoesNotPretendBuyOrSellDirection" classname="com.openai.fxm1.EventCoreUiTest" time="4.063">
+    <failure>java.lang.AssertionError: NO EDGE must not draw a directional future path expected:&lt;0&gt; but was:&lt;110&gt;
+at org.junit.Assert.fail(Assert.java:89)
+at org.junit.Assert.failNotEquals(Assert.java:835)
+at org.junit.Assert.assertEquals(Assert.java:647)
+at com.openai.fxm1.EventCoreUiTest.noEdgeForecastDoesNotPretendBuyOrSellDirection(EventCoreUiTest.java:234)
+</failure>
+  </testcase>
+  <testcase name="autoUiUsesBridgeStateAndAddsAreRiskOnly" classname="com.openai.fxm1.EventCoreUiTest" time="5.045" />
+  <testcase name="lateServerCallbackAfterDestroyIsIgnored" classname="com.openai.fxm1.LiveLayoutUiTest" time="2.988" />
+  <testcase name="changingLiveTextKeepsGeometryAndScroll" classname="com.openai.fxm1.LiveLayoutUiTest" time="5.486" />
+  <testcase name="offlineInstrumentChangeClearsUnrelatedLiveChart" classname="com.openai.fxm1.LiveLayoutUiTest" time="3.621" />
+  <testcase name="shrinkingStatusesAtPageBottomDoesNotSnap" classname="com.openai.fxm1.LiveLayoutUiTest" time="3.57" />
+  <testcase name="cachedLiveUpdatesKeepScreenAndHistoricalChartAnchored" classname="com.openai.fxm1.LiveLayoutUiTest" time="5.628" />
+  <testcase name="fullTextRemainsReadableInFrozenSnapshot" classname="com.openai.fxm1.LiveLayoutUiTest" time="4.599" />
+  <testcase name="accountWideRiskControlsAreAbsent" classname="com.openai.fxm1.OwnRiskOnlyUiTest" time="6.347">
+    <failure>java.lang.AssertionError
+at org.junit.Assert.fail(Assert.java:87)
+at org.junit.Assert.assertTrue(Assert.java:42)
+at org.junit.Assert.assertTrue(Assert.java:53)
+at com.openai.fxm1.OwnRiskOnlyUiTest.accountWideRiskControlsAreAbsent(OwnRiskOnlyUiTest.java:28)
+</failure>
+  </testcase>
+  <testcase name="tiedForecastIsNotLabelledMainAndMissingT2IsNotFabricated" classname="com.openai.fxm1.R51RepairUiTest" time="0.222" />
+  <testcase name="denseAnnotationPlacementNeverOverlapsOrEscapesBounds" classname="com.openai.fxm1.R51RepairUiTest" time="0.226" />
+  <testcase name="legacyCatalogueIsRemovedWithoutChangingChosenSymbolOrLot" classname="com.openai.fxm1.R51RepairUiTest" time="1.708" />
+  <testcase name="liveCatalogueSyncDoesNotReplaceTheWatchlist" classname="com.openai.fxm1.R51RepairUiTest" time="1.8" />
+  <testcase name="historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles" classname="com.openai.fxm1.R51RepairUiTest" time="0.518" />
+  <testcase name="compactChartShowsNoMoreThanTwoSelectedPaths" classname="com.openai.fxm1.R51RepairUiTest" time="0.2" />
+  <testcase name="repairedWatchlistAndMapAreCapturedFromRunningActivity" classname="com.openai.fxm1.R51RepairUiTest" time="6.726" />
+  <testcase name="symbolRiskAndLotControlsReachTheActualConfiguration" classname="com.openai.fxm1.R53ControlsUiTest" time="10.928" />
+  <testcase name="allNineteenLiveFieldsRenderRealChangingBridgeData" classname="com.openai.fxm1.R53ControlsUiTest" time="4.063" />
+  <testcase name="navigationDetailsAndSettingsButtonsOpenTheirDestinations" classname="com.openai.fxm1.R53ControlsUiTest" time="12.938" />
+  <testcase name="scalpSelectionReachesBridgeAndSurvivesActivityRecreation" classname="com.openai.fxm1.R53ControlsUiTest" time="8.336" />
+  <testcase name="failedResetPreservesEmergencyLatch" classname="com.openai.fxm1.R53ControlsUiTest" time="2.597" />
+  <testcase name="selectedRealModeStaysBlockedEvenWhileMt5IsStillDemo" classname="com.openai.fxm1.R53ControlsUiTest" time="6.595" />
+  <testcase name="emergencyNeedsDoubleTapAndSuccessfulSettingsResetClearsBothLatches" classname="com.openai.fxm1.R53ControlsUiTest" time="8.044" />
+  <testcase name="autoConfirmationPauseAndMonitoringStopHaveDistinctEffects" classname="com.openai.fxm1.R53ControlsUiTest" time="6.606" />
+  <testcase name="lockedBridgeProfileSynchronizesSavedModeWithoutCreatingADeferredChange" classname="com.openai.fxm1.R53ControlsUiTest" time="3.792" />
+  <testcase name="missingQuoteReplacesPreviouslyDisplayedPriceWithUnavailableMarker" classname="com.openai.fxm1.R53ControlsUiTest" time="4.609" />
+  <testcase name="destroyedMonitoringServiceClearsItsRunningIndicator" classname="com.openai.fxm1.R53ControlsUiTest" time="3.926" />
+  <testcase name="offlineRefreshDisablesControlsAndRecoveryRefreshRestoresThem" classname="com.openai.fxm1.R53ControlsUiTest" time="4.341" />
+  <testcase name="offlineCachedForecastIsExplicitAndRecoveryRestoresLive" classname="com.openai.fxm1.R53ControlsUiTest" time="5.57" />
+  <testcase name="missingFrozenForecastDoesNotBorrowWatchingHypothesis" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.037" />
+  <testcase name="cachedOfflineRouteIsNeutralAndDoesNotClaimBridgeStopped" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.248" />
+  <testcase name="phaseWinsOverSegmentSlope" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.052" />
+  <testcase name="sellRisesInNeutralPreparationThenFallsInRed" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.176" />
+  <testcase name="watchingLiveHypothesisDoesNotReplaceFrozenEntryIdentity" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.027" />
+  <testcase name="entryIdentitySurvivesUnavailableLiveForecast" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.023" />
+  <testcase name="buyFallsInNeutralPreparationThenRisesInGreen" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.126" />
+  <testcase name="oldV3AnchorsStillSeparatePreparationFromTargets" classname="com.openai.fxm1.R53ScenarioDisplayUiTest" time="0.054" />
+  <testcase name="failedRawReadCannotBorrowVerifiedCandlesOrForecast" classname="com.openai.fxm1.R54ChartUiTest" time="0.0" />
+  <testcase name="futureTerminalCandlesReachEmbeddedAndFullscreenViews" classname="com.openai.fxm1.R54ChartUiTest" time="8.349" />
+  <testcase name="cachedRawChartRemainsExplicitlyOffline" classname="com.openai.fxm1.R54ChartUiTest" time="0.049" />
+  <testcase name="blockedClockRendersRealCandlesWithoutTradingPaths" classname="com.openai.fxm1.R54ChartUiTest" time="0.306" />
+  <testcase name="explicitClockPreviewDisclosesNormalization" classname="com.openai.fxm1.R54ChartUiTest" time="0.001" />
+  <testcase name="rawRowsFromAnotherInstrumentScopeOrTimeframeAreRejected" classname="com.openai.fxm1.R54ChartUiTest" time="0.0" />
+  <testcase name="rawHistoryCannotMergeVerifiedRowsAndRecoveryRestoresVerifiedMap" classname="com.openai.fxm1.R54ChartUiTest" time="0.0" />
+  <testcase name="historyUsesDisplayedFrameAndRejectsOtherMarketClock" classname="com.openai.fxm1.R54ChartUiTest" time="0.001" />
+  <testcase name="downwardSwipeRefreshesWholeScreenWhileMonitoringIsStoppedWithoutCommands" classname="com.openai.fxm1.R54RefreshUiTest" time="4.569" />
+  <testcase name="busyClientQueueHasBoundedLoadingAndDoesNotSendCancelledRefreshLater" classname="com.openai.fxm1.R54RefreshUiTest" time="21.769" />
+  <testcase name="slowRefreshDoesNotBlockMonitoringOrEmergencyAndCannotOverwriteNewState" classname="com.openai.fxm1.R54RefreshUiTest" time="13.863" />
+  <testcase name="repeatedPullsCoalesceWhileVisibleProgressIsRunning" classname="com.openai.fxm1.R54RefreshUiTest" time="8.093" />
+  <testcase name="changedSourceRejectsOldRefreshWithoutInvalidatingNewSnapshot" classname="com.openai.fxm1.R54RefreshUiTest" time="5.446" />
+  <testcase name="failedAndTimedOutRefreshesClearProgressAndRecoveryShowsFreshSuccess" classname="com.openai.fxm1.R54RefreshUiTest" time="9.63" />
+  <testcase name="shortHorizontalMultitouchAndScrolledGesturesDoNotRefresh" classname="com.openai.fxm1.R54RefreshUiTest" time="10.626" />
+  <testcase name="partialHistoryFailureIsVisibleWithoutDiscardingFreshAccount" classname="com.openai.fxm1.R54RefreshUiTest" time="5.905" />
+  <testcase name="oldManualFailureDoesNotDisconnectSuccessfulConcurrentPolling" classname="com.openai.fxm1.R54RefreshUiTest" time="15.126" />
+  <testcase name="finishingDuringRefreshDoesNotDeliverToDestroyedActivity" classname="com.openai.fxm1.R54RefreshUiTest" time="6.128" />
+  <testcase name="acceptedEnableClearsMatchingDraftButOlderSnapshotKeepsNewerChoice" classname="com.openai.fxm1.R55ControlsUiTest" time="2.965" />
+  <testcase name="explicitDraftSurvivesPollBeforeItsCommandIsSent" classname="com.openai.fxm1.R55ControlsUiTest" time="2.102" />
+  <testcase name="smartStatusDetailsShowFullCurrentBridgeStateWithoutResizingPreview" classname="com.openai.fxm1.R55ControlsUiTest" time="4.535" />
+  <testcase name="twoClosedTradesAgreeInMoneyStatisticsAndTradeJournal" classname="com.openai.fxm1.R55ControlsUiTest" time="3.7" />
+  <testcase name="armedAutoWithInvalidQuoteKeepsAllProfileSelectorsUsable" classname="com.openai.fxm1.R55ControlsUiTest" time="1.849" />
+  <testcase name="refreshingWithArmedAutoDoesNotIssueCommandsOrEraseChoice" classname="com.openai.fxm1.R55ControlsUiTest" time="3.607" />
+  <testcase name="selectedEntryTimeframeReachesTheBridgeProfile" classname="com.openai.fxm1.R55ControlsUiTest" time="4.198" />
+  <testcase name="pendingSpinnerSelectionSurvivesUnchangedAuthoritativeRepaint" classname="com.openai.fxm1.R55ControlsUiTest" time="2.825" />
+  <testcase name="campaignKeepsActiveProfileAndShowsDeferredChoiceAcrossPolls" classname="com.openai.fxm1.R55ControlsUiTest" time="6.38" />
+  <testcase name="symbolAndModeChangesReachArmedBridgeWhilePhoneMonitoringIsStopped" classname="com.openai.fxm1.R55ControlsUiTest" time="6.543" />
+  <testcase name="falseReturnDoesNotAdvertiseUnrelatedGenericEntryLevels" classname="com.openai.fxm1.R56ChartSemanticsTest" time="0.031" />
+  <testcase name="repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime" classname="com.openai.fxm1.R56ChartSemanticsTest" time="0.003" />
+  <testcase name="rejectedResetPreservesEmergencyLatchAndPendingRetry" classname="com.openai.fxm1.R56ConcurrencyUiTest" time="0.29" />
+  <testcase name="acceptedResetRejectsAnOlderEmergencySnapshotButFreshEmergencyStillLatches" classname="com.openai.fxm1.R56ConcurrencyUiTest" time="0.202" />
+  <testcase name="acceptedResetRejectsOlderConfigureSnapshotAndPreservesDraft" classname="com.openai.fxm1.R56ConcurrencyUiTest" time="0.256" />
+  <testcase name="runningFlagIsPublishedOnlyAfterNativeForegroundPromotion" classname="com.openai.fxm1.R56ConcurrencyUiTest" time="1.325" />
+  <testcase name="newerOrdinaryPollDoesNotDiscardAnExplicitProfileSelection" classname="com.openai.fxm1.R56ConcurrencyUiTest" time="0.251" />
+  <testcase name="contentRemainsBelowSystemStatusBarAfterInsets" classname="com.openai.fxm1.R56TimeframesUiTest" time="1.514" />
+  <testcase name="tradeFrameAndOverviewRecoverWithoutMonitoringOrSendingPendingCommands" classname="com.openai.fxm1.R56TimeframesUiTest" time="6.326" />
+  <testcase name="enlargedChartSharesViewingFrameAndKeepsHistoryControls" classname="com.openai.fxm1.R56TimeframesUiTest" time="10.445" />
+  <testcase name="observerLivePriceUpdatesWhilePhoneMonitoringIsStopped" classname="com.openai.fxm1.R56TimeframesUiTest" time="7.08" />
+  <testcase name="delayedOldFrameCannotReplaceNewerSelection" classname="com.openai.fxm1.R56TimeframesUiTest" time="7.021" />
+  <testcase name="unavailableFrameHasReasonAndCannotShowAnotherFramesCandles" classname="com.openai.fxm1.R56TimeframesUiTest" time="4.819" />
+  <testcase name="changingSourceClearsObserverCacheBeforeDelayedReply" classname="com.openai.fxm1.R56TimeframesUiTest" time="8.466" />
+  <testcase name="oldTradeSnapshotNeverClaimsLiveWhileStateRefreshIsUnavailable" classname="com.openai.fxm1.R56TimeframesUiTest" time="4.23" />
+  <testcase name="v3AccessibilityUsesScenarioEventInsteadOfGenericEntryTriggers" classname="com.openai.fxm1.R56TimeframesUiTest" time="1.973" />
+  <testcase name="wrongFrameScopeClockOrAccountNeverReachesChart" classname="com.openai.fxm1.R56TimeframesUiTest" time="11.857" />
+  <testcase name="chartFramesHaveIndependentForecastsWithoutChangingTradeProfile" classname="com.openai.fxm1.R56TimeframesUiTest" time="18.852" />
+  <testcase name="oldNumericEntryPreferencesPreserveTheirNamedFrames" classname="com.openai.fxm1.R56TimeframesUiTest" time="2.044" />
+  <testcase name="journalKeepsLegacyReasonsAndBoundsUntrustedText" classname="com.openai.fxm1.R57ScalpUiTest" time="0.059" />
+  <testcase name="journalExplainsNestedAnalysisAndCommandWithoutDumpingCredentials" classname="com.openai.fxm1.R57ScalpUiTest" time="0.016" />
+  <testcase name="executionRequirementDoesNotLeakIntoNormalOtherFramesOrPendingProfile" classname="com.openai.fxm1.R57ScalpUiTest" time="0.024" />
+  <testcase name="nullLevelsBlockedAddsAndCachedRequirementsStayTruthful" classname="com.openai.fxm1.R57ScalpUiTest" time="0.006" />
+  <testcase name="executionRequirementPrecedesHypothesesAndHasExactTradePrices" classname="com.openai.fxm1.R57ScalpUiTest" time="0.006" />
+  <testcase name="nativeWaitAndSignalDetailsUseActiveTradeFrame" classname="com.openai.fxm1.R57ScalpUiTest" time="2.402" />
+  <testcase name="chartHasLiveHistoryNavigation" classname="com.openai.fxm1.R5RedContractUiTest" time="5.581" />
+  <testcase name="selectedLotReachesConfiguration" classname="com.openai.fxm1.R5RedContractUiTest" time="4.953" />
+  <testcase name="targetRealHeaderFollowsSavedSettings" classname="com.openai.fxm1.R5RedContractUiTest" time="7.801" />
+  <testcase name="lotSelectorHasPresetsAndCustomChoice" classname="com.openai.fxm1.R5SettingsHistoryTest" time="2.159" />
+  <testcase name="manualCommaValueAndInvalidValuesHaveExplicitValidation" classname="com.openai.fxm1.R5SettingsHistoryTest" time="0.376" />
+  <testcase name="singleBarHistoryDoesNotThrow" classname="com.openai.fxm1.R5SettingsHistoryTest" time="0.723" />
+  <testcase name="actualLotSelectionReachesServerConfiguration" classname="com.openai.fxm1.R5SettingsHistoryTest" time="3.204" />
+  <testcase name="historyViewportStaysAnchoredWhileNewBarsArrive" classname="com.openai.fxm1.R5SettingsHistoryTest" time="0.376" />
+  <testcase name="configTransmitsChosenLotNotHardcoded001" classname="com.openai.fxm1.R5SettingsHistoryTest" time="0.649" />
+  <testcase name="savingSmartSettingsDoesNotResetManualLot" classname="com.openai.fxm1.R5SettingsHistoryTest" time="3.645" />
+  <testcase name="actualV2MapSupportsHistoryAndImmutableArchive" classname="com.openai.fxm1.R5SettingsHistoryTest" time="9.956" />
+  <testcase name="autoTitleUsesSelectedModeRatherThanActualAccount" classname="com.openai.fxm1.R5SettingsHistoryTest" time="2.641" />
+  <testcase name="oldFormingCandleDoesNotDuplicateAClosedCandle" classname="com.openai.fxm1.R73ChartUiTest" time="0.027" />
+  <testcase name="staleAndArchiveMarkersNeverClaimLive" classname="com.openai.fxm1.R73ChartUiTest" time="0.023" />
+  <testcase name="mismatchedForecastCannotOverlaySelectedTimeframeCandles" classname="com.openai.fxm1.R73ChartUiTest" time="0.01" />
+  <testcase name="unavailableWrongInstrumentAndWrongScopePriceForecastsAreHidden" classname="com.openai.fxm1.R73ChartUiTest" time="0.0" />
+  <testcase name="equivalentSymbolFormattingDoesNotBlockTheTimeframeViewer" classname="com.openai.fxm1.R73ChartUiTest" time="0.0" />
+  <testcase name="flatRealCandlesStillRenderInsteadOfABlankChart" classname="com.openai.fxm1.R73ChartUiTest" time="0.0" />
+  <testcase name="connectedBridgeCannotLabelAnOldPublicationOrStaleQuoteLive" classname="com.openai.fxm1.R73ChartUiTest" time="0.001" />
+  <testcase name="singleAvailableCandleIsVisibleWhileHistoryLoads" classname="com.openai.fxm1.R73ChartUiTest" time="0.0" />
+  <testcase name="historyAnchorSurvivesNewCandlesAndForecastStaysHidden" classname="com.openai.fxm1.R73ChartUiTest" time="0.002" />
+  <testcase name="nativeChartScreenshotsCoverInstrumentScaleSmallScreensAndHistory" classname="com.openai.fxm1.R73ChartUiTest" time="0.303" />
+  <testcase name="invalidZoomDoesNotCollapseAnExistingViewport" classname="com.openai.fxm1.R73ChartUiTest" time="0.001" />
+  <testcase name="brokerEntryAndStopAreVisibleOnlyForTheirActualInstrumentAndLiveView" classname="com.openai.fxm1.R73ChartUiTest" time="0.027" />
+  <testcase name="forecastLabelsDoNotOverlapAndExpiredPointsDoNotBecomeFutureTicks" classname="com.openai.fxm1.R73ChartUiTest" time="0.001" />
+  <testcase name="topLevelOfflineStatusPropagatesIntoTheCopiedChartForecast" classname="com.openai.fxm1.R73ChartUiTest" time="0.001" />
+  <testcase name="chartTimeAxisUsesUtcAndKeepsFrameIdentityAtEveryScale" classname="com.openai.fxm1.R73ChartUiTest" time="0.203" />
+  <testcase name="selectedInstrumentMetadataDoesNotMutateTheServerSnapshot" classname="com.openai.fxm1.R73ChartUiTest" time="0.001" />
+  <testcase name="waitingCandlesUseAvailableWidthWhenThereIsNoProjection" classname="com.openai.fxm1.R73ChartUiTest" time="0.0" />
+  <testcase name="priceAxisPreservesBrokerPrecisionWithoutTruncationAcrossInstruments" classname="com.openai.fxm1.R73ChartUiTest" time="0.0" />
+  <testcase name="malformedCandleCannotOverwriteTheLastValidHistoryRow" classname="com.openai.fxm1.R73ChartUiTest" time="0.0" />
+  <testcase name="acceptedDisableRejectsOlderAutoSnapshot" classname="com.openai.fxm1.R73ControlsUiTest" time="1.32" />
+  <testcase name="reachableBridgeWithStaleMt5DoesNotBecomePhoneOffline" classname="com.openai.fxm1.R73ControlsUiTest" time="1.75" />
+  <testcase name="pollingNeverReplaysLegacyPauseOrUnsentProfileSelection" classname="com.openai.fxm1.R73ControlsUiTest" time="1.145" />
+  <testcase name="resetWaitsForInFlightEmergencyAcknowledgement" classname="com.openai.fxm1.R73ControlsUiTest" time="1.414" />
+  <testcase name="queuedCommandCannotMoveToChangedProfile" classname="com.openai.fxm1.R73ControlsUiTest" time="2.864" />
+  <testcase name="commandDoesNotWaitBehindMoneyRead" classname="com.openai.fxm1.R73ControlsUiTest" time="1.469" />
+  <testcase name="pendingDisableKeepsConfirmedSwitchAndBlocksDuplicateTap" classname="com.openai.fxm1.R73ControlsUiTest" time="1.494" />
+  <testcase name="queuedCommandCannotMoveToChangedServer" classname="com.openai.fxm1.R73ControlsUiTest" time="1.751" />
+  <testcase name="emergencyRetryRetainsIdentityAndResetCancelsOldRetry" classname="com.openai.fxm1.R73ControlsUiTest" time="1.622" />
+  <testcase name="campaignPricesUseBrokerDigitsForJpyMetalsAndBitcoin" classname="com.openai.fxm1.R73ControlsUiTest" time="1.362" />
+  <testcase name="explicitEmergencyOnNewBridgePreservesOldUncertainIdentityAndResetGate" classname="com.openai.fxm1.R73ControlsUiTest" time="1.64" />
+  <testcase name="busyBridgeRemainsReachableWhileExpiredAccountIsLabelledCached" classname="com.openai.fxm1.R73ControlsUiTest" time="1.405" />
+  <testcase name="emergencyRetryCapturedAfterResetPreparationCannotRunAfterAcceptedReset" classname="com.openai.fxm1.R73ControlsUiTest" time="1.341" />
+  <testcase name="legacyEmergencyFlagCannotAcquireANewDestinationOnRestart" classname="com.openai.fxm1.R73ControlsUiTest" time="1.392" />
+  <testcase name="emergencyReachesBridgeWhileServiceReadIsHeld" classname="com.openai.fxm1.R73ControlsUiTest" time="1.424" />
+  <testcase name="resettingNewBridgeDirectlyCannotDiscardOldUncertainEmergency" classname="com.openai.fxm1.R73ControlsUiTest" time="1.166" />
+  <testcase name="offlineFinancialCardExplicitlyLabelsCachedNumbers" classname="com.openai.fxm1.R73ControlsUiTest" time="1.468" />
+  <testcase name="stoppedServiceForegroundFailureMarksCachedFinancialStateOffline" classname="com.openai.fxm1.R73ControlsUiTest" time="1.958" />
+  <testcase name="uncertainEmergencyBlocksResetUntilSameIdentityIsAcknowledged" classname="com.openai.fxm1.R73ControlsUiTest" time="1.346" />
+  <testcase name="oldProfileFailureDoesNotInvalidateCurrentProfile" classname="com.openai.fxm1.R7ProfileReadUiTest" time="0.002" />
+  <testcase name="selectingKnownInstrumentRestoresItsOwnFrameModeAndLot" classname="com.openai.fxm1.R7ProfileReadUiTest" time="0.001" />
+  <testcase name="entryPlanIsVisibleForNormalAndScalpAcrossWorkingFrames" classname="com.openai.fxm1.R7ReleaseUiTest" time="0.0" />
+  <testcase name="priceForecastIsVisibleWhileEntryWaits" classname="com.openai.fxm1.R7ReleaseUiTest" time="0.176" />
+  <testcase name="signalDetailsUseCompactStableHeights" classname="com.openai.fxm1.R7ReleaseUiTest" time="0.026" />
+  <testcase name="explicitProfileIsNotReplacedAndMissingProfileFailsClosed" classname="com.openai.fxm1.R7ReleaseUiTest" time="0.002" />
+  <testcase name="commandEnvelopeCapturesProfileBeforeViewChanges" classname="com.openai.fxm1.R7ReleaseUiTest" time="0.001" />
+  <testcase name="wrongFrameHistoryAndExpiredForecastAreNotDrawn" classname="com.openai.fxm1.R7ReleaseUiTest" time="0.002" />
+  <testcase name="summaryUsesWeightsAndActualReversalStage" classname="com.openai.fxm1.ScenarioMapUiTest" time="0.0" />
+  <testcase name="mapExplainsWeightsAndKeepsActiveInvalidationSeparate" classname="com.openai.fxm1.ScenarioMapUiTest" time="0.183" />
+  <testcase name="unclearMapShowsSharedEntryLevelsWithoutFakePaths" classname="com.openai.fxm1.ScenarioMapUiTest" time="0.099" />
+  <testcase name="legacyProjectionCannotReappearDuringAnUpgrade" classname="com.openai.fxm1.ScenarioUpgradeUiTest" time="3.115">
+    <failure>java.lang.AssertionError: Legacy +5/+10/+15 forecast must never return expected:&lt;0&gt; but was:&lt;852&gt;
+at org.junit.Assert.fail(Assert.java:89)
+at org.junit.Assert.failNotEquals(Assert.java:835)
+at org.junit.Assert.assertEquals(Assert.java:647)
+at com.openai.fxm1.ScenarioUpgradeUiTest.legacyProjectionCannotReappearDuringAnUpgrade(ScenarioUpgradeUiTest.java:57)
+</failure>
+  </testcase>
+  <testcase name="actualAutoButtonAcceptsOldCampaignThenActivatesStructuralMap" classname="com.openai.fxm1.ScenarioUpgradeUiTest" time="13.04" />
+</testsuite>

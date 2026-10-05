@@ -1,0 +1,9 @@
+10-05 06:09:53.736  3879  3893 I TestRunner: started: historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles(com.openai.fxm1.R51RepairUiTest)
+10-05 06:09:53.755   576  1667 W InputManager-JNI: Input channel object '159f8e1 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:09:53.869  1188  1769 D EGL_emulation: app_time_stats: avg=105.42ms min=46.83ms max=285.72ms count=11
+10-05 06:09:53.882  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=31
+10-05 06:09:53.882  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=31
+10-05 06:09:53.992  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:54.007   576   588 I system_server: NativeAlloc concurrent mark compact GC freed 11MB AllocSpace bytes, 17(336KB) LOS objects, 46% free, 27MB/51MB, paused 675us,1.333ms total 248.623ms
+10-05 06:09:54.129  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:09:54.255  3879  3893 I TestRunner: finished: historyGenerationClearsTheOldViewportInsteadOfMergingShiftedCandles(com.openai.fxm1.R51RepairUiTest)

@@ -1,0 +1,2 @@
+10-05 06:14:20.348  3879  3893 I TestRunner: started: repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime(com.openai.fxm1.R56ChartSemanticsTest)
+10-05 06:14:20.355  3879  3893 I TestRunner: finished: repeatedHypothesisStillDisplaysItsOwnFrameAndNewDataTime(com.openai.fxm1.R56ChartSemanticsTest)

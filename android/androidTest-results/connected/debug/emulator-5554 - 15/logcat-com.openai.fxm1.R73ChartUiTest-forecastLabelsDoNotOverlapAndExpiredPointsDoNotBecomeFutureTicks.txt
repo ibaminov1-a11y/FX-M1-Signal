@@ -1,0 +1,2 @@
+10-05 06:16:55.168  3879  3893 I TestRunner: started: forecastLabelsDoNotOverlapAndExpiredPointsDoNotBecomeFutureTicks(com.openai.fxm1.R73ChartUiTest)
+10-05 06:16:55.169  3879  3893 I TestRunner: finished: forecastLabelsDoNotOverlapAndExpiredPointsDoNotBecomeFutureTicks(com.openai.fxm1.R73ChartUiTest)

@@ -1,0 +1,365 @@
+10-05 06:08:02.086  3879  3893 I TestRunner: started: candidateForecastUsesDirectionalLabelAndNoEdgeDrawsNoProjection(com.openai.fxm1.EventCoreUiTest)
+10-05 06:08:02.090  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@cffc3d3 in: DESTROYED
+10-05 06:08:02.091  3879  3879 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@57cd0da
+10-05 06:08:02.208  2039  2043 I .android.as.oss: Background concurrent mark compact GC freed 4540KB AllocSpace bytes, 0(0B) LOS objects, 49% free, 5142KB/10MB, paused 82us,191.037ms total 565.346ms
+10-05 06:08:02.321   576   986 W InputManager-JNI: Input channel object 'b68e31 com.openai.fxm1.ec1/com.openai.fxm1.MainActivity (client)' was disposed without first being removed with the input manager!
+10-05 06:08:02.324  1343  1582 I SP      : Download stopped: handwriting_recognition:scribe_latin_20231123_tflite_zip, succeeded foreground, size: 273180
+10-05 06:08:02.404  3879  3879 I Choreographer: Skipped 30 frames!  The application may be doing too much work on its main thread.
+10-05 06:08:02.442   576   995 D FileUtils: Rounded bytes from 2593193984 to 4000000000
+10-05 06:08:02.582   576   607 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:08:02.620   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:02.622   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:02.626   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10165} in 6ms
+10-05 06:08:02.656  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=10
+10-05 06:08:02.656  1188  1188 I TopTaskTracker: onTaskRemoved: taskId=10
+10-05 06:08:02.658   378   421 I netd    : tetherGetStats() -> {[]} <0.59ms>
+10-05 06:08:02.672  1435  1435 W JobService: onNetworkChanged() not implemented in com.google.android.apps.miphone.aiai.common.superpacks.impl.AiAiPersistentDownloadJobService. Must override in a subclass.
+10-05 06:08:02.674  3240  3240 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:08:02.681  1343  1343 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:08:02.689  3603  3638 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=60 ]
+10-05 06:08:02.690  3603  3691 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[8d692bde-74ec]>Handler" thread_id=65 ]
+10-05 06:08:02.696  3879  3893 D UiDevice: Turning on screen.
+10-05 06:08:02.720  3240  4144 E BugleRcsEngine: Could not create DroidGuard token creation event [CONTEXT log_prefix="DroidGuardLogger" thread_id=107 ]
+10-05 06:08:02.720  3240  4144 I BugleRcsEngine: RequestWithImsiState: event Send config request [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:02.720  3240  4144 I BugleRcsEngine: InProgressState: event Send config request [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:02.721  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:02.742   378   421 I netd    : bandwidthSetGlobalAlert(2097152) <0.13ms>
+10-05 06:08:02.743  1343  1582 I SP      : Scheduling: download stopped, 0 started, 0 paused, 0 scheduled, 2 pending: manifests:emoticon_content_description-2022081613 {W:b:u:l, bg}, handwriting_recognition:scribe_latin_20231123_recospec_zip @ {m:b:u:l, fg}
+10-05 06:08:02.743  1343  1582 I SP      : <==== Finishing job {m:b:u:l, fg}, 11740 ms. elapsed since start
+10-05 06:08:02.743  1343  1582 I SuperpacksForegroundTaskService: SuperpacksForegroundTaskService.finishJob():56 SuperpacksForegroundTaskService.finishJob()
+10-05 06:08:02.748   576  1778 D WifiNl80211Manager: Scan result ready event
+10-05 06:08:02.748   576  1778 D WifiNative: Scan result ready event
+10-05 06:08:02.758  3603  3691 I BugleRcsEngine: No RCS Configuration was found in Bugle for simID: redacted-pii:sim_id[chars:20,last3:897] [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=65 ]
+10-05 06:08:02.763  3240  3479 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=67 ]
+10-05 06:08:02.781  1343  1582 I SP      : Download stopped: handwriting_recognition:scribe_latin_20231123_recospec_zip, succeeded foreground, size: 346
+10-05 06:08:02.788   378   421 I netd    : tetherGetStats() -> {[]} <1.82ms>
+10-05 06:08:02.801  1343  1582 I SP      : Scheduling job with delay of 0s for {W:b:u:l, bg}, 1 candidates
+10-05 06:08:02.803   576   836 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+10-05 06:08:02.824  1224  1619 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:08:02.824  1224  1619 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:08:02.824  1224  3545 I PhenotypeResourceReader: unable to find any Phenotype resource metadata for com.google.android.devicelockcontroller
+10-05 06:08:02.851   378  4240 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10136 0}
+10-05 06:08:02.852   378  4241 I resolv  : res_nmkquery: (QUERY, IN, AAAA)
+10-05 06:08:02.852   378  4242 I resolv  : res_nmkquery: (QUERY, IN, A)
+10-05 06:08:02.876   378  4242 I resolv  : res_nsend: used send_dg 64 terrno: 0
+10-05 06:08:02.876   378  4242 I resolv  : doQuery: rcode=0, ancount=1, return value=64
+10-05 06:08:02.876   378  4241 I resolv  : res_nsend: used send_dg 76 terrno: 0
+10-05 06:08:02.876   378  4241 I resolv  : doQuery: rcode=0, ancount=1, return value=76
+10-05 06:08:02.878  3240  3479 D TrafficStats: tagSocket(157) with statsTag=0xca8, statsUid=-1
+10-05 06:08:02.948   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:02.948   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:02.954   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10140} in 6ms
+10-05 06:08:03.018  1343  1582 I SP      : Scheduling: download stopped, 0 started, 0 paused, 1 scheduled, 1 pending: manifests:emoticon_content_description-2022081613 * {W:b:u:l, bg}
+10-05 06:08:03.104  1224  3545 I PhenotypeResourceReader: unable to find any Phenotype resource metadata for com.google.android.modulemetadata
+10-05 06:08:03.162  3240  3479 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=67 ]
+10-05 06:08:03.163  3879  3893 D UiDevice: Pressing home button.
+10-05 06:08:03.176  3240  4144 I BugleRcsEngine: RequestWithImsiState: event HTTP Response [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.177  3240  4144 I BugleRcsEngine: InProgressState: event HTTP Response [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.185  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.194  3240  4144 I BugleRcsEngine: RequestWithImsiState: event HTTP 200 (OK) [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.194   576   597 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10180, packageName = null, attributionTag = null, token = android.os.Binder@2b9f0a0, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:08:03.197  3240  4144 W BugleRcsEngine: Couldn't find cookies [CONTEXT thread_id=107 ]
+10-05 06:08:03.202  3240  4144 I BugleRcsEngine: transitionTo: destState=ProcessConfigurationState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.203   920  2055 D KeyguardService: setOccluded(false)
+10-05 06:08:03.203   920  2055 D KeyguardViewMediator: setOccluded(false)
+10-05 06:08:03.203  3240  4144 I BugleRcsEngine: onTransitionRequested RequestWithImsiState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.205  3240  4144 I BugleRcsEngine: Exit RequestWithImsiState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.207   920   920 D KeyguardViewMediator: handleSetOccluded(false)
+10-05 06:08:03.207   920   920 D KeyguardViewMediator: KeyguardViewMediator queue processing message: SET_OCCLUDED
+10-05 06:08:03.210   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:03.211   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:03.211   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10166} in 3ms
+10-05 06:08:03.216  1188  1188 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:08:03.216  1188  1188 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:08:03.218  1188  1188 D OverviewCommandHelper: clearing pending commands - size: 0
+10-05 06:08:03.223  1188  1188 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:08:03.227  3879  3893 W UiAutomation: UiAutomation.grantRuntimePermission() is more robust and should be used instead of 'pm grant'
+10-05 06:08:03.235  1188  1769 D EGL_emulation: app_time_stats: avg=114.28ms min=42.28ms max=598.19ms count=13
+10-05 06:08:03.275   920   920 I vol.VolumeDialogImpl: mDialog.dismiss() reason: volume_controller from: com.android.systemui.volume.VolumeDialogImpl$7.onDismissRequested:3
+10-05 06:08:03.275   576  1489 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:08:03.276  1188  2070 D OneSearchSuggestProvider: Established or reuse existing binder channel authority=com.google.android.googlequicksearchbox
+10-05 06:08:03.315  3879  3893 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:08:03.319  1188  1248 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:08:03.322  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.323  3240  4144 I BugleRcsEngine: Enter ProcessConfigurationState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.326   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:03.334   576   843 D InetDiagMessage: Destroyed 1 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:03.334   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10129} in 8ms
+10-05 06:08:03.343  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.339  1435  1625 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:08:03.346  1435  1625 I AiAiEcho: EchoTargets:
+10-05 06:08:03.346  1435  1625 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:08:03.346  1435  1625 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:08:03.346  1435  1625 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:08:03.346  1435  1625 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:08:03.354  3879  3893 D TrafficStats: tagSocket(108) with statsTag=0xffffffff, statsUid=-1
+10-05 06:08:03.359  3240  4144 I BugleRcsEngine: ProcessConfigurationState: event Config document received [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.361  1435  1625 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:08:03.361  3240  4144 I BugleRcsEngine: No RCS Configuration was found in Bugle for simID: redacted-pii:sim_id[chars:20,last3:897] [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=107 ]
+10-05 06:08:03.361  1188  1188 D SsBaseTemplateCard: No text view can be set up
+10-05 06:08:03.361  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:08:03.361  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:08:03.361  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:08:03.361  1188  1188 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:08:03.361  3240  4144 I BugleRcsEngine: Configuration update received. Updating
+10-05 06:08:03.361  3240  4144 I BugleRcsEngine: from [Type: 0, Version: 0, Validity: 0, Last updated: 0, Remaining validity: 0, Reconfiguration requested: false, Messaging technology: SIMPLE_IM, rcsVolteSingleRegistration: false]
+10-05 06:08:03.361  3240  4144 I BugleRcsEngine: to [Type: 2, Version: 0, Validity: 86400, Last updated: 0, Remaining validity: 0, Reconfiguration requested: false, Messaging technology: SIMPLE_IM, rcsVolteSingleRegistration: false]
+10-05 06:08:03.361  3240  4144 I BugleRcsEngine: [CONTEXT thread_id=107 ]
+10-05 06:08:03.362  3240  4144 W BugleRcsEngine: Received configuration with no token or invalid token during refresh. [CONTEXT thread_id=107 ]
+10-05 06:08:03.371  3240  4144 I BugleRcsEngine: Rcs Configuration was updated [CONTEXT log_prefix="ProvisioningEngineDataRetriever" thread_id=107 ]
+10-05 06:08:03.372  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.373  3240  4144 I BugleRcsEngine: Provisioning refreshed with partial configuration. [CONTEXT thread_id=107 ]
+10-05 06:08:03.373  1224  1428 W .gms.persistent: Long monitor contention with owner lowpool[14] (2856) at java.util.Map com.google.android.gms.clearcut.store.FlatFileLogStore.n(epbl)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):382) waiters=0 in void aldi.f(android.content.Context) for 512ms
+10-05 06:08:03.386  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.389  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.392  3240  4144 I BugleRcsEngine: Using config server URL from biuf [CONTEXT log_prefix="ProvisioningServerUtil" thread_id=107 ]
+10-05 06:08:03.406  3240  4144 I BugleRcsEngine: transitionTo: destState=ConfiguredState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.406  3240  4144 I BugleRcsEngine: onTransitionRequested ProcessConfigurationState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.407  3240  4144 I BugleRcsEngine: Exit ProcessConfigurationState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.409  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.411  3240  4144 I BugleRcsEngine: Exit InProgressState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.411  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.411  3240  4144 I BugleRcsEngine: Enter ConfiguredState [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.422  1102  1119 W ndroid.settings: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltGmsCore/PrebuiltGmsCore.apk' with 1 weak references
+10-05 06:08:03.422  1102  1119 W ndroid.settings: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/DevicePersonalizationPrebuiltPixel2021-aiai_20240329.00_RC16/DevicePersonalizationPrebuiltPixel2021-aiai_20240329.00_RC16.apk' with 1 weak references
+10-05 06:08:03.422  1102  1119 W ndroid.settings: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleTTS/GoogleTTS.apk' with 1 weak references
+10-05 06:08:03.423  1102  1119 W ndroid.settings: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/AndroidAutoStubPrebuilt/AndroidAutoStubPrebuilt.apk' with 1 weak references
+10-05 06:08:03.423  1102  1119 W ndroid.settings: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/WellbeingPrebuilt/WellbeingPrebuilt.apk' with 1 weak references
+10-05 06:08:03.425  1102  1119 W ndroid.settings: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SafetyHubPrebuilt/SafetyHubPrebuilt.apk' with 1 weak references
+10-05 06:08:03.426  1102  1119 W ndroid.settings: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.extservices/priv-app/GoogleExtServices@350820300/GoogleExtServices.apk' with 1 weak references
+10-05 06:08:03.430  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.440  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.440  3240  4144 I BugleRcsEngine: Provisioned with disabled config (version < 0). Invoke failure [327ead33-3cf3-4671-8108-a7686316cd04] [CONTEXT log_prefix="(PEv2-SM151841319-DefaultCallSmsData-1-e40)" thread_id=107 ]
+10-05 06:08:03.440  3240  4144 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=107 ]
+10-05 06:08:03.441  3240  4144 I BugleRcsEngine: Sending ProvisioningEvent to Bugle [Update provisioning status (11)], redacted-pii:[chars:85] [CONTEXT thread_id=107 ]
+10-05 06:08:03.441  3240  4144 I BugleRcsEngine: Broadcasting provisioning intent com.google.android.ims.provisioning.engine.provisioningEventAction to Bugle with extras redacted-pii:[chars:243] from source PROVISIONING_EVENT [CONTEXT log_prefix="EngineBroadcaster" thread_id=107 ]
+10-05 06:08:03.442  3240  3479 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=67 ]
+10-05 06:08:03.450   576   995 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@2b9f0a0, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:08:03.489   920  1039 D SplashScreenView: Build android.window.SplashScreenView{45ce307 V.E...... ......ID 0,0-0,0}
+10-05 06:08:03.489   920  1039 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:08:03.489   920  1039 D SplashScreenView: Branding: view: android.view.View{722fc34 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:08:03.490  1188  1188 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:08:03.490  1188  1188 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:08:03.494   447   447 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:08:03.520  1188  1188 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=11, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:08:03.562  3240  3430 I BugleRcsProvisioning: RcsProvisioningEventReceiver: Received ProvisioningEvent: Update provisioning status
+10-05 06:08:03.562  3240  3471 I Bugle   : BroadcastReceiverAsyncWorkTracker: Acknowledging broadcast of com.google.android.apps.messaging.shared.receiver.RcsProvisioningEventReceiver@adf65bb
+10-05 06:08:03.582  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@dd8551a in: PRE_ON_CREATE
+10-05 06:08:03.633  3879  3879 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:08:03.642   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:03.645   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:03.655   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10096} in 15ms
+10-05 06:08:03.776   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:03.776   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:03.776   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10145} in 0ms
+10-05 06:08:03.812   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:03.812   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:03.812   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10206} in 0ms
+10-05 06:08:03.812   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:03.813   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:03.813   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={20206} in 1ms
+10-05 06:08:03.825  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@dd8551a in: CREATED
+10-05 06:08:03.825  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@dd8551a in: STARTED
+10-05 06:08:03.826  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@dd8551a in: RESUMED
+10-05 06:08:03.867  1188  1188 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:08:03.868  1188  1188 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:08:03.918   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:03.919   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:03.919   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10132} in 16ms
+10-05 06:08:03.924  3879  3879 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:08:03.926  3879  3879 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:08:03.926  3879  3879 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:08:03.995  1224  1428 W .gms.persistent: Long monitor contention with owner lowpool[14] (2856) at alen com.google.android.gms.clearcut.store.FlatFileLogStore.f(long, alfb)(:com.google.android.gms@242335041@24.23.35 (190800-646585959):378) waiters=0 in void aldi.f(android.content.Context) for 313ms
+10-05 06:08:04.025   378   421 I netd    : tetherGetStats() -> {[]} <46.90ms>
+10-05 06:08:04.131  1188  1769 D EGL_emulation: app_time_stats: avg=1543.81ms min=55.76ms max=3031.86ms count=2
+10-05 06:08:04.153   576   596 W ziparchive: Unable to open '/data/app/~~NhyToYm_AVl1NmPOTIZ16g==/com.openai.fxm1.ec1-slg5dS01W3iyzA6i1yXs0w==/base.dm': No such file or directory
+10-05 06:08:04.177  3879  4253 D TrafficStats: tagSocket(122) with statsTag=0xffffffff, statsUid=-1
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: query= size=15
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=iran economy,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=iran economy searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6db38ecc-14b2-40f1-a621-8132b7d32c69
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hershey park,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=hershey park searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 95965d04-5f26-4560-8090-d3691c51b65f
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=mock draft 2027 nfl,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=mock draft 2027 nfl searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 76e237c5-16ac-4e40-9c8a-745c82a7faeb
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hocus pocus disney+ streaming charts,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=hocus pocus disney+ streaming charts searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: bde23cc8-ba31-43a9-bde3-b3fdafcdc1bf
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=atlantic hurricane season,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=atlantic hurricane season searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 8e5f1870-b788-4673-8f8e-9226f1dde0b3
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=decaffeinated coffee,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=decaffeinated coffee searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 27fa04da-0581-4b6a-a36e-5372565220cd
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=madonna university nursing students,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=madonna university nursing students searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 8893485c-69e7-4877-b20b-da8ed7052c21
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=lottery powerball jackpot,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=lottery powerball jackpot searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: b2aacab2-106e-4faa-8108-8b32f25f2be5
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=zelda ocarina of time remake,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=zelda ocarina of time remake searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: ab969779-c04c-44b0-8c51-434b57c6b5cc
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=jordan page basketball,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=jordan page basketball searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 0d493702-c903-4a41-8ae3-5e54abe81579
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,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
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=gold nuclei collisions particle physics,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=gold nuclei collisions particle physics searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6a7a2885-f3f6-40b0-bfea-8e031eb3fef3
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/png;base64,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,suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=true,is_personal=false,suggest_raw_text=f1 bahrain grand prix,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=F1 Bahrain Grand Prix searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: c5e
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=shane lilly dog legal battle,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=shane lilly dog legal battle searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 5323b0f0-bdf2-4dd5-b84a-9ddb53bd3f9a
+10-05 06:08:04.186  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=squishy toys,input_query=android.app.search.Query@3831474,group_id=web111763,response_id=3ee3e963-44a6-42e5-863f-032418e2aef0,support_query_builder=false,} searchAction=squishy toys searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 18b47f3e-169c-4814-bd8e-399f37a796c3
+10-05 06:08:04.187   576   596 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +702ms
+10-05 06:08:04.215   920  1057 D EGL_emulation: app_time_stats: avg=1047.40ms min=12.36ms max=3675.54ms count=4
+10-05 06:08:04.251   920  1038 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@95aa8a3
+10-05 06:08:04.254   576  1778 W InputManager-JNI: Input channel object '70a9bb2 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:08:04.271   378   421 I netd    : bandwidthSetGlobalAlert(2097152) <0.12ms>
+10-05 06:08:04.288   378   421 I netd    : tetherGetStats() -> {[]} <0.37ms>
+10-05 06:08:04.290   378   421 I netd    : bandwidthRemoveInterfaceQuota(eth0) <0.53ms>
+10-05 06:08:04.307   378   421 I netd    : bandwidthSetInterfaceQuota(eth0, 9223372036854775807) <1.16ms>
+10-05 06:08:04.385  1455  3908 I IPCThreadState: oneway function results for code 2 on binder at 0x7ba94b46a9f0 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:08:04.419  3879  4254 D TrafficStats: tagSocket(122) with statsTag=0xffffffff, statsUid=-1
+10-05 06:08:04.437  1188  1188 D BaseDepthController: setSurface:
+10-05 06:08:04.437  1188  1188 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:08:04.437  1188  1188 D BaseDepthController: 	mSurface: null
+10-05 06:08:04.447  1188  1188 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:08:04.456  1188  1188 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:08:04.456  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:08:04.456  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:08:04.456  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:08:04.456  1188  1188 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:08:04.457   576   607 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:08:04.460  3879  4253 D TrafficStats: tagSocket(128) with statsTag=0xffffffff, statsUid=-1
+10-05 06:08:04.465  1188  1188 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:08:04.466  1188  2070 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:08:04.466  1188  1205 I IPCThreadState: oneway function results for code 2 on binder at 0x7ba94b491630 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:08:04.518  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 10081KB AllocSpace bytes, 77(2756KB) LOS objects, 49% free, 5282KB/10MB, paused 4.083ms,16.648ms total 245.650ms
+10-05 06:08:04.535  3879  4253 D TrafficStats: tagSocket(122) with statsTag=0xffffffff, statsUid=-1
+10-05 06:08:04.548  3240  3430 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=58 ]
+10-05 06:08:04.555  3879  3879 I Choreographer: Skipped 39 frames!  The application may be doing too much work on its main thread.
+10-05 06:08:04.659  2039  2043 I .android.as.oss: Background concurrent mark compact GC freed 12MB AllocSpace bytes, 0(0B) LOS objects, 49% free, 8078KB/15MB, paused 59.143ms,51.371ms total 617.470ms
+10-05 06:08:04.683  3879  4045 I HWUI    : Davey! duration=780ms; Flags=0, FrameTimelineVsyncId=15708, IntendedVsync=112414665731, Vsync=113064665705, InputEventId=0, HandleInputStart=113078803425, AnimationStart=113078805197, PerformTraversalsStart=113079002193, DrawStart=113081700652, FrameDeadline=112664665721, FrameInterval=113077537565, FrameStartTime=16666666, SyncQueued=113094263290, SyncStart=113094294647, IssueDrawCommandsStart=113094609320, SwapBuffers=113096429100, FrameCompleted=113195522138, DequeueBufferDuration=3165, QueueBufferDuration=132819, GpuCompleted=113195472714, SwapBuffersCompleted=113195522138, DisplayPresentTime=1, CommandSubmissionCompleted=113096429100,
+10-05 06:08:04.686   576   697 I ImeTracker: com.openai.fxm1.ec1:9eaffd8a: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:08:04.687   576   697 I ImeTracker: com.openai.fxm1.ec1:9eaffd8a: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:08:04.751  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:08:04.754  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:08:04.754  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:08:04.770  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:08:04.771  1343  1343 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:08:04.924  3240  3722 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=92 ]
+10-05 06:08:04.947  3240  3722 W BugleRcsEngine: Unable to send diagnostic log [CONTEXT thread_id=92 ]
+10-05 06:08:05.118  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 6857KB AllocSpace bytes, 21(1000KB) LOS objects, 49% free, 3562KB/7124KB, paused 231us,13.353ms total 199.438ms
+10-05 06:08:05.179  1224  3545 I PhenotypeResourceReader: unable to find any Phenotype resource metadata for com.google.android.gsf
+10-05 06:08:05.192  1224  3545 I PhenotypeResourceReader: unable to find any Phenotype resource metadata for com.google.android.tag
+10-05 06:08:05.213  1343  1582 I SP      : Sync for handwriting_recognition succeeded in 16132 ms: {added: [en_us_20230613_compact_fst_zip, qrnn_en_us_reco_20231010_fst_20230613_recospec_zip, scribe_latin_20231123_recospec_zip, scribe_latin_20231123_tflite_zip, transformer_latin_conf_tflite_20231010_zip, transformer_latin_seg_tflite_20231010_zip, transformer_latin_tflite_20231010_zip], metadata: false
+10-05 06:08:05.238   576   576 E DeviceConfig: Parsing int failed for location_mode
+10-05 06:08:05.315  1343  1582 I SP      : GC for 'handwriting_recognition' (10) with ttl of 0 ms took 1 ms (0/1/0)
+10-05 06:08:05.322  1343  1740 I HandwritingOnlineSuperpacks: HandwritingOnlineSuperpacks$3.onSyncSuccess():252 syncInternal(): complete {old=[pack_mapping_v1_lstm_20231127], new=[en_us_20230613_compact_fst_zip, pack_mapping_v1_lstm_20231127, qrnn_en_us_reco_20231010_fst_20230613_recospec_zip, scribe_latin_20231123_recospec_zip, scribe_latin_20231123_tflite_zip, transformer_latin_conf_tflite_20231010_zip, transformer_latin_seg_tflite_20231010_zip, transformer_latin_tflite_20231010_zip], metadata=false, last batch=true}
+10-05 06:08:05.326  1343  1737 E HandwritingSuperpacksUtil: HandwritingSuperpacksUtil.getPackMappingPackName():40 No pack mapping pack found in []
+10-05 06:08:05.326  1343  1737 I HandwritingSuperpacks: HandwritingSuperpacks.lambda$reloadCache$0():237 updatePackMappingsCache(): pack mapping pack unavailable [OFFLINE]
+10-05 06:08:05.346   378  4256 I resolv  : GetAddrInfoHandler::run: {100 786532 100 983140 10143 0}
+10-05 06:08:05.347   378  4257 I resolv  : res_nmkquery: (QUERY, IN, AAAA)
+10-05 06:08:05.347   378  4258 I resolv  : res_nmkquery: (QUERY, IN, A)
+10-05 06:08:05.371  1224  3545 I PhenotypeResourceReader: unable to find any Phenotype resource metadata for com.google.android.apps.nexuslauncher
+10-05 06:08:05.372   378  4258 I resolv  : res_nsend: used send_dg 165 terrno: 0
+10-05 06:08:05.372   378  4258 I resolv  : doQuery: rcode=0, ancount=8, return value=165
+10-05 06:08:05.376   378  4257 I resolv  : res_nsend: used send_dg 261 terrno: 0
+10-05 06:08:05.376   378  4257 I resolv  : doQuery: rcode=0, ancount=8, return value=261
+10-05 06:08:05.379  1224  2336 D TrafficStats: tagSocket(260) with statsTag=0x1065fff, statsUid=10144
+10-05 06:08:05.382  1224  3545 I PhenotypeResourceReader: unable to find any Phenotype resource metadata for com.google.android.feedback
+10-05 06:08:05.735  1188  1188 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:08:05.740  3879  3951 D EGL_emulation: app_time_stats: avg=233.19ms min=73.43ms max=565.68ms count=7
+10-05 06:08:05.760   447   447 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:08:05.769   576   588 I system_server: Background concurrent mark compact GC freed 27MB AllocSpace bytes, 25(600KB) LOS objects, 46% free, 27MB/51MB, paused 10.661ms,12.606ms total 569.439ms
+10-05 06:08:05.776   576   589 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:08:05.776   576   589 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:08:05.779  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@dd8551a in: PAUSED
+10-05 06:08:05.810   378   421 I netd    : tetherGetStats() -> {[]} <0.27ms>
+10-05 06:08:05.850  1188  1188 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:08:05.851  1188  1188 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+10-05 06:08:05.857  1343  1343 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:08:05.871   576  1489 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:08:05.872  3240  3240 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:08:05.872  1435  1435 W JobService: onNetworkChanged() not implemented in com.google.android.apps.miphone.aiai.common.superpacks.impl.AiAiPersistentDownloadJobService. Must override in a subclass.
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:08:05.875  1188  2070 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:08:05.885  1188  1188 D BaseDepthController: setSurface:
+10-05 06:08:05.885  1188  1188 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:08:05.885  1188  1188 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0xfb764e4
+10-05 06:08:05.888  1188  1248 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:08:05.893  1435  1625 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:08:05.901  1188  2070 D OneSearchSuggestProvider: Created the binder channel successfully for end point service =com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService , mChannel=i1{delegate=f{logId=17, target=directaddress:///AndroidComponentAddress%5BIntent%20%7B%20act=grpc.io.action.BIND%20cmp=com.google.android.googlequicksearchbox/com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService%20%7D%5D}} , mOneSearchConnection=l2.Z@cdfffd1
+10-05 06:08:05.900  1435  1625 I AiAiEcho: EchoTargets:
+10-05 06:08:05.900  1435  1625 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:08:05.900  1435  1625 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:08:05.914  1435  1625 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:08:05.931  1435  1625 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:08:05.951  3603  3638 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=60 ]
+10-05 06:08:05.960  3603  3691 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[8d692bde-74ec]>Handler" thread_id=65 ]
+10-05 06:08:05.962   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:05.965   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:05.966   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={10142} in 18ms
+10-05 06:08:05.966  1675  1675 I A       : (REDACTED) Created gRPC endpoint for service %s
+10-05 06:08:05.967   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:08:05.969   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:08:05.971   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={20142} in 4ms
+10-05 06:08:05.974  1435  1625 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:08:05.990   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/InputDevices/InputDevices.apk' with 1 weak references
+10-05 06:08:05.990   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk' with 1 weak references
+10-05 06:08:05.993  1188  1188 D SsBaseTemplateCard: No text view can be set up
+10-05 06:08:05.993  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:08:05.994  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:08:05.994  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:08:05.994  1188  1188 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:08:06.058  1224  1617 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:08:06.058  1224  1617 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:08:06.065  1188  1188 D StateManager: createAtomicAnimation - fromState: Background, toState: Normal, partial trace:
+10-05 06:08:06.065  1188  1188 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.prepareToAnimate(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:22)
+10-05 06:08:06.065  1188  1188 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:08:06.065  1188  1188 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:08:06.074   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltGmsCore/PrebuiltGmsCore.apk' with 1 weak references
+10-05 06:08:06.110  1224  3545 I PhenotypeResourceReader: unable to find any Phenotype resource metadata for com.google.android.gms.supervision
+10-05 06:08:06.131  1188  1769 D EGL_emulation: app_time_stats: avg=199.95ms min=13.69ms max=1431.10ms count=10
+10-05 06:08:06.150   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleTTS/GoogleTTS.apk' with 1 weak references
+10-05 06:08:06.150   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Velvet/Velvet.apk' with 1 weak references
+10-05 06:08:06.151   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGmail/PrebuiltGmail.apk' with 1 weak references
+10-05 06:08:06.151   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Drive/Drive.apk' with 1 weak references
+10-05 06:08:06.151   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/CalendarGooglePrebuilt/CalendarGooglePrebuilt.apk' with 1 weak references
+10-05 06:08:06.152   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/AccessibilityMenu/AccessibilityMenu.apk' with 1 weak references
+10-05 06:08:06.152   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '/product/overlay/AccessibilityMenu__sdk_gphone64_x86_64__auto_generated_rro_product.apk' with 1 weak references
+10-05 06:08:06.152   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/talkback/talkback.apk' with 1 weak references
+10-05 06:08:06.152   576   590 W system_server: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/EmulatorTalkBackOverlay/EmulatorTalkBackOverlay.apk' with 1 weak references
+10-05 06:08:06.238   378   421 I netd    : bandwidthSetGlobalAlert(2097152) <0.14ms>
+10-05 06:08:06.239   576   835 W system_server: Long monitor contention with owner NetworkStats (832) at void android.net.connectivity.com.android.server.net.NetworkStatsService.performPoll(int, android.net.connectivity.com.android.server.net.NetworkStatsEventLogger$PollEvent)(NetworkStatsService.java:2590) waiters=0 in void android.net.connectivity.com.android.server.net.NetworkStatsService.noteUidForeground(int, boolean) for 387ms
+10-05 06:08:06.256   576   697 I ImeTracker: com.google.android.apps.nexuslauncher:8e34ba1e: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:08:06.256   576   697 I ImeTracker: com.google.android.apps.nexuslauncher:8e34ba1e: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:08:06.257   576  1154 W system_server: Long monitor contention with owner NetworkStats (832) at void android.net.connectivity.com.android.server.net.NetworkStatsService.performPoll(int, android.net.connectivity.com.android.server.net.NetworkStatsEventLogger$PollEvent)(NetworkStatsService.java:2590) waiters=1 in java.lang.String[] android.net.connectivity.com.android.server.net.NetworkStatsService.getAllIfacesSinceBoot(int) for 404ms
+10-05 06:08:06.258   920  1159 W ndroid.systemui: Long monitor contention with owner SysUiBg (1045) at boolean android.os.MessageQueue.enqueueMessage(android.os.Message, long)(MessageQueue.java:695) waiters=1 in boolean android.os.MessageQueue.enqueueMessage(android.os.Message, long) for 194ms
+10-05 06:08:06.262   576  2861 W system_server: Long monitor contention with owner android.anim (600) at void com.android.server.wm.WindowAnimator.lambda$new$1(long)(WindowAnimator.java:103) waiters=7 in void com.android.server.wm.TaskPersister$TaskWriteQueueItem.process() for 115ms
+10-05 06:08:06.270  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:08:06.279  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:08:06.292  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.google.android.apps.nexuslauncher, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:08:06.296  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:08:06.296  1343  1343 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:08:06.311   576   599 W system_server: Long monitor contention with owner android.anim (600) at void com.android.server.wm.WindowAnimator.lambda$new$1(long)(WindowAnimator.java:103) waiters=0 in void com.android.server.wm.ActivityTaskSupervisor$ActivityTaskSupervisorHandler.handleMessage(android.os.Message) for 325ms
+10-05 06:08:06.310  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3668KB AllocSpace bytes, 7(324KB) LOS objects, 49% free, 3538KB/7076KB, paused 243us,175.970ms total 568.594ms
+10-05 06:08:06.350  3879  3893 I TestRunner: finished: candidateForecastUsesDirectionalLabelAndNoEdgeDrawsNoProjection(com.openai.fxm1.EventCoreUiTest)

@@ -1,0 +1,2 @@
+10-05 06:17:47.892  3879  3893 I TestRunner: started: selectingKnownInstrumentRestoresItsOwnFrameModeAndLot(com.openai.fxm1.R7ProfileReadUiTest)
+10-05 06:17:47.900  3879  3893 I TestRunner: finished: selectingKnownInstrumentRestoresItsOwnFrameModeAndLot(com.openai.fxm1.R7ProfileReadUiTest)

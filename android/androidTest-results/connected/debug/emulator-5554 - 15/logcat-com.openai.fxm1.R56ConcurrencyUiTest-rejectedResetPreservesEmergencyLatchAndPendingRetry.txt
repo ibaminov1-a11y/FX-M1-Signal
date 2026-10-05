@@ -1,0 +1,9 @@
+10-05 06:14:20.356  3879  3893 I TestRunner: started: rejectedResetPreservesEmergencyLatchAndPendingRetry(com.openai.fxm1.R56ConcurrencyUiTest)
+10-05 06:14:20.362  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.400  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.448  1188  1769 D EGL_emulation: app_time_stats: avg=76.55ms min=20.79ms max=236.69ms count=13
+10-05 06:14:20.603  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.621  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.662  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:20.676  3879  3893 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:14:20.677  3879  3893 I TestRunner: finished: rejectedResetPreservesEmergencyLatchAndPendingRetry(com.openai.fxm1.R56ConcurrencyUiTest)

@@ -1,0 +1,2 @@
+10-05 06:16:55.365  3879  3893 I TestRunner: started: selectedInstrumentMetadataDoesNotMutateTheServerSnapshot(com.openai.fxm1.R73ChartUiTest)
+10-05 06:16:55.368  3879  3893 I TestRunner: finished: selectedInstrumentMetadataDoesNotMutateTheServerSnapshot(com.openai.fxm1.R73ChartUiTest)

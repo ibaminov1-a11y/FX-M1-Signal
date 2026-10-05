@@ -1,0 +1,2 @@
+10-05 06:16:54.830  3879  3893 I TestRunner: started: singleAvailableCandleIsVisibleWhileHistoryLoads(com.openai.fxm1.R73ChartUiTest)
+10-05 06:16:54.834  3879  3893 I TestRunner: finished: singleAvailableCandleIsVisibleWhileHistoryLoads(com.openai.fxm1.R73ChartUiTest)

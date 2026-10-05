@@ -1,0 +1,19 @@
+10-05 06:14:23.694  3879  3893 I TestRunner: started: newerOrdinaryPollDoesNotDiscardAnExplicitProfileSelection(com.openai.fxm1.R56ConcurrencyUiTest)
+10-05 06:14:23.705  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.779  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.813  3879  3893 D TrafficStats: tagSocket(121) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.841  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4245KB AllocSpace bytes, 33(1504KB) LOS objects, 49% free, 4213KB/8427KB, paused 184us,5.650ms total 43.555ms
+10-05 06:14:23.848  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.857  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.865  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.871  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.872  3879  5814 D TrafficStats: tagSocket(121) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.915  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.918  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.923  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.929  3879  5814 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.934  3879  5814 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.939  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.943  3879  3893 D TrafficStats: tagSocket(113) with statsTag=0xffffffff, statsUid=-1
+10-05 06:14:23.946  3879  3893 W ActivityTestRule: Activity wasn't created yet or already stopped
+10-05 06:14:23.946  3879  3893 I TestRunner: finished: newerOrdinaryPollDoesNotDiscardAnExplicitProfileSelection(com.openai.fxm1.R56ConcurrencyUiTest)

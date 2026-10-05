@@ -1,0 +1,358 @@
+10-05 06:11:47.156  3879  3893 I TestRunner: started: busyClientQueueHasBoundedLoadingAndDoesNotSendCancelledRefreshLater(com.openai.fxm1.R54RefreshUiTest)
+10-05 06:11:47.161  3879  3893 D UiDevice: Turning on screen.
+10-05 06:11:47.382  1188  1769 D EGL_emulation: app_time_stats: avg=87.55ms min=21.08ms max=267.23ms count=12
+10-05 06:11:47.667  1433  1433 D WM-DelayedWorkTracker: Scheduling work b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3
+10-05 06:11:47.667  1433  1433 D WM-GreedyScheduler: Starting tracking for b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3
+10-05 06:11:47.676  1433  1645 D WM-ConstraintTracker: BatteryNotLowTracker: initial state = true
+10-05 06:11:47.676  1433  1645 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: registering receiver
+10-05 06:11:47.677  1433  1610 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3, generation=0)
+10-05 06:11:47.678  1433  1645 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3, generation=0)
+10-05 06:11:47.679  1433  1433 D WM-WorkerWrapper: Starting work for com.android.providers.media.photopicker.sync.ProactiveSyncWorker
+10-05 06:11:47.679  1433  4162 I PSyncWorker: Starting proactive picker sync from sync source: 1
+10-05 06:11:47.679  1433  4162 I PickerSyncTracker: Created new sync future java.util.concurrent.CompletableFuture@aaa5a6f[Not completed, 1 dependents]. Future map: {b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3=java.util.concurrent.CompletableFuture@aaa5a6f[Not completed, 1 dependents]}
+10-05 06:11:47.679  1433  4162 D PickerSyncController: syncAllMediaFromProvider() LOCAL, auth=com.android.providers.media.photopicker, retry=true
+10-05 06:11:47.680  1433  4162 D PickerSyncController: getSyncRequestParams() LOCAL, auth=com.android.providers.media.photopicker
+10-05 06:11:47.680  1433  4162 D PickerSyncController:    Latest ID/Gen=1409:96b585ec-2891-4296-882b-6ef945f9c7d5:external_primary/111
+10-05 06:11:47.680  1433  4162 D PickerSyncController:    Cached ID/Gen=1409:96b585ec-2891-4296-882b-6ef945f9c7d5:external_primary/102
+10-05 06:11:47.680  1433  4162 D PickerSyncController:    RESULT=SyncRequestParams{type=MEDIA_INCREMENTAL, gen=102, latest=Bundle[{last_media_sync_generation=111, media_collection_id=1409:96b585ec-2891-4296-882b-6ef945f9c7d5:external_primary}], pageSize=1000}
+10-05 06:11:47.680  1433  4162 I PickerSyncController: Executing SyncAdd. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:11:47.680  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:11:47.680  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.680  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.680  1433  4162 D ExternalDbFacade: Token received for queryMedia = null
+10-05 06:11:47.681  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:11:47.681  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.681  1433  4162 D PickerSyncController: Saving next page token: 1791180706000|1000000038 for key: local_provider:media_add:resume
+10-05 06:11:47.681  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.681  1433  4162 D PickerNotificationSender: Sending a notification for media update
+10-05 06:11:47.681  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:11:47.681  1433  4162 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:11:47.682  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:11:47.682  1433  4162 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:11:47.682  1433  4162 D ExternalDbFacade: Token received for queryMedia = 1791180706000|1000000038
+10-05 06:11:47.682  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:11:47.682  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.682  1433  4162 D PickerSyncController: Clearing next page token for key: local_provider:media_add:resume
+10-05 06:11:47.682  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.682  1433  4162 D PickerNotificationSender: Sending a notification for media update
+10-05 06:11:47.682  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:11:47.682  1433  4162 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:11:47.683  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:11:47.683  1433  4162 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:11:47.683  1433  4162 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791180706000|1000000038, android.provider.extra.SYNC_GENERATION=102, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 1
+10-05 06:11:47.683  1433  4162 I PickerSyncController: Executing SyncRemove. isLocal: true. authority: com.android.providers.media.photopicker
+10-05 06:11:47.683  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:11:47.683  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.683  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.683  1433  4162 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+10-05 06:11:47.683  1433  4162 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Locked by thread pool-3-thread-1]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.683  1433  4162 D PickerSyncController: Clearing next page token for key: local_provider:media_remove:resume
+10-05 06:11:47.683  1433  4162 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@5dd4cd6[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+10-05 06:11:47.683  1433  4162 D PickerNotificationSender: Sending a notification for media update
+10-05 06:11:47.683  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Favorites
+10-05 06:11:47.683  1433  4162 D PickerNotificationSender: Sending a notification for album media update Favorites
+10-05 06:11:47.683  1433  4162 D PickerNotificationSender: Sending a notification for merged album media update Videos
+10-05 06:11:47.683  1433  4162 D PickerNotificationSender: Sending a notification for album media update Videos
+10-05 06:11:47.683  1433  4162 I PickerSyncController: Paged sync successful. QueryArgs: Bundle[{android.provider.extra.PAGE_TOKEN=1791180706000|1000000038, android.provider.extra.SYNC_GENERATION=102, android.provider.extra.PAGE_SIZE=1000}] Total Rows: 0
+10-05 06:11:47.684  1433  4162 I PickerSyncTracker: Marked sync future complete for work id: b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3. Future map: {}
+10-05 06:11:47.684  1433  4162 I PSyncWorker: Completed picker proactive sync complete from local provider.
+10-05 06:11:47.684  1433  1645 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3, tags={ com.android.providers.media.photopicker.sync.ProactiveSyncWorker } ]
+10-05 06:11:47.685  1433  1433 D WM-Processor: Processor b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3 executed; reschedule = false
+10-05 06:11:47.685  1433  1433 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3, generation=0)
+10-05 06:11:47.686  1433  1645 D WM-GreedyScheduler: Cancelling work ID b8d8a1c6-04bf-4b4c-a73a-0c2c1490c8a3
+10-05 06:11:47.686  1433  1645 D WM-GreedyScheduler: Ignoring {WorkSpec: 055aaabf-a582-4928-b156-62c43ae4171a}. Requires device idle.
+10-05 06:11:47.686  1433  1645 D WM-GreedyScheduler: Ignoring {WorkSpec: 8c61511e-1865-49ab-a573-96495a07b31b}. Requires device idle.
+10-05 06:11:47.686  1433  1610 D WM-BrdcstRcvrCnstrntTrc: BatteryNotLowTracker: unregistering receiver
+10-05 06:11:48.549  3879  3893 D UiDevice: Pressing home button.
+10-05 06:11:48.573   576   597 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10180, packageName = null, attributionTag = null, token = android.os.Binder@2b9f0a0, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:11:48.575  1188  1188 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:11:48.575  1188  1188 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:11:48.575  1188  1188 D OverviewCommandHelper: clearing pending commands - size: 0
+10-05 06:11:48.575   920  1298 D KeyguardService: setOccluded(false)
+10-05 06:11:48.575   920  1298 D KeyguardViewMediator: setOccluded(false)
+10-05 06:11:48.575  1188  1188 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:11:48.581   920   920 I vol.VolumeDialogImpl: mDialog.dismiss() reason: volume_controller from: com.android.systemui.volume.VolumeDialogImpl$7.onDismissRequested:3
+10-05 06:11:48.581   920   920 D KeyguardViewMediator: handleSetOccluded(false)
+10-05 06:11:48.581   920   920 D KeyguardViewMediator: KeyguardViewMediator queue processing message: SET_OCCLUDED
+10-05 06:11:48.582  1188  1248 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:11:48.585   576  1489 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:11:48.587  1435  1625 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:11:48.587  1435  1625 I AiAiEcho: EchoTargets:
+10-05 06:11:48.587  1435  1625 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:11:48.587  1435  1625 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:11:48.587  1435  1625 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:11:48.589  1435  1625 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:11:48.589  1435  1625 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:11:48.589  1188  2070 D OneSearchSuggestProvider: Established or reuse existing binder channel authority=com.google.android.googlequicksearchbox
+10-05 06:11:48.593  1188  1188 D SsBaseTemplateCard: No text view can be set up
+10-05 06:11:48.593  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:11:48.593  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:11:48.593  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:11:48.593  1188  1188 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:11:48.600  1188  1769 D EGL_emulation: app_time_stats: avg=79.34ms min=34.90ms max=495.77ms count=15
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: query= size=15
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=iran economy,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=iran economy searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 8bff249b-42ff-4996-a3a6-d8c87f9c31cb
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hershey park,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=hershey park searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 635bf3e8-aad6-43c6-bd74-7c4e9766bc62
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=mock draft 2027 nfl,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=mock draft 2027 nfl searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: b2e47808-9d14-4ac0-a11a-cc6bdd609f87
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=hocus pocus disney+ streaming charts,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=hocus pocus disney+ streaming charts searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6abb20e0-96e4-4350-baf0-dd3f798a3d26
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=atlantic hurricane season,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=atlantic hurricane season searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 1ff11502-7999-4d6a-a68f-ebb75571a20d
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=decaffeinated coffee,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=decaffeinated coffee searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 73775561-006c-4adf-b256-c77814edba00
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=madonna university nursing students,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=madonna university nursing students searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 629bb203-eeb8-49b3-a71b-f2098c5ddf72
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=lottery powerball jackpot,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=lottery powerball jackpot searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6b59ca91-393b-4f62-9090-163f4faecd74
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=zelda ocarina of time remake,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=zelda ocarina of time remake searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: d5584c3e-8c8e-4986-a133-1ed85023149c
+10-05 06:11:48.612  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=jordan page basketball,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=jordan page basketball searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: f8812a55-5275-4d0f-8288-1b80b45d78a0
+10-05 06:11:48.619  1188  1188 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/jpeg;base64,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
+10-05 06:11:48.619  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=gold nuclei collisions particle physics,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=gold nuclei collisions particle physics searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 0a338e29-22b0-442e-b9c8-00b3830ff85f
+10-05 06:11:48.619  1188  1188 D SearchTargetUtil: layoutType=extra_tall_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{bitmap_url=data:image/png;base64,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,suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=true,is_personal=false,suggest_raw_text=f1 bahrain grand prix,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=F1 Bahrain Grand Prix searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 9e3e
+10-05 06:11:48.619  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=shane lilly dog legal battle,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=shane lilly dog legal battle searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: 6361fda4-c6f6-4b73-ad92-f667aae82983
+10-05 06:11:48.619  1188  1188 D SearchTargetUtil: layoutType=short_icon_row resultType=131072 packageName=com.google.android.googlequicksearchbox extras=Bundle{suggestion_type=33,suggest_truncate_start=false,is_answer=false,is_entity=false,is_personal=false,suggest_raw_text=squishy toys,input_query=android.app.search.Query@c9db5d,group_id=web337098,response_id=4f535b53-241e-4d69-a364-52d7b81b69a3,support_query_builder=false,} searchAction=squishy toys searchActionExtras=Bundle{learn_more_url=https://support.google.com/websearch/answer/106230?hl=106230,suggestion_action_text=Report this,should_start_for_result=true,allow_pinning=true,skip_logging_in_target_handler=true,suggestion_action_rpc=2,}ParentID: null targetID: b1ffef97-e444-4ed5-98f9-5acd27b06d88
+10-05 06:11:48.990  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:49.004  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:49.016   576  1660 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10209, packageName = null, attributionTag = null, token = android.os.Binder@2b9f0a0, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-05 06:11:49.019   920  1039 D SplashScreenView: Build android.window.SplashScreenView{df6c40d V.E...... ......ID 0,0-0,0}
+10-05 06:11:49.019   920  1039 D SplashScreenView: Icon: view: null drawable: null size: 0
+10-05 06:11:49.019   920  1039 D SplashScreenView: Branding: view: android.view.View{db9fc2 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-05 06:11:49.020   496   496 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:49.023  1188  1188 W SplitSelectStateCtor: Missing session instanceIds
+10-05 06:11:49.023  1188  1188 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-05 06:11:49.026   447   447 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:11:49.035  1188  1188 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=48, baseIntent=Intent { flg=0x10000000 cmp=com.openai.fxm1.ec1/com.openai.fxm1.MainActivity }
+10-05 06:11:49.038   378   378 I netd    : tetherGetStats() -> {[]} <0.29ms>
+10-05 06:11:49.050  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@178e911 in: PRE_ON_CREATE
+10-05 06:11:49.062  3879  3879 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-05 06:11:49.186  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@178e911 in: CREATED
+10-05 06:11:49.187  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@178e911 in: STARTED
+10-05 06:11:49.187  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@178e911 in: RESUMED
+10-05 06:11:49.284  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3033KB AllocSpace bytes, 53(1576KB) LOS objects, 49% free, 4488KB/8976KB, paused 124us,4.105ms total 188.316ms
+10-05 06:11:49.286   920  1057 D EGL_emulation: app_time_stats: avg=1688.33ms min=6.87ms max=6269.07ms count=4
+10-05 06:11:49.378  3879  3879 D AutofillManager: notifyViewReadyInner:1073741824
+10-05 06:11:49.378  3879  3879 D AutofillManager: notifyViewReadyInner:1073741826
+10-05 06:11:49.378  3879  3879 D AutofillManager: notifyViewReadyInner:1073741827
+10-05 06:11:49.406  1188  1769 D EGL_emulation: app_time_stats: avg=690.51ms min=17.53ms max=2355.95ms count=4
+10-05 06:11:49.487  1188  1188 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-05 06:11:49.487  1188  1188 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-05 06:11:49.511   576   596 W ziparchive: Unable to open '/data/app/~~NhyToYm_AVl1NmPOTIZ16g==/com.openai.fxm1.ec1-slg5dS01W3iyzA6i1yXs0w==/base.dm': No such file or directory
+10-05 06:11:49.512   576   596 I ActivityTaskManager: Displayed com.openai.fxm1.ec1/com.openai.fxm1.MainActivity for user 0: +494ms
+10-05 06:11:49.520   920  1038 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@bc06e3c
+10-05 06:11:49.521   576  1660 W InputManager-JNI: Input channel object '31e7b63 Splash Screen com.openai.fxm1.ec1 (client)' was disposed without first being removed with the input manager!
+10-05 06:11:49.575   496   496 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:49.583  3879  5398 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:49.607  3879  5398 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:49.630  1188  1188 D BaseDepthController: setSurface:
+10-05 06:11:49.630  1188  1188 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:11:49.630  1188  1188 D BaseDepthController: 	mSurface: null
+10-05 06:11:49.631  1188  1188 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+10-05 06:11:49.632  1188  1188 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+10-05 06:11:49.632  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:11:49.632  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:11:49.632  1188  1188 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-05 06:11:49.632  1188  1188 D StatsLog: LAUNCHER_ONSTOP
+10-05 06:11:49.635  1188  1188 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-05 06:11:49.635  1188  2070 D OneSearchSuggestProvider: Shut down the binder channel
+10-05 06:11:49.654  1188  1336 I IPCThreadState: oneway function results for code 2 on binder at 0x7ba94b4b3980 will be dropped but finished with status UNKNOWN_TRANSACTION
+10-05 06:11:49.664  3879  5398 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:49.665  3879  5399 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:49.728   576   697 I ImeTracker: com.openai.fxm1.ec1:c731df3b: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:11:49.774   576   697 I ImeTracker: com.openai.fxm1.ec1:c731df3b: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:11:49.813  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:11:49.818  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:11:49.818  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.openai.fxm1.ec1, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:11:49.818  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:11:49.818  1343  1343 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:11:49.824   576   596 I GnssLocationProvider: WakeLock acquired by handleDownloadPsdsData()
+10-05 06:11:49.826   576  5401 E GnssPsdsDownloader: No Long-Term PSDS servers were specified in the GnssConfiguration
+10-05 06:11:50.001  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 5865KB AllocSpace bytes, 19(828KB) LOS objects, 49% free, 4624KB/9249KB, paused 1.516ms,66.972ms total 338.869ms
+10-05 06:11:50.606  3879  3893 D TrafficStats: tagSocket(135) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:50.609  3879  3893 D UiDevice: Swiping from (540, 200) to (540, 778) in 36 steps.
+10-05 06:11:50.783  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 3709KB AllocSpace bytes, 11(532KB) LOS objects, 49% free, 3716KB/7433KB, paused 124us,5.843ms total 66.135ms
+10-05 06:11:50.970  3879  3951 D EGL_emulation: app_time_stats: avg=160.49ms min=40.33ms max=529.79ms count=9
+10-05 06:11:51.717  3879  5403 D TrafficStats: tagSocket(126) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:52.780  3879  3951 D EGL_emulation: app_time_stats: avg=135.38ms min=8.18ms max=957.26ms count=13
+10-05 06:11:53.762  3879  5399 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:53.806  3879  3951 D EGL_emulation: app_time_stats: avg=513.27ms min=52.66ms max=973.88ms count=2
+10-05 06:11:53.827  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4604KB AllocSpace bytes, 16(660KB) LOS objects, 49% free, 5470KB/10MB, paused 2.625ms,5.228ms total 59.708ms
+10-05 06:11:54.820  3879  3951 D EGL_emulation: app_time_stats: avg=506.82ms min=55.24ms max=958.41ms count=2
+10-05 06:11:55.576   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:55.576   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:11:55.579  3240  3240 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:11:55.580  3603  3638 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=60 ]
+10-05 06:11:55.580  3603  3691 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[8d692bde-74ec]>Handler" thread_id=65 ]
+10-05 06:11:55.582  1224  2354 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:11:55.582  1224  2354 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:11:55.813  3879  5403 D TrafficStats: tagSocket(125) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:55.860  3879  3951 D EGL_emulation: app_time_stats: avg=520.02ms min=52.61ms max=987.44ms count=2
+10-05 06:11:55.874  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 7696KB AllocSpace bytes, 21(1036KB) LOS objects, 49% free, 6330KB/12MB, paused 433us,9.050ms total 77.673ms
+10-05 06:11:56.876  3879  3951 D EGL_emulation: app_time_stats: avg=337.55ms min=50.34ms max=904.37ms count=3
+10-05 06:11:57.868  3879  5399 D TrafficStats: tagSocket(130) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:57.910  3879  3951 D EGL_emulation: app_time_stats: avg=515.52ms min=33.98ms max=997.07ms count=2
+10-05 06:11:57.968  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 8840KB AllocSpace bytes, 28(1244KB) LOS objects, 49% free, 7188KB/14MB, paused 136us,6.553ms total 117.167ms
+10-05 06:11:58.927  3879  3951 D EGL_emulation: app_time_stats: avg=338.67ms min=44.41ms max=907.12ms count=3
+10-05 06:11:59.725   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+10-05 06:11:59.725   576   843 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+10-05 06:11:59.725   576   843 D InetDiagMessage: Destroyed live tcp sockets for uids={99000} in 0ms
+10-05 06:11:59.909  3879  5403 D TrafficStats: tagSocket(134) with statsTag=0xffffffff, statsUid=-1
+10-05 06:11:59.959  3879  3951 D EGL_emulation: app_time_stats: avg=512.42ms min=37.26ms max=987.58ms count=2
+10-05 06:12:00.025  1435  1625 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:12:00.025  1435  1625 I AiAiEcho: EchoTargets:
+10-05 06:12:00.025  1435  1625 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:12:00.025  1435  1625 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:12:00.025  1435  1625 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:12:00.025  1435  1625 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:12:00.025  1435  1625 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:12:00.025  1435  1625 I AiAiEcho: EchoTargets:
+10-05 06:12:00.025  1435  1625 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:12:00.025  1435  1625 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:12:00.025  1435  1625 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:12:00.026  1435  1625 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:12:00.026  1435  1625 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+10-05 06:12:00.026  1435  1625 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:12:00.028  1188  1188 D SsBaseTemplateCard: No text view can be set up
+10-05 06:12:00.028  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:12:00.028  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:12:00.028  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:12:00.028  1188  1188 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:12:00.036   920   920 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+10-05 06:12:00.092   920  1057 D EGL_emulation: app_time_stats: avg=2161.07ms min=18.72ms max=10151.13ms count=5
+10-05 06:12:00.978  3879  3951 D EGL_emulation: app_time_stats: avg=337.48ms min=47.85ms max=906.26ms count=3
+10-05 06:12:01.585  3240  3240 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.585   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:01.587  3603  3691 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[8d692bde-74ec]>Handler" thread_id=65 ]
+10-05 06:12:01.587  3603  3638 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=60 ]
+10-05 06:12:01.589  1224  2354 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:12:01.590  1224  2354 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:12:01.958  3879  5399 D TrafficStats: tagSocket(133) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:02.009  3879  3951 D EGL_emulation: app_time_stats: avg=513.89ms min=49.63ms max=978.15ms count=2
+10-05 06:12:02.075  3879  3884 I openai.fxm1.ec1: Background concurrent mark compact GC freed 4373KB AllocSpace bytes, 13(608KB) LOS objects, 49% free, 5155KB/10MB, paused 102us,15.212ms total 108.001ms
+10-05 06:12:02.454   576   983 D WifiNl80211Manager: Scan result ready event
+10-05 06:12:02.454   576   983 D WifiNative: Scan result ready event
+10-05 06:12:02.455   576   836 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+10-05 06:12:03.019  3879  3951 D EGL_emulation: app_time_stats: avg=336.42ms min=52.29ms max=904.68ms count=3
+10-05 06:12:04.008  3879  5403 D TrafficStats: tagSocket(127) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:04.047  3879  3951 D EGL_emulation: app_time_stats: avg=507.66ms min=42.06ms max=973.25ms count=2
+10-05 06:12:04.588  3240  3240 W JobService: onNetworkChanged() not implemented in androidx.work.impl.background.systemjob.SystemJobService. Must override in a subclass.
+10-05 06:12:04.588   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.588   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.588   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.588   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.588   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.589   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.589   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.589   576   843 W IPCThreadState: Sending oneway calls to frozen process.
+10-05 06:12:04.590  3603  3638 I BugleRcsEngine: Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=60 ]
+10-05 06:12:04.590  3603  3691 I BugleRcsEngine: handleMessage processing message:[NOTIFY_UPTIME_IGNORE_STATE_CHANGED] with [non-null]:RcsEngineImpl reference [CONTEXT log_prefix="RcsEngineImpl[DUAL_REG]:[8d692bde-74ec]>Handler" thread_id=65 ]
+10-05 06:12:04.592  1224  1235 I ChimeraSrvcProxy: NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl
+10-05 06:12:04.592  1224  1235 W .gms.persistent: Large reply transaction of 1056768 bytes, interface descriptor , code 1
+10-05 06:12:05.066  3879  3951 D EGL_emulation: app_time_stats: avg=334.17ms min=39.39ms max=915.59ms count=3
+10-05 06:12:06.050  3879  5399 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:06.105  3879  3951 D EGL_emulation: app_time_stats: avg=519.04ms min=42.24ms max=995.85ms count=2
+10-05 06:12:06.762  1224  5405 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService started execution. cause:4 exec_start_elapsed_seconds: 355 [CONTEXT service_id=218 ]
+10-05 06:12:06.762  1224  5247 W TapAndPay: NfcAdapter is null while obtaining CardEmulation instance. [CONTEXT service_id=79 ]
+10-05 06:12:06.762  1224  5247 W TapAndPay: java.lang.NullPointerException: NfcAdapter is null
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at android.nfc.cardemulation.CardEmulation.getInstance(CardEmulation.java:170)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at dhwn.<init>(:com.google.android.gms@242335041@24.23.35 (190800-646585959):15)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at com.google.android.gms.tapandpay.hce.task.TapAndPayAidRegistrationTaskOperation.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskChimeraService.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):32)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at bpjj.call(:com.google.android.gms@242335041@24.23.35 (190800-646585959):32)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-05 06:12:06.762  1224  5247 W TapAndPay: 	at java.lang.Thread.run(Thread.java:1012)
+10-05 06:12:06.764  1224  5405 I NetworkScheduler.Stats: Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService finished executing. cause:4 result: 3 elapsed_millis: 4 uptime_millis: 4 exec_start_elapsed_seconds: 355 [CONTEXT service_id=218 ]
+10-05 06:12:07.025  3879  3893 D TrafficStats: tagSocket(134) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:07.117  3879  3951 D EGL_emulation: app_time_stats: avg=337.27ms min=46.16ms max=500.29ms count=3
+10-05 06:12:07.139  3879  3893 D UiDevice: Swiping from (540, 200) to (540, 778) in 36 steps.
+10-05 06:12:07.851  3879  5398 D TrafficStats: tagSocket(133) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:07.859  3879  5398 D TrafficStats: tagSocket(133) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:07.893  3879  5398 D TrafficStats: tagSocket(133) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:07.909  3879  5398 D TrafficStats: tagSocket(132) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:07.990  3879  3893 D TrafficStats: tagSocket(110) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:08.019  1188  1188 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=7, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+10-05 06:12:08.026   447   447 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+10-05 06:12:08.053  3879  3879 D LifecycleMonitor: Lifecycle status change: com.openai.fxm1.MainActivity@178e911 in: PAUSED
+10-05 06:12:08.092  1188  1188 D StatsLog: LAUNCHER_ONRESUME
+10-05 06:12:08.098  1188  1248 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=workspace/0/[-1,-1]/[1,1]
+10-05 06:12:08.099  1435  1625 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+10-05 06:12:08.099  1435  1625 I AiAiEcho: EchoTargets:
+10-05 06:12:08.099  1435  1625 I AiAiEcho: Filtered by AiAi flag check:
+10-05 06:12:08.099  1435  1625 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:12:08.099  1435  1625 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+10-05 06:12:08.099  1435  1625 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+10-05 06:12:08.099  1435  1625 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+10-05 06:12:08.116  1188  1188 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+10-05 06:12:08.121   576  1489 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+10-05 06:12:08.122  1188  2070 D OneSearchSuggestProvider: 	... 8 more
+10-05 06:12:08.125  1188  2070 D OneSearchSuggestProvider: Created the binder channel successfully for end point service =com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService , mChannel=i1{delegate=f{logId=165, target=directaddress:///AndroidComponentAddress%5BIntent%20%7B%20act=grpc.io.action.BIND%20cmp=com.google.android.googlequicksearchbox/com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService%20%7D%5D}} , mOneSearchConnection=l2.Z@b49a9fb
+10-05 06:12:08.127  1188  1188 D BaseDepthController: setSurface:
+10-05 06:12:08.127  1188  1188 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+10-05 06:12:08.127  1188  1188 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0x3250a85
+10-05 06:12:08.162  3879  3951 D EGL_emulation: app_time_stats: avg=101.06ms min=7.29ms max=437.62ms count=10
+10-05 06:12:08.174   378   378 I netd    : tetherGetStats() -> {[]} <1.28ms>
+10-05 06:12:08.256  1675  1675 I A       : (REDACTED) Created gRPC endpoint for service %s
+10-05 06:12:08.257  1188  1188 D SsBaseTemplateCard: No text view can be set up
+10-05 06:12:08.258  3879  5403 D TrafficStats: tagSocket(129) with statsTag=0xffffffff, statsUid=-1
+10-05 06:12:08.261  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:12:08.261  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:12:08.261  1188  1188 D SsBaseTemplateCard: Passed-in item info is null
+10-05 06:12:08.261  1188  1188 I SsBaseTemplateCard: Secondary card pane is null
+10-05 06:12:08.321  1188  1188 D StateManager: createAtomicAnimation - fromState: Background, toState: Normal, partial trace:
+10-05 06:12:08.321  1188  1188 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.prepareToAnimate(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:22)
+10-05 06:12:08.321  1188  1188 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-05 06:12:08.321  1188  1188 D StateManager: 	at com.android.quickstep.util.StaggeredWorkspaceAnim.<init>(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-05 06:12:08.438  1188  1769 D EGL_emulation: app_time_stats: avg=1580.72ms min=9.55ms max=18617.33ms count=12
+10-05 06:12:08.717   576   697 I ImeTracker: com.google.android.apps.nexuslauncher:bc3ea2d4: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-05 06:12:08.720   576   697 I ImeTracker: com.google.android.apps.nexuslauncher:bc3ea2d4: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-05 06:12:08.733  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+10-05 06:12:08.738  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-05 06:12:08.738  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.google.android.apps.nexuslauncher, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-05 06:12:08.739  1343  1343 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-05 06:12:08.740  1343  1343 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-05 06:12:08.804  3879  3893 I TestRunner: finished: busyClientQueueHasBoundedLoadingAndDoesNotSendCancelledRefreshLater(com.openai.fxm1.R54RefreshUiTest)
