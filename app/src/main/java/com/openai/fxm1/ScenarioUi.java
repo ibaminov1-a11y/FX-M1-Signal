@@ -228,7 +228,7 @@ public final class ScenarioUi {
         pinned.addView(scroll,new LinearLayout.LayoutParams(0,-2,1));
         button(a,row,"◀",()->chart.panHistory(12));button(a,row,"▶",()->chart.panHistory(-12));
         button(a,row,"−",()->chart.zoomHistory(.8));button(a,row,"+",()->chart.zoomHistory(1.25));
-        button(a,row,"ПРОГНОЗ",()->chart.showPriceForecast(true));
+        button(a,row,"АНАЛОГ",()->chart.showPriceForecast(true));
         button(a,row,"СЦЕНАРИИ",()->chart.showPriceForecast(false));
         Button branches=button(a,row,"ВЕТКИ",()->choose(a,chart));branches.setTag("scenario_branches");
         if(!archive){Button history=button(a,row,"ЕЩЁ ИСТОРИЯ",()->older(a,chart));history.setTag("scenario_history");Button archiveButton=button(a,row,"АРХИВ ВХОДА",()->archiveList(a,null));archiveButton.setTag("scenario_archive");}
