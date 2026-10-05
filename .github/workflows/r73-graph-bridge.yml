@@ -1,0 +1,66 @@
+name: R7.3 Graph Bridge ready
+on:
+  push:
+    branches: [repair/r7.3-stability-20261005]
+permissions:
+  contents: read
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Full Python regression
+        run: PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py'
+      - name: Assert live snapshots hide analogue trajectory
+        run: |
+          grep -q "display_forecast\['show_price_forecast'\]=False" mt5_bridge/event_core/engine.py
+          grep -q "out\['forecast'\]\['show_price_forecast'\]=False" mt5_bridge/event_core/observers.py
+      - name: Build ready Bridge
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist/mt5_bridge_R73_GRAPH
+          cp -r mt5_bridge/event_core dist/mt5_bridge_R73_GRAPH/
+          cp mt5_bridge/bridge_v10_0.py mt5_bridge/bridge_startup.py mt5_bridge/requirements_event.txt dist/mt5_bridge_R73_GRAPH/
+          find dist -type d -name __pycache__ -prune -exec rm -rf {} +
+          find dist -type f -name '*.pyc' -delete
+          cat > dist/mt5_bridge_R73_GRAPH/START_BRIDGE_R73_GRAPH.cmd <<'CMD'
+          @echo off
+          setlocal
+          set "HERE=%~dp0"
+          set "OLD=%HERE%..\mt5_bridge"
+          set "PY=%OLD%\.venv\Scripts\python.exe"
+          set "STATE=%OLD%\event_state"
+          if not exist "%PY%" (
+            echo ERROR: old Bridge Python not found: %PY%
+            pause
+            exit /b 1
+          )
+          if not exist "%STATE%" mkdir "%STATE%"
+          set "PYTHONPATH=%HERE%"
+          "%PY%" -B "%HERE%bridge_startup.py" --state-dir "%STATE%"
+          set "RC=%ERRORLEVEL%"
+          if not "%RC%"=="0" pause
+          exit /b %RC%
+          CMD
+          cat > dist/README_RU.txt <<'TXT'
+          FXM1 R7.3 GRAPH FIX
+          1. AUTO OFF. Close old Bridge.
+          2. Put folder mt5_bridge_R73_GRAPH next to existing mt5_bridge.
+          3. Run START_BRIDGE_R73_GRAPH.cmd.
+          Old .venv and event_state are reused read/write; old program files are not modified.
+          Trading chart: Scenario Map only. No analogue blue forecast path during WAIT.
+          TXT
+          (cd dist && zip -qr ../FXM1_R7_3_GRAPH_BRIDGE_READY.zip .)
+          sha256sum FXM1_R7_3_GRAPH_BRIDGE_READY.zip > dist/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FXM1-R7.3-GRAPH-BRIDGE-${{ github.sha }}
+          path: |
+            FXM1_R7_3_GRAPH_BRIDGE_READY.zip
+            dist/
+          if-no-files-found: error
