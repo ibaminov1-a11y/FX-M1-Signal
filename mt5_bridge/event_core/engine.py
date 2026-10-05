@@ -1129,6 +1129,10 @@ class Engine:
         with self.lock:
             q=self.quote;now=self.clock();owned=self._owned()
             display_forecast=copy.deepcopy(self.forecast)
+            # The analogue price model remains archived/evaluated as research data,
+            # but the live trading chart is structural Scenario Map only. In WAIT
+            # it must not paint a synthetic future trajectory.
+            display_forecast['show_price_forecast']=False
             if self.campaign:
                 c=self.campaign
                 display_forecast['active_scenario']=dict(side=c['side'],entry=c['last_entry'],
