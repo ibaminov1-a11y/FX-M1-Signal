@@ -102,7 +102,9 @@ final class ScenarioMapRenderer {
         historical=f.optBoolean("history_only");clientOffline=f.optBoolean("client_offline");stale=f.optBoolean("stale")||clientOffline;tied="TIED".equals(f.optString("selection_status"));
         JSONArray routes=valid&&!historical?f.optJSONArray("scenarios"):null;
         JSONObject levels=valid&&!v3&&!historical?f.optJSONObject("entry_levels"):null,active=historical||unverified?null:f.optJSONObject("active_scenario");
-        JSONObject priceForecast=PriceForecastPlot.visible(f);
+        // The trading chart is a structural Scenario Map. The independent analogue
+        // price forecast is retained by Bridge for research/evaluation, but it must
+        // never paint a synthetic future path on the live trading chart.
         int routeCount=routes==null?0:Math.min(2,routes.length());
         top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:76)*d;
         for(int i=0;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null){bound(b.optDouble("low"));bound(b.optDouble("high"));}}
@@ -115,12 +117,6 @@ final class ScenarioMapRenderer {
         if(routes!=null)for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);JSONArray path=r==null?null:r.optJSONArray("path");if(path==null)continue;
             for(int j=0;j<path.length();j++){JSONObject pt=path.optJSONObject(j);if(pt!=null)nearBound(pt.optDouble("price"),historyLow,historyHigh,historyRange);}}
-        if(priceForecast!=null){
-            bound(priceForecast.optDouble("origin"));
-            JSONArray projection=priceForecast.optJSONArray("projection");
-            for(int i=0;i<projection.length();i++){JSONObject point=projection.optJSONObject(i);
-                bound(point.optDouble("low"));bound(point.optDouble("high"));}
-        }
         boolean showPositions=!historical&&!unverified&&!f.optBoolean("archive");
         if(showPositions&&positions!=null)for(int i=0;i<positions.length();i++){
             JSONObject position=positions.optJSONObject(i);if(!positionMatches(f,position))continue;
@@ -138,11 +134,14 @@ final class ScenarioMapRenderer {
         for(int i=0;i<5;i++)widest=Math.max(widest,p.measureText(price(high-(high-low)*i/4)));
         right=w-Math.max(58*d,widest+10*d);
         if(right<=left)return;
-        boolean futurePanel=!historical&&!unverified&&(routeCount>0||priceForecast!=null);
-        split=futurePanel?left+(right-left)*.44f:right;
+        boolean futurePanel=!historical&&!unverified&&valid;
+        // With a confirmed structural scenario the LIVE split stays near the middle.
+        // WAIT still keeps a modest blank future area for levels/status, but gives
+        // most of the width to factual candles instead of an invented projection.
+        split=futurePanel?left+(right-left)*(routeCount>0?.48f:.72f):right;
         if(!unverified){
         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
-        else if(routeCount==0)text(priceForecast!=null?"ЦЕНОВОЙ ПРОГНОЗ · вход отдельно":valid?"WAIT · нет ясной структуры":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
+        else if(routeCount==0)text(valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
             String name=ScenarioUi.role(r,i);
@@ -238,8 +237,14 @@ final class ScenarioMapRenderer {
             positionLevel(position.optDouble("price_open"),state+"MT5 "+ticket+" "+(position.optInt("side")>0?"BUY ":"SELL ")+price(position.optDouble("price_open")));
             positionLevel(position.optDouble("sl"),state+"SL MT5 "+ticket+" "+price(position.optDouble("sl")));
         }
-        if(priceForecast!=null)PriceForecastPlot.draw(c,f,priceForecast,new RectF(split,top,right,bottom),low,high,d);
-        else for(int i=routeCount-1;i>=0;i--)route(routes.optJSONObject(i),i,current);
+        if(routeCount==0&&futurePanel){
+            String wait="NO CLEAR SCENARIO";
+            p.setTextSize(9*d);float tw=p.measureText(wait);
+            text(wait,Math.max(split+4*d,split+(right-split-tw)/2),top+18*d,MUTED,9);
+            text("WAIT · только уровни и фактические свечи",split+5*d,top+34*d,MUTED,8);
+        }else{
+            for(int i=routeCount-1;i>=0;i--)route(routes.optJSONObject(i),i,current);
+        }
         if(Double.isFinite(current)){
             p.setColor(0xffeeeeff);c.drawCircle(split,clippedY(current),3*d,p);
             String marker=f.optBoolean("archive")?"СНИМОК":clientOffline?"КЭШ":stale?"УСТАРЕЛО":"LIVE";
@@ -247,11 +252,6 @@ final class ScenarioMapRenderer {
         }
         drawAnnotations();
         text(candleTimes(first,live==null?last:live.optLong("time")),left,h-44*d,MUTED,8);
-        if(priceForecast!=null){
-            text("Прогноз от "+utc("HH:mm",priceForecast.optLong("issued_at"))+" UTC · полоса примеров",left,h-26*d,MUTED,8);
-            text("Оценка, не гарантия · условия входа: «Сценарии»",left,h-11*d,MUTED,8);
-            return;
-        }
         boolean legacy=false;
         if(routes!=null)for(int i=0;i<routeCount;i++)legacy|=!hasPhaseMeaning(routes.optJSONObject(i));
         text(legacy?"Цвет — условная ветка; этапы входа не размечены":"Серый — до входа · цвет — после, не факт сделки",left,h-26*d,MUTED,8);
