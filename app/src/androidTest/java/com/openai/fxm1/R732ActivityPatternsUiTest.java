@@ -48,6 +48,8 @@ public class R732ActivityPatternsUiTest {
    JSONObject state=scene(i,"live",false),expected=R732PatternRendererUiTest.pattern(state);assertNotNull(expected);
    final String[] description={""};ui(()->description[0]=chart().getContentDescription().toString());
    assertTrue("Activity hides figure "+i+": "+description[0],description[0].contains(expected.getString("title")));
+   final String[] heading={""};ui(()->heading[0]=((android.widget.TextView)rule.getActivity().findViewById(R.id.confidenceText)).getText().toString());
+   assertTrue("Heading contradicts figure "+i+": "+heading[0],heading[0].contains(expected.getString("title")));
    assertFalse(chart().displayedForecast().optBoolean("show_price_forecast",true));shot("r732-activity-"+i);
   }
   JSONArray commands=EventClient.http("GET",BASE+"/test/r53-command-audit",null).getJSONArray("commands");
