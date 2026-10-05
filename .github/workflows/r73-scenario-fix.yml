@@ -1,0 +1,61 @@
+name: R7.3.1 Scenario Map graph fix
+on:
+  push:
+    branches: [repair/r73-scenario-map-20261005]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Full Python regression
+        run: |
+          mkdir -p evidence
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v 2>&1 | tee evidence/python-tests.log
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Configure signing
+        run: |
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - name: Full Android API35 regression
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_r7_native.sh
+      - name: Record build identity
+        if: always()
+        run: |
+          git rev-parse HEAD > evidence/SCENARIO_FIX_COMMIT.txt
+          cp app/build/outputs/apk/debug/app-debug.apk evidence/FXM1_R7_3_1_SCENARIO_MAP.apk || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R73-SCENARIO-MAP-${{ github.sha }}
+          path: evidence/
+          if-no-files-found: error
