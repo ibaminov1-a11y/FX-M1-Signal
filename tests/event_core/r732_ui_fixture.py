@@ -13,6 +13,8 @@ def install(app,engine):
  @app.before_request
  def clear_on_reset():
   if request.path=='/test/reset':selection.clear()
+  if request.path=='/ec/state' and selection.get('variant')=='offline':
+   return jsonify(ok=False,message='synthetic Bridge connection unavailable'),503
  @app.post('/test/r732-pattern')
  def choose():
   data=request.get_json(silent=True) or {};i=int(data.get('index',0))

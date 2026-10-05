@@ -173,10 +173,10 @@ class R56Broker(FakeBroker):
         from test_r5_scenarios import lane
         super().__init__(clock)
         self.balance=99868.35;self.bid=1.101;self.ask=self.bid+.00001
-        self.frames={};self.fail=set();now=int(clock())
+        self.frames={};self.ends={};self.fail=set();now=int(clock())
         source=lane('RANGE')
         for index,tf in enumerate(PUBLIC_TIMEFRAMES):
-            end=self.frame_start(tf,now);span=TF_SECONDS[tf]
+            end=self.frame_start(tf,now);self.ends[tf]=end;span=TF_SECONDS[tf]
             times=[end-(len(source)-i)*span for i in range(len(source))]
             if tf=='MN1':
                 current=time.gmtime(now);month=current.tm_year*12+current.tm_mon-1
@@ -195,6 +195,16 @@ class R56Broker(FakeBroker):
 
     def bars(self,symbol,tf):
         if tf in self.fail:raise Blocked('Тестовые данные '+tf+' недоступны')
+        # The UI suite crosses real minute/hour boundaries. Close only elapsed
+        # forming bars; never leave the M1 safety feed frozen during a long test.
+        from event_core.model import bar_close_time
+        end=self.frame_start(tf,self.clock());offset=PUBLIC_TIMEFRAMES.index(tf)*.00001
+        while self.ends[tf]<end:
+            started=self.ends[tf]
+            self.frames[tf].append(Bar(started,1.101+offset,max(1.1013+offset,self.bid),
+                min(1.1007+offset,self.bid),self.bid,1))
+            self.ends[tf]=bar_close_time(started,tf,0)
+        self.frames[tf]=self.frames[tf][-1200:]
         return list(self.frames[tf])
 
     def current_bar(self,symbol,tf):

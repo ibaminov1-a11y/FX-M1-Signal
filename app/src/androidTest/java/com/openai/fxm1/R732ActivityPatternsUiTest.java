@@ -65,7 +65,12 @@ public class R732ActivityPatternsUiTest {
   scene(19,"live",false);assertTrue(chart().getContentDescription().toString().contains("Формируется"));shot("r732-activity-forming");
   scene(0,"empty",false);assertEquals(0,chart().patternChoices().length());shot("r732-activity-no-figure");
   scene(17,"stale",false);assertTrue(chart().displayedForecast().optBoolean("stale"));shot("r732-activity-stale");
-  scene(17,"offline",false);assertTrue(chart().displayedForecast().optBoolean("client_offline"));shot("r732-activity-offline");
+  scene(17,"live",false);
+  EventClient.http("POST",BASE+"/test/r732-pattern",new JSONObject().put("index",17).put("view","offline"));
+  // Offline is a client transport observation, not a flag from a successful GET.
+  try{EventClient.poll();fail("Offline fixture unexpectedly answered successfully");}
+  catch(java.io.IOException failure){EventClient.offline(failure);}
+  sync();assertTrue(chart().displayedForecast().optBoolean("client_offline"));shot("r732-activity-offline");
   JSONObject s=scene(17,"live",true);assertTrue(s.getJSONArray("positions").length()>0);shot("r732-activity-position");
   ui(()->chart().setArchive(true));shot("r732-activity-archive");ui(()->chart().setArchive(false));
  }
