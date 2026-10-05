@@ -1,0 +1,141 @@
+name: R732 original signature and acceptance
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r732-signed-acceptance.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: r732-acceptance-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+env:
+  R732_SOURCE_SHA: 814d8c50009ca68407dc366a65656d7e16252077
+jobs:
+  python:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R732_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Whole Python suite and exact runtime ZIP
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git archive --format=zip HEAD > evidence/Sources.zip
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/python.log 2>&1
+          tail -12 evidence/python.log
+          python tools/package_r732.py --source "$R732_SOURCE_SHA" --out evidence/FXM1_R7_3_2_Bridge.zip > evidence/PACKAGE_RESULT.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R732-PYTHON-PACKAGE-${{ env.R732_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
+  windows:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+      R7_NO_PAUSE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R732_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - run: python -m pip install -r mt5_bridge/requirements_event.txt
+      - name: Native CMD with locked old caches and unchanged trading state
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          python tools/windows_r732_gate.py *> evidence/windows.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/windows.log
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R732-WINDOWS-${{ env.R732_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
+  android:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R732_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Require original certificate without exporting private key
+        run: |
+          set -euo pipefail
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/public-cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/public-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: R73-RECOVERED-61bfe8661ee54b98ee1ca6fc191998a2764f47b1
+          run-id: 37276385778
+          github-token: ${{ github.token }}
+          path: previous-release
+      - name: Extract and verify the actual previously shipped APK
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib,os
+          with zipfile.ZipFile('previous-release/FXM1_R7_3_FULL.zip') as z:
+              names=[n for n in z.namelist() if n.endswith('.apk') and 'DEMO' in n]
+              assert len(names)==1
+              apk=z.read(names[0])
+          assert hashlib.sha256(apk).hexdigest()=='6cc4c6ef0797eebff96b2c93fb72d8829186751061ec15b6d4421a30fd4575ee'
+          p=Path(os.environ['RUNNER_TEMP'])/'previous-931.apk';p.write_bytes(apk)
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('R732_OLD_APK='+str(p)+'\n')
+          PY
+      - name: Original-signature upgrade and complete real Android API35 acceptance
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_r732_native.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R732-SIGNED-NATIVE-CANDIDATE-${{ env.R732_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error

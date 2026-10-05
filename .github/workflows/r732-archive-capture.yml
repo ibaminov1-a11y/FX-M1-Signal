@@ -1,0 +1,154 @@
+name: R732 archive visual evidence
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r732-archive-capture.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  capture:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 814d8c50009ca68407dc366a65656d7e16252077
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: R732-SIGNED-NATIVE-CANDIDATE-814d8c50009ca68407dc366a65656d7e16252077
+          run-id: 37346562237
+          github-token: ${{ github.token }}
+          path: accepted
+      - name: Add capture-only harness; product and accepted APK remain untouched
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          echo 'f3e96163cd8c5b0a5f428756437db54b5cf4a1e25ee6d4c7e3912e35c605073e  accepted/FXM1_R7_3_2.apk' | sha256sum -c -
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+          cat > app/src/androidTest/java/com/openai/fxm1/R732ArchiveCaptureUiTest.java <<'JAVA'
+          package com.openai.fxm1;
+          import android.app.Activity;
+          import android.graphics.Bitmap;
+          import android.os.ParcelFileDescriptor;
+          import androidx.test.ext.junit.runners.AndroidJUnit4;
+          import androidx.test.platform.app.InstrumentationRegistry;
+          import androidx.test.uiautomator.*;
+          import org.json.*;
+          import org.junit.Test;
+          import org.junit.runner.RunWith;
+          import java.io.*;
+          import java.lang.reflect.Method;
+          import java.util.concurrent.CountDownLatch;
+          import java.util.concurrent.TimeUnit;
+          import static org.junit.Assert.*;
+          @RunWith(AndroidJUnit4.class)
+          public class R732ArchiveCaptureUiTest extends R732ActivityPatternsUiTest {
+              @Test public void captureActualFrozenArchiveDialog() throws Exception {
+                  Method scene=R732ActivityPatternsUiTest.class.getDeclaredMethod("scene",int.class,String.class,boolean.class);
+                  scene.setAccessible(true);
+                  JSONObject state=(JSONObject)scene.invoke(this,17,"live",true);
+                  JSONObject snapshot=new JSONObject(state.toString());
+                  String frozen=snapshot.toString();
+                  Method open=ScenarioUi.class.getDeclaredMethod("open",Activity.class,JSONObject.class);
+                  open.setAccessible(true);
+                  InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
+                      try{open.invoke(null,rule.getActivity(),snapshot);}catch(Exception e){throw new AssertionError(e);}
+                  });
+                  UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+                  assertTrue("Archive dialog title absent",device.wait(Until.hasObject(By.text("ИСХОДНЫЙ ПРОГНОЗ · НЕ LIVE")),5000));
+                  assertTrue("Archive mode description absent",device.wait(Until.hasObject(By.descContains("Архивный снимок.")),5000));
+                  // Wait for real frame opportunities, not only an updated accessibility tree.
+                  CountDownLatch drawn=new CountDownLatch(1);
+                  InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
+                      android.view.View decor=rule.getActivity().getWindow().getDecorView();
+                      decor.postOnAnimation(()->decor.postOnAnimation(()->decor.postOnAnimation(drawn::countDown)));
+                  });
+                  assertTrue("Frames did not advance",drawn.await(5,TimeUnit.SECONDS));
+                  InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+                  device.waitForIdle();
+                  Bitmap bitmap=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+                  assertNotNull(bitmap);
+                  File out=new File(rule.getActivity().getExternalFilesDir(null),"r732-activity-archive.png");
+                  try(FileOutputStream stream=new FileOutputStream(out)){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,stream));}finally{bitmap.recycle();}
+                  for(String command:new String[]{"mkdir -p /sdcard/Download/ec1-qa","cp "+out.getAbsolutePath()+" /sdcard/Download/ec1-qa/r732-activity-archive.png"}){
+                      try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){
+                          byte[] bytes=new byte[4096];while(in.read(bytes)!=-1){}
+                      }
+                  }
+                  assertEquals("Archive snapshot mutated",frozen,snapshot.toString());
+                  assertFalse("Archive cannot enable AUTO",EventClient.state().optBoolean("auto"));
+                  device.pressBack();
+              }
+          }
+          JAVA
+          cp app/src/androidTest/java/com/openai/fxm1/R732ArchiveCaptureUiTest.java evidence/CAPTURE_HARNESS.java
+          git diff --exit-code HEAD -- app/src/main app/build.gradle mt5_bridge tools
+          cat > "$RUNNER_TEMP/capture.sh" <<'SH'
+          set -euo pipefail
+          export PYTHONPATH=mt5_bridge:tests/event_core
+          python tests/event_core/export_r732_chart_fixtures.py
+          python tests/event_core/ui_fixture.py > evidence/fixture.log 2>&1 &
+          fixture=$!
+          trap 'kill "$fixture" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null
+          adb reverse tcp:8765 tcp:8765
+          gradle --no-daemon :app:assembleDebugAndroidTest > evidence/build.log 2>&1
+          adb install -r accepted/FXM1_R7_3_2.apk
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          adb shell am instrument -w -r -e class com.openai.fxm1.R732ArchiveCaptureUiTest#captureActualFrozenArchiveDialog com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner > evidence/capture.log 2>&1
+          cat evidence/capture.log
+          grep -q 'OK (1 test)' evidence/capture.log
+          adb pull /sdcard/Download/ec1-qa/r732-activity-archive.png evidence/r732-activity-archive.png
+          git diff --exit-code HEAD -- app/src/main app/build.gradle mt5_bridge tools
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          apk=Path('accepted/FXM1_R7_3_2.apk').read_bytes();h=hashlib.sha256(apk).hexdigest()
+          assert h=='f3e96163cd8c5b0a5f428756437db54b5cf4a1e25ee6d4c7e3912e35c605073e'
+          image=Path('evidence/r732-activity-archive.png').read_bytes()
+          assert image[:8]==b'\x89PNG\r\n\x1a\n'
+          previous=Path('accepted/ui/ec1-qa/r732-activity-archive.png').read_bytes()
+          assert hashlib.sha256(previous).hexdigest()!=hashlib.sha256(image).hexdigest()
+          Path('evidence/CAPTURE_RESULT.json').write_text(json.dumps(dict(source_sha='814d8c50009ca68407dc366a65656d7e16252077',accepted_run_id=37346562237,tests=1,failures=0,installed_apk_sha256=h,production_changes=False,archive_png_sha256=hashlib.sha256(image).hexdigest(),previous_png_sha256=hashlib.sha256(previous).hexdigest(),reason='Previous export was the unchanged preceding position frame; capture actual production archive dialog after frames advance'),indent=2))
+          PY
+          SH
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash "$RUNNER_TEMP/capture.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R732-ARCHIVE-VISUAL-814d8c50009ca68407dc366a65656d7e16252077
+          path: evidence/
+          if-no-files-found: error
