@@ -35,7 +35,7 @@ final class ScenarioMapRenderer {
         format.setTimeZone(TimeZone.getTimeZone("UTC"));return format.format(new Date(seconds*1000));
     }
     private String candleTimes(long first,long last){
-        String pattern=first/86400==last/86400?"HH:mm":"dd.MM HH:mm";
+        String pattern=first/86400==last/86400?"HH:mm":utc("yyyy",first).equals(utc("yyyy",last))?"dd.MM HH:mm":"dd.MM.yy HH:mm";
         return "Свечи "+utc(pattern,first)+" — "+utc(pattern,last)+" UTC";
     }
     private void text(String s,float x,float yy,int color,float size){
@@ -45,7 +45,8 @@ final class ScenarioMapRenderer {
         c.drawText(s,x,yy,p);
     }
     private void readOnlyHeading(JSONObject f){
-        text(ScenarioUi.rawChartLabel(f),left,18*d,0xffffb04d,10);
+        String symbol=f.optString("chart_symbol"),identity=symbol.isEmpty()?"":" · "+symbol+" "+f.optString("chart_timeframe",f.optString("timeframe","—"));
+        text(ScenarioUi.rawChartLabel(f)+identity,left,18*d,0xffffb04d,10);
         text(clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":"ТОЛЬКО ПРОСМОТР · ВХОД ЗАПРЕЩЁН",left,34*d,MUTED,9);
         String remaining=f.optString("chart_reason").replace('\n',' ');p.setTextSize(9*d);
         for(int i=0;i<3&&!remaining.isEmpty();i++){
@@ -153,8 +154,9 @@ final class ScenarioMapRenderer {
         if(tied&&!historical&&!unverified)text("Равнозначные варианты · без предпочтения",left,(16+16*routeCount)*d,MUTED,8);
         String stamp=f.optDouble("data_asof",0)>0?utc("HH:mm:ss",(long)f.optDouble("data_asof"))+" UTC":"—";
         String symbol=f.optString("chart_symbol");
+        String identity=symbol.isEmpty()?"":" · "+symbol+" "+f.optString("chart_timeframe",f.optString("timeframe","—"));
         String marketHeading="MT5 · "+f.optString("timeframe","—")+" · "+(symbol.isEmpty()?"":symbol+" · ")+(historical?"история":stamp);
-        if(!unverified)text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE":clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE":stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН":marketHeading),left,top-7*d,stale?0xffffb04d:MUTED,8);
+        if(!unverified)text((f.optBoolean("archive")?"СНИМОК ПРОГНОЗА · НЕ LIVE"+identity:clientOffline?"КЭШ · НЕТ СВЯЗИ С BRIDGE"+identity:stale?"ДАННЫЕ УСТАРЕЛИ · ВХОД ЗАПРЕЩЁН"+identity:marketHeading),left,top-7*d,stale?0xffffb04d:MUTED,8);
         for(int i=0;i<5;i++){
             float yy=top+(bottom-top)*i/4;line(left,yy,right,yy,0xff312b43,.6f,false);
             text(price(high-(high-low)*i/4),right+4*d,yy+3*d,MUTED,8.5f);

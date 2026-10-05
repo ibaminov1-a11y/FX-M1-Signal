@@ -35,6 +35,22 @@ public class EventCoreUiTest {
   rule.launchActivity(new Intent());
  }
  void main(Runnable r){InstrumentationRegistry.getInstrumentation().runOnMainSync(r);}
+ private void assertSameFactualChart(JSONArray bars,JSONObject liveBar,JSONObject payload,JSONObject reference,String message){
+  final Bitmap[] images=new Bitmap[2];
+  main(()->{JSONObject[] forecasts={payload,reference};for(int i=0;i<forecasts.length;i++){
+   SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
+   chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecasts[i]);
+   images[i]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(images[i]));
+  }});
+  try{
+   int candles=0;int[] pixels=new int[1000*500];images[1].getPixels(pixels,0,1000,0,0,1000,500);
+   for(int color:pixels)if(color==0xff42d67a||color==0xffff4857)candles++;
+   assertTrue("Reference must contain visible factual MT5 candles",candles>20);
+   // WAIT uses the full width now. Compare every pixel against the same factual
+   // chart without the obsolete payload, rather than mistaking candles for routes.
+   assertTrue(message,images[0].sameAs(images[1]));
+  }finally{for(Bitmap image:images)if(image!=null)image.recycle();}
+ }
  void shell(String command)throws Exception{try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[]b=new byte[4096];while(in.read(b)!=-1){}}}
  void await(BooleanSupplier f,String label)throws Exception{long end=SystemClock.elapsedRealtime()+20000;while(SystemClock.elapsedRealtime()<end){if(f.getAsBoolean())return;Thread.sleep(150);}fail(label);}
  void shot(String name)throws Exception{shell("mkdir -p /sdcard/Download/ec1-qa");shell("screencap -p /sdcard/Download/ec1-qa/"+name+".png");}
@@ -170,15 +186,9 @@ public class EventCoreUiTest {
       .put(new JSONObject().put("name","PRIMARY").put("side",1).put("probability",.67).put("path",mainPath))
       .put(new JSONObject().put("name","ALTERNATIVE").put("side",-1).put("probability",.22).put("path",altPath)));
   assertTrue(SparklineView.hasScenarioMap(forecast));
-  final Bitmap[] bitmap={null};
-  main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
-   chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"COMPUTE",liveBar,new JSONArray(),forecast);
-   bitmap[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(bitmap[0]));});
-  int green=0,yellow=0;int[]pixels=new int[1000*500];bitmap[0].getPixels(pixels,0,1000,0,0,1000,500);
-  for(int y=0;y<500;y++)for(int x=580;x<935;x++){int v=pixels[y*1000+x];if(v==0xff42d67a)green++;if(v==0xffffc857)yellow++;}
-  assertEquals("Old unversioned map is not the new structural contract",0,green);
-  assertEquals("Do not fall back to obsolete route payload",0,yellow);
-  bitmap[0].recycle();
+  JSONObject reference=new JSONObject(forecast.toString());
+  reference.remove("scenarios");reference.remove("support");reference.remove("resistance");
+  assertSameFactualChart(bars,liveBar,forecast,reference,"Unversioned routes and levels must have no effect on any rendered pixel");
  }
  @Test public void legacyFiveMinuteProjectionStaysDisabledDuringUpgrade()throws Exception{
   JSONArray bars=new JSONArray();
@@ -190,29 +200,12 @@ public class EventCoreUiTest {
       .put(new JSONObject().put("minutes",5).put("center",1.10205).put("low",1.10180).put("high",1.10230).put("up_probability",.72).put("down_probability",.16).put("range_probability",.12))
       .put(new JSONObject().put("minutes",10).put("center",1.10218).put("low",1.10172).put("high",1.10264).put("up_probability",.65).put("down_probability",.20).put("range_probability",.15))
       .put(new JSONObject().put("minutes",15).put("center",1.10228).put("low",1.10162).put("high",1.10294).put("up_probability",.60).put("down_probability",.22).put("range_probability",.18)));
-  final Bitmap[] bitmap={null};
-  main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
-   chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecast);
-   bitmap[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(bitmap[0]));});
-  int greenForecast=0,blueForecast=0,candlePixelsInFuture=0;int[]pixels=new int[1000*500];bitmap[0].getPixels(pixels,0,1000,0,0,1000,500);
-  for(int y=0;y<500;y++)for(int x=720;x<930;x++){int v=pixels[y*1000+x];
-   if(v==0xff42d67a)greenForecast++;
-   if(v==0xff5bd6ff)blueForecast++;
-   if(v==0xffff4857)candlePixelsInFuture++;
-  }
-  assertEquals("Old BUY +5/+10/+15 projection must be absent",0,greenForecast);
-  assertEquals("old cyan forecast path must be gone",0,blueForecast);
-  assertEquals("real red candles must stay out of future forecast zone",0,candlePixelsInFuture);
+  JSONObject reference=new JSONObject(forecast.toString());reference.remove("projection");
+  assertSameFactualChart(bars,liveBar,forecast,reference,"Legacy BUY +5/+10/+15 projection must not add paths, bands, labels or alter candle scale");
 
   forecast.put("side",-1).put("confidence",.81).put("up_probability",.10).put("down_probability",.81).put("range_probability",.09);
-  final Bitmap[] sell={null};
-  main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
-   chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecast);
-   sell[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(sell[0]));});
-  int redForecast=0;int[]sellPixels=new int[1000*500];sell[0].getPixels(sellPixels,0,1000,0,0,1000,500);
-  for(int y=0;y<500;y++)for(int x=720;x<930;x++)if(sellPixels[y*1000+x]==0xffff4857)redForecast++;
-  assertEquals("Old SELL +5/+10/+15 projection must be absent",0,redForecast);
-  sell[0].recycle();bitmap[0].recycle();
+  reference=new JSONObject(forecast.toString());reference.remove("projection");
+  assertSameFactualChart(bars,liveBar,forecast,reference,"Legacy SELL +5/+10/+15 projection must have no effect on any rendered pixel");
  }
  @Test public void noEdgeForecastDoesNotPretendBuyOrSellDirection()throws Exception{
   JSONArray bars=new JSONArray();
@@ -225,14 +218,8 @@ public class EventCoreUiTest {
       .put(new JSONObject().put("minutes",5).put("center",1.10093).put("low",1.10075).put("high",1.10111).put("up_probability",.41).put("down_probability",.34).put("range_probability",.25)));
   assertEquals("NO EDGE",SparklineView.forecastLabel(forecast));
   assertFalse(SparklineView.shouldDrawProjection(forecast));
-  final Bitmap[] b={null};
-  main(()->{SparklineView chart=new SparklineView(rule.getActivity());chart.layout(0,0,1000,500);
-   chart.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"SEARCH",liveBar,new JSONArray(),forecast);
-   b[0]=Bitmap.createBitmap(1000,500,Bitmap.Config.ARGB_8888);chart.draw(new Canvas(b[0]));});
-  int directional=0;int[]px=new int[1000*500];b[0].getPixels(px,0,1000,0,0,1000,500);
-  for(int y=0;y<500;y++)for(int x=760;x<930;x++){int v=px[y*1000+x];if(v==0xff42d67a||v==0xffff4857)directional++;}
-  assertEquals("NO EDGE must not draw a directional future path",0,directional);
-  b[0].recycle();
+  JSONObject reference=new JSONObject(forecast.toString());reference.remove("projection");
+  assertSameFactualChart(bars,liveBar,forecast,reference,"NO EDGE legacy projection must not add any directional path or forecast band");
  }
  @Test public void configurePreservesSelectedScalpWhileUpgradingScenarioEngine()throws Exception{
   p.edit().putInt("signal_mode_pos",1).commit();

@@ -49,12 +49,19 @@ public class ScenarioUpgradeUiTest {
                 .put(new JSONObject().put("minutes",5).put("center",1.1012).put("high",1.1013).put("low",1.1011))
                 .put(new JSONObject().put("minutes",10).put("center",1.1014).put("high",1.1015).put("low",1.1013))
                 .put(new JSONObject().put("minutes",15).put("center",1.1016).put("high",1.1017).put("low",1.1015)));
-        final Bitmap[] image={null};
-        ui(()->{SparklineView view=new SparklineView(context);view.layout(0,0,1000,850);
-            view.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"TRIGGER",null,null,old);
-            image[0]=Bitmap.createBitmap(1000,850,Bitmap.Config.ARGB_8888);view.draw(new Canvas(image[0]));});
-        int green=0;for(int y=0;y<850;y++)for(int x=700;x<930;x++)if(image[0].getPixel(x,y)==0xff42d67a)green++;
-        image[0].recycle();assertEquals("Legacy +5/+10/+15 forecast must never return",0,green);
+        JSONObject reference=new JSONObject(old.toString());reference.remove("projection");
+        final Bitmap[] images=new Bitmap[2];
+        ui(()->{JSONObject[] forecasts={old,reference};for(int i=0;i<forecasts.length;i++){
+            SparklineView view=new SparklineView(context);view.layout(0,0,1000,850);
+            view.setMarket(bars,new JSONArray(),new JSONArray(),new JSONArray(),"TRIGGER",null,null,forecasts[i]);
+            images[i]=Bitmap.createBitmap(1000,850,Bitmap.Config.ARGB_8888);view.draw(new Canvas(images[i]));
+        }});
+        try{
+            int candles=0;int[] pixels=new int[1000*850];images[1].getPixels(pixels,0,1000,0,0,1000,850);
+            for(int color:pixels)if(color==0xff42d67a||color==0xffff4857)candles++;
+            assertTrue("Upgrade reference contains actual MT5 candles",candles>20);
+            assertTrue("Legacy projection must not add any path, band, label or change the candle layout during upgrade",images[0].sameAs(images[1]));
+        }finally{for(Bitmap image:images)if(image!=null)image.recycle();}
     }
     @Test public void actualAutoButtonAcceptsOldCampaignThenActivatesStructuralMap()throws Exception{
         EventClient.http("POST",EventClient.base()+"/test/legacy-upgrade",new JSONObject());EventClient.poll();Thread.sleep(1600);

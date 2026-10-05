@@ -150,6 +150,7 @@ public class R73ChartUiTest {
             JSONObject f=forecast("EURUSD","M5",1.10324,.00001,5).put(flag,true);
             RecordingCanvas canvas=draw(f,bars("M5",1.10324,.00001),null,360,260);
             try{for(Label label:canvas.labels)assertNotEquals(flag+" marker must disclose its age","LIVE",label.text);
+                assertTrue(flag+" must retain selected instrument and timeframe identity",canvas.has("EURUSD")&&canvas.has("M5"));
                 assertFalse(flag+" accessibility cannot advertise a live last price",SparklineView.mapDescription(f).contains(" LIVE 1.10324"));
             }finally{canvas.bitmap.recycle();}
         }
@@ -247,10 +248,15 @@ public class R73ChartUiTest {
         TimeZone previous=TimeZone.getDefault();TimeZone.setDefault(TimeZone.getTimeZone("GMT+09:00"));
         try{for(String frame:Timeframes.CHOICES){
             JSONObject f=forecast("USDJPY",frame,147.234,.001,3).put("show_price_forecast",false);
-            RecordingCanvas canvas=draw(f,bars(frame,147.234,.001),null,360,260);
+            JSONArray history=bars(frame,147.234,.001);RecordingCanvas canvas=draw(f,history,null,360,260);
             try{assertTrue("Chart identifies its instrument and selected timeframe",canvas.has("USDJPY")&&canvas.has(frame));
                 boolean timeAxis=false;for(Label label:canvas.labels)if(label.bounds.top>190&&label.text.contains("UTC"))timeAxis=true;
                 assertTrue("Actual candle time range and timezone are visible below plot on "+frame,timeAxis);
+                java.text.SimpleDateFormat year=new java.text.SimpleDateFormat("yyyy",java.util.Locale.US),date=new java.text.SimpleDateFormat("dd.MM.yy",java.util.Locale.US);
+                year.setTimeZone(TimeZone.getTimeZone("UTC"));date.setTimeZone(TimeZone.getTimeZone("UTC"));
+                java.util.Date first=new java.util.Date(history.getJSONObject(0).getLong("time")*1000),last=new java.util.Date(history.getJSONObject(history.length()-1).getLong("time")*1000);
+                if(!year.format(first).equals(year.format(last)))assertTrue("Cross-year candle range must disclose both years on "+frame,
+                    canvas.has(date.format(first))&&canvas.has(date.format(last)));
                 save(canvas,"r73-chart-frame-"+frame.toLowerCase());
             }finally{canvas.bitmap.recycle();}
         }}finally{TimeZone.setDefault(previous);}
