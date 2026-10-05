@@ -24,6 +24,7 @@ def main():
    p=new/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b)
   state=old/'event_state';state.mkdir()
   with sqlite3.connect(state/'campaign.sqlite3') as db:db.execute('create table sentinel(value text)');db.execute("insert into sentinel values ('existing history')")
+  db.close()  # sqlite transaction context does not close the native Windows handle.
   (state/'bridge-token.txt').write_text('ci-fixture-existing-pairing-key-not-for-real-trading')
   (state/'broker-clock.json').write_text('{"offset_minutes":180}')
   (state/'runtime.lock').write_bytes(b'0')
