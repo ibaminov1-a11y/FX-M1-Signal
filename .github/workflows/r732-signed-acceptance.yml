@@ -1,0 +1,38 @@
+name: R732 original signature and acceptance
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: ['.github/workflows/r732-signed-acceptance.yml']
+permissions:
+  contents: read
+concurrency:
+  group: r732-acceptance-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+jobs:
+  signing-preflight:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r732-acceptance-20261005'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Verify existing public certificate only
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/public-cert.der"
+          fingerprint=$(sha256sum "$RUNNER_TEMP/public-cert.der" | cut -d' ' -f1)
+          test "$fingerprint" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          printf '{"certificate_sha256":"%s","private_key_exported":false,"release_allowed":false}\n' "$fingerprint" > evidence/SIGNING_PREFLIGHT.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: R732-SIGNING-PREFLIGHT-${{ github.event.pull_request.head.sha }}
+          path: evidence/SIGNING_PREFLIGHT.json
+          if-no-files-found: error
