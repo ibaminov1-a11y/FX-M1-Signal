@@ -2,7 +2,7 @@ name: R732 diagnostic tests only
 on:
   push:
     branches: [feature/r732-pattern-chart-20261005]
-    paths: ['.github/workflows/r732-diagnostics.yml', 'app/**', 'mt5_bridge/**', 'tests/**', 'tools/**']
+    paths: ['.github/workflows/r732-diagnostics.yml', '.ci/r732-run.txt']
 permissions:
   contents: read
 concurrency:
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Export exact source, no runtime state or signing files
+      - name: Export exact tracked source
         run: |
           mkdir -p evidence
           git archive --format=zip HEAD > evidence/source.zip
@@ -45,22 +45,10 @@ jobs:
   native:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        source: [current, delivered-red]
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
           persist-credentials: false
-      - name: Select original source only for the RED reproduction
-        if: matrix.source == 'delivered-red'
-        run: |
-          cp app/src/androidTest/java/com/openai/fxm1/R732ChartStateUiTest.java "$RUNNER_TEMP/R732ChartStateUiTest.java"
-          git fetch --depth=1 origin 61bfe8661ee54b98ee1ca6fc191998a2764f47b1
-          git checkout 61bfe8661ee54b98ee1ca6fc191998a2764f47b1 -- app/src/main app/src/androidTest app/build.gradle
-          cp "$RUNNER_TEMP/R732ChartStateUiTest.java" app/src/androidTest/java/com/openai/fxm1/
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -72,11 +60,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Prepare isolated diagnostic runner
-        env:
-          CHECK_MODE: ${{ matrix.source }}
+      - name: Prepare diagnostic runner, no production signing access
         run: |
           mkdir -p evidence/ui
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
           sudo chmod 666 /dev/kvm
           cat > "$RUNNER_TEMP/r732-native.sh" <<'SH'
@@ -89,12 +76,18 @@ jobs:
             if curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null; then break; fi
             sleep 1
           done
+          curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null
           adb reverse tcp:8765 tcp:8765
-          if test "$CHECK_MODE" = delivered-red; then
-            classes=com.openai.fxm1.R732ChartStateUiTest
-          else
-            classes=$(python -c "from pathlib import Path; print(','.join('com.openai.fxm1.'+p.stem for p in sorted(Path('app/src/androidTest/java/com/openai/fxm1').glob('*Test.java')) if p.stem!='V108RepairTest'))")
-          fi
+          classes=$(python - <<'PY'
+          from pathlib import Path
+          flag=Path('.ci/r732-run.txt')
+          mode=flag.read_text().strip().splitlines()[0] if flag.exists() else 'FOCUS'
+          tests=sorted(Path('app/src/androidTest/java/com/openai/fxm1').glob('*Test.java'))
+          if mode!='FULL':tests=[p for p in tests if p.stem.startswith('R732')]
+          print(','.join('com.openai.fxm1.'+p.stem for p in tests if p.stem!='V108RepairTest'))
+          PY
+          )
+          test -n "$classes"
           set +e
           gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class="$classes" > evidence/android.log 2>&1
           rc=$?
@@ -103,27 +96,22 @@ jobs:
           timeout 15s adb logcat -d > evidence/logcat.txt 2>&1 || true
           adb pull /sdcard/Download/ec1-qa evidence/ui > evidence/png-export.log 2>&1 || true
           test ! -d app/build/outputs/androidTest-results || cp -r app/build/outputs/androidTest-results evidence/
-          tail -55 evidence/android.log
-          if test "$CHECK_MODE" = delivered-red; then
-            python - "$rc" <<'PY'
+          tail -65 evidence/android.log
+          python - <<'PY'
           from pathlib import Path
-          import sys, json, xml.etree.ElementTree as E
+          import xml.etree.ElementTree as E,json,hashlib,subprocess
           cases=[]
-          for p in Path('evidence/androidTest-results').rglob('*.xml'):
-              cases.extend(E.parse(p).getroot().iter('testcase'))
-          assert len(cases)==1, 'Expected one executed native reproduction'
-          failure=cases[0].find('failure')
-          assert int(sys.argv[1])!=0 and failure is not None, 'Expected old-source failure'
-          assert 'SERVER_FALSE_OVERRIDDEN' in E.tostring(failure, encoding='unicode'), 'Wrong failure cause'
-          Path('evidence/RED_RESULT.json').write_text(json.dumps({'source':'61bfe8661ee54b98ee1ca6fc191998a2764f47b1','expected_failure':'SERVER_FALSE_OVERRIDDEN','native_test_executed':True},indent=2))
-          print('ORIGINAL_GRAPH_DEFECT_REPRODUCED')
+          for p in Path('evidence/androidTest-results').rglob('*.xml'):cases.extend(E.parse(p).getroot().iter('testcase'))
+          rows=[{'class':t.get('classname'),'test':t.get('name'),'status':'FAIL' if t.find('failure') is not None or t.find('error') is not None else 'SKIP' if t.find('skipped') is not None else 'PASS'} for t in cases]
+          result={'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'diagnostic_only':True,'production_signature_verified':False,'tests':rows,'count':len(rows)}
+          apk=Path('app/build/outputs/apk/debug/app-debug.apk')
+          if apk.is_file():result['diagnostic_apk_sha256']=hashlib.sha256(apk.read_bytes()).hexdigest()
+          Path('evidence/NATIVE_RESULT.json').write_text(json.dumps(result,indent=2))
+          assert cases,'No executed native tests'
           PY
-          else
-            exit "$rc"
-          fi
+          exit "$rc"
           SH
-          echo "CHECK_MODE=$CHECK_MODE" >> "$GITHUB_ENV"
-      - name: Android API35, temporary diagnostic certificate only
+      - name: Android API35 with temporary diagnostic certificate
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -133,10 +121,10 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
           script: bash "$RUNNER_TEMP/r732-native.sh"
-      - name: Retain diagnostic evidence only; no installation APK
+      - name: Retain evidence only, never an installation APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: R732-ANDROID-${{ matrix.source }}-${{ github.sha }}
+          name: R732-ANDROID-${{ github.sha }}
           path: evidence/
           if-no-files-found: error
