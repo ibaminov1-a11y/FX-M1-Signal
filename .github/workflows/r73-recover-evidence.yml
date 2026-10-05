@@ -1,0 +1,173 @@
+name: R7.3 recover verified native evidence
+on:
+  push:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/r73-recover-evidence.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+env:
+  R73_SOURCE_SHA: 61bfe8661ee54b98ee1ca6fc191998a2764f47b1
+  R73_FULL_RUN: '37274041525'
+  PYTHONUTF8: '1'
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R73_SOURCE_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: R73-VERIFY-*
+          merge-multiple: true
+          run-id: ${{ env.R73_FULL_RUN }}
+          github-token: ${{ github.token }}
+          path: restored
+      - name: Verify original full native results and preserve tested APK
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,shutil,sys
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          sys.path.insert(0,'tools')
+          from package_r7 import validate_windows_evidence
+          source=os.environ['R73_SOURCE_SHA']
+          a=Path('restored/android/evidence');w=Path('restored/windows/evidence')
+          assert (a/'COMMIT.txt').read_text().strip()==source
+          log=(a/'android-runtime.log').read_text()
+          assert 'BUILD SUCCESSFUL' in log and 'Finished 167 tests' in log
+          cases=[]
+          for p in (a/'androidTest-results').rglob('*.xml'):
+              cases.extend(ET.parse(p).getroot().iter('testcase'))
+          assert len(cases)==167,len(cases)
+          assert all(t.find('failure') is None and t.find('error') is None and t.find('skipped') is None for t in cases)
+          def count(name):return sum(t.get('classname','').endswith(name) for t in cases)
+          assert count('R73ChartUiTest')==19 and count('R73ControlsUiTest')==19 and count('R7ReleaseUiTest')==6
+          windows=json.loads((w/'WINDOWS_RESULT.json').read_text());validate_windows_evidence(windows,source)
+          e=Path('evidence');shutil.copytree(a,e,dirs_exist_ok=True);shutil.copytree(w,e,dirs_exist_ok=True)
+          original=Path('recovered/app-debug.apk');original.parent.mkdir();shutil.copy2('restored/android/app-debug.apk',original)
+          result=dict(commit=source,tests=167,failures=0,r7_tests=6,r73_chart_tests=19,r73_controls_tests=19,
+              excluded_legacy_suite='V108RepairTest: retired V10.8/TwelveData protocol',
+              full_suite_run_id=int(os.environ['R73_FULL_RUN']),full_suite_result='167 passed, 0 failed, 0 skipped',
+              collection_recovery='Original full suite passed; optional post-test adb logcat exited 255 before export. Original tested APK retained byte-for-byte.',
+              tested_apk_sha256=hashlib.sha256(original.read_bytes()).hexdigest(),
+              screenshot_recovery_run_id=int(os.environ['GITHUB_RUN_ID']),screenshot_recovery_tests=0)
+          (e/'ANDROID_RESULT.json').write_text(json.dumps(result,indent=2))
+          print('ORIGINAL_FULL_SUITE_VERIFIED',result)
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Prepare supplemental screenshot collection
+        run: |
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/r73-cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/r73-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+          cat > "$RUNNER_TEMP/r73-collect.sh" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          gradle --no-daemon :app:assembleDebugAndroidTest
+          # Install the exact APK that already passed all 167 tests, not a rebuilt application.
+          adb install -r recovered/app-debug.apk
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          adb shell am instrument -w -r -e class com.openai.fxm1.R73ChartUiTest,com.openai.fxm1.R7ReleaseUiTest com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner | tee evidence/screenshot-recovery.log
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          log=Path('evidence/screenshot-recovery.log').read_text()
+          assert re.search(r'OK \(25 tests\)',log),log
+          assert 'FAILURES!!!' not in log and 'INSTRUMENTATION_FAILED' not in log
+          result=Path('evidence/ANDROID_RESULT.json')
+          proof=json.loads(result.read_text());proof['screenshot_recovery_tests']=25
+          result.write_text(json.dumps(proof,indent=2))
+          PY
+          mkdir -p evidence/ui
+          copied=false
+          for attempt in 1 2 3; do
+            if timeout 45s adb pull /sdcard/Download/ec1-qa evidence/ui; then copied=true;break;fi
+            timeout 10s adb reconnect || true
+          done
+          test "$copied" = true
+          timeout 15s adb logcat -d > evidence/screenshot-recovery-logcat.txt 2>&1 || true
+          SH
+      - name: Capture chart evidence from the exact tested APK
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash "$RUNNER_TEMP/r73-collect.sh"
+      - name: Package unchanged tested source and binary
+        run: |
+          mkdir -p app/build/outputs/apk/debug
+          cp recovered/app-debug.apk app/build/outputs/apk/debug/app-debug.apk
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$signer" verify --print-certs recovered/app-debug.apk > evidence/apk-signature.txt
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          result=json.loads(Path('evidence/ANDROID_RESULT.json').read_text())
+          assert hashlib.sha256(Path('app/build/outputs/apk/debug/app-debug.apk').read_bytes()).hexdigest()==result['tested_apk_sha256']
+          report=Path('docs/verification/R73_NATIVE_COLLECTION.md')
+          report.write_text('# Native evidence collection recovery\n\n'+json.dumps(result,indent=2)+'\n\nSupplemental instrumentation output:\n\n```text\n'+Path('evidence/screenshot-recovery.log').read_text()+'\n```\n')
+          PY
+          git diff --exit-code HEAD
+          python tools/package_r7.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R73-RECOVERED-${{ env.R73_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
+      - name: Export verified deliverable and evidence
+        if: always()
+        env:
+          EXPORT_DIR: ${{ runner.temp }}/r73-recovered-export
+          EVIDENCE_BRANCH: qa/r73-evidence-recovery-${{ github.run_id }}
+        run: |
+          mkdir -p "$EXPORT_DIR"
+          python - <<'PY'
+          import os,shutil
+          from pathlib import Path
+          export=Path(os.environ['EXPORT_DIR'])
+          allowed={'.png','.json','.log','.txt','.xml'}
+          for p in Path('evidence').rglob('*'):
+              if p.is_file() and p.suffix in allowed and 'package_r73' not in p.parts:
+                  target=export/'verification'/p.relative_to('evidence');target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(p,target)
+          for name in ('FXM1_R7_3_FULL.zip','R7_PACKAGE_SHA256.txt'):
+              p=Path('evidence')/name
+              if p.is_file():shutil.copy2(p,export/name)
+          (export/'SOURCE_COMMIT.txt').write_text(os.environ['R73_SOURCE_SHA']+'\n')
+          PY
+          git switch --orphan "$EVIDENCE_BRANCH"
+          cp -r "$EXPORT_DIR"/. .
+          git add SOURCE_COMMIT.txt verification
+          for path in FXM1_R7_3_FULL.zip R7_PACKAGE_SHA256.txt; do
+            if test -e "$path"; then git add -- "$path"; fi
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'R7.3 exact tested APK and recovered native chart evidence'
+          git push origin HEAD:"refs/heads/$EVIDENCE_BRANCH"
