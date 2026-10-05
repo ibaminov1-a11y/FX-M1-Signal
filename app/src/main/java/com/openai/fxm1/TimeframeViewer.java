@@ -180,13 +180,14 @@ final class TimeframeViewer {
         boolean unavailable=!state.optBoolean("available",true)||(forecast!=null&&!forecast.optBoolean("available",true));
         if(unavailable)return owner+"\nПрогноз недоступен: "+state.optString("reason",forecast==null?"Ожидаем данные":forecast.optString("reason","Ожидаем данные"));
         JSONArray rows=forecast==null?null:forecast.optJSONArray("scenarios");JSONObject first=rows==null?null:rows.optJSONObject(0);
-        String title=first==null?"WAIT · нет ясной структуры":first.optString("title")+" · "+ScenarioUi.stage(first.optString("stage"));
+        JSONObject pattern=PatternChartModel.fromSnapshot(state).selected(forecast==null?"":forecast.optString("selected_pattern_id"));
+        String title=pattern!=null?pattern.optString("title")+" · "+PatternChartModel.stage(pattern.optString("geometry_state")):first==null?"WAIT · нет ясной структуры":first.optString("title")+" · "+ScenarioUi.stage(first.optString("stage"));
         double data=state.optDouble("data_asof",forecast==null?0:forecast.optDouble("data_asof",0));
         JSONObject live=state.optJSONObject("live_bar");if(data<=0&&live!=null)data=live.optDouble("time",0);
         double analysis=state.optDouble("analysis_time",forecast==null?0:forecast.optDouble("analysis_time",0));
         return owner+"\n"+(state.optBoolean("client_offline")?"КЭШ · ":forecast!=null&&forecast.optBoolean("stale")?"УСТАРЕЛО · ":"LIVE · ")+title
             +"\nДанные "+timestamp(data)+" · расчёт "+timestamp(analysis)
-            +"\nДалее: "+(first==null?"ожидаем структуру":first.optString("next_event",first.optString("reason")));
+            +"\nДалее: "+(first==null?(pattern==null?"ожидаем структуру":pattern.optString("reason")):first.optString("next_event",first.optString("reason")));
     }
     private boolean tradeIsStale(){
         JSONObject f=trade.optJSONObject("forecast");

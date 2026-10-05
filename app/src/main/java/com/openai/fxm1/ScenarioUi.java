@@ -68,6 +68,8 @@ public final class ScenarioUi {
         if(f==null||f.optInt("map_version")<2)return "КАРТА: ожидаем профиль / данные Bridge";
         if(f.optBoolean("stale"))return "ПОСЛЕДНЯЯ КАРТА · данные устарели, вход запрещён";
         if("TIED".equals(f.optString("selection_status")))return "Равнозначные гипотезы — предпочтение не определено";
+        JSONObject p=PatternChartModel.fromForecast(f).selected(f.optString("selected_pattern_id"));
+        if(p!=null)return p.optString("title")+" · "+PatternChartModel.stage(p.optString("geometry_state"))+" · вход отдельно";
         JSONArray rows=f.optJSONArray("scenarios");
         if(f.optInt("map_version")>=3){
             JSONObject s=rows==null?null:rows.optJSONObject(0);
@@ -234,9 +236,20 @@ public final class ScenarioUi {
         button(a,row,"СВЕЧИ",()->chart.setChartMode("CANDLES"));
         button(a,row,"ПРОГНОЗ",()->chart.showPriceForecast(true));
         button(a,row,"СЦЕНАРИИ",()->chart.showPriceForecast(false));
+        button(a,row,"ФИГУРЫ",()->choosePattern(a,chart));
+        button(a,row,"ВСЯ ФИГУРА",()->{if(!chart.fitSelectedPattern()){Toast.makeText(a,"Нужны более ранние свечи: загружаем историю. Нажмите «ВСЯ ФИГУРА» после загрузки.",Toast.LENGTH_LONG).show();older(a,chart);}});
+        button(a,row,"ПОДРОБНО",()->new AlertDialog.Builder(a).setTitle("Разметка · не разрешение на сделку").setMessage(chart.patternDetails()).setPositiveButton("ЗАКРЫТЬ",null).show());
         Button branches=button(a,row,"ВЕТКИ",()->choose(a,chart));branches.setTag("scenario_branches");
         if(!archive){Button history=button(a,row,"ЕЩЁ ИСТОРИЯ",()->older(a,chart));history.setTag("scenario_history");Button archiveButton=button(a,row,"АРХИВ ВХОДА",()->archiveList(a,null));archiveButton.setTag("scenario_archive");}
         return pinned;
+    }
+    private static void choosePattern(Activity a,SparklineView chart){
+        JSONArray choices=chart.patternChoices();if(choices.length()==0){Toast.makeText(a,"Подходящие фигуры пока не найдены",Toast.LENGTH_LONG).show();return;}
+        String[] labels=new String[choices.length()];for(int i=0;i<labels.length;i++){JSONObject p=choices.optJSONObject(i);
+            labels[i]=p.optString("title")+" · "+PatternChartModel.stage(p.optString("geometry_state"));}
+        new AlertDialog.Builder(a).setTitle("Фигуры выбранного периода").setItems(labels,(dialog,index)->{
+            chart.selectPattern(choices.optJSONObject(index).optString("view_id"));
+        }).setNegativeButton("ЗАКРЫТЬ",null).show();
     }
     private static void updateControls(SparklineView chart){
         if(!(chart.getParent() instanceof ViewGroup))return;ViewGroup parent=(ViewGroup)chart.getParent();
@@ -317,6 +330,7 @@ public final class ScenarioUi {
             forecast.put("chart_broker_symbol",instrument.optString("name",symbol));
         }
         if(!state.optString("market_scope").isEmpty())forecast.put("chart_scope",state.optString("market_scope"));
+        if(!state.optString("market_history_generation").isEmpty())forecast.put("chart_history_clock",state.optString("market_history_generation"));
         if(config!=null&&!config.optString("mode").isEmpty())forecast.put("chart_mode",config.optString("mode"));
         if(state.has("client_offline"))forecast.put("client_offline",state.optBoolean("client_offline"));
         if(state.optDouble("snapshot_age",0)>10||(state.has("quote_fresh")&&!state.optBoolean("quote_fresh")))forecast.put("stale",true);

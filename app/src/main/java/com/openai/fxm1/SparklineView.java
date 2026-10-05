@@ -23,28 +23,29 @@ public class SparklineView extends View {
     private ChartDisplayState transientDisplay=new ChartDisplayState();
     private float downX,downY,lastX;
     private ScaleGestureDetector scale;
+    private String viewportPreference="";
     public SparklineView(Context c){super(c);init(c);}
     public SparklineView(Context c,AttributeSet a){super(c,a);init(c);}
     public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);init(c);}
     private void init(Context c){
         chartPrefs=c.getApplicationContext().getSharedPreferences("fxm1_chart_v1",Context.MODE_PRIVATE);
         setClickable(true);scale=new ScaleGestureDetector(c,new ScaleGestureDetector.SimpleOnScaleGestureListener(){
-            public boolean onScale(ScaleGestureDetector d){viewport.zoom(d.getScaleFactor());invalidate();return true;}
+            public boolean onScale(ScaleGestureDetector d){viewport.zoom(d.getScaleFactor());saveViewport();invalidate();return true;}
         });
     }
     public void setSignal(String ignored){}
     public void setValues(List<Double> ignored){}
-    public void setMarketIdentity(String key){if(!identity.equals(key)){identity=key;viewport.clear();selected.clear();customSelection=false;}}
+    public void setMarketIdentity(String key){if(!identity.equals(key)){identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();}}
     public String marketIdentity(){return identity;}
-    public void panHistory(int bars){viewport.pan(bars);updateDescription();invalidate();}
+    public void panHistory(int bars){viewport.pan(bars);saveViewport();updateDescription();invalidate();}
     public long historyRightTime(){return viewport.edge();}
     public long oldestTime(){return viewport.oldest();}
     public boolean isFollowingLive(){return viewport.live();}
     public boolean isUnverifiedMarket(){return forecast.optBoolean("chart_read_only");}
-    public void goLive(){viewport.follow();updateDescription();invalidate();}
-    public void zoomHistory(double factor){viewport.zoom(factor);invalidate();}
+    public void goLive(){viewport.follow();saveViewport();updateDescription();invalidate();}
+    public void zoomHistory(double factor){viewport.zoom(factor);saveViewport();invalidate();}
     public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
-    public void setArchive(boolean value){archive=value;updateDescription();invalidate();}
+    public void setArchive(boolean value){if(archive!=value){archive=value;viewportPreference="";restoreViewport();}updateDescription();invalidate();}
     public void showPriceForecast(boolean ignored){setChartMode(ChartDisplayState.PATTERNS);}
     private String displayScope(){return archive?"archive|"+identity:identity;}
     private ChartDisplayState displayState(){return identity.isEmpty()?transientDisplay:ChartDisplayState.load(chartPrefs,displayScope());}
@@ -53,20 +54,64 @@ public class SparklineView extends View {
         if(!ChartDisplayState.PATTERNS.equals(value)&&!ChartDisplayState.CANDLES.equals(value))return;
         ChartDisplayState state=displayState();state.mode=value;saveDisplay(state);updateDescription();invalidate();
     }
-    public JSONArray scenarioChoices(){JSONArray r=forecast.optJSONArray("scenarios");return r==null?new JSONArray():r;}
+    private void saveViewport(){
+        ChartDisplayState state=displayState();JSONObject snap=viewport.snapshotState();
+        state.visibleBars=snap.optInt("visibleBars",36);state.followingLive=snap.optBoolean("followingLive",true);
+        state.rightEdgeTime=snap.optLong("rightEdgeTime");state.manualViewport=true;saveDisplay(state);viewportPreference=snap.toString();
+    }
+    private void restoreViewport(){
+        ChartDisplayState state=displayState();try{JSONObject snap=new JSONObject().put("visibleBars",state.visibleBars).put("followingLive",state.followingLive).put("rightEdgeTime",state.rightEdgeTime);
+            if(!snap.toString().equals(viewportPreference)){viewport.restoreState(snap);viewportPreference=snap.toString();}}
+        catch(JSONException e){throw new IllegalStateException(e);}
+    }
+    public JSONObject viewportState(){restoreViewport();return viewport.snapshotState();}
+    public JSONArray displayedBars(){restoreViewport();return viewport.window();}
+    public JSONArray patternChoices(){return PatternChartModel.fromForecast(forecast).choices();}
+    public void selectPattern(String id){ChartDisplayState state=displayState();state.selectedPatternId=id==null?"":id;state.selectedScenarioIds.clear();
+        state.mode=ChartDisplayState.PATTERNS;selected.clear();customSelection=false;saveDisplay(state);updateDescription();invalidate();}
+    public boolean fitSelectedPattern(){
+        JSONObject f=displayedForecast();JSONObject p=PatternChartModel.fromForecast(f).selected(f.optString("selected_pattern_id"));
+        if(p==null)return false;boolean complete=viewport.oldest()>0&&viewport.oldest()<=p.optLong("start_at");
+        viewport.fitRange(p.optLong("start_at"),p.optLong("end_at"));saveViewport();updateDescription();invalidate();return complete;
+    }
+    public String patternDetails(){JSONObject f=displayedForecast();PatternChartModel m=PatternChartModel.fromForecast(f);
+        String id=f.optString("selected_pattern_id");StringBuilder text=new StringBuilder(m.description(id));
+        JSONObject p=m.selected(id);if(p!=null){JSONArray b=m.routes(p.optString("view_id"));
+            for(int i=0;i<b.length();i++){JSONObject v=b.optJSONObject(i);text.append("\n\n").append(v.optString("title")).append(" · ").append(ScenarioUi.stage(v.optString("stage")))
+                .append("\n").append(v.optString("next_event"));JSONObject outcome=v.optJSONObject("display_outcome");
+                if(outcome!=null)text.append("\n").append(outcome.optString("reason"));}}
+        return text.toString();
+    }
+    public JSONArray scenarioChoices(){
+        if(forecast.has("pattern_chart")){
+            PatternChartModel m=PatternChartModel.fromForecast(forecast);ChartDisplayState state=displayState();
+            JSONObject p=m.selected(state.selectedPatternId.isEmpty()?forecast.optString("selected_pattern_id"):state.selectedPatternId);
+            return p==null?new JSONArray():m.routes(p.optString("view_id"));}
+        JSONArray r=forecast.optJSONArray("scenarios");return r==null?new JSONArray():r;
+    }
     public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;ChartDisplayState state=displayState();state.mode=ChartDisplayState.PATTERNS;state.selectedScenarioIds.clear();state.selectedScenarioIds.addAll(ids);saveDisplay(state);updateDescription();invalidate();}
     private static String key(JSONObject s,int i){return s.optString("scenario_id",s.optString("name",""+i));}
     public JSONObject displayedForecast(){
         try{
-            ChartDisplayState state=displayState();
-            if(!state.selectedScenarioIds.isEmpty()){selected.clear();selected.addAll(state.selectedScenarioIds);customSelection=true;}
-            JSONObject f=new JSONObject(forecast.toString());JSONArray all=scenarioChoices(),out=new JSONArray();
-            for(int i=0;i<all.length();i++){JSONObject s=all.optJSONObject(i);if(s==null)continue;
-                if(out.length()<2&&(customSelection?selected.contains(key(s,i)):i<2))out.put(s);
+            restoreViewport();ChartDisplayState state=displayState();
+            selected.clear();selected.addAll(state.selectedScenarioIds);customSelection=!selected.isEmpty();
+            JSONObject f=new JSONObject(forecast.toString());
+            f.put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",false).put("chart_display_mode",state.mode);
+            String chosen=state.selectedPatternId.isEmpty()?f.optString("selected_pattern_id"):state.selectedPatternId;
+            f.put("selected_pattern_id",chosen);
+            PatternChartModel model=PatternChartModel.fromForecast(f);JSONObject pattern=model.selected(chosen);
+            JSONArray all=scenarioChoices(),out=new JSONArray();
+            if(f.has("pattern_chart")&&ChartDisplayState.PATTERNS.equals(state.mode)){
+                if(pattern!=null){f.put("selected_pattern_id",pattern.optString("view_id"));all=model.routes(pattern.optString("view_id"));
+                    if(!Arrays.asList("DETECTED").contains(pattern.optString("geometry_state")))all=new JSONArray();}
+                else all=new JSONArray();
             }
-            // A new structural identity does not inherit an unrelated old selection.
-            if(customSelection&&out.length()==0&&all.length()>0){customSelection=false;for(int i=0;i<Math.min(2,all.length());i++)out.put(all.get(i));}
-            f.put("scenarios",out).put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",false).put("chart_display_mode",state.mode);
+            for(int i=0;i<all.length();i++){
+                JSONObject branch=all.optJSONObject(i);if(branch==null)continue;
+                if(Arrays.asList("FAILED","EXPIRED","TARGET_REACHED").contains(branch.optString("status")))continue;
+                if(out.length()<2&&(customSelection?selected.contains(key(branch,i)):true))out.put(branch);
+            }
+            f.put("scenarios",out);
             if(!viewport.live()||ChartDisplayState.CANDLES.equals(state.mode))f.put("scenarios",new JSONArray());
             return f;
         }catch(Exception e){return new JSONObject();}
@@ -80,7 +125,7 @@ public class SparklineView extends View {
     public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String path,JSONObject lb,JSONArray ls){setMarket(b,l,p,s,path,lb,ls,null);}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String path,JSONObject lb,JSONArray ls,JSONObject f){
         if(f!=null&&f.optBoolean("chart_read_only")&&(b==null||b.length()==0))viewport.clear();
-        viewport.merge(b);positions=p==null?new JSONArray():p;structure=s==null?new JSONArray():s;
+        viewport.merge(b);restoreViewport();positions=p==null?new JSONArray():p;structure=s==null?new JSONArray():s;
         liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;updateDescription();invalidate();
     }
     @Override public boolean onTouchEvent(MotionEvent e){
@@ -103,7 +148,7 @@ public class SparklineView extends View {
     }
     @Override public boolean performClick(){super.performClick();return true;}
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);JSONArray bars=viewport.window();JSONObject f=displayedForecast(),forming=viewport.live()?liveBar:null;
+        super.onDraw(c);JSONObject f=displayedForecast();JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
         if(!ChartViewport.validBar(forming)||(bars.length()>0&&forming.optLong("time")<=bars.optJSONObject(bars.length()-1).optLong("time")))forming=null;
         if(bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
         if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
@@ -130,7 +175,9 @@ public class SparklineView extends View {
         text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("client_offline")?" КЭШ: телефон потерял связь с Bridge. Последние полученные гипотезы; AUTO может продолжать работу самостоятельно.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");
         text.append(" Серый пунктир — подготовка до подтверждения входа. Цвет — условный путь к целям после подтверждения, не факт сделки. Цвет обозначает ветку, а не наклон отрезка. Старые ветки без этапов сохраняют исходный цвет.");
         if("TIED".equals(f.optString("selection_status")))text.append(" Равнозначные гипотезы — предпочтение не определено.");
-        if(!hasScenarioMap(f))text.append(" WAIT — нет ясного сценария.");
+        PatternChartModel model=PatternChartModel.fromForecast(f);
+        if(f.has("pattern_chart"))text.append(" ").append(model.description(f.optString("selected_pattern_id")));
+        else if(!hasScenarioMap(f))text.append(" WAIT — нет ясного сценария.");
         JSONObject entries=f.optJSONObject("entry_levels");
         if(entries!=null&&f.optInt("map_version")<3)for(String side:new String[]{"BUY","SELL"}){
             JSONObject level=entries.optJSONObject(side);if(level==null)continue;

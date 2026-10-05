@@ -106,6 +106,8 @@ final class ScenarioMapRenderer {
         // The trading chart is a structural Scenario Map. The independent analogue
         // price forecast is retained by Bridge for research/evaluation, but it must
         // never paint a synthetic future path on the live trading chart.
+        PatternChartModel patternModel=PatternChartModel.fromForecast(f);
+        JSONObject pattern=patternModel.selected(f.optString("selected_pattern_id"));
         int routeCount=routes==null?0:Math.min(2,routes.length());
         top=(unverified?86:Math.max(55,routeCount*16+24+(tied?14:0)))*d;bottom=h-(historical||unverified?42:76)*d;
         for(int i=0;i<bars.length();i++){JSONObject b=bars.optJSONObject(i);if(b!=null){bound(b.optDouble("low"));bound(b.optDouble("high"));}}
@@ -141,7 +143,7 @@ final class ScenarioMapRenderer {
         split=futurePanel?left+(right-left)*.48f:right;
         if(!unverified){
         if(historical){text(clientOffline?"ИСТОРИЯ · КЭШ · НЕТ СВЯЗИ":"ИСТОРИЯ · LIVE продолжает работу отдельно",left,18*d,MUTED,10);}
-        else if(routeCount==0)text(plain?"СВЕЧИ MT5":valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
+        else if(routeCount==0)text(plain?"СВЕЧИ MT5":pattern!=null?PatternChartModel.stage(pattern.optString("geometry_state"))+" · вход отдельно":valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
             String name=ScenarioUi.role(r,i);
@@ -162,16 +164,18 @@ final class ScenarioMapRenderer {
         }
         if(futurePanel)line(split,top,split,bottom,0xff756b89,.8f,true);
         int count=bars.length()+(live==null?0:1);float step=(split-left-8*d)/Math.max(1,count);
+        JSONArray chartBars=new JSONArray();for(int i=0;i<bars.length();i++)chartBars.put(bars.optJSONObject(i));if(live!=null)chartBars.put(live);
+        ChartTransform transform=new ChartTransform(chartBars,new RectF(left,top,split-8*d,bottom),low,high,d);
         HashMap<Long,Float> xs=new HashMap<>();
         long first=bars.length()>0?bars.optJSONObject(0).optLong("time"):live.optLong("time"),last=bars.length()>0?bars.optJSONObject(bars.length()-1).optLong("time"):first;
         long interval=bars.length()>1?Math.max(1,last-bars.optJSONObject(bars.length()-2).optLong("time")):300;
         for(int i=0;i<bars.length();i++){
             JSONObject b=bars.optJSONObject(i);if(b==null)continue;
-            float xx=left+step*(i+.5f);xs.put(b.optLong("time"),xx);candle(b,xx,step*.30f);
+            float xx=transform.x(b.optLong("time"));xs.put(b.optLong("time"),xx);candle(b,xx,step*.30f);
         }
-        if(live!=null){float xx=left+step*(count-.5f);xs.put(live.optLong("time"),xx);candle(live,xx,step*.30f);}
+        if(live!=null){float xx=transform.x(live.optLong("time"));xs.put(live.optLong("time"),xx);candle(live,xx,step*.30f);}
         float previousX=Float.NaN,previousY=0;
-        if(!unverified&&structure!=null)for(int i=0;i<structure.length();i++){
+        if(pattern==null&&!unverified&&structure!=null)for(int i=0;i<structure.length();i++){
             JSONObject s=structure.optJSONObject(i);if(s==null)continue;Float xx=xs.get(s.optLong("time"));double v=s.optDouble("price");if(xx==null||v<low||v>high)continue;
             float yy=y(v);if(!Float.isNaN(previousX))line(previousX,previousY,xx,yy,0xff914dff,1f,false);
             p.setColor(0xff914dff);c.drawCircle(xx,yy,2.5f*d,p);
@@ -179,7 +183,7 @@ final class ScenarioMapRenderer {
         }
         // Provisional structure describes already observed current-bar extremes,
         // not future route nodes. Hide it when browsing old candles.
-        if(!historical&&!unverified&&live!=null&&liveStructure!=null){
+        if(pattern==null&&!historical&&!unverified&&live!=null&&liveStructure!=null){
             float prevX=Float.NaN,prevY=0;
             for(int i=0;i<liveStructure.length();i++){
                 JSONObject s=liveStructure.optJSONObject(i);if(s==null)continue;
@@ -194,7 +198,7 @@ final class ScenarioMapRenderer {
                 prevX=xx;prevY=yy;
             }
         }
-        if(routes!=null&&v3){
+        if(pattern==null&&routes!=null&&v3){
             Set<String> drawn=new HashSet<>();
             for(int i=0;i<routeCount;i++){
                 JSONObject s=routes.optJSONObject(i),pat=s==null?null:s.optJSONObject("pattern");if(pat==null||!drawn.add(pat.optString("pattern_id")))continue;
@@ -208,6 +212,7 @@ final class ScenarioMapRenderer {
                 }
             }
         }
+        if(pattern!=null)PatternOverlayRenderer.draw(c,patternModel,transform,pattern.optString("view_id"));
         if(unverified){
             java.text.SimpleDateFormat format=new java.text.SimpleDateFormat("dd.MM HH:mm",Locale.US);format.setTimeZone(TimeZone.getTimeZone("UTC"));
             text(format.format(new Date(first*1000))+" — "+format.format(new Date((live==null?last:live.optLong("time"))*1000)),left,h-24*d,MUTED,9);
@@ -220,7 +225,7 @@ final class ScenarioMapRenderer {
         if(levels!=null){
             for(String side:new String[]{"BUY","SELL"}){JSONObject l=levels.optJSONObject(side);if(l!=null)level(l.optDouble("trigger"),side+" "+price(l.optDouble("trigger")),0xff879bb4);}
         }
-        if(valid){
+        if(valid&&pattern==null){
             level(f.optDouble("support"),"Поддержка "+price(f.optDouble("support")),0xff789e8d);
             level(f.optDouble("resistance"),"Сопротивление "+price(f.optDouble("resistance")),0xffae7785);
         }

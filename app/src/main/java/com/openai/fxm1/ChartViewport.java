@@ -8,7 +8,7 @@ final class ChartViewport {
     private boolean live=true;
     private long edge=Long.MAX_VALUE;
     private int visible=36;
-    void clear(){history.clear();live=true;edge=Long.MAX_VALUE;}
+    void clear(){history.clear();live=true;edge=Long.MAX_VALUE;visible=36;}
     static boolean validBar(JSONObject b){
         if(b==null||b.optLong("time",0)<=0)return false;
         double o=b.optDouble("open",Double.NaN),c=b.optDouble("close",Double.NaN),
@@ -28,7 +28,18 @@ final class ChartViewport {
         int index=Collections.binarySearch(keys,old);if(index<0)index=-index-2;
         int next=Math.max(0,Math.min(keys.size()-1,index-count));edge=keys.get(next);live=false;
     }
-    void zoom(double scale){if(Double.isFinite(scale)&&scale>0)visible=(int)Math.max(12,Math.min(240,Math.round(visible/scale)));}
+    void zoom(double scale){if(Double.isFinite(scale)&&scale>0)visible=(int)Math.max(12,Math.min(5000,Math.round(visible/scale)));}
+    void fitRange(long first,long last){
+        if(history.isEmpty()||first<=0||last<first)return;
+        Long start=history.floorKey(first);if(start==null)start=history.firstKey();
+        Long end=history.ceilingKey(last);if(end==null)end=history.lastKey();
+        visible=Math.max(12,history.subMap(start,true,end,true).size()+2);
+        visible=Math.min(5000,visible);live=end.equals(history.lastKey());edge=live?Long.MAX_VALUE:end;
+    }
+    JSONObject snapshotState(){try{return new JSONObject().put("visibleBars",visible).put("followingLive",live).put("rightEdgeTime",live?0:edge);}
+        catch(JSONException e){throw new IllegalStateException(e);}}
+    void restoreState(JSONObject s){if(s==null)return;visible=Math.max(12,Math.min(5000,s.optInt("visibleBars",36)));
+        live=s.optBoolean("followingLive",true);long saved=s.optLong("rightEdgeTime",0);edge=live||saved<=0?Long.MAX_VALUE:saved;if(saved<=0)live=true;}
     boolean live(){return live;}void follow(){live=true;edge=Long.MAX_VALUE;}
     long edge(){return history.isEmpty()?0:live?history.lastKey():edge;}
     long oldest(){return history.isEmpty()?0:history.firstKey();}
