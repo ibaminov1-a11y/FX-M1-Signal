@@ -1,3 +1,4 @@
+# signed candidate sync
 name: R7.3.1 Scenario Map graph fix
 on:
   push:
