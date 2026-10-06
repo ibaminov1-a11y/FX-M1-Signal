@@ -1,0 +1,40 @@
+name: R741 UI source import
+on:
+  push:
+    branches: [fix/r741-page-scroll-20261006]
+    paths: [.ci/r741-ui.patch]
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify unchanged base and UI-only diff before applying
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import subprocess,hashlib
+          from pathlib import Path
+          base={'app/build.gradle':'422623d6218be93233ac9bf64cfb89bd5db52cce','app/src/main/java/com/openai/fxm1/MainActivity.java':'b17c916b2bff6086d1adb071dc8951d8af369cdc','app/src/main/java/com/openai/fxm1/SparklineView.java':'eb5e8e3ffb7b766c36d5e99e2224497b13d1b4d5'}
+          for p,h in base.items():assert subprocess.check_output(['git','hash-object',p],text=True).strip()==h
+          patch=Path('.ci/r741-ui.patch')
+          assert hashlib.sha256(patch.read_bytes()).hexdigest()=='736fb37f585064305edf9bd6a38cbd8f34342a80b197dd7a684f75be8edf7419'
+          subprocess.run(['git','apply','--unidiff-zero','--check',str(patch)],check=True)
+          subprocess.run(['git','apply','--unidiff-zero','--index',str(patch)],check=True)
+          assert set(subprocess.check_output(['git','diff','--cached','--name-only'],text=True).splitlines())==set(base)
+          subprocess.run(['git','diff','--cached','--check'],check=True)
+          PY
+          git rm .ci/r741-ui.patch
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix(r741): reuse chart drawing and one state per page update'
+          test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:"$GITHUB_REF"
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: R741-SOURCE-COMMIT
+          path: evidence/
