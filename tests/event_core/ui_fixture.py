@@ -43,6 +43,14 @@ def reset():
     global freeze_until,broker,r54_refresh_config,r56_config
     clear_read_hold()
     with engine.lock:
+        # This endpoint creates an independent TEST session. Android tests reset
+        # their fixed client IDs/sequence too. Production restarts intentionally
+        # preserve this durable inbox; never expose this reset in EventCore.
+        inbox=app.config['command_inbox']
+        with inbox.lock,inbox._db() as db:
+            for table in ('inbox','order_seen','inhibits'):
+                db.execute('DELETE FROM '+table)
+            inbox._inhibit.clear()
         broker=normal_broker;engine.broker=broker
         r54_refresh_config={}
         r56_config={};engine.observers=ForecastObservers()
