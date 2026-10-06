@@ -10,7 +10,7 @@ concurrency:
   group: r74-acceptance-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 env:
-  R74_SOURCE_SHA: c1676d95e117c3c0e5668cef78354ff265bb79b1
+  R74_SOURCE_SHA: 5f6f47f303c337bfd57acec9958cb5ed910d375f
 jobs:
   python:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r74-acceptance-20261006'
