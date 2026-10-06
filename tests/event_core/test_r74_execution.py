@@ -46,6 +46,25 @@ class StableExecutionTests(unittest.TestCase):
         for d in (.5,1.,.6,.7,1.04):self.tick(self.high-d*self.a)
         self.assertEqual(len(self.b.sent),2,self.e.execution)
         self.assertTrue(all(p.side==-1 for p in self.b.sent))
+    def test_addition_plan_displays_direction_and_original_target(self):
+        self.enter()
+        state=self.tick(self.low+.5*self.a)
+        setup=state['forecast']['execution_setup']
+        self.assertEqual(setup.get('side'),1,'Addition direction missing from executable plan')
+        self.assertEqual(setup.get('target1'),self.e.campaign['forecast_at_entry']['entry_target1'])
+    def test_expired_unfilled_addition_can_observe_a_new_sequence(self):
+        from event_core.model import Blocked
+        self.enter()
+        self.b.preflight=lambda *args:(_ for _ in ()).throw(Blocked('Transient margin limit'))
+        for d in (.5,1.,.6,.7,1.04):self.tick(self.low+d*self.a)
+        self.assertEqual(len(self.b.sent),1)
+        self.assertTrue(self.e.compute.continuation.emitted)
+        self.now[0]+=5
+        self.b.preflight=lambda *args:None
+        self.tick(self.low+1.04*self.a)
+        self.assertFalse(self.e.compute.continuation.emitted,'Expired unfilled addition left the observer permanently consumed')
+        for d in (1.2,1.3,.85,.95,1.34):self.tick(self.low+d*self.a)
+        self.assertEqual(len(self.b.sent),2,self.e.execution)
     def test_no_averaging_on_adverse_movement(self):
         self.enter()
         for d in (.1,.05,-.05):self.tick(self.low+d*self.a)

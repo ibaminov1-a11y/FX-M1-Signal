@@ -130,6 +130,11 @@ class ScenarioCore:
                   if fast else self.continuation.observe(campaign,source,q,now,a,self.config.mode))
         stable_add=bool(self.stable and campaign and source)
         if stable_add:
+            # A rejected/expired add must require new observations, not remain consumed forever.
+            pending_add=any(s.get('addition') and s.get('entry_ready') and s['status'] not in TERMINAL
+                and s.get('event_id') not in self.consumed and s.get('parent_scenario_id')==campaign.get('scenario_id')
+                for s in self.scenarios.values())
+            if self.continuation.emitted and not pending_add:self.continuation.reset()
             # A managed rebound keeps its campaign direction; old trend alone cannot reset additions.
             addition=self.continuation.observe(campaign,source,q,now,a,self.config.mode) if self.config.dynamic_adds else None
         if addition:
@@ -197,7 +202,7 @@ class ScenarioCore:
             forecast['plan_model']=StablePlans.VERSION
             forecast['fixed_plans']=[copy.deepcopy(p) for p in self.stable.plans.values() if p['status'] not in TERMINAL]
             if stable_add:
-                plan=dict(self.continuation.status(),engine='STABLE_ADDITION',mode=self.config.mode,timeframe=self.config.timeframe,addition=True,trigger=self.continuation.peak,invalidation=campaign['invalidation'])
+                plan=dict(self.continuation.status(),engine='STABLE_ADDITION',mode=self.config.mode,timeframe=self.config.timeframe,addition=True,side=campaign['side'],trigger=self.continuation.peak,invalidation=campaign['invalidation'],target1=campaign.get('forecast_at_entry',{}).get('entry_target1',source.get('target1')))
                 forecast['addition']=plan
             if plan and (stable_add or not preview):forecast['execution_setup']=plan
         forecast['pattern_chart']=self.pattern_catalog.update(bars,live_bar,
