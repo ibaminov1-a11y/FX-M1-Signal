@@ -26,6 +26,37 @@ class QueuedControls(unittest.TestCase):
         t=threading.Thread(target=fn);self.holder=t;t.start();self.assertTrue(ready.wait(1))
         self.addCleanup(t.join,2);self.addCleanup(done.set)
         return done
+    def test_explicit_refresh_retains_queued_control_capability(self):
+        r=self.c.get('/ec/state?refresh=1',headers=self.h)
+        self.assertEqual(r.status_code,200,r.json)
+        self.assertTrue(r.json.get('capabilities',{}).get('queued_controls'),
+                        'Full refresh drops queued-controls support from the phone snapshot')
+        self.assertIn('control_queue',r.json)
+
+    def test_busy_pause_uses_queue_after_explicit_refresh(self):
+        r=self.c.get('/ec/state?refresh=1',headers=self.h)
+        self.assertEqual(r.status_code,200,r.json)
+        # Mirror the actual Android capability negotiation; do not force the header.
+        headers={k:v for k,v in self.h.items() if k!='X-FXM1-Control'}
+        if r.json.get('capabilities',{}).get('queued_controls'):
+            headers['X-FXM1-Control']='queued-v1'
+        release=self.hold()
+        response=self.c.post('/ec/command/pause',json=self.packet(),headers=headers)
+        self.assertEqual(response.status_code,202,
+                         'After full refresh the client falls back to busy legacy control: '+str(response.json))
+        self.assertFalse(response.json['applied'])
+        self.assertTrue(self.app.config['command_inbox'].inhibited(self.p.profile_id))
+        release.set();self.holder.join(2)
+
+    def test_full_refresh_does_not_apply_a_queued_configuration(self):
+        r=self.c.post('/ec/command/configure',json=self.packet(config={'mode':'SCALP'}),headers=self.h)
+        self.assertEqual(r.status_code,202,r.json)
+        response=self.c.get('/ec/state?refresh=1',headers=self.h)
+        self.assertEqual(response.status_code,200,response.json)
+        self.assertEqual(self.p.config.mode,'NORMAL')
+        self.assertEqual(self.app.config['command_inbox'].status(r.json['command_id'])['command_status'],'QUEUED')
+        self.assertFalse(self.b.sent)
+
     def test_busy_config_is_received_not_falsely_applied(self):
         release=self.hold()
         r=self.c.post('/ec/command/configure',json=self.packet(config={'mode':'SCALP'}),headers=self.h)

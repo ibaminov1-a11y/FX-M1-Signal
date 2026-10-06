@@ -58,12 +58,16 @@ def create_app(engine,token):
     @app.errorhandler(404)
     def missing(e):return jsonify(ok=False,message='Этот старый endpoint не исполняет сделки. Нужен APK EventCore.'),404
 
-    def snap():
-        result=views.read()
-        if result is None:raise Busy('Профиль ещё не опубликован; повторите получение состояния.')
+    def control_metadata(result):
+        # All state publication paths must advertise the same control protocol.
+        # Otherwise an explicit refresh makes the phone fall back to legacy 503s.
         result.setdefault('capabilities',{})['queued_controls']=True
         result['control_queue']=app.config['command_inbox'].summary()
         return result
+    def snap():
+        result=views.read()
+        if result is None:raise Busy('Профиль ещё не опубликован; повторите получение состояния.')
+        return control_metadata(result)
     def healthy(s):return bool(s['account']) and s.get('account_age',999)<10
 
     @app.get('/ec/state')
@@ -71,7 +75,7 @@ def create_app(engine,token):
         if request.args.get('refresh')=='1':
             with admission():
                 result=engine.refresh_view();views.remember(result)
-                return jsonify(result)
+                return jsonify(control_metadata(result))
         return jsonify(snap())
 
     @app.get('/ec/forecast')
