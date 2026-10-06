@@ -1,0 +1,129 @@
+name: R741 page scroll native gate
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/r741-scroll.yml]
+permissions:
+  contents: read
+  actions: read
+env:
+  SOURCE_SHA: 9f146976c50575c78257bcb8ee1c719f2cf9cb26
+  PHASE: BASELINE
+jobs:
+  android:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r741-scroll-20261006'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-SIGNED-NATIVE-5f6f47f303c337bfd57acec9958cb5ed910d375f
+          run-id: 37433783603
+          github-token: ${{ github.token }}
+          path: previous
+      - name: Verify identity and prepare native script
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git archive --format=zip HEAD > evidence/Sources.zip
+          echo '9cb2b370b8bc1a13c49b2c7b4da87aaf39a84e96da1231ff7b1f2cfcf8a0381d  previous/FXM1_R7_4.apk' | sha256sum -c -
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+          cat > "$RUNNER_TEMP/scroll.sh" <<'SH'
+          set -euo pipefail
+          export PYTHONPATH=mt5_bridge:tests/event_core
+          python tests/event_core/export_r732_chart_fixtures.py
+          python tests/event_core/ui_fixture.py > evidence/fixture.log 2>&1 &
+          fixture=$!
+          trap 'kill "$fixture" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null
+          adb reverse tcp:8765 tcp:8765
+          gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest > evidence/build.log 2>&1
+          TEST=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          adb install -r previous/FXM1_R7_4.apk
+          adb install -r "$TEST"
+          adb shell am instrument -w -r -e class com.openai.fxm1.R741ScrollUiTest com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner > evidence/baseline.log 2>&1
+          cat evidence/baseline.log
+          for marker in REPEATED_DRAW_SERIALIZES_FORECAST PAGE_REPARSES_STATE_PER_WIDGET UNCHANGED_PLAN_TEXT_REPLACED_TWICE; do grep -q "$marker" evidence/baseline.log; done
+          grep -q 'Tests run: 4,  Failures: 3' evidence/baseline.log
+          adb pull /sdcard/Download/ec1-qa evidence/baseline-ui
+          if test "$PHASE" = FIXED; then
+            adb install -r "$APK"
+            adb shell am instrument -w -r -e class com.openai.fxm1.R741ScrollUiTest com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner > evidence/scroll-green.log 2>&1
+            cat evidence/scroll-green.log
+            grep -q 'OK (4 tests)' evidence/scroll-green.log
+            adb pull /sdcard/Download/ec1-qa evidence/scroll-ui
+            classes=$(python - <<'PY'
+          from pathlib import Path
+          print(','.join('com.openai.fxm1.'+p.stem for p in sorted(Path('app/src/androidTest/java/com/openai/fxm1').glob('*Test.java')) if p.stem!='V108RepairTest'))
+          PY
+            )
+            set +e
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class="$classes" > evidence/android.log 2>&1
+            rc=$?
+            set -e
+            cp -r app/build/outputs/androidTest-results evidence/
+            adb pull /sdcard/Download/ec1-qa evidence/ui || true
+            cp "$APK" evidence/FXM1_R7_4_1.apk
+            signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+            "$signer" verify --print-certs "$APK" > evidence/apk-signature.txt
+            grep -q '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885' evidence/apk-signature.txt
+            python - <<'PY'
+          import json,hashlib,xml.etree.ElementTree as E,subprocess
+          from pathlib import Path
+          cases=[]
+          for p in Path('evidence/androidTest-results').rglob('*.xml'):cases.extend(E.parse(p).getroot().iter('testcase'))
+          failures=[t.get('classname')+'.'+t.get('name') for t in cases if any(t.find(k) is not None for k in ('failure','error','skipped'))]
+          meta=json.loads(Path('app/build/outputs/apk/debug/output-metadata.json').read_text())
+          result=dict(source_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),tests=len(cases),failures=failures,apk_sha256=hashlib.sha256(Path('evidence/FXM1_R7_4_1.apk').read_bytes()).hexdigest(),metadata=meta)
+          Path('evidence/RESULT.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result));assert len(cases)>=213 and not failures
+          assert meta['elements'][0]['versionCode']==935
+          PY
+            exit "$rc"
+          fi
+          SH
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash "$RUNNER_TEMP/scroll.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R741-${{ env.PHASE }}-${{ env.SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
