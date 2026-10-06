@@ -95,7 +95,7 @@ def launch(paths,server_args) -> int:
 
 
 def main(argv=None):
-    parser=argparse.ArgumentParser(description='R7.3.2 ready Bridge: existing environment and state; new program only')
+    parser=argparse.ArgumentParser(description='EC1 ready Bridge: existing environment and state; new program only')
     parser.add_argument('--check',action='store_true',help='Read-only import check, no MT5 initialization')
     parser.add_argument('--diagnose',action='store_true',help='Read-only local connection diagnosis')
     parser.add_argument('--port',type=int,default=8000)
@@ -107,7 +107,7 @@ def main(argv=None):
         sys.path.insert(0,str(paths.program_root));from bridge_startup import network_report
         print(json.dumps(dict(environment=report,network=network_report(paths.state_dir,args.port)),indent=2));return 0
     require_stopped(paths)
-    print('R7.3.2 READY: '+json.dumps(report,sort_keys=True),flush=True)
+    print(str(report.get('build','EC1'))+' READY: '+json.dumps(report,sort_keys=True),flush=True)
     if args.check:return 0
     return launch(paths,['--port',str(args.port),*extra])
 
