@@ -586,7 +586,9 @@ public class MainActivity extends Activity {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    private void setTradingControlsOffline() {
+    private void setTradingControlsOffline() { setTradingControlsOffline(EventClient.state()); }
+
+    private void setTradingControlsOffline(JSONObject snapshot) {
         serverConnected = false;
         mt5Connected = false;
         demoAccount = false;
@@ -605,7 +607,7 @@ public class MainActivity extends Activity {
         renderPositionsMoneyCard(cached.getInt("mt5_positions_snapshot",0),Double.longBitsToDouble(cached.getLong("mt5_floating_bits",Double.doubleToLongBits(0))),currency);
         lastMt5Bid = Double.NaN;
         lastMt5Ask = Double.NaN;
-        updatePriceComparison();
+        updatePriceComparison(snapshot);
         closeAllButton.setEnabled(false);
 
         // Phone-side connectivity is NOT authority to change Bridge trading state.
@@ -659,7 +661,9 @@ public class MainActivity extends Activity {
         if(journalMessage!=null)addJournal(journalMessage);
     }
 
-    private void restoreTradingSnapshotFromPrefs() {
+    private void restoreTradingSnapshotFromPrefs() { restoreTradingSnapshotFromPrefs(EventClient.state()); }
+
+    private void restoreTradingSnapshotFromPrefs(JSONObject authoritativeState) {
         if(autoTradingSwitch!=null)autoTradingSwitch.setText(TradeSettings.autoTitle());
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         String savedUrl = p.getString("server_url", "").trim();
@@ -674,7 +678,7 @@ public class MainActivity extends Activity {
         int positions = p.getInt("mt5_positions_snapshot", 0);
         double floating = Double.longBitsToDouble(p.getLong("mt5_floating_bits", Double.doubleToLongBits(0.0)));
 
-        JSONObject authoritativeState=EventClient.state(),authoritativeCfg=authoritativeState.optJSONObject("config");
+        JSONObject authoritativeCfg=authoritativeState.optJSONObject("config");
         for(Spinner control:new Spinner[]{symbolSpinner,entryTimeframeSpinner,signalModeSpinner,riskSpinner})if(control!=null)control.setEnabled(true);
         if(maxPositionsSpinner!=null)maxPositionsSpinner.setEnabled(true);
         JSONObject chosen=authoritativeState.optJSONObject("pending_config");if(chosen==null)chosen=authoritativeCfg;
@@ -708,7 +712,7 @@ public class MainActivity extends Activity {
             autoTradingSwitch.setEnabled(pendingControl.isEmpty());
             suppressAutoSwitch = true;
             boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
-            JSONObject bridgeState = EventClient.state();
+            JSONObject bridgeState = authoritativeState;
             boolean emergency = p.getBoolean("v108_emergency_latched", false) || bridgeState.optBoolean("emergency", false);
             boolean paused = bridgeState.optBoolean("paused", true);
             boolean bridgeAuto = bridgeState.optBoolean("auto", false) && !paused && !emergency;
@@ -730,7 +734,7 @@ public class MainActivity extends Activity {
             }
             suppressAutoSwitch = false;
         } else {
-            setTradingControlsOffline();
+            setTradingControlsOffline(authoritativeState);
         }
         if(!pendingControl.isEmpty()){autoTradingSwitch.setEnabled(false);closeAllButton.setEnabled(false);}
     }
@@ -759,9 +763,10 @@ public class MainActivity extends Activity {
     }
     private void onLotChanged(){onProfileChanged();}
 
-    private void restoreSparklineFromPrefs(String signal) {
+    private void restoreSparklineFromPrefs(String signal) { restoreSparklineFromPrefs(signal,EventClient.state()); }
+
+    private void restoreSparklineFromPrefs(String signal,JSONObject s) {
         if(sparklineView==null)return;
-        JSONObject s=EventClient.state();
         ScenarioUi.updateLive(sparklineView,s);
         sparklineView.setSignal(signal);
     }
@@ -1185,8 +1190,10 @@ public class MainActivity extends Activity {
         return "AUTO выключен; новые входы и добавления не отправляются";
     }
 
-    private void refreshSmartUi() {
-        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);JSONObject s=EventClient.state(),cfg=s.optJSONObject("config");
+    private void refreshSmartUi() { refreshSmartUi(EventClient.state()); }
+
+    private void refreshSmartUi(JSONObject s) {
+        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);JSONObject cfg=s.optJSONObject("config");
         p.edit().putInt("ec_limit",0).putString("maxpos_label","По риску").apply();
         String accountLabel=s.optJSONObject("account")==null?targetTradeMode():s.optJSONObject("account").optString("type",targetTradeMode());
         if(smartStatusText!=null)smartStatusText.setText((s.optBoolean("client_offline")?"КЭШ · состояние Bridge не подтверждено\n":"")+"Режим: "+(cfg==null?EventClient.mode():cfg.optString("mode"))+" · счёт: "+accountLabel+"\nИсточник: MT5\n"+
@@ -1420,9 +1427,11 @@ public class MainActivity extends Activity {
 
     private void syncUiFromBackgroundService() {
         ((LiveScrollView)findViewById(R.id.rootLayout)).beginLiveUpdate();
+        // One detached state per repaint; commands always read their own fresh state.
+        JSONObject currentState=EventClient.state();
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         updateMarketStatusUi();
-        restoreTradingSnapshotFromPrefs();
+        restoreTradingSnapshotFromPrefs(currentState);
         updateLegacyFrameNote();
         String bridgeJournal=p.getString("ec_journal_snapshot","");
         if(!bridgeJournal.isEmpty()){
@@ -1455,7 +1464,7 @@ public class MainActivity extends Activity {
         String selectedSymbol = (String) symbolSpinner.getSelectedItem();
         String selectedTf = selectedEntryTimeframe();
 
-        JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
+        JSONObject currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
         boolean offline=currentState.optBoolean("client_offline",false);
         String signal = p.getString("state_signal", "WAIT");
         String context = p.getString("state_context", "");
@@ -1500,32 +1509,34 @@ public class MainActivity extends Activity {
         confidenceText.setTextColor(offline?C_MUTED:mapSide>0?C_GREEN:mapSide<0?C_RED:C_PURPLE);
         if (qualityBarView != null) qualityBarView.setVisibility(View.GONE);
         updateSignalAgeText(signal, since, updated);
-        restoreSparklineFromPrefs(offline?"WAIT":signal);
+        restoreSparklineFromPrefs(offline?"WAIT":signal,currentState);
 
         String campaignSummary=EventClient.campaignSummary(currentState);
+        String levelValue;
         if(!campaignSummary.isEmpty()){
             String next;
             if("WAIT".equals(signal)){
                 double trigger=currentDecision==null?Double.NaN:currentDecision.optDouble("trigger",Double.NaN);
-                next="\n\nНОВЫЙ СИГНАЛ: WAIT"+(Double.isFinite(trigger)&&trigger>0?" · Trigger "+fmt(trigger):"");
+                next="\n\nНОВЫЙ СИГНАЛ: WAIT"+(Double.isFinite(trigger)&&trigger>0?" · Trigger "+EventClient.price(currentState,trigger):"");
             }else{
-                next="\n\nНОВОЕ ПОДТВЕРЖДЕНИЕ: "+signal+" · Entry "+fmt(entry)+" · SL "+fmt(sl);
+                next="\n\nНОВОЕ ПОДТВЕРЖДЕНИЕ: "+signal+" · Entry "+EventClient.price(currentState,entry)+" · SL "+EventClient.price(currentState,sl);
             }
-            levelsText.setText(campaignSummary+next);
+            levelValue=campaignSummary+next;
         }else if ("WAIT".equals(signal)) {
             double trigger=currentDecision==null?Double.NaN:currentDecision.optDouble("trigger",Double.NaN);
-            levelsText.setText("Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+fmt(trigger):"") + "\nSL: —\nTP1: —\nTP2: —");
+            levelValue="Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+EventClient.price(currentState,trigger):"") + "\nSL: —\nTP1: —\nTP2: —";
         } else {
-            levelsText.setText(
-                    "Entry: " + fmt(entry) +
-                    "\nSL: " + fmt(sl) +
+            levelValue=
+                    "Entry: " + EventClient.price(currentState,entry) +
+                    "\nSL: " + EventClient.price(currentState,sl) +
                     "\nКласс: "+(currentDecision==null?"—":currentDecision.optString("entry_class","CONFIRMED"))+
-                    "\nВыход: структура и защита кампании"
-            );
+                    "\nВыход: структура и защита кампании";
         }
         String scenarioLevels=ScenarioUi.levels(currentState);
-        if(!scenarioLevels.isEmpty())levelsText.setText(scenarioLevels);
-        else if(offline)levelsText.setText("КЭШ · последняя полученная информация\n"+levelsText.getText());
+        if(!scenarioLevels.isEmpty())levelValue=scenarioLevels;
+        else if(offline)levelValue="КЭШ · последняя полученная информация\n"+levelValue;
+        // Do not install an intermediate fallback and then remeasure the same final plan.
+        levelsText.setText(levelValue);
         contextText.setText(offline?"КЭШ · нет связи с Bridge\n"+context:context);
         String executionRequirement=ScenarioUi.executionRequirement(currentState);
         JSONObject actualConfig=currentState.optJSONObject("config");
@@ -1533,10 +1544,10 @@ public class MainActivity extends Activity {
         if (whyWaitText != null) whyWaitText.setText((executionRequirement.isEmpty()?"":executionRequirement+"\n")
             +(offline?"СОХРАНЁННЫЙ СИГНАЛ: ":"WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
         if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));
-        refreshSmartUi();
+        refreshSmartUi(currentState);
 
         lastApiPrice = entry;
-        updatePriceComparison();
+        updatePriceComparison(currentState);
     }
 
     private void scheduleNext(long delayMs) {
@@ -1921,9 +1932,11 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void updatePriceComparison() {
-        JSONObject s=EventClient.state(),q=s.optJSONObject("quote"),cfg=s.optJSONObject("config"),rs=s.optJSONObject("risk");
-        String bid=q==null?"—":fmt(q.optDouble("bid",Double.NaN));String ask=q==null?"—":fmt(q.optDouble("ask",Double.NaN));
+    private void updatePriceComparison() { updatePriceComparison(EventClient.state()); }
+
+    private void updatePriceComparison(JSONObject s) {
+        JSONObject q=s.optJSONObject("quote"),cfg=s.optJSONObject("config"),rs=s.optJSONObject("risk");
+        String bid=q==null?"—":EventClient.price(s,q.optDouble("bid",Double.NaN));String ask=q==null?"—":EventClient.price(s,q.optDouble("ask",Double.NaN));
         priceCompareText.setText("MT5 Bid/Ask: "+bid+" / "+ask+"\nИсточник анализа и исполнения: MT5"+
             "\nБаза расчёта риска (отдельно от баланса): "+(rs==null?"—":money(rs.optDouble("base",Double.NaN),"USD"))+
             "\nЛимит риска кампании при текущей настройке: "+(rs==null?"—":money(rs.optDouble("campaign_budget",Double.NaN),"USD")));

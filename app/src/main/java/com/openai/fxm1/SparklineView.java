@@ -24,6 +24,13 @@ public class SparklineView extends View {
     private float downX,downY,lastX;
     private ScaleGestureDetector scale;
     private String viewportPreference="";
+    private String preferenceScope="",preferenceKey="",preferenceValue;
+    private ChartDisplayState loadedDisplay;
+    private JSONObject preparedDisplay;
+    private Picture preparedPicture;
+    private int pictureWidth,pictureHeight;
+    private void dropPrepared(){preparedDisplay=null;preparedPicture=null;}
+
     public SparklineView(Context c){super(c);init(c);}
     public SparklineView(Context c,AttributeSet a){super(c,a);init(c);}
     public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);init(c);}
@@ -41,7 +48,7 @@ public class SparklineView extends View {
         // both surfaces; ordinary frame switches/recreation still restore it.
         boolean domainTransition=!identity.isEmpty()&&identity.contains("|CHART|")!=key.contains("|CHART|");
         if(domainTransition)resetDomainViewport();
-        identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
+        identity=key;dropPrepared();viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
         if(domainTransition)resetDomainViewport();
     }}
     private void resetDomainViewport(){
@@ -56,12 +63,25 @@ public class SparklineView extends View {
     public boolean isUnverifiedMarket(){return forecast.optBoolean("chart_read_only");}
     public void goLive(){viewport.follow();saveViewport();updateDescription();invalidate();}
     public void zoomHistory(double factor){viewport.zoom(factor);saveViewport();invalidate();}
-    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
-    public void setArchive(boolean value){if(archive!=value){archive=value;viewportPreference="";restoreViewport();}updateDescription();invalidate();}
+    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);dropPrepared();invalidate();}
+    public void setArchive(boolean value){if(archive!=value){archive=value;dropPrepared();viewportPreference="";restoreViewport();}updateDescription();invalidate();}
     public void showPriceForecast(boolean ignored){setChartMode(ChartDisplayState.PATTERNS);}
     private String displayScope(){return archive?"archive|"+identity:identity;}
-    private ChartDisplayState displayState(){return identity.isEmpty()?transientDisplay:ChartDisplayState.load(chartPrefs,displayScope());}
-    private void saveDisplay(ChartDisplayState state){if(identity.isEmpty())transientDisplay=state;else state.save(chartPrefs,displayScope());}
+    private ChartDisplayState displayState(){
+        if(identity.isEmpty())return transientDisplay;
+        String scope=displayScope();
+        if(!scope.equals(preferenceScope)){
+            preferenceScope=scope;preferenceKey=ChartDisplayState.key(scope);
+            preferenceValue=null;loadedDisplay=null;dropPrepared();
+        }
+        String value=chartPrefs.getString(preferenceKey,"{}");
+        // Other live/full-screen surfaces can change this scope's UI preferences.
+        if(loadedDisplay==null||!value.equals(preferenceValue)){
+            loadedDisplay=ChartDisplayState.load(chartPrefs,scope);preferenceValue=value;dropPrepared();
+        }
+        return loadedDisplay;
+    }
+    private void saveDisplay(ChartDisplayState state){dropPrepared();if(identity.isEmpty())transientDisplay=state;else state.save(chartPrefs,displayScope());}
     public void setChartMode(String value){
         if(!ChartDisplayState.PATTERNS.equals(value)&&!ChartDisplayState.CANDLES.equals(value))return;
         ChartDisplayState state=displayState();state.mode=value;saveDisplay(state);updateDescription();invalidate();
@@ -73,7 +93,7 @@ public class SparklineView extends View {
     }
     private void restoreViewport(){
         ChartDisplayState state=displayState();try{JSONObject snap=new JSONObject().put("visibleBars",state.visibleBars).put("followingLive",state.followingLive).put("rightEdgeTime",state.rightEdgeTime);
-            if(!snap.toString().equals(viewportPreference)){viewport.restoreState(snap);viewportPreference=snap.toString();}}
+            if(!snap.toString().equals(viewportPreference)){viewport.restoreState(snap);viewportPreference=snap.toString();dropPrepared();}}
         catch(JSONException e){throw new IllegalStateException(e);}
     }
     public JSONObject viewportState(){restoreViewport();return viewport.snapshotState();}
@@ -109,6 +129,12 @@ public class SparklineView extends View {
     public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;ChartDisplayState state=displayState();state.mode=ChartDisplayState.PATTERNS;state.selectedScenarioIds.clear();state.selectedScenarioIds.addAll(ids);saveDisplay(state);updateDescription();invalidate();}
     private static String key(JSONObject s,int i){return s.optString("scenario_id",s.optString("name",""+i));}
     public JSONObject displayedForecast(){
+        // Callers receive a detached presentation copy, not the render cache.
+        try{return new JSONObject(preparedForecast().toString());}catch(JSONException e){return new JSONObject();}
+    }
+    private JSONObject preparedForecast(){
+        displayState(); // Detect cross-surface preference changes without reparsing unchanged JSON.
+        if(preparedDisplay!=null)return preparedDisplay;
         try{
             restoreViewport();ChartDisplayState state=displayState();
             selected.clear();selected.addAll(state.selectedScenarioIds);customSelection=!selected.isEmpty();
@@ -130,10 +156,10 @@ public class SparklineView extends View {
             }
             f.put("scenarios",out);
             if(!viewport.live()||ChartDisplayState.CANDLES.equals(state.mode))f.put("scenarios",new JSONArray());
-            return f;
-        }catch(Exception e){return new JSONObject();}
+            preparedDisplay=f;return f;
+        }catch(Exception e){preparedDisplay=new JSONObject();return preparedDisplay;}
     }
-    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(displayedForecast()));}
+    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(preparedForecast()));}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p){
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
         setMarket(b,l,p,d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
@@ -143,7 +169,7 @@ public class SparklineView extends View {
     public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String path,JSONObject lb,JSONArray ls,JSONObject f){
         if(f!=null&&f.optBoolean("chart_read_only")&&(b==null||b.length()==0))viewport.clear();
         viewport.merge(b);restoreViewport();positions=p==null?new JSONArray():p;structure=s==null?new JSONArray():s;
-        liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;updateDescription();invalidate();
+        liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;dropPrepared();updateDescription();invalidate();
     }
     @Override public boolean onTouchEvent(MotionEvent e){
         scale.onTouchEvent(e);
@@ -164,8 +190,23 @@ public class SparklineView extends View {
         }return true;
     }
     @Override public boolean performClick(){super.performClick();return true;}
+    @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){
+        super.onSizeChanged(w,h,oldw,oldh);preparedPicture=null;
+    }
+    @Override protected void onDetachedFromWindow(){dropPrepared();super.onDetachedFromWindow();}
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);JSONObject f=displayedForecast();JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
+        super.onDraw(c);JSONObject f=preparedForecast();
+        if(getWidth()<=0||getHeight()<=0)return;
+        if(preparedPicture==null||pictureWidth!=getWidth()||pictureHeight!=getHeight()){
+            Picture picture=new Picture();Canvas recorded=picture.beginRecording(getWidth(),getHeight());
+            try{drawChart(recorded,f);}finally{picture.endRecording();}
+            preparedPicture=picture;pictureWidth=getWidth();pictureHeight=getHeight();
+        }
+        // Parent scrolling reuses vector commands. New data/viewport/size rebuilds them.
+        c.drawPicture(preparedPicture);
+    }
+    private void drawChart(Canvas c,JSONObject f){
+        JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
         if(!ChartViewport.validBar(forming)||(bars.length()>0&&forming.optLong("time")<=bars.optJSONObject(bars.length()-1).optLong("time")))forming=null;
         if(bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
         if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
