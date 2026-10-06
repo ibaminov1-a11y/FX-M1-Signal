@@ -61,6 +61,8 @@ def create_app(engine,token):
     def snap():
         result=views.read()
         if result is None:raise Busy('Профиль ещё не опубликован; повторите получение состояния.')
+        result.setdefault('capabilities',{})['queued_controls']=True
+        result['control_queue']=app.config['command_inbox'].summary()
         return result
     def healthy(s):return bool(s['account']) and s.get('account_age',999)<10
 
@@ -186,10 +188,20 @@ def create_app(engine,token):
                 raise Blocked('Устаревшая управляющая команда отклонена')
         seen[client]=max(seq,last);engine.store.save('clients',seen)
 
+    from .command_inbox import CommandInbox
+    app.config['command_inbox']=CommandInbox(engine,sequence,views)
+
+    @app.get('/ec/commands/<command_id>')
+    def command_status(command_id):
+        return jsonify(app.config['command_inbox'].status(command_id))
+
     @app.post('/ec/command/<cmd>')
     def command(cmd):
         data=request.get_json(silent=False)
         if not isinstance(data,dict):raise Blocked('Ожидался объект команды')
+        if request.headers.get('X-FXM1-Control')=='queued-v1':
+            receipt=app.config['command_inbox'].receive(cmd,data)
+            return jsonify(receipt),200 if receipt['command_status'] in ('APPLIED','REJECTED','EXPIRED','CANCELLED') else 202
         with admission():
             sequence(data,cmd)
             result=engine.command(cmd,data);views.publish()
@@ -242,13 +254,15 @@ def main():
     logging.info('Bridge %s startup; host=%s port=%s; AUTO OFF; DEMO ONLY',BUILD,args.host,args.port)
     policy=load_clock_policy(directory)
     from .portfolio import Portfolio
-    store=Store(directory/'campaign.sqlite3');engine=Portfolio(MT5Broker(mt5,args.terminal,**policy),store)
+    store=Store(directory/'campaign.sqlite3');engine=Portfolio(MT5Broker(mt5,args.terminal,**policy),store,entry_model='STABLE_V1')
     app=create_app(engine,token)
     views=app.config['runtime_views']
     def worker():
         while True:
             try:
+                app.config['command_inbox'].drain()
                 engine.step()
+                app.config['command_inbox'].drain()
                 views.publish()
             except Exception:
                 with engine.lock:

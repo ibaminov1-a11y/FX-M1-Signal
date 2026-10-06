@@ -98,6 +98,7 @@ class Config:
     mode: str = 'NORMAL'
     engine_mode: str = 'LEGACY'
     runtime_model: str = 'COMPAT'  # Explicitly R7 in the production profile registry.
+    entry_model: str = 'LEGACY'  # R7.4 production selects STABLE_V1; older saved clients stay compatible.
     account_mode: str = 'DEMO'
     risk_pct: float = .25
     daily_loss_pct: float = 3.0
@@ -139,6 +140,7 @@ class Config:
     approved: bool = False
 
     def validate(self):
+        if self.entry_model not in ('LEGACY','STABLE_V1'):raise Blocked('Неизвестная модель входа')
         if self.runtime_model not in ('COMPAT','R7'):
             raise Blocked('Неизвестная версия торговой логики')
         if self.mode not in PROFILES or self.timeframe not in TF_SECONDS:

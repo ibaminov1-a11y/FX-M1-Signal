@@ -56,7 +56,10 @@ public final class ScenarioUi {
     }
     private static String entryStage(String value){switch(value){
         case "WAIT_CONTEXT":return "Ждём новое движение и локальный откат";
-        case "PROGRESS":return "Импульс наблюдается · ждём локальный откат";
+        case "PROGRESS":return "Наблюдаем движение · ждём достаточный импульс и откат";
+        case "WATCHING":return "План закреплён · ждём проверку зоны";
+        case "TOUCH_SEEN":return "Зона проверена · ждём возврат за уровень";
+        case "RETURN_SEEN":return "Возврат наблюдался · ждём продолжение";
         case "PULLBACK":return "Откат наблюдался · ждём возобновление и локальный пробой";
         case "MICRO":return "Возобновление наблюдается · ждём локальный пробой";
         case "CONFIRMED":return "Вход подтверждён · Bridge проверяет исполнение";
@@ -102,7 +105,9 @@ public final class ScenarioUi {
         String mode=cfg.optString("mode","NORMAL").toUpperCase(Locale.ROOT),tf=cfg.optString("timeframe","M5");
         if(f.has("timeframe")&&!tf.equals(f.optString("timeframe")))return "";
         JSONObject setup=f.optJSONObject("execution_setup");
-        if(setup==null||!"SCALP_MICRO_V1".equals(setup.optString("engine")))return "";
+        if(setup==null)return "";
+        String engine=setup.optString("engine");
+        if(!"SCALP_MICRO_V1".equals(engine)&&!"STABLE_V1".equals(engine)&&!"STABLE_ADDITION".equals(engine))return "";
         if(setup.has("timeframe")&&!tf.equals(setup.optString("timeframe")))return "";
         if(setup.has("mode")&&!mode.equalsIgnoreCase(setup.optString("mode")))return "";
         boolean offline=state.optBoolean("client_offline")||f.optBoolean("client_offline");
@@ -123,7 +128,13 @@ public final class ScenarioUi {
         int side=setup.optInt("side");
         if(Double.isFinite(trigger)&&trigger>0&&side!=0)out.append("\nПодтверждение ").append(side>0?"BUY: выше ":"SELL: ниже ").append(px(trigger));
         else out.append("\nУровень подтверждения: ещё не сформирован");
-        if(Double.isFinite(invalidation)&&invalidation>0)out.append("\nОтмена: ").append(px(invalidation));
+        if(Double.isFinite(invalidation)&&invalidation>0)out.append("\nОтмена: ").append(EventClient.price(state,invalidation));
+        double target=setup.optDouble("target1",Double.NaN);
+        if(Double.isFinite(target)&&target>0)out.append(" · Цель: ").append(EventClient.price(state,target));
+        if("STABLE_V1".equals(engine)&&setup.optDouble("expires_at",0)>0){
+            java.text.SimpleDateFormat format=new java.text.SimpleDateFormat("HH:mm",Locale.US);format.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            out.append("\nПлан до ").append(format.format(new java.util.Date((long)(setup.optDouble("expires_at")*1000)))).append(" UTC · уровни закреплены");
+        }
         return out.toString();
     }
     public static String levels(JSONObject state){

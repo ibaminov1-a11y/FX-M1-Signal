@@ -12,6 +12,7 @@ from ..model import Config, Decision, atr, ordered, pivots, direction, swing_lab
 from .structure import detect_patterns, value, FAMILIES, live_geometry_valid
 from .continuation import Continuation
 from .scalp import ScalpMicro
+from .stable_plans import StablePlans
 from ..price_forecast import PriceForecaster
 from .pattern_view import PatternCatalog, display_outcome
 from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
@@ -28,6 +29,10 @@ class ScenarioCore:
         self.pending_snapshots=[];self.events=[];self.last_forecast={}
         self.continuation=Continuation()
         self.micro=ScalpMicro(config)
+        self.stable=StablePlans(config,saved.get('stable')) if config.entry_model=='STABLE_V1' else None
+        if self.stable:
+            self.scenarios={k:v for k,v in self.scenarios.items() if not v.get('stable_plan')}
+            self.scenarios.update(self.stable.plans)
         self.price_forecaster=PriceForecaster()
         self.pattern_catalog=PatternCatalog()
         # Observation evidence is not an executable order after process restart.
@@ -37,14 +42,16 @@ class ScenarioCore:
                 s['status']='WATCHING';s['stage']='WATCHING';s['event_id']=''
                 s['reason']='Bridge перезапущен; требуется новое наблюдаемое событие'
     def state(self):
-        return dict(scenarios=copy.deepcopy(self.scenarios),known=sorted(self.known)[-8192:],consumed=sorted(self.consumed)[-4096:])
+        return dict(scenarios=copy.deepcopy(self.scenarios),known=sorted(self.known)[-8192:],consumed=sorted(self.consumed)[-4096:],stable=self.stable.state() if self.stable else None)
     def clear(self):
         self.suspend()
     def suspend(self):
         self.previous_quote=None
         self.continuation.reset()
         self.micro.reset()
+        if self.stable:self.stable.suspend()
         for s in self.scenarios.values():
+            if s.get('stable_plan'):continue
             s['entry_ready']=False
             if s['status'] not in TERMINAL and not s.get('sent') and s['stage']!='WATCHING':
                 s['status']='EXPIRED';s['stage']='EXPIRED';s['reason']='Наблюдение прервано; старый вход отменён'
@@ -53,6 +60,7 @@ class ScenarioCore:
         if not event_id:return
         selected=next((s for s in self.scenarios.values() if s.get('event_id')==event_id),None)
         self.consumed.add(event_id)
+        if self.stable:self.stable.consume(event_id)
         if selected:
             for s in self.scenarios.values():
                 if s['status']=='CONFIRMED' and s['side']==selected['side'] and abs(s['trigger']-selected['trigger'])<=selected['pattern']['atr']*.10:
@@ -63,7 +71,7 @@ class ScenarioCore:
         contexts=[direction(pivots(b)) if len(b)>12 else 0 for b in ((m15,h1) if context is None else (context,))]
         progress={'WATCHING':.10,'BREAK_SEEN':.45,'TOUCH_SEEN':.60,'RETURN_SEEN':.70,'RETEST_SEEN':.75,'CONFIRMED':1.}
         for s in rows:
-            side=s['side'];reversal=s['type'] in ('FALSE_BREAK_RETURN','STRUCTURE_REVERSAL')
+            side=s['side'];reversal=s['type'] in ('FALSE_BREAK_RETURN','STRUCTURE_REVERSAL','BOUNDARY_RECLAIM')
             alignment=sum(1 if x==side else .5 if x==0 else 0 for x in contexts)/len(contexts) if side else .5
             if reversal:alignment=max(.5,alignment)  # Old trend opposition alone cannot veto a confirmed reversal structure.
             freshness=max(0.,1-(now-s['created_at'])/max(1,s['expires_at']-s['created_at']))
@@ -104,23 +112,35 @@ class ScenarioCore:
         if prev is not None and (q.time_msc<prev.time_msc or q.time_msc-prev.time_msc>10000):
             self.suspend();prev=None
         for s in self.scenarios.values():
+            if s.get('stable_plan'):continue
             before=(s['status'],s['stage'])
             advance(s,q,prev,now,a,m1,validate_geometry=normal)
             if before!=(s['status'],s['stage']):
                 self.events.append(dict(scenario_id=s['scenario_id'],type=s['type'],side=s['side'],
                     status=s['status'],stage=s['stage'],reason=s['reason'],time=now,retirement_code=s.get('retirement_code','')))
         self.previous_quote=q
+        if self.stable:
+            event=self.stable.observe(bars,q,now,a,campaign or bool(campaign_side))
+            self.scenarios.update(self.stable.plans)
+            if event:self.events.append(dict(scenario_id=event['scenario_id'],type=event['type'],side=event['side'],status='CONFIRMED',stage='CONFIRMED',reason=event['reason'],time=now))
         source=self.scenarios.get(campaign.get('scenario_id')) if campaign else None
         r7=self.config.runtime_model=='R7'
         fast=r7 or (self.config.mode=='SCALP' and self.config.timeframe=='M1')
         addition=(self.micro.observe(self.config.symbol,bars if r7 else context or [],context if r7 else m15,q,now,a,campaign,source,campaign_side,self.config.dynamic_adds)
                   if fast else self.continuation.observe(campaign,source,q,now,a,self.config.mode))
+        stable_add=bool(self.stable and campaign and source)
+        if stable_add:
+            # A managed rebound keeps its campaign direction; old trend alone cannot reset additions.
+            addition=self.continuation.observe(campaign,source,q,now,a,self.config.mode) if self.config.dynamic_adds else None
         if addition:
+            if stable_add:
+                addition['stable_plan']=False
+                addition['expires_at']=min(addition['expires_at'],now+5)
             self.scenarios[addition['scenario_id']]=addition;self.known.add(addition['scenario_id'])
             self.events.append(dict(scenario_id=addition['scenario_id'],type=addition['type'],side=addition['side'],
                 status='CONFIRMED',stage='CONFIRMED',reason=addition['reason'],time=now))
         active=[s for s in self.scenarios.values() if s['status'] not in TERMINAL]
-        preview=self.micro.preview() if fast else None
+        preview=self.micro.preview() if fast and not stable_add else None
         if preview and not any(s['scenario_id']==preview['scenario_id'] for s in active):active.append(preview)
         selected,ranked=self._rank(active,m15,h1,now,q,a,context=None if self.config.timeframe=='M5' else context)
         if normal:
@@ -172,6 +192,14 @@ class ScenarioCore:
         if fast:
             forecast['execution_setup']=self.micro.status()
             forecast['addition']=self.micro.status() if campaign else None
+        if self.stable:
+            plan=self.stable.status(q.bid)
+            forecast['plan_model']=StablePlans.VERSION
+            forecast['fixed_plans']=[copy.deepcopy(p) for p in self.stable.plans.values() if p['status'] not in TERMINAL]
+            if stable_add:
+                plan=dict(self.continuation.status(),engine='STABLE_ADDITION',mode=self.config.mode,timeframe=self.config.timeframe,addition=True,trigger=self.continuation.peak,invalidation=campaign['invalidation'])
+                forecast['addition']=plan
+            if plan and (stable_add or not preview):forecast['execution_setup']=plan
         forecast['pattern_chart']=self.pattern_catalog.update(bars,live_bar,
             symbol=self.config.symbol,timeframe=self.config.timeframe,mode=self.config.mode,
             scope=market_scope or clock_generation,clock_generation=clock_generation,now=price_time,scenarios=self.scenarios)
@@ -198,7 +226,7 @@ class ScenarioCore:
         # keep that order and leave both SCALP paths and execution guards intact.
         execution_pool=active if self.config.mode=='NORMAL' else ranked
         ready=[s for s in execution_pool if s['entry_ready'] and s['event_id'] not in self.consumed]
-        if fast and (not r7 or self.config.mode=='SCALP'):
+        if fast and (not r7 or self.config.mode=='SCALP') and not self.stable:
             ready=[s for s in self.scenarios.values() if s.get('micro') and s['entry_ready']
                    and s['event_id'] not in self.consumed and preview is s and self.micro.stage=='CONFIRMED']
         for s in ready:
@@ -208,6 +236,10 @@ class ScenarioCore:
             forecast['entry_scenario_id']=s['scenario_id'];forecast['entry_scenario_version']=s['scenario_version']
             forecast['entry_type']=s['type']
             forecast['entry_target1']=s.get('target1')
+            if self.stable:
+                forecast['plan_expires']=s['expires_at']
+                forecast['entry_expires']=min(s['expires_at'],s.get('confirmed_at',now)+5)
+                forecast['execution_policy']='STABLE_V1'
             levels=({'kind':'trigger','price':trigger},{'kind':'invalidation','price':stop})
             return Decision('BUY' if side>0 else 'SELL','ENTRY_READY',s['title']+' — события подтверждены',
                 s['event_id'],side,stop,trigger,stop,a,q.time_msc,levels,path='SCENARIO_V2',
@@ -215,4 +247,5 @@ class ScenarioCore:
         reason=(('Равнозначные гипотезы; ' if tied else '')+routes[0]['title']+'; '+routes[0]['next_event']) if routes else forecast['reason']
         if campaign:reason=self.continuation.reason+'; '+reason
         if fast:reason=self.micro.reason.replace('SCALP M1',self.config.mode+' '+self.config.timeframe)
+        if self.stable and forecast.get('execution_setup'):reason=forecast['execution_setup'].get('reason',reason)
         return Decision(reason=reason,atr=a,path='SCENARIO_V2',structure=swing_labels(bars),forecast=forecast)

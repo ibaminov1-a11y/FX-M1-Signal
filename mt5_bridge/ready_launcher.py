@@ -1,4 +1,4 @@
-"""Ready R7.3.2 launcher: new program, existing Windows Python and trading state.
+"""Ready EC1 launcher: new program, existing Windows Python and trading state.
 
 Preflight never connects to MT5, reads the pairing token, repairs dependencies or
 creates a replacement history. Ordinary server output stays in the user's console.
@@ -17,13 +17,13 @@ class RuntimePaths:
 
 def resolve_runtime(root: Path) -> RuntimePaths:
     root=Path(root).resolve();old=root.parent/'mt5_bridge'
-    if old.resolve()==root:raise RuntimeError('Keep R7.3.2 in its separate mt5_bridge_R732 folder.')
+    if old.resolve()==root:raise RuntimeError('New program must be in its own folder beside mt5_bridge. Current folder: '+str(root))
     python=old/'.venv/Scripts/python.exe';state=old/'event_state'
     if not python.is_file():raise RuntimeError('Existing Bridge Python not found. Keep this folder next to mt5_bridge; do not delete .venv.')
     if not state.is_dir() or not (state/'campaign.sqlite3').is_file():
         raise RuntimeError('Existing trading state/history not found. No empty state was created. Keep the old mt5_bridge folder.')
     if not (state/'bridge-token.txt').is_file():raise RuntimeError('Existing pairing identity not found. No replacement token was created.')
-    if not (root/'event_core/__init__.py').is_file():raise RuntimeError('Full R7.3.2 program is missing. Extract the whole Bridge ZIP.')
+    if not (root/'event_core/__init__.py').is_file():raise RuntimeError('Full program is missing. Extract the whole Bridge ZIP.')
     return RuntimePaths(python.resolve(),root,state.resolve())
 
 

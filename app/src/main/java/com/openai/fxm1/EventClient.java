@@ -11,7 +11,7 @@ import java.util.*;
 
 /** Transport and presentation only. It cannot calculate or send a BUY/SELL order. */
 public final class EventClient {
-    public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "FORECAST":return "Прогноз / поздний вход заблокирован";case "PROBE_READY":return "Ранний probe";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
+    public static String phaseName(String phase){switch(phase){case "SEARCH":return "Поиск";case "FORECAST":return "Прогноз / поздний вход заблокирован";case "PROBE_READY":return "Ранний probe";case "PULLBACK":return "Ожидание отката";case "TRIGGER":return "Ожидание подтверждения";case "ENTRY_READY":return "Вход подтверждён";case "ENTRY_BLOCKED":return "Вход не исполнен · проверка риска";case "HOLD":return "Сопровождение";case "CANCELLED":return "Сценарий отменён";case "DATA_BLOCK":return "Нет пригодных данных";default:return phase;}}
     public static String pathName(String path){switch(path){case "SCENARIO_V2":return "Scenario Engine V2";case "COMPUTE":return "ComputeCore";case "FORECAST":return "LIVE Forecast";case "LIVE_BREAKOUT":return "Первичный LIVE-пробой";case "LATE_BLOCK":return "Поздний вход заблокирован";case "IMPULSE":return "Импульс";case "CONTINUATION":return "Продолжение";case "PULLBACK":return "Откат";case "TRIGGER":return "Триггер";default:return "Поиск";}}
     public static final String VERSION="10.9-EC1", PROTOCOL="fxm1.event.v1";
     private static Context app;
@@ -135,7 +135,9 @@ public final class EventClient {
         return "ОТКРЫТАЯ КАМПАНИЯ: "+(side>0?"BUY":side<0?"SELL":"—")+" · "+cls+
             "\nEntry MT5: "+price(state,weighted/volume)+" · "+String.format(Locale.US,"%.2f",volume)+" lot"+
             "\nSL MT5: "+slText+"\nP/L: "+String.format(Locale.US,"%+.2f USD",pl)+
-            "\nВыход: структура / защитный SL; фиксированный TP не используется";
+            ((campaign.optJSONObject("forecast_at_entry")!=null&&"STABLE_V1".equals(campaign.optJSONObject("forecast_at_entry").optString("execution_policy")))
+                ?"\nВыход: исходная цель "+price(state,campaign.optJSONObject("forecast_at_entry").optDouble("entry_target1"))+" / защитный SL / срок плана"
+                :"\nВыход: структура / защитный SL; фиксированный TP не используется");
     }
     public static JSONObject http(String method,String url,JSONObject data) throws Exception {
         return http(method,url,data,base(),prefs().getString("ec_token",""));
@@ -149,6 +151,8 @@ public final class EventClient {
         c.setRequestProperty("Authorization","Bearer "+token);
         c.setRequestProperty("Accept","application/json");
         c.setRequestProperty("X-FXM1-Client","R51");
+        if(data!=null&&"queued-v1".equals(data.optString("control_protocol"))&&target.getPath().startsWith("/ec/command/"))
+            c.setRequestProperty("X-FXM1-Control","queued-v1");
         try {
             if(data!=null){c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json; charset=UTF-8");try(OutputStream o=c.getOutputStream()){o.write(data.toString().getBytes(StandardCharsets.UTF_8));}}
             int code=c.getResponseCode();InputStream in=code<400?c.getInputStream():c.getErrorStream();
@@ -195,6 +199,11 @@ public final class EventClient {
             if("enable".equals(command)&&"ENABLE_DEMO".equals(data.optString("confirmation")))
                 data.put("allow_wait",true).put("accept_pending_profile",true).put("config",config());
             if("emergency".equals(command)||"disable".equals(command)||"pause".equals(command)||"close".equals(command)||"reset".equals(command))++commandGeneration;
+            JSONObject snapshot=state(),caps=snapshot.optJSONObject("capabilities"),account=snapshot.optJSONObject("account");
+            if((caps!=null&&caps.optBoolean("queued_controls"))&&Arrays.asList("configure","enable","play","pause","disable","close","emergency","reset").contains(command)){
+                data.put("control_protocol","queued-v1");
+                if(!data.has("account_key")&&account!=null)data.put("account_key",account.optString("key"));
+            }
             JSONObject payload=envelope(data);
             if("emergency".equals(command))payload.remove("profile_id");
             return new CommandRequest(command,base(),prefs().getString("ec_token",""),payload,commandGeneration);
@@ -235,6 +244,7 @@ public final class EventClient {
                 throw new IOException("Не удалось сохранить состояние аварийной отправки");
         }
         JSONObject result=http("POST",request.source+"/ec/command/"+request.command,new JSONObject(request.payload),request.source,request.token);
+        if(result.has("command_status"))result=awaitApplied(request,result);
         synchronized(STATE_READ_LOCK){
             // A response from an old connection or superseded command cannot update this screen or its latches.
             requireCurrentCommand(request);
@@ -255,6 +265,28 @@ public final class EventClient {
             }
         }
         return result;
+    }
+    /** Poll the original receipt; never re-send a new order/control identity. */
+    private static JSONObject awaitApplied(CommandRequest request,JSONObject response) throws Exception {
+        String id=new JSONObject(request.payload).getString("command_id");long deadline=SystemClock.elapsedRealtime()+35000;
+        while(true){
+            synchronized(STATE_READ_LOCK){requireCurrentCommand(request);}
+            if(!id.equals(response.optString("command_id")))throw new IOException("Ответ относится к другой команде; применение не подтверждено");
+            String status=response.optString("command_status");
+            if("APPLIED".equals(status)&&response.optBoolean("applied")&&response.optBoolean("ok")){
+                prefs().edit().putString("ec_command_status","APPLIED").remove("ec_command_pending_id").apply();return response;
+            }
+            if(!"QUEUED".equals(status)&&!"APPLYING".equals(status)){
+                prefs().edit().putString("ec_command_status",status).remove("ec_command_pending_id").apply();
+                throw new IOException(response.optString("message","Команда отклонена"));
+            }
+            prefs().edit().putString("ec_command_pending_id",id).putString("ec_command_status",status)
+                .putString("ec_message","Команда принята Bridge; ожидается применение. Настройки ещё не подтверждены.").apply();
+            if(SystemClock.elapsedRealtime()>deadline)throw new IOException("Команда получена, но применение пока не подтверждено. Обновите статус; не создавайте повторную заявку.");
+            Thread.sleep(250);
+            synchronized(STATE_READ_LOCK){requireCurrentCommand(request);}
+            response=http("GET",request.source+"/ec/commands/"+URLEncoder.encode(id,"UTF-8"),null,request.source,request.token);
+        }
     }
     public static JSONObject command(String cmd,JSONObject body) throws Exception{
         return sendCommand(prepareCommand(cmd,body));
@@ -405,8 +437,12 @@ public final class EventClient {
         final CommandRequest request;
         synchronized(STATE_READ_LOCK){
             requireCurrentSelection(read,selection);
-            request=prepareCommand("configure",new JSONObject().put("config",desired).put("allow_deferred",true)
-                .put("preserve_auto",explicit).put("accept_pending_profile",explicit).put("profile_id",read.profileId));
+            JSONObject body=new JSONObject().put("config",desired).put("allow_deferred",true)
+                .put("preserve_auto",explicit).put("accept_pending_profile",explicit).put("profile_id",read.profileId);
+            if(a!=null)body.put("account_key",a.optString("key"));
+            JSONObject capabilities=current.optJSONObject("capabilities");
+            if(capabilities!=null&&capabilities.optBoolean("queued_controls"))body.put("control_protocol","queued-v1");
+            request=prepareCommand("configure",body);
         }
         JSONObject result=sendCommand(request);
         requireSameSource(read);

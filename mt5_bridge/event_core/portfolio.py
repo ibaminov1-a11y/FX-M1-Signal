@@ -56,8 +56,8 @@ class ProfileBroker:
         if self.owner.broker.orders():raise Blocked('На счёте ожидается исполнение ордера; новая заявка не отправлена')
 
 class Portfolio:
-    def __init__(self,broker,store,clock=time.time):
-        self.broker=broker;self.store=store;self.clock=clock;self.lock=threading.RLock()
+    def __init__(self,broker,store,clock=time.time,entry_model=None):
+        self.broker=broker;self.store=store;self.clock=clock;self.lock=threading.RLock();self.entry_model=entry_model
         self._all_positions=[];self._positions_time=0.;self._positions_error='Позиции MT5 ещё не получены'
         self._positions_account_key=''
         self.engines={};self.meta={};self._view=contextvars.ContextVar('r7_profile_view',default=None)
@@ -84,9 +84,12 @@ class Portfolio:
         old=ps.load('engine',{})
         values=old.get('config',{}) if cfg is None else cfg
         values=dict(values,runtime_model='R7',engine_mode='SCENARIO_V2')
+        if self.entry_model:values['entry_model']=self.entry_model
         old=dict(old,config=asdict(Config(**values).validate()));ps.save('engine',old)
         e=Engine(ProfileBroker(self,meta['symbol']),ps,self.clock);e.lock=self.lock
         self.engines[ident]=e
+        inbox=self.__dict__.get('control_inbox')
+        if inbox:e.entry_inhibited=lambda ident=ident:inbox.inhibited(ident)
     def _save(self):self.store.save('r7_profiles',dict(selected=self.default_id,profiles=self.meta))
     def account_budget(self,account,cfg=None):
         # One explicit account envelope: largest configured per-campaign percent,
@@ -131,6 +134,8 @@ class Portfolio:
     def step(self):
         with self.lock:
             for ident,e in list(self.engines.items()):
+                inbox=self.__dict__.get('control_inbox')
+                if inbox:inbox.drain()
                 try:e.step()
                 except Exception:
                     e.auto=False;e.paused=True;e.recovery=True;e.save()
@@ -167,10 +172,12 @@ class Portfolio:
                 cross=target!=ident
                 e=self.engines[target]
                 values=dict(values,runtime_model='R7')
+                if self.entry_model:values['entry_model']=self.entry_model
                 permitted={f.name for f in fields(Config)}-{'approved','technical_position_fuse','max_orders_per_minute'}
                 unchanged=not (set(values)-permitted) and all(
                     symbol_key(v)==symbol_key(e.config.symbol) if k=='symbol' else getattr(e.config,k)==v
                     for k,v in values.items())
+                e._check_control_receipt(data)
                 if cross and unchanged:
                     # Merely returning to an already configured instrument must
                     # not reset observers, pause its campaign, or grant consent.

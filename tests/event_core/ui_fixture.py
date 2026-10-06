@@ -412,6 +412,7 @@ if __name__=='__main__':
         global freeze_until
         while True:
             with engine.lock:
+                app.config['command_inbox'].drain()
                 if time.time()>=freeze_until:engine.step()
             time.sleep(.2)
     threading.Thread(target=work,daemon=True).start()

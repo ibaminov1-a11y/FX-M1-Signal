@@ -269,6 +269,7 @@ class Engine:
 
     def _entry_gate(self):
         blocks=[]
+        if getattr(self,'entry_inhibited',lambda:False)():blocks.append('CONTROL_PENDING')
         if self.emergency:blocks.append('EMERGENCY')
         if self.recovery or self.store.pending():blocks.append('RECOVERY')
         if not self.auto:blocks.append('AUTO_OFF')
@@ -279,7 +280,7 @@ class Engine:
         if not self.history_ok or self.clock()-self.history_time>15:blocks.append('HISTORY_WAIT')
         if not self.risk.get('allowed',False):blocks.append('RISK_WAIT')
         if self.market_errors or not self.quote_ready:blocks.append('MARKET_WAIT')
-        labels={'EMERGENCY':'аварийная блокировка','RECOVERY':'сверка неизвестного исполнения',
+        labels={'CONTROL_PENDING':'принята остановка; ждём применения управления','EMERGENCY':'аварийная блокировка','RECOVERY':'сверка неизвестного исполнения',
             'AUTO_OFF':'AUTO выключен','PAUSE':'пауза','PROFILE_PENDING':'новый профиль ждёт завершения прежней кампании',
             'CLOSING':'ждём подтверждения закрытия MT5','RECONCILING':'сверяем объём кампании и закрытые сделки в истории MT5',
             'HISTORY_WAIT':'ожидаем историю MT5','RISK_WAIT':'проверка риска не разрешает вход',
@@ -642,6 +643,13 @@ class Engine:
         mark=q.bid if side==1 else q.ask
         if (mark-c['invalidation'])*side<=0:
             self._close_campaign('слом уровня отмены сценария','SCENARIO_INVALIDATED');return True
+        plan=c.get('forecast_at_entry',{})
+        if plan.get('execution_policy')=='STABLE_V1':
+            target=plan.get('entry_target1');expires=plan.get('plan_expires')
+            if target and (mark-float(target))*side>=0:
+                self._close_campaign('достигнута исходная целевая зона','PLAN_TARGET');return True
+            if expires and now>float(expires):
+                self._close_campaign('срок исходного плана завершён','PLAN_EXPIRED');return True
         profile=PROFILES[c['mode']]
         r=max(c.get('initial_risk',c['budget']),1e-8)
         if c['peak']>=profile.protect_at_r*r and net<c['peak']*(1-profile.giveback_fraction):
@@ -699,6 +707,8 @@ class Engine:
         return bool(set(session.split('+'))&set(self.config.allowed_sessions.split(',')))
 
     def step(self):
+        inbox=self.__dict__.get('control_inbox')
+        if inbox:inbox.drain()
         with self.lock:
             now=self.clock()
             try:
@@ -712,7 +722,7 @@ class Engine:
                     except Exception as exc:
                         self.execution='Закрытие EC1 пока не подтверждено: '+str(exc)
                 self._refresh_market(now)
-                self._refresh_observers(now)
+                if self.config.entry_model!='STABLE_V1':self._refresh_observers(now)
                 compute_decision=None
                 if not self.market_errors and self.quote_ready:
                     try:
@@ -821,7 +831,10 @@ class Engine:
                     except Blocked as exc:
                         self.store.event('ENTRY_BLOCKED',dict(event_id=d.event_id,reason=str(exc),
                             addition=bool(self.campaign),mode=self.config.mode),now)
-                        raise
+                        if self.config.entry_model=='STABLE_V1':
+                            self.execution='Вход пока не исполнен: '+str(exc)
+                            self.decision=replace(d,signal='WAIT',phase='ENTRY_BLOCKED',reason=str(exc))
+                        else:raise
             except Exception as e:
                 self._cancel_reversal('Ошибка проверки данных/исполнения: '+str(e),now)
                 self._suspend_trigger(now)
@@ -832,9 +845,13 @@ class Engine:
                 if self.bars:
                     detail+='\nПоказаны последние доступные закрытые свечи MT5; это не свежий торговый сигнал'
                 self.decision=Decision(phase='DATA_BLOCK',reason=detail)
+            if self.config.entry_model=='STABLE_V1':
+                try:self._refresh_observers(self.clock())
+                except Exception as exc:self.store.event('OBSERVER_ERROR',dict(reason=str(exc)),self.clock())
             return self.snapshot()
 
     def _entry(self,d,now):
+        if getattr(self,'entry_inhibited',lambda:False)():raise Blocked('Принята остановка; новые заявки запрещены')
         if self.pending_config:raise Blocked('Новый профиль ожидает подтверждённого завершения кампании')
         if self.emergency or self.exit_pending or self.recovery or self.store.pending():
             raise Blocked('Вход заблокирован состоянием кампании')
@@ -885,8 +902,10 @@ class Engine:
         # not merely the timestamp captured at the beginning of this engine step.
         send_now=self.clock()
         q.validate(send_now)
+        if getattr(self,'entry_inhibited',lambda:False)():raise Blocked('Принята остановка во время проверки; заявка не отправлена')
         if reversal_ok and send_now>float(self.pending_reversal['expires']):
             raise Blocked('Срок разворота истёк во время проверки исполнения')
+        if d.forecast.get('entry_expires') and send_now>float(d.forecast['entry_expires']):raise Blocked('Срок подтверждения истёк; заявка не отправлена')
         new_campaign=not self.campaign
         if new_campaign:
             self.campaign=dict(id=d.event_id,side=d.side,mode=self.config.mode,timeframe=self.config.timeframe,
@@ -956,12 +975,21 @@ class Engine:
             self.recovery=True;self.auto=False;self.paused=True
             self.execution='Результат требует сверки; повторная отправка запрещена';self.save()
 
+    def _check_control_receipt(self,data):
+        deadline=data.get('_receipt_expires',0)
+        if deadline and self.clock()>float(deadline):
+            raise Blocked('Срок отложенной команды истёк; подтвердите текущий выбор заново')
+        account=data.get('_receipt_account')
+        if deadline and account and self.account.get('key')!=account:
+            raise Blocked('Счёт изменился во время применения команды')
+
     def command(self,command,data=None):
         with self.lock:
             data=data or {};now=self.clock();key=str(data.get('command_id',''))
             if len(key)<8 or len(key)>128:raise Blocked('Нужен уникальный идентификатор команды')
             prior=self.store.command_result(key)
             if prior is not None:return prior
+            self._check_control_receipt(data)
             if command in ('emergency','pause','disable','close'):
                 self._cancel_reversal('Команда пользователя: '+command,now)
                 self._suspend_trigger(now)
@@ -1057,6 +1085,7 @@ class Engine:
                 message='REAL PILOT вооружён до перезапуска Bridge; AUTO пока выключен'
             elif command in ('enable','play'):
                 self._refresh(now)
+                self._check_control_receipt(data)
                 if self.emergency:raise Blocked('AUTO заблокирован: EMERGENCY. Выполните явную сверку DEMO')
                 if self.exit_pending and not data.get('allow_wait',False):raise Blocked('AUTO временно заблокирован: ожидается подтверждение закрытия кампании в MT5')
                 if self.store.pending():raise Blocked('AUTO временно заблокирован: ожидается подтверждение торгового запроса MT5')
@@ -1093,6 +1122,7 @@ class Engine:
                 message='AUTO '+actual+' включён · '+self._entry_gate()['reason']
             elif command=='reset':
                 self._refresh(now);self._reconcile()
+                self._check_control_receipt(data)
                 actual=self.account.get('type','DEMO');expected='RESET_REAL_FLAT' if actual=='REAL' else 'RESET_DEMO_FLAT'
                 if data.get('confirmation')!=expected:raise Blocked('Нужна явная сверка '+actual)
                 if self._owned() or self._owned_orders() or self.store.pending():raise Blocked('Есть позиции/ордера или неизвестный запрос: автоматический сброс запрещён')

@@ -1528,6 +1528,8 @@ public class MainActivity extends Activity {
         else if(offline)levelsText.setText("КЭШ · последняя полученная информация\n"+levelsText.getText());
         contextText.setText(offline?"КЭШ · нет связи с Bridge\n"+context:context);
         String executionRequirement=ScenarioUi.executionRequirement(currentState);
+        JSONObject actualConfig=currentState.optJSONObject("config");
+        if(actualConfig!=null&&"STABLE_V1".equals(actualConfig.optString("entry_model")))executionRequirement="";
         if (whyWaitText != null) whyWaitText.setText((executionRequirement.isEmpty()?"":executionRequirement+"\n")
             +(offline?"СОХРАНЁННЫЙ СИГНАЛ: ":"WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
         if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));
