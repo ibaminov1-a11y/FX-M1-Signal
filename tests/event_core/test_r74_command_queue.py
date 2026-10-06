@@ -59,6 +59,19 @@ class QueuedControls(unittest.TestCase):
         release.set();self.holder.join(2);inbox.drain()
         self.assertTrue(self.p.paused);self.assertTrue(inbox.inhibited(self.p.profile_id))
         self.assertEqual(inbox.status('r74-queue-command-1')['command_status'],'CANCELLED')
+    def test_global_emergency_receipt_keeps_identity_after_profile_switch(self):
+        body=self.packet();body.pop('profile_id')
+        original=self.p.profile_id
+        first=self.c.post('/ec/command/emergency',json=body,headers=self.h)
+        self.assertEqual(first.status_code,202,first.json)
+        self.p.command('configure',dict(command_id='independent-view-change',config={'symbol':'USD/JPY'},allow_deferred=True))
+        self.assertNotEqual(original,self.p.profile_id)
+        duplicate=self.c.post('/ec/command/emergency',json=body,headers=self.h)
+        self.assertEqual(duplicate.status_code,202,duplicate.json)
+        inbox=self.app.config['command_inbox'];inbox.drain()
+        self.assertEqual(inbox.status(body['command_id'])['command_status'],'APPLIED')
+        self.assertTrue(all(e.emergency for e in self.p.engines.values()))
+        self.assertEqual(inbox.summary()['applied'],1)
     def test_expired_config_is_not_applied(self):
         r=self.c.post('/ec/command/configure',json=self.packet(config={'mode':'SCALP'}),headers=self.h)
         self.assertEqual(r.status_code,202,r.json)

@@ -75,7 +75,7 @@ class CommandInbox:
         if not isinstance(key,str) or not 8<=len(key)<=128:raise Blocked('Нужен уникальный идентификатор команды')
         if not isinstance(client,str) or not 8<=len(client)<=128 or not isinstance(seq,int) or isinstance(seq,bool) or seq<1:
             raise Blocked('Требуется идентификатор клиента и порядок команд')
-        ident=str(data.get('profile_id') or getattr(self.engine,'profile_id',''))
+        ident='' if cmd=='emergency' else str(data.get('profile_id') or getattr(self.engine,'profile_id',''))
         if cmd!='emergency' and hasattr(self.engine,'engines') and ident not in self.engine.engines:raise Blocked('Профиль команды не найден')
         account=str(data.get('account_key',''))
         if cmd not in SAFE and not account:raise Blocked('Обновите счёт перед управлением')
@@ -126,7 +126,7 @@ class CommandInbox:
                     db.execute("UPDATE inbox SET status='APPLYING' WHERE id=?",(key,))
                 # Release receipt lock and SQLite transaction before any MT5 I/O.
                 try:
-                    if hasattr(self.engine,'select_request'):self.engine.select_request(row['profile'])
+                    if hasattr(self.engine,'select_request'):self.engine.select_request(None if cmd=='emergency' else row['profile'])
                     if cmd not in SAFE:
                         if self.engine.account.get('key')!=row['account']:raise Blocked('Счёт изменился; отложенная команда отменена')
                         actual=self.engine.broker.account()
