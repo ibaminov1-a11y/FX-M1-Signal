@@ -1,0 +1,186 @@
+diff --git a/app/build.gradle b/app/build.gradle
+index 422623d..5a735b4 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -11,2 +11,2 @@ android {
+-        versionCode 934
+-        versionName "10.9-EC1-R7.4"
++        versionCode 935
++        versionName "10.9-EC1-R7.4.1"
+diff --git a/app/src/main/java/com/openai/fxm1/MainActivity.java b/app/src/main/java/com/openai/fxm1/MainActivity.java
+index b17c916..bd7c234 100644
+--- a/app/src/main/java/com/openai/fxm1/MainActivity.java
++++ b/app/src/main/java/com/openai/fxm1/MainActivity.java
+@@ -589 +589,3 @@ public class MainActivity extends Activity {
+-    private void setTradingControlsOffline() {
++    private void setTradingControlsOffline() { setTradingControlsOffline(EventClient.state()); }
++
++    private void setTradingControlsOffline(JSONObject snapshot) {
+@@ -608 +610 @@ public class MainActivity extends Activity {
+-        updatePriceComparison();
++        updatePriceComparison(snapshot);
+@@ -662 +664,3 @@ public class MainActivity extends Activity {
+-    private void restoreTradingSnapshotFromPrefs() {
++    private void restoreTradingSnapshotFromPrefs() { restoreTradingSnapshotFromPrefs(EventClient.state()); }
++
++    private void restoreTradingSnapshotFromPrefs(JSONObject authoritativeState) {
+@@ -677 +681 @@ public class MainActivity extends Activity {
+-        JSONObject authoritativeState=EventClient.state(),authoritativeCfg=authoritativeState.optJSONObject("config");
++        JSONObject authoritativeCfg=authoritativeState.optJSONObject("config");
+@@ -711 +715 @@ public class MainActivity extends Activity {
+-            JSONObject bridgeState = EventClient.state();
++            JSONObject bridgeState = authoritativeState;
+@@ -733 +737 @@ public class MainActivity extends Activity {
+-            setTradingControlsOffline();
++            setTradingControlsOffline(authoritativeState);
+@@ -762 +766,3 @@ public class MainActivity extends Activity {
+-    private void restoreSparklineFromPrefs(String signal) {
++    private void restoreSparklineFromPrefs(String signal) { restoreSparklineFromPrefs(signal,EventClient.state()); }
++
++    private void restoreSparklineFromPrefs(String signal,JSONObject s) {
+@@ -764 +769,0 @@ public class MainActivity extends Activity {
+-        JSONObject s=EventClient.state();
+@@ -1188,2 +1193,4 @@ public class MainActivity extends Activity {
+-    private void refreshSmartUi() {
+-        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);JSONObject s=EventClient.state(),cfg=s.optJSONObject("config");
++    private void refreshSmartUi() { refreshSmartUi(EventClient.state()); }
++
++    private void refreshSmartUi(JSONObject s) {
++        SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);JSONObject cfg=s.optJSONObject("config");
+@@ -1422,0 +1430,2 @@ public class MainActivity extends Activity {
++        // One detached state per repaint; commands always read their own fresh state.
++        JSONObject currentState=EventClient.state();
+@@ -1425 +1434 @@ public class MainActivity extends Activity {
+-        restoreTradingSnapshotFromPrefs();
++        restoreTradingSnapshotFromPrefs(currentState);
+@@ -1458 +1467 @@ public class MainActivity extends Activity {
+-        JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
++        JSONObject currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
+@@ -1503 +1512 @@ public class MainActivity extends Activity {
+-        restoreSparklineFromPrefs(offline?"WAIT":signal);
++        restoreSparklineFromPrefs(offline?"WAIT":signal,currentState);
+@@ -1505,0 +1515 @@ public class MainActivity extends Activity {
++        String levelValue;
+@@ -1510 +1520 @@ public class MainActivity extends Activity {
+-                next="\n\nНОВЫЙ СИГНАЛ: WAIT"+(Double.isFinite(trigger)&&trigger>0?" · Trigger "+fmt(trigger):"");
++                next="\n\nНОВЫЙ СИГНАЛ: WAIT"+(Double.isFinite(trigger)&&trigger>0?" · Trigger "+EventClient.price(currentState,trigger):"");
+@@ -1512 +1522 @@ public class MainActivity extends Activity {
+-                next="\n\nНОВОЕ ПОДТВЕРЖДЕНИЕ: "+signal+" · Entry "+fmt(entry)+" · SL "+fmt(sl);
++                next="\n\nНОВОЕ ПОДТВЕРЖДЕНИЕ: "+signal+" · Entry "+EventClient.price(currentState,entry)+" · SL "+EventClient.price(currentState,sl);
+@@ -1514 +1524 @@ public class MainActivity extends Activity {
+-            levelsText.setText(campaignSummary+next);
++            levelValue=campaignSummary+next;
+@@ -1517 +1527 @@ public class MainActivity extends Activity {
+-            levelsText.setText("Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+fmt(trigger):"") + "\nSL: —\nTP1: —\nTP2: —");
++            levelValue="Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+EventClient.price(currentState,trigger):"") + "\nSL: —\nTP1: —\nTP2: —";
+@@ -1519,3 +1529,3 @@ public class MainActivity extends Activity {
+-            levelsText.setText(
+-                    "Entry: " + fmt(entry) +
+-                    "\nSL: " + fmt(sl) +
++            levelValue=
++                    "Entry: " + EventClient.price(currentState,entry) +
++                    "\nSL: " + EventClient.price(currentState,sl) +
+@@ -1523,2 +1533 @@ public class MainActivity extends Activity {
+-                    "\nВыход: структура и защита кампании"
+-            );
++                    "\nВыход: структура и защита кампании";
+@@ -1527,2 +1536,4 @@ public class MainActivity extends Activity {
+-        if(!scenarioLevels.isEmpty())levelsText.setText(scenarioLevels);
+-        else if(offline)levelsText.setText("КЭШ · последняя полученная информация\n"+levelsText.getText());
++        if(!scenarioLevels.isEmpty())levelValue=scenarioLevels;
++        else if(offline)levelValue="КЭШ · последняя полученная информация\n"+levelValue;
++        // Do not install an intermediate fallback and then remeasure the same final plan.
++        levelsText.setText(levelValue);
+@@ -1536 +1547 @@ public class MainActivity extends Activity {
+-        refreshSmartUi();
++        refreshSmartUi(currentState);
+@@ -1539 +1550 @@ public class MainActivity extends Activity {
+-        updatePriceComparison();
++        updatePriceComparison(currentState);
+@@ -1924,3 +1935,5 @@ public class MainActivity extends Activity {
+-    private void updatePriceComparison() {
+-        JSONObject s=EventClient.state(),q=s.optJSONObject("quote"),cfg=s.optJSONObject("config"),rs=s.optJSONObject("risk");
+-        String bid=q==null?"—":fmt(q.optDouble("bid",Double.NaN));String ask=q==null?"—":fmt(q.optDouble("ask",Double.NaN));
++    private void updatePriceComparison() { updatePriceComparison(EventClient.state()); }
++
++    private void updatePriceComparison(JSONObject s) {
++        JSONObject q=s.optJSONObject("quote"),cfg=s.optJSONObject("config"),rs=s.optJSONObject("risk");
++        String bid=q==null?"—":EventClient.price(s,q.optDouble("bid",Double.NaN));String ask=q==null?"—":EventClient.price(s,q.optDouble("ask",Double.NaN));
+diff --git a/app/src/main/java/com/openai/fxm1/SparklineView.java b/app/src/main/java/com/openai/fxm1/SparklineView.java
+index eb5e8e3..b973f38 100644
+--- a/app/src/main/java/com/openai/fxm1/SparklineView.java
++++ b/app/src/main/java/com/openai/fxm1/SparklineView.java
+@@ -26,0 +27,7 @@ public class SparklineView extends View {
++    private String preferenceScope="",preferenceKey="",preferenceValue;
++    private ChartDisplayState loadedDisplay;
++    private JSONObject preparedDisplay;
++    private Picture preparedPicture;
++    private int pictureWidth,pictureHeight;
++    private void dropPrepared(){preparedDisplay=null;preparedPicture=null;}
++
+@@ -44 +51 @@ public class SparklineView extends View {
+-        identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
++        identity=key;dropPrepared();viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
+@@ -59,2 +66,2 @@ public class SparklineView extends View {
+-    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
+-    public void setArchive(boolean value){if(archive!=value){archive=value;viewportPreference="";restoreViewport();}updateDescription();invalidate();}
++    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);dropPrepared();invalidate();}
++    public void setArchive(boolean value){if(archive!=value){archive=value;dropPrepared();viewportPreference="";restoreViewport();}updateDescription();invalidate();}
+@@ -63,2 +70,15 @@ public class SparklineView extends View {
+-    private ChartDisplayState displayState(){return identity.isEmpty()?transientDisplay:ChartDisplayState.load(chartPrefs,displayScope());}
+-    private void saveDisplay(ChartDisplayState state){if(identity.isEmpty())transientDisplay=state;else state.save(chartPrefs,displayScope());}
++    private ChartDisplayState displayState(){
++        if(identity.isEmpty())return transientDisplay;
++        String scope=displayScope();
++        if(!scope.equals(preferenceScope)){
++            preferenceScope=scope;preferenceKey=ChartDisplayState.key(scope);
++            preferenceValue=null;loadedDisplay=null;dropPrepared();
++        }
++        String value=chartPrefs.getString(preferenceKey,"{}");
++        // Other live/full-screen surfaces can change this scope's UI preferences.
++        if(loadedDisplay==null||!value.equals(preferenceValue)){
++            loadedDisplay=ChartDisplayState.load(chartPrefs,scope);preferenceValue=value;dropPrepared();
++        }
++        return loadedDisplay;
++    }
++    private void saveDisplay(ChartDisplayState state){dropPrepared();if(identity.isEmpty())transientDisplay=state;else state.save(chartPrefs,displayScope());}
+@@ -76 +96 @@ public class SparklineView extends View {
+-            if(!snap.toString().equals(viewportPreference)){viewport.restoreState(snap);viewportPreference=snap.toString();}}
++            if(!snap.toString().equals(viewportPreference)){viewport.restoreState(snap);viewportPreference=snap.toString();dropPrepared();}}
+@@ -111,0 +132,6 @@ public class SparklineView extends View {
++        // Callers receive a detached presentation copy, not the render cache.
++        try{return new JSONObject(preparedForecast().toString());}catch(JSONException e){return new JSONObject();}
++    }
++    private JSONObject preparedForecast(){
++        displayState(); // Detect cross-surface preference changes without reparsing unchanged JSON.
++        if(preparedDisplay!=null)return preparedDisplay;
+@@ -133,2 +159,2 @@ public class SparklineView extends View {
+-            return f;
+-        }catch(Exception e){return new JSONObject();}
++            preparedDisplay=f;return f;
++        }catch(Exception e){preparedDisplay=new JSONObject();return preparedDisplay;}
+@@ -136 +162 @@ public class SparklineView extends View {
+-    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(displayedForecast()));}
++    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(preparedForecast()));}
+@@ -146 +172 @@ public class SparklineView extends View {
+-        liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;updateDescription();invalidate();
++        liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;dropPrepared();updateDescription();invalidate();
+@@ -166,0 +193,4 @@ public class SparklineView extends View {
++    @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){
++        super.onSizeChanged(w,h,oldw,oldh);preparedPicture=null;
++    }
++    @Override protected void onDetachedFromWindow(){dropPrepared();super.onDetachedFromWindow();}
+@@ -168 +198,12 @@ public class SparklineView extends View {
+-        super.onDraw(c);JSONObject f=displayedForecast();JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
++        super.onDraw(c);JSONObject f=preparedForecast();
++        if(getWidth()<=0||getHeight()<=0)return;
++        if(preparedPicture==null||pictureWidth!=getWidth()||pictureHeight!=getHeight()){
++            Picture picture=new Picture();Canvas recorded=picture.beginRecording(getWidth(),getHeight());
++            try{drawChart(recorded,f);}finally{picture.endRecording();}
++            preparedPicture=picture;pictureWidth=getWidth();pictureHeight=getHeight();
++        }
++        // Parent scrolling reuses vector commands. New data/viewport/size rebuilds them.
++        c.drawPicture(preparedPicture);
++    }
++    private void drawChart(Canvas c,JSONObject f){
++        JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
