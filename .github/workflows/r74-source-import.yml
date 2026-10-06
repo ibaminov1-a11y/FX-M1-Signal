@@ -1,0 +1,56 @@
+name: R74 exact source import
+on:
+  push:
+    branches: [feature/r74-execution-20261006]
+    paths: [.ci/r74-pending.json]
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Verify and apply source only, no execution of submitted code
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python - <<'PY'
+          import base64,bz2,hashlib,json,subprocess
+          from pathlib import Path,PurePosixPath
+          envelope=json.loads(Path('.ci/r74-pending.json').read_text())
+          assert envelope['encoding']=='bz2-base64-unified-diff'
+          decoder=bz2.BZ2Decompressor()
+          data=decoder.decompress(base64.b64decode(envelope['data'],validate=True),max_length=2000001)
+          assert len(data)<=2000000 and decoder.eof and not decoder.unused_data
+          assert hashlib.sha256(data).hexdigest()==envelope['sha256']
+          data.decode('utf-8');patch=Path('evidence/REVIEWED_SOURCE.patch');patch.write_bytes(data)
+          # --stat establishes parseability, and the staged names are checked after applying.
+          subprocess.run(['git','apply','--stat',str(patch)],check=True)
+          subprocess.run(['git','apply','--check',str(patch)],check=True)
+          subprocess.run(['git','apply','--index',str(patch)],check=True)
+          names=subprocess.check_output(['git','diff','--cached','--name-only'],text=True).splitlines()
+          assert names
+          for name in names:
+              p=PurePosixPath(name)
+              assert not p.is_absolute() and '..' not in p.parts
+              assert name=='app/build.gradle' or name.startswith(('app/src/','mt5_bridge/','tests/','tools/','docs/verification/'))
+              assert p.suffix in ('.java','.py','.xml','.json','.md','.txt','.sh','.cmd','.bat','.gradle')
+              assert not any(x in ('event_state','.venv','__pycache__') for x in p.parts)
+          PY
+          git diff --cached --check
+          git rm .ci/r74-pending.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(r74): queued controls and stable prospective DEMO execution'
+          test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:"$GITHUB_REF"
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git archive --format=zip HEAD > evidence/Sources.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-IMPORTED-SOURCE-${{ github.sha }}
+          path: evidence/
