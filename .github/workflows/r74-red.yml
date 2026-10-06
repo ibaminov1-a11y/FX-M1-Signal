@@ -1,0 +1,53 @@
+name: R74 original client RED
+on:
+  push:
+    branches: [feature/r74-execution-20261006]
+    paths: [.github/workflows/r74-red.yml]
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: mkdir -p evidence; sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: |
+            set +e; gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R74ControlUiTest > evidence/red.log 2>&1; echo $? > evidence/gradle-exit.txt
+      - name: Require original defects, not compilation failure
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as E,json
+          from pathlib import Path
+          cases=[]
+          for p in Path('app/build/outputs/androidTest-results').rglob('*.xml'): cases.extend(E.parse(p).getroot().iter('testcase'))
+          assert len(cases)==4
+          failures=[t for t in cases if t.find('failure') is not None]
+          text='\n'.join(t.find('failure').text or '' for t in failures)
+          for marker in ['QUEUED_RECEIPT_IS_NOT_APPLIED','REJECTED_RECEIPT_REPORTED_SUCCESS','EMERGENCY_RECEIPT_NOT_APPLICATION','STABLE_PLAN_LEVELS_NOT_VISIBLE']:assert marker in text, text
+          Path('evidence/RED_RESULT.json').write_text(json.dumps(dict(tests=4,expected_failures=4,production_apk_released=False)))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-ORIGINAL-CLIENT-RED
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/
