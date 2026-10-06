@@ -1,0 +1,137 @@
+name: R74 signed DEMO acceptance
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/r74-acceptance.yml]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: r74-acceptance-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+env:
+  R74_SOURCE_SHA: 1babc976b1cf9c5a69625334f65baa65c1614a03
+jobs:
+  python:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r74-acceptance-20261006'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R74_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire Python regression and source-matched Bridge
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git archive --format=zip HEAD > evidence/Sources.zip
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/python.log 2>&1
+          tail -15 evidence/python.log
+          python tools/package_r74.py --source "$R74_SOURCE_SHA" --out evidence/FXM1_R7_4_Bridge.zip > evidence/PACKAGE_RESULT.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-PYTHON-PACKAGE-${{ env.R74_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
+  windows:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r74-acceptance-20261006'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+      R7_NO_PAUSE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R74_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - run: python -m pip install -r mt5_bridge/requirements_event.txt
+      - name: Windows launcher, imports, protected old state and cache
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          python tools/windows_r74_gate.py *> evidence/windows.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/windows.log
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-WINDOWS-${{ env.R74_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
+  android:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r74-acceptance-20261006'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R74_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Require original APK certificate, never export signing key
+        run: |
+          set -euo pipefail
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/public-cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/public-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: R732-SIGNED-NATIVE-CANDIDATE-814d8c50009ca68407dc366a65656d7e16252077
+          run-id: 37346562237
+          github-token: ${{ github.token }}
+          path: previous-release
+      - name: Require actual previously delivered R7.3.2 APK
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,os
+          p=Path('previous-release/FXM1_R7_3_2.apk').resolve()
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='f3e96163cd8c5b0a5f428756437db54b5cf4a1e25ee6d4c7e3912e35c605073e'
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('R74_OLD_APK='+str(p)+'\n')
+          PY
+      - name: Reproduce previous client defects, upgrade in place and full API35 suite
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_r74_native.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-SIGNED-NATIVE-${{ env.R74_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
