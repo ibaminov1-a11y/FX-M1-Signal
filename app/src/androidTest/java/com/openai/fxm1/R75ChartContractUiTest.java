@@ -43,7 +43,9 @@ public class R75ChartContractUiTest {
  @Test public void defaultFigureCannotReplaceThePinnedExecutionRoot()throws Exception {
   JSONObject s=R732PatternRendererUiTest.from(17),f=pinned(s);
   ui(()->{SparklineView v=create(s,f);JSONObject shown=v.displayedForecast();
-   assertEquals("DISPLAY_REPLACED_PINNED_ROOT","fixed-root-75",shown.optJSONArray("scenarios").optJSONObject(0).optString("scenario_id"));
+   JSONObject root=shown.optJSONArray("scenarios").optJSONObject(0);
+   assertNotNull("DISPLAY_REPLACED_PINNED_ROOT",root);
+   assertEquals("DISPLAY_REPLACED_PINNED_ROOT","fixed-root-75",root.optString("scenario_id"));
    assertEquals("EXECUTION",shown.optString("chart_plan_role"));
    assertTrue(v.getContentDescription().toString().contains("ПЛАН ИСПОЛНЕНИЯ"));
   });

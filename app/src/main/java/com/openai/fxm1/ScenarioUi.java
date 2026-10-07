@@ -81,6 +81,9 @@ public final class ScenarioUi {
         if(f==null||f.optInt("map_version")<2)return "КАРТА: ожидаем профиль / данные Bridge";
         if(f.optBoolean("stale"))return "ПОСЛЕДНЯЯ КАРТА · данные устарели, вход запрещён";
         if("TIED".equals(f.optString("selection_status")))return "Равнозначные гипотезы — предпочтение не определено";
+        JSONObject pin=f.optJSONObject("execution_plan");
+        if(pin!=null&&pin.optBoolean("available")&&!f.optBoolean("chart_forecast_rejected")&&!f.optBoolean("chart_read_only"))
+            return "ЗАКРЕПЛЁННЫЙ ПЛАН · "+(pin.optInt("side")>0?"BUY":"SELL")+" · "+pin.optString("title");
         JSONObject p=PatternChartModel.fromForecast(f).selected(f.optString("selected_pattern_id"));
         if(p!=null)return p.optString("title")+" · "+PatternChartModel.stage(p.optString("geometry_state"))+" · вход отдельно";
         JSONArray rows=f.optJSONArray("scenarios");
@@ -107,7 +110,7 @@ public final class ScenarioUi {
         JSONObject setup=f.optJSONObject("execution_setup");
         if(setup==null)return "";
         String engine=setup.optString("engine");
-        if(!"SCALP_MICRO_V1".equals(engine)&&!"STABLE_V1".equals(engine)&&!"STABLE_ADDITION".equals(engine))return "";
+        if(!"SCALP_MICRO_V1".equals(engine)&&!"STABLE_V1".equals(engine)&&!"PINNED_V1".equals(engine)&&!"STABLE_ADDITION".equals(engine))return "";
         if(setup.has("timeframe")&&!tf.equals(setup.optString("timeframe")))return "";
         if(setup.has("mode")&&!mode.equalsIgnoreCase(setup.optString("mode")))return "";
         boolean offline=state.optBoolean("client_offline")||f.optBoolean("client_offline");
@@ -131,9 +134,17 @@ public final class ScenarioUi {
         if(Double.isFinite(invalidation)&&invalidation>0)out.append("\nОтмена: ").append(EventClient.price(state,invalidation));
         double target=setup.optDouble("target1",Double.NaN);
         if(Double.isFinite(target)&&target>0)out.append(" · Цель: ").append(EventClient.price(state,target));
-        if("STABLE_V1".equals(engine)&&setup.optDouble("expires_at",0)>0){
+        if(("STABLE_V1".equals(engine)||"PINNED_V1".equals(engine))&&setup.optDouble("expires_at",0)>0){
             java.text.SimpleDateFormat format=new java.text.SimpleDateFormat("HH:mm",Locale.US);format.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
             out.append("\nПлан до ").append(format.format(new java.util.Date((long)(setup.optDouble("expires_at")*1000)))).append(" UTC · уровни закреплены");
+        }
+        JSONObject progress=state.optJSONObject("campaign_progress");
+        if(progress!=null&&"PINNED_V1".equals(cfg.optString("entry_model"))){
+            out.append("\nСерия: открыто ").append(progress.optInt("open_positions"))
+                .append(" / ").append(progress.optInt("max_positions",10))
+                .append(" · исполненных входов ").append(progress.optInt("confirmed_entries"));
+            out.append("\nСледующее событие: ").append(progress.optString("next_event","—"));
+            out.append("\nИсполнение: ").append(progress.optString("execution","—"));
         }
         return out.toString();
     }
@@ -256,6 +267,7 @@ public final class ScenarioUi {
         button(a,row,"−",()->chart.zoomHistory(.8));button(a,row,"+",()->chart.zoomHistory(1.25));
         button(a,row,"СВЕЧИ",()->chart.setChartMode("CANDLES"));
         button(a,row,"ПРОГНОЗ",()->chart.showPriceForecast(true));
+        button(a,row,"ПЛАН",()->{chart.goLive();chart.selectPattern("");});
         button(a,row,"СЦЕНАРИИ",()->chart.showPriceForecast(false));
         button(a,row,"ФИГУРЫ",()->choosePattern(a,chart));
         button(a,row,"ВСЯ ФИГУРА",()->{if(!chart.fitSelectedPattern()){Toast.makeText(a,"Нужны более ранние свечи: загружаем историю. Нажмите «ВСЯ ФИГУРА» после загрузки.",Toast.LENGTH_LONG).show();older(a,chart);}});

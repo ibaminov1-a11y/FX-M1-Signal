@@ -24,6 +24,26 @@ public class SparklineView extends View {
     private float downX,downY,lastX;
     private ScaleGestureDetector scale;
     private String viewportPreference="";
+    // A frame redraw must not serialize the whole received market snapshot.
+    // Cache only presentation; public data access remains a defensive copy.
+    private JSONObject preparedForecast;
+    private Picture recordedChart;
+    private int recordedWidth=-1,recordedHeight=-1;
+    private String preparedScope="",preparedPrefsKey="",preparedPrefsValue="";
+    private void chartChanged(){preparedForecast=null;recordedChart=null;}
+    private void refreshDisplayPreferences(){
+        String scope=displayScope();
+        if(!scope.equals(preparedScope)){
+            preparedScope=scope;preparedPrefsKey=ChartDisplayState.key(scope);preparedPrefsValue="";chartChanged();
+        }
+        String value=identity.isEmpty()?"":chartPrefs.getString(preparedPrefsKey,"{}");
+        if(!value.equals(preparedPrefsValue)){preparedPrefsValue=value;chartChanged();}
+    }
+    private JSONObject preparedForecast(){
+        refreshDisplayPreferences();
+        if(preparedForecast==null)preparedForecast=buildDisplayedForecast();
+        return preparedForecast;
+    }
     public SparklineView(Context c){super(c);init(c);}
     public SparklineView(Context c,AttributeSet a){super(c,a);init(c);}
     public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);init(c);}
@@ -41,7 +61,7 @@ public class SparklineView extends View {
         // both surfaces; ordinary frame switches/recreation still restore it.
         boolean domainTransition=!identity.isEmpty()&&identity.contains("|CHART|")!=key.contains("|CHART|");
         if(domainTransition)resetDomainViewport();
-        identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
+        chartChanged();identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
         if(domainTransition)resetDomainViewport();
     }}
     private void resetDomainViewport(){
@@ -56,7 +76,7 @@ public class SparklineView extends View {
     public boolean isUnverifiedMarket(){return forecast.optBoolean("chart_read_only");}
     public void goLive(){viewport.follow();saveViewport();updateDescription();invalidate();}
     public void zoomHistory(double factor){viewport.zoom(factor);saveViewport();invalidate();}
-    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
+    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);chartChanged();invalidate();}
     public void setArchive(boolean value){if(archive!=value){archive=value;viewportPreference="";restoreViewport();}updateDescription();invalidate();}
     public void showPriceForecast(boolean ignored){setChartMode(ChartDisplayState.PATTERNS);}
     private String displayScope(){return archive?"archive|"+identity:identity;}
@@ -67,6 +87,7 @@ public class SparklineView extends View {
         ChartDisplayState state=displayState();state.mode=value;saveDisplay(state);updateDescription();invalidate();
     }
     private void saveViewport(){
+        chartChanged();
         ChartDisplayState state=displayState();JSONObject snap=viewport.snapshotState();
         state.visibleBars=snap.optInt("visibleBars",36);state.followingLive=snap.optBoolean("followingLive",true);
         state.rightEdgeTime=snap.optLong("rightEdgeTime");state.manualViewport=true;saveDisplay(state);viewportPreference=snap.toString();
@@ -109,6 +130,10 @@ public class SparklineView extends View {
     public void selectScenarios(Set<String> ids){selected.clear();selected.addAll(ids);customSelection=true;ChartDisplayState state=displayState();state.mode=ChartDisplayState.PATTERNS;state.selectedScenarioIds.clear();state.selectedScenarioIds.addAll(ids);saveDisplay(state);updateDescription();invalidate();}
     private static String key(JSONObject s,int i){return s.optString("scenario_id",s.optString("name",""+i));}
     public JSONObject displayedForecast(){
+        try{return new JSONObject(preparedForecast().toString());}
+        catch(JSONException e){return new JSONObject();}
+    }
+    private JSONObject buildDisplayedForecast(){
         try{
             restoreViewport();ChartDisplayState state=displayState();
             selected.clear();selected.addAll(state.selectedScenarioIds);customSelection=!selected.isEmpty();
@@ -118,6 +143,21 @@ public class SparklineView extends View {
             f.put("selected_pattern_id",chosen);
             PatternChartModel model=PatternChartModel.fromForecast(f);JSONObject pattern=model.selected(chosen);
             JSONArray all=scenarioChoices(),out=new JSONArray();
+            JSONObject pin=f.optJSONObject("execution_plan");
+            boolean pinned=pin!=null&&pin.optBoolean("available")&&"PINNED_V1".equals(pin.optString("model"))
+                &&!f.optBoolean("chart_read_only")&&!f.optBoolean("chart_forecast_rejected");
+            boolean execution=pinned&&state.selectedPatternId.isEmpty()&&!customSelection;
+            if(pinned)f.put("chart_plan_role",execution?"EXECUTION":"ALTERNATIVE");
+            if(execution){
+                // The catalog remains available through patternChoices(). The default
+                // chart represents the executable root, not an unrelated auto-selected figure.
+                f.remove("pattern_chart");f.put("selected_pattern_id","");
+                JSONArray candidates=f.optJSONArray("scenarios");all=new JSONArray();
+                if(candidates!=null)for(int i=0;i<candidates.length();i++){
+                    JSONObject v=candidates.optJSONObject(i);
+                    if(v!=null&&pin.optString("plan_id").equals(v.optString("scenario_id")))all.put(v);
+                }
+            }
             if(f.has("pattern_chart")&&ChartDisplayState.PATTERNS.equals(state.mode)){
                 if(pattern!=null){f.put("selected_pattern_id",pattern.optString("view_id"));all=model.routes(pattern.optString("view_id"));
                     if(!Arrays.asList("DETECTED").contains(pattern.optString("geometry_state")))all=new JSONArray();}
@@ -133,7 +173,7 @@ public class SparklineView extends View {
             return f;
         }catch(Exception e){return new JSONObject();}
     }
-    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(displayedForecast()));}
+    private void updateDescription(){chartChanged();setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(preparedForecast()));}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p){
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
         setMarket(b,l,p,d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
@@ -165,7 +205,18 @@ public class SparklineView extends View {
     }
     @Override public boolean performClick(){super.performClick();return true;}
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);JSONObject f=displayedForecast();JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
+        super.onDraw(c);JSONObject f=preparedForecast();
+        if(getWidth()<=0||getHeight()<=0)return;
+        if(recordedChart==null||recordedWidth!=getWidth()||recordedHeight!=getHeight()){
+            recordedWidth=getWidth();recordedHeight=getHeight();Picture next=new Picture();
+            Canvas recording=next.beginRecording(recordedWidth,recordedHeight);
+            try{drawPreparedChart(recording,f);}finally{next.endRecording();}
+            recordedChart=next;
+        }
+        c.drawPicture(recordedChart);
+    }
+    private void drawPreparedChart(Canvas c,JSONObject f){
+        JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
         if(!ChartViewport.validBar(forming)||(bars.length()>0&&forming.optLong("time")<=bars.optJSONObject(bars.length()-1).optLong("time")))forming=null;
         if(bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
         if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
@@ -197,6 +248,11 @@ public class SparklineView extends View {
         if(ChartDisplayState.CANDLES.equals(f.optString("chart_display_mode")))return "Свечи MT5. Геометрия и условные маршруты скрыты."
             +(f.optBoolean("archive")?" Архивный снимок.":f.optBoolean("client_offline")?" КЭШ · нет связи с Bridge.":f.optBoolean("stale")?" Данные устарели.":" LIVE.");
         StringBuilder text=new StringBuilder("Карта сценариев. Веса модели — не вероятность успеха. Время этапов условно.");
+        JSONObject pin=f.optJSONObject("execution_plan");
+        if(pin!=null&&pin.optBoolean("available")){
+            text.append(" ").append("EXECUTION".equals(f.optString("chart_plan_role"))?"ПЛАН ИСПОЛНЕНИЯ":"ПРОСМОТР АЛЬТЕРНАТИВЫ")
+                .append(" · закреплён ").append(pin.optInt("side")>0?"BUY":"SELL").append(" · ").append(pin.optString("plan_id")).append(".");
+        }
         text.append(PriceForecastPlot.description(f));
         text.append(f.optBoolean("archive")?" Сохранённые гипотезы, не LIVE.":f.optBoolean("client_offline")?" КЭШ: телефон потерял связь с Bridge. Последние полученные гипотезы; AUTO может продолжать работу самостоятельно.":f.optBoolean("stale")?" Последние гипотезы: данные устарели, вход запрещён.":" Текущие гипотезы LIVE.");
         text.append(" Серый пунктир — подготовка до подтверждения входа. Цвет — условный путь к целям после подтверждения, не факт сделки. Цвет обозначает ветку, а не наклон отрезка. Старые ветки без этапов сохраняют исходный цвет.");

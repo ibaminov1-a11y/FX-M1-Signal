@@ -146,7 +146,8 @@ final class ScenarioMapRenderer {
         else if(routeCount==0)text(plain?"СВЕЧИ MT5":pattern!=null?PatternChartModel.stage(pattern.optString("geometry_state"))+" · вход отдельно":valid?"NO CLEAR SCENARIO · WAIT":"Карта ждёт профиль / свежие данные",left,19*d,MUTED,10);
         else for(int i=0;i<routeCount;i++){
             JSONObject r=routes.optJSONObject(i);if(r==null)continue;
-            String name=ScenarioUi.role(r,i);
+            String name="EXECUTION".equals(f.optString("chart_plan_role"))&&i==0?"ПЛАН ИСПОЛНЕНИЯ":
+                "ALTERNATIVE".equals(f.optString("chart_plan_role"))?"АЛЬТЕРНАТИВА · ТОЛЬКО ПРОСМОТР":ScenarioUi.role(r,i);
             String title=v3?r.optString("title",r.optString("type")):((i==0?"ОСНОВНОЙ ":"АЛЬТЕРНАТИВА ")+(r.optInt("side")>0?"BUY":"SELL"));
             long score=Math.round(r.optDouble("quality_score",r.optDouble("model_weight",r.optDouble("probability"))*100));
             text(name+" · "+title+" · "+score+"/100",left,(16+16*i)*d,routeColor(r,i),9.5f);

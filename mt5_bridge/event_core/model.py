@@ -140,7 +140,7 @@ class Config:
     approved: bool = False
 
     def validate(self):
-        if self.entry_model not in ('LEGACY','STABLE_V1'):raise Blocked('Неизвестная модель входа')
+        if self.entry_model not in ('LEGACY','STABLE_V1','PINNED_V1'):raise Blocked('Неизвестная модель входа')
         if self.runtime_model not in ('COMPAT','R7'):
             raise Blocked('Неизвестная версия торговой логики')
         if self.mode not in PROFILES or self.timeframe not in TF_SECONDS:

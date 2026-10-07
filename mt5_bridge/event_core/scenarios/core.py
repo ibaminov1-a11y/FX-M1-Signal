@@ -13,6 +13,7 @@ from .structure import detect_patterns, value, FAMILIES, live_geometry_valid
 from .continuation import Continuation
 from .scalp import ScalpMicro
 from .stable_plans import StablePlans
+from .commitment import PlanCommitment
 from ..price_forecast import PriceForecaster
 from .pattern_view import PatternCatalog, display_outcome
 from .lifecycle import create_scenarios, advance, remaining_path, TERMINAL, NEXT, next_requirement
@@ -29,7 +30,8 @@ class ScenarioCore:
         self.pending_snapshots=[];self.events=[];self.last_forecast={}
         self.continuation=Continuation()
         self.micro=ScalpMicro(config)
-        self.stable=StablePlans(config,saved.get('stable')) if config.entry_model=='STABLE_V1' else None
+        self.stable=StablePlans(config,saved.get('stable')) if config.entry_model in ('STABLE_V1','PINNED_V1') else None
+        self.commitment=PlanCommitment(saved.get('commitment')) if config.entry_model=='PINNED_V1' else None
         if self.stable:
             self.scenarios={k:v for k,v in self.scenarios.items() if not v.get('stable_plan')}
             self.scenarios.update(self.stable.plans)
@@ -42,7 +44,7 @@ class ScenarioCore:
                 s['status']='WATCHING';s['stage']='WATCHING';s['event_id']=''
                 s['reason']='Bridge перезапущен; требуется новое наблюдаемое событие'
     def state(self):
-        return dict(scenarios=copy.deepcopy(self.scenarios),known=sorted(self.known)[-8192:],consumed=sorted(self.consumed)[-4096:],stable=self.stable.state() if self.stable else None)
+        return dict(scenarios=copy.deepcopy(self.scenarios),known=sorted(self.known)[-8192:],consumed=sorted(self.consumed)[-4096:],stable=self.stable.state() if self.stable else None,commitment=self.commitment.state() if self.commitment else None)
     def clear(self):
         self.suspend()
     def suspend(self):
@@ -52,6 +54,9 @@ class ScenarioCore:
         if self.stable:self.stable.suspend()
         for s in self.scenarios.values():
             if s.get('stable_plan'):continue
+            if self.commitment and s['scenario_id']==self.commitment.ident and not s.get('sent') and s['status'] not in TERMINAL:
+                s.update(status='WATCHING',stage='WATCHING',event_id='',observed_events=[],entry_ready=False,reason='План сохранён; требуется новое наблюдаемое событие')
+                continue
             s['entry_ready']=False
             if s['status'] not in TERMINAL and not s.get('sent') and s['stage']!='WATCHING':
                 s['status']='EXPIRED';s['stage']='EXPIRED';s['reason']='Наблюдение прервано; старый вход отменён'
@@ -112,9 +117,15 @@ class ScenarioCore:
         if prev is not None and (q.time_msc<prev.time_msc or q.time_msc-prev.time_msc>10000):
             self.suspend();prev=None
         for s in self.scenarios.values():
+            if self.commitment and s['scenario_id']==self.commitment.ident:
+                for key in self.commitment.FIXED:
+                    if key in self.commitment.original:s[key]=copy.deepcopy(self.commitment.original[key])
             if s.get('stable_plan'):continue
             before=(s['status'],s['stage'])
-            advance(s,q,prev,now,a,m1,validate_geometry=normal)
+            if self.commitment and s['scenario_id']==self.commitment.ident and s.get('micro') and not campaign_side:
+                self._advance_pinned_micro(s,q,prev,now,a)
+            else:
+                advance(s,q,prev,now,a,m1,validate_geometry=normal)
             if before!=(s['status'],s['stage']):
                 self.events.append(dict(scenario_id=s['scenario_id'],type=s['type'],side=s['side'],
                     status=s['status'],stage=s['stage'],reason=s['reason'],time=now,retirement_code=s.get('retirement_code','')))
@@ -126,8 +137,9 @@ class ScenarioCore:
         source=self.scenarios.get(campaign.get('scenario_id')) if campaign else None
         r7=self.config.runtime_model=='R7'
         fast=r7 or (self.config.mode=='SCALP' and self.config.timeframe=='M1')
+        pinned_observation=bool(self.commitment and (self.commitment.ident or campaign_side))
         addition=(self.micro.observe(self.config.symbol,bars if r7 else context or [],context if r7 else m15,q,now,a,campaign,source,campaign_side,self.config.dynamic_adds)
-                  if fast else self.continuation.observe(campaign,source,q,now,a,self.config.mode))
+                  if fast and not pinned_observation else None if pinned_observation else self.continuation.observe(campaign,source,q,now,a,self.config.mode))
         stable_add=bool(self.stable and campaign and source)
         if stable_add:
             # A rejected/expired add must require new observations, not remain consumed forever.
@@ -145,7 +157,7 @@ class ScenarioCore:
             self.events.append(dict(scenario_id=addition['scenario_id'],type=addition['type'],side=addition['side'],
                 status='CONFIRMED',stage='CONFIRMED',reason=addition['reason'],time=now))
         active=[s for s in self.scenarios.values() if s['status'] not in TERMINAL]
-        preview=self.micro.preview() if fast and not stable_add else None
+        preview=self.micro.preview() if fast and not stable_add and not pinned_observation else None
         if preview and not any(s['scenario_id']==preview['scenario_id'] for s in active):active.append(preview)
         selected,ranked=self._rank(active,m15,h1,now,q,a,context=None if self.config.timeframe=='M5' else context)
         if normal:
@@ -155,9 +167,27 @@ class ScenarioCore:
             visible=[s for s in active if live_geometry_valid(s['pattern'],q.time_msc/1000.0)]
             selected,_=self._rank(visible,m15,h1,now,q,a,context=None if self.config.timeframe=='M5' else context)
         if preview:selected=[preview]+[s for s in selected if s['scenario_id']!=preview['scenario_id']][:3]
+        pinned=None
+        if self.commitment:
+            scope='|'.join((market_scope or clock_generation,self.config.symbol,self.config.mode,self.config.timeframe))
+            # Candidates continue to exist for audit/display. Only this selected
+            # contract, or a fresh child of its open campaign, can dispatch.
+            pool=list(ranked)
+            if self.commitment.ident:
+                root=self.scenarios.get(self.commitment.ident)
+                if root is not None and root not in pool:pool.append(root)
+            if campaign:
+                root=self.scenarios.get(campaign.get('scenario_id'))
+                if root is not None and root not in pool:pool.append(root)
+            pinned=self.commitment.select(pool,q,now,scope,campaign)
+            if pinned:
+                self.scenarios[pinned['scenario_id']]=pinned
+                if pinned not in active:active.append(pinned)
+                selected=[pinned]+[s for s in selected if s['scenario_id']!=pinned['scenario_id']][:3]
+
         tied=len(selected)>1 and int(selected[0]['quality_score']+.5)==int(selected[1]['quality_score']+.5)
-        if preview:tied=False
-        selection_status='TIED' if tied else 'PREFERRED' if selected else 'NONE'
+        if preview or pinned:tied=False
+        selection_status='PINNED' if pinned else 'TIED' if tied else 'PREFERRED' if selected else 'NONE'
         price_time=q.time_msc/1000.0
         routes=[]
         for i,s in enumerate(selected):
@@ -205,6 +235,15 @@ class ScenarioCore:
                 plan=dict(self.continuation.status(),engine='STABLE_ADDITION',mode=self.config.mode,timeframe=self.config.timeframe,addition=True,side=campaign['side'],trigger=self.continuation.peak,invalidation=campaign['invalidation'],target1=campaign.get('forecast_at_entry',{}).get('entry_target1',source.get('target1')))
                 forecast['addition']=plan
             if plan and (stable_add or not preview):forecast['execution_setup']=plan
+        if self.commitment:
+            forecast['execution_plan']=self.commitment.describe(pinned)
+            if pinned:
+                setup=dict(engine='PINNED_V1',mode=self.config.mode,timeframe=self.config.timeframe,
+                    plan_id=pinned['scenario_id'],side=pinned['side'],stage=pinned['stage'],
+                    trigger=pinned.get('micro_trigger') or pinned.get('trigger') or pinned.get('activation'),
+                    invalidation=pinned['invalidation'],target1=pinned.get('target1'),
+                    expires_at=self.commitment.original['expires_at'],reason=pinned['reason'],fixed_levels=True)
+                if not campaign:forecast['execution_setup']=setup
         forecast['pattern_chart']=self.pattern_catalog.update(bars,live_bar,
             symbol=self.config.symbol,timeframe=self.config.timeframe,mode=self.config.mode,
             scope=market_scope or clock_generation,clock_generation=clock_generation,now=price_time,scenarios=self.scenarios)
@@ -231,6 +270,12 @@ class ScenarioCore:
         # keep that order and leave both SCALP paths and execution guards intact.
         execution_pool=active if self.config.mode=='NORMAL' else ranked
         ready=[s for s in execution_pool if s['entry_ready'] and s['event_id'] not in self.consumed]
+        if self.commitment:
+            if campaign:
+                ready=[s for s in ready if s.get('addition') and s.get('parent_scenario_id')==campaign.get('scenario_id') and s['side']==campaign['side']]
+            else:
+                ready=[s for s in ready if pinned is not None and s['scenario_id']==self.commitment.ident
+                       and s.get('confirmed_at',0)>self.commitment.committed_at]
         if fast and (not r7 or self.config.mode=='SCALP') and not self.stable:
             ready=[s for s in self.scenarios.values() if s.get('micro') and s['entry_ready']
                    and s['event_id'] not in self.consumed and preview is s and self.micro.stage=='CONFIRMED']
@@ -240,6 +285,7 @@ class ScenarioCore:
             # A high score never waives a fresh spread/no-chase/risk check in Engine.
             forecast['entry_scenario_id']=s['scenario_id'];forecast['entry_scenario_version']=s['scenario_version']
             forecast['entry_type']=s['type']
+            forecast['entry_parent_scenario_id']=s.get('parent_scenario_id')
             forecast['entry_target1']=s.get('target1')
             if self.stable:
                 forecast['plan_expires']=s['expires_at']
@@ -254,3 +300,24 @@ class ScenarioCore:
         if fast:reason=self.micro.reason.replace('SCALP M1',self.config.mode+' '+self.config.timeframe)
         if self.stable and forecast.get('execution_setup'):reason=forecast['execution_setup'].get('reason',reason)
         return Decision(reason=reason,atr=a,path='SCENARIO_V2',structure=swing_labels(bars),forecast=forecast)
+
+    def _advance_pinned_micro(self,s,q,prev,now,a):
+        from .lifecycle import _event,_confirm
+        from ..model import PROFILES
+        side=s['side'];mark=q.bid if side>0 else q.ask
+        if s['status'] in TERMINAL:return
+        s['entry_ready']=False
+        if now>s['expires_at']:_event(s,'EXPIRED',q,now,'Срок закреплённого плана истёк');return
+        if (mark-s['invalidation'])*side<=0:_event(s,'FAILED',q,now,'Нарушен закреплённый уровень отмены');return
+        if (mark-s['target1'])*side>=0:_event(s,'TARGET_REACHED',q,now,'Исходная цель уже достигнута');return
+        if s['status']=='CONFIRMED':
+            s['entry_ready']=bool(not s.get('sent') and prev and q.time_msc>prev.time_msc and now-s['confirmed_at']<=5 and 0<(q.bid-s['trigger'])*side<=.25*a)
+            return
+        if prev is None or q.time_msc<=prev.time_msc:return
+        trigger=value(s['boundary'],q.time_msc/1000)
+        if s['stage']=='WATCHING':
+            if (trigger-q.bid)*side>=PROFILES[self.config.mode].pullback_atr*a and (q.bid-prev.bid)*side<0:
+                s['stage']='PULLBACK';s['reason']='Новый откат наблюдался; ждём пробой закреплённого уровня'
+            return
+        if (q.bid-prev.bid)*side>0 and (prev.bid-trigger)*side<=0<(q.bid-trigger)*side:
+            _confirm(s,q,now,trigger,a)

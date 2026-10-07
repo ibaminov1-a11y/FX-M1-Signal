@@ -20,7 +20,7 @@ final class ChartDisplayState {
         try {
             byte[] bytes=MessageDigest.getInstance("SHA-256").digest(scope.getBytes(StandardCharsets.UTF_8));
             StringBuilder value=new StringBuilder("chart-v1-");
-            for(byte b:bytes)value.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
+            for(byte b:bytes){int n=b&255;value.append("0123456789abcdef".charAt(n>>>4)).append("0123456789abcdef".charAt(n&15));}
             return value.toString();
         }catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}
     }

@@ -48,7 +48,10 @@ class Continuation:
             if (q.bid-self.trough)*side<0:self.trough=q.bid
             if (q.bid-previous.bid)*side>0:
                 self.stage='MICRO';self.reason=f'Добавление: ждём новый микропробой {self.peak:.5f}'
-            return None
+            else:
+                return None
+            # The first resumption tick may itself cross the frozen extreme.
+            # Falling through checks that SAME observed crossing exactly once.
         # Frozen extreme predates the pullback and resumption; never infer crossing retroactively.
         if (previous.bid-self.peak)*side<=0<(q.bid-self.peak)*side:
             if (q.bid-self.peak)*side>.25*a:

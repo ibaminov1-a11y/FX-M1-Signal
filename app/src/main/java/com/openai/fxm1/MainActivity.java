@@ -284,7 +284,7 @@ public class MainActivity extends Activity {
         maxDriftSpinner.setAdapter(driftAdapter);
         maxDriftSpinner.setSelection(prefs.getInt("maxdrift_pos", 1));
 
-        analyzeButton.setText(monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
+        setTextIfChanged(analyzeButton,monitoring ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
         restoreTradingSnapshotFromPrefs();
 
         saveKeyButton.setOnClickListener(v -> {
@@ -590,7 +590,7 @@ public class MainActivity extends Activity {
         serverConnected = false;
         mt5Connected = false;
         demoAccount = false;
-        serverStatusText.setText("SERVER: NOT CONNECTED   •   MT5: OFFLINE");
+        setTextIfChanged(serverStatusText,"SERVER: NOT CONNECTED   •   MT5: OFFLINE");
         serverStatusText.setTextColor(C_RED);
         if (whyWaitText != null) whyWaitText.setTextColor(C_ORANGE);
         if (componentScoresText != null) componentScoresText.setTextColor(C_PURPLE);
@@ -599,7 +599,7 @@ public class MainActivity extends Activity {
         if (signalHistoryText != null) signalHistoryText.setTextColor(C_MUTED);
         SharedPreferences cached=getSharedPreferences("fxm1",MODE_PRIVATE);
         String currency=cached.getString("mt5_currency_snapshot","USD");
-        accountText.setText("КЭШ · последнее состояние счёта\nСчёт: "+cached.getString("mt5_account_type_snapshot","—")
+        setTextIfChanged(accountText,"КЭШ · последнее состояние счёта\nСчёт: "+cached.getString("mt5_account_type_snapshot","—")
             +"\nБаланс: "+money(Double.longBitsToDouble(cached.getLong("mt5_balance_bits",Double.doubleToLongBits(Double.NaN))),currency)
             +"\nEquity: "+money(Double.longBitsToDouble(cached.getLong("mt5_equity_bits",Double.doubleToLongBits(Double.NaN))),currency));
         renderPositionsMoneyCard(cached.getInt("mt5_positions_snapshot",0),Double.longBitsToDouble(cached.getLong("mt5_floating_bits",Double.doubleToLongBits(0))),currency);
@@ -617,7 +617,7 @@ public class MainActivity extends Activity {
         autoTradingSwitch.setEnabled(false);
         suppressAutoSwitch = false;
         if (autoStatusText != null) {
-            autoStatusText.setText(lastKnownAuto
+            setTextIfChanged(autoStatusText,lastKnownAuto
                     ? "Связь потеряна · последнее состояние AUTO: включён · Bridge не изменён"
                     : "Связь потеряна · последнее состояние AUTO: выключен · Bridge не изменён");
             autoStatusText.setTextColor(C_YELLOW);
@@ -654,12 +654,16 @@ public class MainActivity extends Activity {
         suppressAutoSwitch=true;autoTradingSwitch.setChecked(false);suppressAutoSwitch=false;
         SharedPreferences p=getSharedPreferences("fxm1",MODE_PRIVATE);boolean was=p.getBoolean("auto_user_enabled",false);
         p.edit().putBoolean("auto_trading",false).putBoolean("auto_user_enabled",false).apply();
-        if(autoStatusText!=null){autoStatusText.setText("AUTO выключен · "+targetTradeMode());autoStatusText.setTextColor(C_MUTED);}
+        if(autoStatusText!=null){setTextIfChanged(autoStatusText,"AUTO выключен · "+targetTradeMode());autoStatusText.setTextColor(C_MUTED);}
         if(was)eventCommand("disable",new JSONObject());
         if(journalMessage!=null)addJournal(journalMessage);
     }
 
-    private void restoreTradingSnapshotFromPrefs() {
+    private static void setTextIfChanged(TextView view,CharSequence value){
+        if(view!=null&&!android.text.TextUtils.equals(view.getText(),value))view.setText(value);
+    }
+    private void restoreTradingSnapshotFromPrefs() {restoreTradingSnapshotFromPrefs(EventClient.state());}
+    private void restoreTradingSnapshotFromPrefs(JSONObject authoritativeState) {
         if(autoTradingSwitch!=null)autoTradingSwitch.setText(TradeSettings.autoTitle());
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
         String savedUrl = p.getString("server_url", "").trim();
@@ -674,7 +678,7 @@ public class MainActivity extends Activity {
         int positions = p.getInt("mt5_positions_snapshot", 0);
         double floating = Double.longBitsToDouble(p.getLong("mt5_floating_bits", Double.doubleToLongBits(0.0)));
 
-        JSONObject authoritativeState=EventClient.state(),authoritativeCfg=authoritativeState.optJSONObject("config");
+        JSONObject authoritativeCfg=authoritativeState.optJSONObject("config");
         for(Spinner control:new Spinner[]{symbolSpinner,entryTimeframeSpinner,signalModeSpinner,riskSpinner})if(control!=null)control.setEnabled(true);
         if(maxPositionsSpinner!=null)maxPositionsSpinner.setEnabled(true);
         JSONObject chosen=authoritativeState.optJSONObject("pending_config");if(chosen==null)chosen=authoritativeCfg;
@@ -700,15 +704,15 @@ public class MainActivity extends Activity {
             serverConnected = true;
             mt5Connected = mt5;
             demoAccount = "DEMO".equalsIgnoreCase(accountType);
-            serverStatusText.setText("APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n"+p.getString("ec_runtime_build","")+"\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
+            setTextIfChanged(serverStatusText,"APP V" + appVersionName() + "   •   BRIDGE V" + bridgeVersion + "\n"+p.getString("ec_runtime_build","")+"\nSERVER: CONNECTED   •   MT5: " + (mt5 ? "CONNECTED" : "OFFLINE"));
             serverStatusText.setTextColor(mt5 ? C_GREEN : C_RED);
-            accountText.setText((mt5?"":"КЭШ · нет свежих данных MT5\n")+"Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
+            setTextIfChanged(accountText,(mt5?"":"КЭШ · нет свежих данных MT5\n")+"Счёт: " + accountType + "\nБаланс: " + money(balance, currency) + "\nEquity: " + money(equity, currency));
             renderPositionsMoneyCard(positions, floating, currency);
             closeAllButton.setEnabled(mt5 && positions > 0);
             autoTradingSwitch.setEnabled(pendingControl.isEmpty());
             suppressAutoSwitch = true;
             boolean targetAllowed = "REAL".equals(targetTradeMode()) ? (!demoAccount && realTradingEnabled) : demoAccount;
-            JSONObject bridgeState = EventClient.state();
+            JSONObject bridgeState = authoritativeState;
             boolean emergency = p.getBoolean("v108_emergency_latched", false) || bridgeState.optBoolean("emergency", false);
             boolean paused = bridgeState.optBoolean("paused", true);
             boolean bridgeAuto = bridgeState.optBoolean("auto", false) && !paused && !emergency;
@@ -725,7 +729,7 @@ public class MainActivity extends Activity {
                 if(pendingProfile!=null)autoStatus+="\nПосле кампании: "+EventClient.profileLabel(pendingProfile);
                 if(EventClient.hasProfileDraft())autoStatus+="\nВыбор на телефоне ожидает подтверждения Bridge";
                 if(!pendingControl.isEmpty())autoStatus+="\nОжидается подтверждение Bridge: "+pendingControl;
-                autoStatusText.setText(autoStatus);
+                setTextIfChanged(autoStatusText,autoStatus);
                 autoStatusText.setTextColor(emergency ? C_RED : autoSaved ? C_GREEN : C_MUTED);
             }
             suppressAutoSwitch = false;
@@ -747,7 +751,7 @@ public class MainActivity extends Activity {
             entryTimeframeSpinner.getSelectedItemPosition(),signalModeSpinner.getSelectedItemPosition(),riskSpinner.getSelectedItemPosition());}
         catch(Exception e){Toast.makeText(this,safeMessage(e),Toast.LENGTH_LONG).show();return;}
         updateLegacyFrameNote();
-        autoStatusText.setText("Профиль выбран: "+EventClient.profileLabel(desired)+"\nОжидается подтверждение Bridge");
+        setTextIfChanged(autoStatusText,"Профиль выбран: "+EventClient.profileLabel(desired)+"\nОжидается подтверждение Bridge");
         if(EventClient.base().isEmpty())return;
         final EventClient.ReadRequest read=EventClient.newReadRequest();
         submitControlTask(()->{try{EventClient.configureUserSelection(read,desired);EventClient.poll();deliverUi(()->{
@@ -759,9 +763,9 @@ public class MainActivity extends Activity {
     }
     private void onLotChanged(){onProfileChanged();}
 
-    private void restoreSparklineFromPrefs(String signal) {
+    private void restoreSparklineFromPrefs(String signal) {restoreSparklineFromPrefs(signal,EventClient.state());}
+    private void restoreSparklineFromPrefs(String signal,JSONObject s) {
         if(sparklineView==null)return;
-        JSONObject s=EventClient.state();
         ScenarioUi.updateLive(sparklineView,s);
         sparklineView.setSignal(signal);
     }
@@ -894,7 +898,7 @@ public class MainActivity extends Activity {
                 .putBoolean("server_verified", false)
                 .apply();
         serverCheckButton.setEnabled(false);
-        serverStatusText.setText("SERVER: CHECKING…   •   MT5: …");
+        setTextIfChanged(serverStatusText,"SERVER: CHECKING…   •   MT5: …");
         serverStatusText.setTextColor(C_YELLOW);
 
         final EventClient.ReadRequest read=EventClient.newReadRequest();
@@ -971,7 +975,7 @@ public class MainActivity extends Activity {
             }
             updated = limited.toString();
         }
-        journalText.setText(updated);
+        setTextIfChanged(journalText,updated);
         SharedPreferences jp = getSharedPreferences("fxm1", MODE_PRIVATE);
         String full = jp.getString("full_journal", "");
         String fullUpdated = prefix + " · " + line + (full.trim().isEmpty() ? "" : "\n" + full);
@@ -998,7 +1002,7 @@ public class MainActivity extends Activity {
         tv.setText(text); scroll.addView(tv);
         new AlertDialog.Builder(this).setTitle("Торговый журнал · подробно").setView(scroll)
                 .setPositiveButton("ОБНОВИТЬ", (d,w) -> refreshStatsAndPositions())
-                .setNeutralButton("ОЧИСТИТЬ ЛОКАЛЬНЫЙ", (d,w) -> { p.edit().remove("full_journal").apply(); journalText.setText("Журнал пока пуст."); })
+                .setNeutralButton("ОЧИСТИТЬ ЛОКАЛЬНЫЙ", (d,w) -> { p.edit().remove("full_journal").apply(); setTextIfChanged(journalText,"Журнал пока пуст."); })
                 .setNegativeButton("ЗАКРЫТЬ", null).show();
     }
 
@@ -1354,15 +1358,15 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             monitoring = false;
             getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("ui_monitoring", false).apply();
-            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-            statusText.setText("Ошибка запуска мониторинга: " + safeMessage(e));
+            setTextIfChanged(analyzeButton,"ЗАПУСТИТЬ МОНИТОРИНГ");
+            setTextIfChanged(statusText,"Ошибка запуска мониторинга: " + safeMessage(e));
             Toast.makeText(this, "Не удалось запустить мониторинг: " + safeMessage(e), Toast.LENGTH_LONG).show();
             return;
         }
 
         monitoring = true;
-        analyzeButton.setText("ОСТАНОВИТЬ МОНИТОРИНГ");
-        statusText.setText("Мониторинг запущен · можно свернуть приложение.");
+        setTextIfChanged(analyzeButton,"ОСТАНОВИТЬ МОНИТОРИНГ");
+        setTextIfChanged(statusText,"Мониторинг запущен · можно свернуть приложение.");
         monitorHandler.removeCallbacks(monitorRunnable);
     }
 
@@ -1377,8 +1381,8 @@ public class MainActivity extends Activity {
                 .apply();
 
         sendBackgroundCommand(MonitoringService.ACTION_STOP);
-        analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-        statusText.setText("Мониторинг остановлен.");
+        setTextIfChanged(analyzeButton,"ЗАПУСТИТЬ МОНИТОРИНГ");
+        setTextIfChanged(statusText,"Мониторинг остановлен.");
     }
 
     @Override
@@ -1391,8 +1395,8 @@ public class MainActivity extends Activity {
         } else {
             monitoring = false;
             getSharedPreferences("fxm1", MODE_PRIVATE).edit().putBoolean("ui_monitoring", false).apply();
-            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
-            statusText.setText("Мониторинг не запущен: уведомления запрещены.");
+            setTextIfChanged(analyzeButton,"ЗАПУСТИТЬ МОНИТОРИНГ");
+            setTextIfChanged(statusText,"Мониторинг не запущен: уведомления запрещены.");
             Toast.makeText(this,
                     "Разрешите уведомления для FX M1 Bot — Android требует их для постоянного мониторинга.",
                     Toast.LENGTH_LONG).show();
@@ -1421,13 +1425,14 @@ public class MainActivity extends Activity {
     private void syncUiFromBackgroundService() {
         ((LiveScrollView)findViewById(R.id.rootLayout)).beginLiveUpdate();
         SharedPreferences p = getSharedPreferences("fxm1", MODE_PRIVATE);
+        JSONObject currentState=EventClient.state();
         updateMarketStatusUi();
-        restoreTradingSnapshotFromPrefs();
+        restoreTradingSnapshotFromPrefs(currentState);
         updateLegacyFrameNote();
         String bridgeJournal=p.getString("ec_journal_snapshot","");
         if(!bridgeJournal.isEmpty()){
             String localJournal=p.getString("full_journal","");
-            journalText.setText(bridgeJournal+(localJournal.isEmpty()?"":"\n\nСОБЫТИЯ ПРИЛОЖЕНИЯ\n"+localJournal));
+            setTextIfChanged(journalText,bridgeJournal+(localJournal.isEmpty()?"":"\n\nСОБЫТИЯ ПРИЛОЖЕНИЯ\n"+localJournal));
         }
         if (p.getBoolean("server_verified", false) && !manualRefreshInFlight) {
             long nowMoney = System.currentTimeMillis();
@@ -1439,13 +1444,13 @@ public class MainActivity extends Activity {
         boolean bgRunning = p.getBoolean("bg_running", false);
         monitoring = bgRunning;
 
-        analyzeButton.setText(bgRunning ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
+        setTextIfChanged(analyzeButton,bgRunning ? "ОСТАНОВИТЬ МОНИТОРИНГ" : "ЗАПУСТИТЬ МОНИТОРИНГ");
 
         if (p.getBoolean("stop_all_requested", false)) {
             p.edit().putBoolean("stop_all_requested", false).putBoolean("ui_monitoring", false).apply();
             monitoring = false;
             monitorHandler.removeCallbacks(monitorRunnable);
-            analyzeButton.setText("ЗАПУСТИТЬ МОНИТОРИНГ");
+            setTextIfChanged(analyzeButton,"ЗАПУСТИТЬ МОНИТОРИНГ");
         }
 
         String symbol = p.getString("state_symbol", "");
@@ -1455,7 +1460,7 @@ public class MainActivity extends Activity {
         String selectedSymbol = (String) symbolSpinner.getSelectedItem();
         String selectedTf = selectedEntryTimeframe();
 
-        JSONObject currentState=EventClient.state(),currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
+        JSONObject currentDecision=currentState.optJSONObject("decision"),forecast=currentState.optJSONObject("forecast");
         boolean offline=currentState.optBoolean("client_offline",false);
         String signal = p.getString("state_signal", "WAIT");
         String context = p.getString("state_context", "");
@@ -1467,23 +1472,23 @@ public class MainActivity extends Activity {
         long since = p.getLong("state_signal_since_ms", 0L);
         long updated = p.getLong("state_last_update_ms", 0L);
         String source = offline ? "КЭШ · НЕТ СВЯЗИ С BRIDGE" : !p.getBoolean("mt5_connected_snapshot",false)?"BRIDGE CONNECTED · ОЖИДАНИЕ MT5":bgRunning ? "LIVE" : "STOP";
-        statusText.setText(symbol+" · "+tf+" · "+source+" · ДАННЫЕ MT5");
+        setTextIfChanged(statusText,symbol+" · "+tf+" · "+source+" · ДАННЫЕ MT5");
 
         boolean deferredProfile=currentState.optJSONObject("campaign")!=null||currentState.optJSONObject("pending_config")!=null;
         if (!deferredProfile&&(!symbol.replace("/", "").trim().equalsIgnoreCase(selectedSymbol.replace("/", "").trim()) || !tf.equals(selectedTf))) {
-            statusText.setText(selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));
+            setTextIfChanged(statusText,selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));
             // A cached chart belongs to its recorded instrument. Clear it while the
             // selected profile awaits data, including during phone disconnection.
             sparklineView.setMarketIdentity("pending:"+selectedSymbol+"|"+selectedTf);
             sparklineView.setMarket(new JSONArray(),new JSONArray(),new JSONArray(),new JSONArray(),"SCENARIO_V2",null,null,new JSONObject());
-            signalText.setText("WAIT");
+            setTextIfChanged(signalText,"WAIT");
             signalText.setTextColor(C_PURPLE);
-            confidenceText.setText("Сценарий: ожидание данных");
+            setTextIfChanged(confidenceText,"Сценарий: ожидание данных");
             updateSignalAgeText("WAIT", 0L, 0L);
-            levelsText.setText("Entry: —\nSL: —\nTP1: —\nTP2: —");
-            contextText.setText("Параметры изменены. Жду новый анализ для " + selectedSymbol + " · " + selectedTf + ".");
-            if (whyWaitText != null) whyWaitText.setText("ПОЧЕМУ WAIT: жду новый анализ");
-            if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: —");
+            setTextIfChanged(levelsText,"Entry: —\nSL: —\nTP1: —\nTP2: —");
+            setTextIfChanged(contextText,"Параметры изменены. Жду новый анализ для " + selectedSymbol + " · " + selectedTf + ".");
+            if (whyWaitText != null) setTextIfChanged(whyWaitText,"ПОЧЕМУ WAIT: жду новый анализ");
+            if (componentScoresText != null) setTextIfChanged(componentScoresText,"ПРАВИЛА СЦЕНАРИЯ: —");
             return;
         }
 
@@ -1492,16 +1497,17 @@ public class MainActivity extends Activity {
         double tp1 = Double.longBitsToDouble(p.getLong("state_tp1_bits", Double.doubleToLongBits(Double.NaN)));
         double tp2 = Double.longBitsToDouble(p.getLong("state_tp2_bits", Double.doubleToLongBits(Double.NaN)));
 
-        signalText.setText(offline?"КЭШ":signal);
+        setTextIfChanged(signalText,offline?"КЭШ":signal);
         signalText.setTextColor(offline?C_MUTED:"BUY".equals(signal) ? C_GREEN : ("SELL".equals(signal) ? C_RED : C_PURPLE));
 
-        confidenceText.setText("ВХОД "+(currentState.optJSONObject("config")==null?tf:currentState.optJSONObject("config").optString("timeframe",tf))+" · "+ScenarioUi.headlineForState(currentState));
+        setTextIfChanged(confidenceText,"ВХОД "+(currentState.optJSONObject("config")==null?tf:currentState.optJSONObject("config").optString("timeframe",tf))+" · "+ScenarioUi.headlineForState(currentState));
         int mapSide=forecast==null?0:forecast.optInt("side");
         confidenceText.setTextColor(offline?C_MUTED:mapSide>0?C_GREEN:mapSide<0?C_RED:C_PURPLE);
         if (qualityBarView != null) qualityBarView.setVisibility(View.GONE);
         updateSignalAgeText(signal, since, updated);
-        restoreSparklineFromPrefs(offline?"WAIT":signal);
+        restoreSparklineFromPrefs(offline?"WAIT":signal,currentState);
 
+        String levelValue;
         String campaignSummary=EventClient.campaignSummary(currentState);
         if(!campaignSummary.isEmpty()){
             String next;
@@ -1511,12 +1517,12 @@ public class MainActivity extends Activity {
             }else{
                 next="\n\nНОВОЕ ПОДТВЕРЖДЕНИЕ: "+signal+" · Entry "+fmt(entry)+" · SL "+fmt(sl);
             }
-            levelsText.setText(campaignSummary+next);
+            levelValue=campaignSummary+next;
         }else if ("WAIT".equals(signal)) {
             double trigger=currentDecision==null?Double.NaN:currentDecision.optDouble("trigger",Double.NaN);
-            levelsText.setText("Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+fmt(trigger):"") + "\nSL: —\nTP1: —\nTP2: —");
+            levelValue="Entry: —" + (Double.isFinite(trigger)&&trigger>0?"\nTrigger: "+fmt(trigger):"") + "\nSL: —\nTP1: —\nTP2: —";
         } else {
-            levelsText.setText(
+            levelValue=(
                     "Entry: " + fmt(entry) +
                     "\nSL: " + fmt(sl) +
                     "\nКласс: "+(currentDecision==null?"—":currentDecision.optString("entry_class","CONFIRMED"))+
@@ -1524,15 +1530,16 @@ public class MainActivity extends Activity {
             );
         }
         String scenarioLevels=ScenarioUi.levels(currentState);
-        if(!scenarioLevels.isEmpty())levelsText.setText(scenarioLevels);
-        else if(offline)levelsText.setText("КЭШ · последняя полученная информация\n"+levelsText.getText());
-        contextText.setText(offline?"КЭШ · нет связи с Bridge\n"+context:context);
+        if(!scenarioLevels.isEmpty())levelValue=scenarioLevels;
+        else if(offline)levelValue="КЭШ · последняя полученная информация\n"+levelValue;
+        setTextIfChanged(levelsText,levelValue);
+        setTextIfChanged(contextText,offline?"КЭШ · нет связи с Bridge\n"+context:context);
         String executionRequirement=ScenarioUi.executionRequirement(currentState);
         JSONObject actualConfig=currentState.optJSONObject("config");
-        if(actualConfig!=null&&"STABLE_V1".equals(actualConfig.optString("entry_model")))executionRequirement="";
-        if (whyWaitText != null) whyWaitText.setText((executionRequirement.isEmpty()?"":executionRequirement+"\n")
+        if(actualConfig!=null&&("STABLE_V1".equals(actualConfig.optString("entry_model"))||"PINNED_V1".equals(actualConfig.optString("entry_model"))))executionRequirement="";
+        if (whyWaitText != null) setTextIfChanged(whyWaitText,(executionRequirement.isEmpty()?"":executionRequirement+"\n")
             +(offline?"СОХРАНЁННЫЙ СИГНАЛ: ":"WAIT".equals(signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + (why == null || why.isEmpty() ? "—" : why) + ExecutionFeedback.render(p, symbol, tf));
-        if (componentScoresText != null) componentScoresText.setText("ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));
+        if (componentScoresText != null) setTextIfChanged(componentScoresText,"ПРАВИЛА СЦЕНАРИЯ: " + (components == null || components.isEmpty() ? "—" : components));
         refreshSmartUi();
 
         lastApiPrice = entry;
@@ -2484,7 +2491,7 @@ public class MainActivity extends Activity {
                               int freshRequests,
                               int cachedRequests) {
 
-        statusText.setText(
+        setTextIfChanged(statusText,
                 a.symbol +
                 " · " + selectedEntryTimeframe() +
                 " · MON · API " + freshRequests +
@@ -2492,7 +2499,7 @@ public class MainActivity extends Activity {
         );
 
         publishUnifiedSignalState(a, freshRequests, cachedRequests, "MON");
-        signalText.setText(a.signal);
+        setTextIfChanged(signalText,a.signal);
 
         if ("BUY".equals(a.signal)) {
             signalText.setTextColor(C_GREEN);
@@ -2503,7 +2510,7 @@ public class MainActivity extends Activity {
         }
 
         confidenceText.setTextColor(C_PURPLE);
-        confidenceText.setText(
+        setTextIfChanged(confidenceText,
                 "Качество сигнала: " +
                 a.quality +
                 "/100"
@@ -2527,14 +2534,14 @@ public class MainActivity extends Activity {
         updateSignalAgeText(a.signal, localSince, nowMs);
 
         if ("WAIT".equals(a.signal)) {
-            levelsText.setText(
+            setTextIfChanged(levelsText,
                     "Entry: " + fmt(a.entry) +
                     "\nSL: —" +
                     "\nTP1: —" +
                     "\nTP2: —"
             );
         } else {
-            levelsText.setText(
+            setTextIfChanged(levelsText,
                     "Entry: " + fmt(a.entry) +
                     "\nSL: " + fmt(a.sl) +
                     "\nTP1: " + fmt(a.tp1) + "  (1.5R)" +
@@ -2542,9 +2549,9 @@ public class MainActivity extends Activity {
             );
         }
 
-        contextText.setText(a.context);
-        if (whyWaitText != null) whyWaitText.setText(("WAIT".equals(a.signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + a.why + ExecutionFeedback.render(localPrefs, a.symbol, selectedEntryTimeframe()));
-        if (componentScoresText != null) componentScoresText.setText("КОМПОНЕНТЫ КАЧЕСТВА: " + a.components);
+        setTextIfChanged(contextText,a.context);
+        if (whyWaitText != null) setTextIfChanged(whyWaitText,("WAIT".equals(a.signal) ? "ПОЧЕМУ WAIT: " : "СИГНАЛ АНАЛИЗА: ") + a.why + ExecutionFeedback.render(localPrefs, a.symbol, selectedEntryTimeframe()));
+        if (componentScoresText != null) setTextIfChanged(componentScoresText,"КОМПОНЕНТЫ КАЧЕСТВА: " + a.components);
         FeatureEngine.appendSignalHistory(getSharedPreferences("fxm1", MODE_PRIVATE), a.symbol, selectedEntryTimeframe(), a.signal, a.quality, "analysis");
         refreshSmartUi();
 

@@ -212,6 +212,8 @@ def plan_order(broker, cfg: Config, account, info, q: Quote, d: Decision, positi
     is_fx=len(letters)>=6 and letters[:3] in currencies and letters[3:6] in currencies
     if is_fx and q.spread/pip>cfg.spread_pips:
         raise Blocked('FX-спред превышает выбранный предел')
+    if cfg.entry_model=='PINNED_V1' and len(positions)>=10:
+        raise Blocked('Достигнут предел серии: 10 открытых позиций')
     if len(positions)>=cfg.technical_position_fuse:
         raise Blocked('Технический предохранитель: слишком много позиций')
     if cfg.optional_position_limit and len(positions)>=cfg.optional_position_limit:

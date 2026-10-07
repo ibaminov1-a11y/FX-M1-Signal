@@ -258,7 +258,7 @@ def main():
     logging.info('Bridge %s startup; host=%s port=%s; AUTO OFF; DEMO ONLY',BUILD,args.host,args.port)
     policy=load_clock_policy(directory)
     from .portfolio import Portfolio
-    store=Store(directory/'campaign.sqlite3');engine=Portfolio(MT5Broker(mt5,args.terminal,**policy),store,entry_model='STABLE_V1')
+    store=Store(directory/'campaign.sqlite3');engine=Portfolio(MT5Broker(mt5,args.terminal,**policy),store,entry_model='PINNED_V1')
     app=create_app(engine,token)
     views=app.config['runtime_views']
     def worker():

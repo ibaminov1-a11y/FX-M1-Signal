@@ -1,6 +1,6 @@
 """EventCore EC1. Unified ComputeCore decision engine with gated MT5 execution."""
 # VERSION is the installed APK's compatibility contract; BUILD identifies this rebuild.
 VERSION = '10.9-EC1'
-BUILD = '10.9-EC1-R7.4'
-REVISION = 'R7.4-EXECUTION-DEMO'
+BUILD = '10.9-EC1-R7.5'
+REVISION = 'R7.5-PINNED-CAMPAIGN-DEMO'
 PROTOCOL = 'fxm1.event.v1'

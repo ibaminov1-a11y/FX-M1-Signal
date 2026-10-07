@@ -722,7 +722,7 @@ class Engine:
                     except Exception as exc:
                         self.execution='Закрытие EC1 пока не подтверждено: '+str(exc)
                 self._refresh_market(now)
-                if self.config.entry_model!='STABLE_V1':self._refresh_observers(now)
+                if self.config.entry_model not in ('STABLE_V1','PINNED_V1'):self._refresh_observers(now)
                 compute_decision=None
                 if not self.market_errors and self.quote_ready:
                     try:
@@ -831,7 +831,7 @@ class Engine:
                     except Blocked as exc:
                         self.store.event('ENTRY_BLOCKED',dict(event_id=d.event_id,reason=str(exc),
                             addition=bool(self.campaign),mode=self.config.mode),now)
-                        if self.config.entry_model=='STABLE_V1':
+                        if self.config.entry_model in ('STABLE_V1','PINNED_V1'):
                             self.execution='Вход пока не исполнен: '+str(exc)
                             self.decision=replace(d,signal='WAIT',phase='ENTRY_BLOCKED',reason=str(exc))
                         else:raise
@@ -845,7 +845,7 @@ class Engine:
                 if self.bars:
                     detail+='\nПоказаны последние доступные закрытые свечи MT5; это не свежий торговый сигнал'
                 self.decision=Decision(phase='DATA_BLOCK',reason=detail)
-            if self.config.entry_model=='STABLE_V1':
+            if self.config.entry_model in ('STABLE_V1','PINNED_V1'):
                 try:self._refresh_observers(self.clock())
                 except Exception as exc:self.store.event('OBSERVER_ERROR',dict(reason=str(exc)),self.clock())
             return self.snapshot()
@@ -856,6 +856,10 @@ class Engine:
         if self.emergency or self.exit_pending or self.recovery or self.store.pending():
             raise Blocked('Вход заблокирован состоянием кампании')
         if self.store.has_intent(d.event_id):raise Blocked('Повтор торгового события запрещён')
+        if self.config.entry_model=='PINNED_V1':
+            root=self.campaign.get('scenario_id') if self.campaign else self.compute.commitment.ident
+            expected=d.forecast.get('entry_parent_scenario_id') if self.campaign else d.forecast.get('entry_scenario_id')
+            if not root or root!=expected:raise Blocked('Событие не относится к закреплённому плану исполнения')
         if self._owned_orders():raise Blocked('Предыдущий запрос ещё не завершён')
         if any(p['magic']!=MAGIC for p in self.positions) or any(o['magic']!=MAGIC for o in self.orders):
             raise Blocked('Есть ручные/старые позиции или ордера: сначала завершите их отдельно')
@@ -1184,6 +1188,11 @@ class Engine:
                 pending_reversal=copy.deepcopy(self.pending_reversal),
                 pending_config=copy.deepcopy(self.pending_config),entry_gate=self._entry_gate(),
                 campaign_state=('OPEN' if owned else 'RECONCILING' if self.campaign else 'NONE'),
+                campaign_progress=dict(open_positions=len(owned),confirmed_entries=len(self.campaign.get('events',[])) if self.campaign else 0,
+                    max_positions=min(self.config.technical_position_fuse,self.config.optional_position_limit or 128,10 if self.config.entry_model=='PINNED_V1' else 128),
+                    next_stage=(len(self.campaign.get('events',[]))+1) if self.campaign else 1,
+                    next_event=(display_forecast.get('addition') or display_forecast.get('execution_setup') or {}).get('reason','Нет нового события'),
+                    execution=self.execution,risk_rechecked_on_event=True),
                 reconcile_detail=self.reconcile_detail,
                 decision=self.decision.json(),execution=self.execution,risk=self.risk,
                 forecast=display_forecast,auto_requested=self.auto,entry_allowed=self._entry_gate()['allowed'],
