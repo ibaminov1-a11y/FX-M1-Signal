@@ -1,0 +1,68 @@
+name: R75 exact reviewed source import
+on:
+  push:
+    branches: [feature/r75-pinned-campaign-20261007]
+    paths: [.ci/r75-pending.json]
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply exact line edits without executing submitted source
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python - <<'PY'
+          import base64,bz2,hashlib,json,subprocess
+          from pathlib import Path,PurePosixPath
+          e=json.loads(Path('.ci/r75-pending.json').read_text())
+          assert e['encoding']=='bz2-base64-line-edits-v1'
+          encoded=e['data'];assert len(encoded)<2000000
+          decoder=bz2.BZ2Decompressor();raw=decoder.decompress(base64.b64decode(encoded,validate=True),max_length=2000001)
+          assert decoder.eof and not decoder.unused_data and len(raw)<=2000000
+          assert hashlib.sha256(raw).hexdigest()==e['sha256']
+          files=json.loads(raw);assert 0<len(files)<80
+          seen=set();prepared=[]
+          def allowed(name):
+              p=PurePosixPath(name)
+              assert not p.is_absolute() and '..' not in p.parts and not Path(name).is_symlink()
+              assert name=='app/build.gradle' or name.startswith(('app/src/','mt5_bridge/','tests/','tools/','docs/verification/'))
+              assert p.suffix in ('.java','.py','.xml','.json','.md','.txt','.sh','.cmd','.bat','.gradle')
+              assert not any(x in ('event_state','.venv','__pycache__') for x in p.parts)
+          digest=lambda s:hashlib.sha256(s.encode('utf-8')).hexdigest()
+          for f in files:
+              name=f['path'];base=f['base'];allowed(name);allowed(base);assert name not in seen;seen.add(name)
+              if f['before_sha256'] is None:
+                  assert not Path(name).exists();text=f['content']
+              else:
+                  before=Path(base).read_text(encoding='utf-8');assert digest(before)==f['before_sha256'],base
+                  lines=before.splitlines(keepends=True);edge=len(lines)+1
+                  for lo,hi,replacement in reversed(f['edits']):
+                      assert 0<=lo<=hi<=len(lines) and hi<edge;edge=lo
+                      lines[lo:hi]=[replacement]
+                  text=''.join(lines)
+              assert digest(text)==f['after_sha256'],name
+              prepared.append((name,text))
+          for name,text in prepared:
+              p=Path(name);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
+          subprocess.run(['git','add','--',*sorted(seen)],check=True)
+          Path('evidence/APPLIED_FILES.json').write_text(json.dumps([{k:v for k,v in f.items() if k in ('path','before_sha256','after_sha256')} for f in files],indent=2))
+          PY
+          git diff --cached --check
+          git diff --cached > evidence/SOURCE.patch
+          git rm .ci/r75-pending.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(r75): pinned execution contract, causal additions and cached native chart'
+          test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:"$GITHUB_REF"
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git archive --format=zip HEAD > evidence/Sources.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R75-IMPORTED-SOURCE-${{ github.sha }}
+          path: evidence/
