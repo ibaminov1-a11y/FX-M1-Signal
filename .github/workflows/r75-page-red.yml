@@ -1,0 +1,76 @@
+name: R75 whole page baseline RED
+on:
+  push:
+    branches: [feature/r75-pinned-campaign-20261007]
+    paths: [.github/workflows/r75-page-red.yml]
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: |
+          mkdir -p evidence
+          PYTHONPATH=mt5_bridge:tests/event_core python tests/event_core/export_r732_chart_fixtures.py
+          cp app/src/androidTest/java/com/openai/fxm1/R75*UiTest.java evidence/
+          sudo chmod 666 /dev/kvm
+          cat > /tmp/page-red.sh <<'SH'
+          export PYTHONPATH=mt5_bridge:tests/event_core
+          python tests/event_core/ui_fixture.py > evidence/fixture.log 2>&1 &
+          fixture=$!
+          trap 'kill "$fixture" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null; then break; fi
+            sleep 1
+          done
+          adb reverse tcp:8765 tcp:8765
+          gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R75PageUiTest > evidence/red.log 2>&1
+          echo $? > evidence/gradle-exit.txt
+          adb pull /sdcard/Download/ec1-qa evidence/ui || true
+          SH
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash /tmp/page-red.sh
+      - name: Require measured page rendering and specific repeated-text failure
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as E,json
+          from pathlib import Path
+          cases=[]
+          for p in Path('app/build/outputs/androidTest-results').rglob('*.xml'):cases.extend(E.parse(p).getroot().iter('testcase'))
+          assert len(cases)==2,len(cases)
+          failed=[t for t in cases if t.find('failure') is not None]
+          text='\n'.join(t.find('failure').text or '' for t in failed)
+          assert 'UNCHANGED_PAGE_FORCES_RELAYOUT' in text,text
+          assert len(failed)==1,text
+          assert list(Path('evidence').rglob('r75-page-metrics-934.json'))
+          Path('evidence/RED_RESULT.json').write_text(json.dumps(dict(tests=2,expected_failures=1,release=False)))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R75-PAGE-BASELINE-RED
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/
