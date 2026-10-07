@@ -16,11 +16,16 @@ jobs:
           set -euo pipefail
           mkdir -p evidence
           python - <<'PY'
-          import base64,bz2,hashlib,json,subprocess
+          import base64,bz2,hashlib,json,subprocess,re
           from pathlib import Path,PurePosixPath
           e=json.loads(Path('.ci/r75-pending.json').read_text())
           assert e['encoding']=='bz2-base64-line-edits-v1'
-          encoded=e['data'];assert len(encoded)<2000000
+          encoded=e.get('data','')
+          if 'parts' in e:
+              assert 0<len(e['parts'])<=12
+              assert all(re.fullmatch(r'\.ci/r75-part-[0-9]+\.txt',p) for p in e['parts'])
+              encoded=''.join(Path(p).read_text().strip() for p in e['parts'])
+          assert len(encoded)<2000000
           decoder=bz2.BZ2Decompressor();raw=decoder.decompress(base64.b64decode(encoded,validate=True),max_length=2000001)
           assert decoder.eof and not decoder.unused_data and len(raw)<=2000000
           assert hashlib.sha256(raw).hexdigest()==e['sha256']
@@ -54,6 +59,7 @@ jobs:
           git diff --cached --check
           git diff --cached > evidence/SOURCE.patch
           git rm .ci/r75-pending.json
+          git rm --ignore-unmatch '.ci/r75-part-*.txt'
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'feat(r75): pinned execution contract, causal additions and cached native chart'
