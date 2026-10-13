@@ -1,8 +1,8 @@
-"""App-local runtime for unmodified R7.4, after confirmed loss of old local files.
+"""App-local runtime for unmodified R7.4 after loss of old local files.
 No dependencies are downloaded at launch. No broker order is sent by this wrapper.
 """
 from __future__ import annotations
-import argparse, hashlib, importlib, json, os, runpy, secrets, socket, sqlite3, struct, sys, time
+import argparse, contextlib, hashlib, json, os, runpy, secrets, socket, sqlite3, struct, sys, time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -47,7 +47,7 @@ def state_mode(state):
     if len(token.read_text(encoding='utf-8').strip())<32:
         raise RuntimeError('Локальный ключ повреждён. Новый ключ автоматически не создаётся.')
     try:
-        with sqlite3.connect(db.as_uri()+'?mode=ro',uri=True) as conn:
+        with contextlib.closing(sqlite3.connect(db.as_uri()+'?mode=ro',uri=True)) as conn:
             if conn.execute('PRAGMA quick_check').fetchone()[0]!='ok':raise RuntimeError('Проверка базы состояния не пройдена.')
             names={r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if not {'state','intents','campaigns','commands'}<=names:raise RuntimeError('Неизвестный формат базы состояния.')
@@ -65,8 +65,8 @@ def initialize_state(state,details):
     with (state/'bridge-token.txt').open('x',encoding='utf-8') as f:f.write(secrets.token_urlsafe(32))
     from event_core.store import Store
     store=Store(state/'campaign.sqlite3')
-    store.save('recovery_install',dict(old_local_state_restored=False,auto_enabled=False,created_at=time.time()))
-    store.db.close()
+    try:store.save('recovery_install',dict(old_local_state_restored=False,auto_enabled=False,created_at=time.time()))
+    finally:store.db.close()
 
 
 def validate_account(a,positions,orders,fresh):
