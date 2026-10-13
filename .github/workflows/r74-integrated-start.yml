@@ -1,0 +1,44 @@
+name: R74 integrated launch acceptance
+on:
+  push:
+    branches: [repair/r74-integrated-start-20261013]
+    paths: ['tools/r74_integrated/**', '.github/workflows/r74-integrated-start.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      R7_NO_PAUSE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-CODE-RECOVERY-FULL
+          run-id: 38384802093
+          github-token: ${{ github.token }}
+          path: original
+      - name: Reproduce missing bootstrap using exact prior user ZIP and native CMD
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          python tools/r74_integrated/probe.py original/FXM1_R74_FULL_PROJECT_RECOVER.zip --red --out evidence *> evidence/RED.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/RED.log
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-INTEGRATED-START-RED
+          path: evidence/
+          if-no-files-found: error
