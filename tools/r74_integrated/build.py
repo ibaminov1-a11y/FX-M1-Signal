@@ -38,9 +38,11 @@ __NATIVE_HASHES__
     foreach ($relative in $nativeHashes.Keys) {
         $full=Join-Path $root $relative
         if (-not [IO.File]::Exists($full)) { throw ('MISSING_NATIVE: '+$full) }
-        $entry=Get-Item -LiteralPath $full -Force
-        if ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw ('NATIVE_LINK_REFUSED: '+$full) }
-        $actual=(Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ([IO.File]::GetAttributes($full) -band [IO.FileAttributes]::ReparsePoint) { throw ('NATIVE_LINK_REFUSED: '+$full) }
+        $algorithm=[Security.Cryptography.SHA256]::Create()
+        $stream=[IO.File]::OpenRead($full)
+        try { $actual=([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
+        finally { $stream.Dispose(); $algorithm.Dispose() }
         if ($actual -ne $nativeHashes[$relative]) { throw ('NATIVE_HASH_MISMATCH: '+$full) }
     }
     # Embedded standard-library preflight, not a separately extracted PS1.
