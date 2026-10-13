@@ -23,7 +23,6 @@ jobs:
         shell: pwsh
         run: |
           git config core.autocrlf false
-          git checkout-index --force --all
           New-Item -ItemType Directory -Force evidence | Out-Null
           git rev-parse HEAD > evidence/PACKAGING_COMMIT.txt
       - uses: actions/setup-python@v5
@@ -36,6 +35,21 @@ jobs:
           run-id: 37433783603
           github-token: ${{ github.token }}
           path: previous-release
+      - name: Materialize immutable product Git blobs without checkout newline filters
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess,hashlib,json
+          source='5f6f47f303c337bfd57acec9958cb5ed910d375f'
+          before={}
+          for p in Path('mt5_bridge/event_core').rglob('*.py'):
+              name=p.as_posix()
+              old=subprocess.check_output(['git','show',source+':'+name])
+              head=subprocess.check_output(['git','show','HEAD:'+name])
+              assert head==old,name
+              before[name]={'checkout_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'git_sha256':hashlib.sha256(old).hexdigest()}
+              p.write_bytes(old)
+          Path('evidence/CHECKOUT_BYTES.json').write_text(json.dumps(before,indent=2))
       - name: Build full portable runtime and original R7.4
         shell: pwsh
         run: |
