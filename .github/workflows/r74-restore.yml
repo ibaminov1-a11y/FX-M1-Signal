@@ -1,0 +1,79 @@
+name: R74 complete standalone recovery
+on:
+  push:
+    branches: [repair/r74-standalone-20261013]
+    paths: [.github/workflows/r74-restore.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows-recovery:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      R7_NO_PAUSE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Keep repository bytes exact on Windows
+        shell: pwsh
+        run: |
+          git config core.autocrlf false
+          git checkout-index --force --all
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          git rev-parse HEAD > evidence/PACKAGING_COMMIT.txt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-SIGNED-NATIVE-5f6f47f303c337bfd57acec9958cb5ed910d375f
+          run-id: 37433783603
+          github-token: ${{ github.token }}
+          path: previous-release
+      - name: Build full portable runtime and original R7.4
+        shell: pwsh
+        run: |
+          python tools/r74_restore/build.py *> evidence/build.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/build.log -Tail 30
+          exit $rc
+      - name: Native packaged runtime and fresh installation checks
+        shell: pwsh
+        run: |
+          python tools/r74_restore/verify_windows.py *> evidence/native.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/native.log -Tail 30
+          exit $rc
+      - name: Complete original Python regressions with bundled dependency versions
+        shell: pwsh
+        run: |
+          python -m pip install --no-index --find-links dist/wheels -r mt5_bridge/requirements_event.txt numpy==2.2.6
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:PYTHONPATH="mt5_bridge;tests/event_core"
+          $env:TERM="xterm"
+          python -m unittest discover -s tests/event_core -p 'test_*.py' -v *> evidence/python.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/python.log -Tail 20
+          exit $rc
+      - name: Package reproduction source
+        shell: pwsh
+        run: |
+          git archive --format=zip --output=evidence/PACKAGING_SOURCE.zip HEAD
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-COMPLETE-RESTORE
+          path: dist/FXM1_R7_4_RESTORE_FULL.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-RESTORE-EVIDENCE
+          path: evidence/
+          if-no-files-found: error
