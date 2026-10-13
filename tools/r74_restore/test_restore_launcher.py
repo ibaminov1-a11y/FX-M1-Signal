@@ -10,7 +10,7 @@ L=importlib.util.module_from_spec(spec);sys.modules[spec.name]=L;spec.loader.exe
 
 class RestoreTests(unittest.TestCase):
     def setUp(self):
-        self.t=tempfile.TemporaryDirectory();self.base=Path(self.t.name)
+        self.t=tempfile.TemporaryDirectory();self.base=Path(self.t.name).resolve()
         self.root=self.base/'Чистая папка ! test'/'FXM1_R74';self.root.mkdir(parents=True)
         (self.root/'Runtime').mkdir();(self.root/'Runtime/python.exe').write_bytes(b'test-exe')
         (self.root/'mt5_bridge/event_core').mkdir(parents=True)
@@ -20,7 +20,7 @@ class RestoreTests(unittest.TestCase):
     def test_fresh_install_does_not_require_deleted_old_environment(self):
         try: paths=L.resolve_runtime(self.root)
         except RuntimeError as e:self.fail('FRESH_INSTALL_REQUIRES_DELETED_ENVIRONMENT: '+str(e))
-        self.assertEqual(paths.python,self.root/'Runtime/python.exe')
+        self.assertEqual(paths.python,(self.root/'Runtime/python.exe').resolve())
         self.assertFalse(paths.state_dir.exists())
         self.assertNotEqual(paths.state_dir.parent,self.root)
     def test_new_state_creates_unique_identity_with_auto_off(self):
@@ -31,8 +31,9 @@ class RestoreTests(unittest.TestCase):
         token=(paths.state_dir/'bridge-token.txt').read_text()
         self.assertGreaterEqual(len(token),32)
         import sqlite3
-        with sqlite3.connect(paths.state_dir/'campaign.sqlite3') as c:
-            self.assertEqual(c.execute('select count(*) from intents').fetchone()[0],0)
+        c=sqlite3.connect(paths.state_dir/'campaign.sqlite3')
+        try:self.assertEqual(c.execute('select count(*) from intents').fetchone()[0],0)
+        finally:c.close()
         self.assertFalse(json.loads((paths.state_dir/'recovery-install.json').read_text())['auto_enabled'])
     def test_partial_state_is_never_silently_replaced(self):
         p=L.resolve_runtime(self.root).state_dir;p.mkdir(parents=True)
