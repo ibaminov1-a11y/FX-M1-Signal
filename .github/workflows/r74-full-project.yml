@@ -1,0 +1,88 @@
+name: R74 complete project native acceptance
+on:
+  push:
+    branches: [repair/r74-full-project-20261013]
+    paths: ['tools/r74_project/**', '.github/workflows/r74-full-project.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      R7_NO_PAUSE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-ONE-FOLDER
+          run-id: 38368255769
+          github-token: ${{ github.token }}
+          path: previous
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-COMPLETE-RESTORE
+          run-id: 38356652559
+          github-token: ${{ github.token }}
+          path: restore
+      - name: Require previous package to lack requested full project
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          python tools/r74_project/check_project.py previous/FXM1_R74_ONE_FOLDER.zip *> evidence/LAYOUT_RED.json
+          if ($LASTEXITCODE -ne 1) { throw 'Missing layout defect was not reproduced' }
+          $r=Get-Content evidence/LAYOUT_RED.json -Raw | ConvertFrom-Json
+          if ($r.checks.full_source_directories -or $r.checks.ready_apk) { throw 'Wrong RED failure' }
+          exit 0
+      - name: Build complete project without changing trade logic or APK
+        shell: pwsh
+        run: |
+          python tools/r74_project/build_project.py previous/FXM1_R74_ONE_FOLDER.zip restore/FXM1_R7_4_RESTORE_FULL.zip dist *> evidence/BUILD.json
+          $rc=$LASTEXITCODE
+          Get-Content evidence/BUILD.json
+          exit $rc
+      - name: Native launch, all legacy aliases, moving folder and safety checks
+        shell: pwsh
+        run: |
+          python tools/r74_project/verify_windows.py *> evidence/NATIVE.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/NATIVE.log -Tail 30
+          exit $rc
+      - name: Original Python regression against bundled product and dependencies
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH='dist/FX-M1-Signal/mt5_bridge;dist/FX-M1-Signal/Runtime/Lib/site-packages;tests/event_core'
+          $env:TERM='xterm'
+          python -m unittest discover -s tests/event_core -p 'test_*.py' -v *> evidence/PYTHON.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/PYTHON.log -Tail 25
+          exit $rc
+      - name: Record exact deliverable bytes and packaging source
+        shell: pwsh
+        run: |
+          python tools/r74_project/check_project.py dist/FXM1_R74_COMPLETE_PROJECT.zip dist/reference/source.zip *> evidence/LAYOUT_GREEN.json
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git archive --format=zip --output=evidence/PACKAGING_SOURCE.zip HEAD
+          (Get-FileHash dist/FXM1_R74_COMPLETE_PROJECT.zip -Algorithm SHA256).Hash > evidence/ARCHIVE_SHA256.txt
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-COMPLETE-PROJECT
+          path: dist/FXM1_R74_COMPLETE_PROJECT.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-COMPLETE-PROJECT-CHECKS
+          path: evidence/
+          if-no-files-found: error
