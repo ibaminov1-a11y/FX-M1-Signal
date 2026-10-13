@@ -10,10 +10,9 @@ def extract(archive, destination):
 
 def call(root, args='--check', cwd=None):
     env=dict(os.environ,LOCALAPPDATA=str(root.parent/'isolated-state'),R7_NO_PAUSE='1',PYTHONPATH='not-the-bundled-runtime',PYTHONHOME='not-the-bundled-runtime')
-    # No system Python or py launcher can be selected through PATH.
     env['PATH']=os.path.join(os.environ['SystemRoot'],'System32')
-    cmd='"'+str(root/'START.cmd')+'" '+args
-    run=subprocess.run(['cmd.exe','/d','/c',cmd],cwd=cwd or root.parent,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=100)
+    line='"'+os.environ['COMSPEC']+'" /d /s /c ""'+str(root/'START.cmd')+'" '+args+'"'
+    run=subprocess.run(line,cwd=cwd or root.parent,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=100)
     return dict(exit=run.returncode,stdout=run.stdout.decode('utf-8',errors='replace'),stderr=run.stderr.decode('utf-8',errors='replace'))
 
 def main():
@@ -22,7 +21,8 @@ def main():
     report=dict(red=a.red,checks={},calls=[],broker_calls=0)
     def check(name, condition):
         report['checks'][name]=bool(condition)
-        if not condition:raise AssertionError(name)
+        (out/('RED.json' if a.red else 'WINDOWS.json')).write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
+        if not condition:raise AssertionError(name+': '+str(report['calls'][-1:]))
     with tempfile.TemporaryDirectory(prefix='R74 integrated ') as td:
         work=Path(td);root=extract(a.archive,work/'извлечено с пробелами')
         before=call(root);report['calls'].append(before)
@@ -35,7 +35,6 @@ def main():
             check('reported_missing_bootstrap_reproduced',after['exit']!=0 and 'restore_launcher.py' in after['stdout'])
         else:
             check('no_external_launcher_needed',not launcher.exists())
-            # A stray prior launcher is not executed or modified.
             sentinel=b"raise RuntimeError('DO_NOT_EXECUTE_STRAY_ROOT_SCRIPT')\n"
             launcher.write_bytes(sentinel)
             after=call(root);report['calls'].append(after)
@@ -53,7 +52,6 @@ def main():
             missing=call(root);report['calls'].append(missing)
             check('missing_native_reports_exact_path',missing['exit']!=0 and 'MISSING_NATIVE' in missing['stdout'] and 'Runtime' in missing['stdout'] and 'python.exe' in missing['stdout'])
             (root/'Runtime/python.saved').rename(native)
-            # A corrupt native binary is never launched or silently replaced.
             payload=native.read_bytes();native.write_bytes(b'NOT_AN_EXECUTABLE')
             corrupt=call(root);report['calls'].append(corrupt)
             check('corrupt_native_refused_not_repaired',corrupt['exit']!=0 and 'NATIVE_HASH_MISMATCH' in corrupt['stdout'] and native.read_bytes()==b'NOT_AN_EXECUTABLE')
