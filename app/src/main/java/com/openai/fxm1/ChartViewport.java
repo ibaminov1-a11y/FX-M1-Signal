@@ -23,6 +23,15 @@ final class ChartViewport {
         ArrayList<JSONObject> rows=new ArrayList<>(data.descendingMap().values());
         for(int i=Math.min(visible,rows.size())-1;i>=0;i--)out.put(rows.get(i));return out;
     }
+    JSONArray between(double first,double last){
+        JSONArray out=new JSONArray();
+        if(!Double.isFinite(first)||!Double.isFinite(last)||first<=0||last<first)return out;
+        ArrayList<JSONObject> rows=new ArrayList<>();
+        for(JSONObject b:history.subMap((long)Math.ceil(first),true,(long)Math.floor(last),true).descendingMap().values()){
+            if(rows.size()>=5000)break;rows.add(b);
+        }
+        for(int i=rows.size()-1;i>=0;i--)out.put(rows.get(i));return out;
+    }
     void pan(int count){if(history.isEmpty())return;
         ArrayList<Long> keys=new ArrayList<>(history.keySet());long old=live?keys.get(keys.size()-1):edge;
         int index=Collections.binarySearch(keys,old);if(index<0)index=-index-2;

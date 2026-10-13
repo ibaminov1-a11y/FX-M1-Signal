@@ -12,6 +12,7 @@ public class SparklineView extends View {
     private final ChartViewport viewport=new ChartViewport();
     private JSONArray positions=new JSONArray(),structure=new JSONArray(),liveStructure=new JSONArray();
     private JSONObject liveBar=null,forecast=new JSONObject(),preparedForecast=null;
+    private JSONArray preparedComparisonBars=null;
     private ForecastArchive forecastArchive;private String forecastArchiveScope="";private Runnable forecastUiChanged;
     private String identity="",historyScope="",historyFrame="M5",historyClock="";
     public void setHistoryContext(String scope,String frame,String clock){historyScope=scope;historyFrame=frame;historyClock=clock;}
@@ -42,7 +43,7 @@ public class SparklineView extends View {
         // both surfaces; ordinary frame switches/recreation still restore it.
         boolean domainTransition=!identity.isEmpty()&&identity.contains("|CHART|")!=key.contains("|CHART|");
         if(domainTransition)resetDomainViewport();
-        identity=key;forecast=new JSONObject();preparedForecast=null;forecastArchive=null;forecastArchiveScope="";viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
+        identity=key;forecast=new JSONObject();preparedForecast=null;preparedComparisonBars=null;forecastArchive=null;forecastArchiveScope="";viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
         if(domainTransition)resetDomainViewport();
     }}
     private void resetDomainViewport(){
@@ -70,8 +71,8 @@ public class SparklineView extends View {
         }return forecastArchive;
     }
     public JSONArray forecastChoices(){return forecastArchive().choices();}
-    public boolean selectForecast(String id){boolean found=forecastArchive().select(id);if(found)setChartMode(ChartDisplayState.FORECAST);return found;}
-    public boolean newestForecast(){boolean found=forecastArchive().newest();setChartMode(ChartDisplayState.FORECAST);return found;}
+    public boolean selectForecast(String id){boolean found=forecastArchive().select(id);if(found){goLive();setChartMode(ChartDisplayState.FORECAST);}return found;}
+    public boolean newestForecast(){boolean found=forecastArchive().newest();if(found)goLive();setChartMode(ChartDisplayState.FORECAST);return found;}
     public String forecastDetails(){return ForecastChartRenderer.description(displayedForecast());}
     private String displayScope(){return archive?"archive|"+identity:identity;}
     private ChartDisplayState displayState(){return identity.isEmpty()?transientDisplay:ChartDisplayState.load(chartPrefs,displayScope());}
@@ -157,7 +158,15 @@ public class SparklineView extends View {
             return f;
         }catch(Exception e){return new JSONObject();}
     }
-    private void updateDescription(){preparedForecast=displayedForecast();setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(preparedForecast));if(forecastUiChanged!=null)forecastUiChanged.run();}
+    private JSONArray comparisonBars(JSONObject f){
+        if(!ChartDisplayState.FORECAST.equals(f.optString("chart_display_mode")))return null;
+        JSONObject p=PriceForecastPlot.visible(f);if(p==null)return null;
+        double issued=p.optDouble("issued_at"),end=ForecastChartRenderer.end(p);
+        int seconds=ForecastChartRenderer.seconds(f.optString("timeframe"));
+        double start=issued-Math.max(6.0*seconds,end-issued)*Math.max(12,Math.min(5000,viewport.visible()))/36.0;
+        return viewport.between(start,end+seconds*.35);
+    }
+    private void updateDescription(){preparedForecast=displayedForecast();preparedComparisonBars=comparisonBars(preparedForecast);setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(preparedForecast));if(forecastUiChanged!=null)forecastUiChanged.run();}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p){
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
         setMarket(b,l,p,d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
@@ -190,7 +199,7 @@ public class SparklineView extends View {
     }
     @Override public boolean performClick(){super.performClick();return true;}
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);JSONObject f=preparedForecast==null?displayedForecast():preparedForecast;JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
+        super.onDraw(c);JSONObject f=preparedForecast==null?displayedForecast():preparedForecast;JSONArray bars=preparedComparisonBars==null?viewport.window():preparedComparisonBars;JSONObject forming=viewport.live()?liveBar:null;
         if(!ChartViewport.validBar(forming)||(bars.length()>0&&forming.optLong("time")<=bars.optJSONObject(bars.length()-1).optLong("time")))forming=null;
         if(bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
         if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
