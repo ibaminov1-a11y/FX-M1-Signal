@@ -7,7 +7,7 @@ permissions:
   contents: read
   actions: read
 env:
-  F1_SOURCE_SHA: 37730c2f4157f6ddcf9ed0689f4ae8b756f0eaed
+  F1_SOURCE_SHA: 4e79326b2e60885204c5eebf85b75d887589dd8a
 jobs:
   python:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r74-forecast-f1-20261013'
