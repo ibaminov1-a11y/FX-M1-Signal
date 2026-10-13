@@ -1,0 +1,108 @@
+name: F1 signed APK acceptance
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/f1-acceptance.yml]
+permissions:
+  contents: read
+  actions: read
+env:
+  F1_SOURCE_SHA: 37730c2f4157f6ddcf9ed0689f4ae8b756f0eaed
+jobs:
+  python:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r74-forecast-f1-20261013'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.F1_SOURCE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Unchanged Bridge and complete regression
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git diff --exit-code 796c54d93f212aa9424670c72aac5d56bbae1081 HEAD -- mt5_bridge
+          git diff --check 796c54d93f212aa9424670c72aac5d56bbae1081 HEAD
+          git rev-parse HEAD > evidence/SOURCE_SHA.txt
+          git archive --format=zip HEAD > evidence/SOURCE.zip
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/python.log 2>&1
+          tail -20 evidence/python.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: F1-PYTHON-${{ env.F1_SOURCE_SHA }}
+          path: evidence/
+  android:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r74-forecast-f1-20261013'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.F1_SOURCE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - name: Verify original certificate and unchanged Bridge; never export key
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git diff --exit-code 796c54d93f212aa9424670c72aac5d56bbae1081 HEAD -- mt5_bridge
+          git rev-parse HEAD > evidence/SOURCE_SHA.txt
+          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/public-cert.der"
+          test "$(sha256sum "$RUNNER_TEMP/public-cert.der" | cut -d' ' -f1)" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-SIGNED-NATIVE-5f6f47f303c337bfd57acec9958cb5ed910d375f
+          run-id: 37433783603
+          github-token: ${{ github.token }}
+          path: previous-release
+      - name: Verify previous installed APK
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,os
+          p=Path('previous-release/FXM1_R7_4.apk').resolve()
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='9cb2b370b8bc1a13c49b2c7b4da87aaf39a84e96da1231ff7b1f2cfcf8a0381d'
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('F1_OLD_APK='+str(p)+'\n')
+          PY
+      - name: Upgrade 934 to 935, all native tests and actual chart screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_f1_native.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: F1-NATIVE-${{ env.F1_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
