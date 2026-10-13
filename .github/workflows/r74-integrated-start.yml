@@ -7,6 +7,27 @@ permissions:
   contents: read
   actions: read
 jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire R7.4 regression
+        run: |
+          mkdir -p evidence
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/PYTHON.log 2>&1
+          tail -5 evidence/PYTHON.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-INTEGRATED-PYTHON
+          path: evidence/
   windows:
     runs-on: windows-latest
     timeout-minutes: 12
@@ -28,17 +49,43 @@ jobs:
           run-id: 38384802093
           github-token: ${{ github.token }}
           path: original
-      - name: Reproduce missing bootstrap using exact prior user ZIP and native CMD
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-INTEGRATED-START-RED
+          run-id: 38390375112
+          github-token: ${{ github.token }}
+          path: evidence
+      - name: Build from verified immutable input after reproduced defect
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force evidence | Out-Null
-          python tools/r74_integrated/probe.py original/FXM1_R74_FULL_PROJECT_RECOVER.zip --red --out evidence *> evidence/RED.log
+          $r=Get-Content evidence/RED.json -Raw | ConvertFrom-Json
+          if (-not $r.ok -or -not $r.checks.reported_missing_bootstrap_reproduced) { throw 'RED not proven' }
+          python tools/r74_integrated/build.py original/FXM1_R74_FULL_PROJECT_RECOVER.zip dist *> evidence/BUILD.log
           $rc=$LASTEXITCODE
-          Get-Content evidence/RED.log
+          Get-Content evidence/BUILD.log
           exit $rc
+      - name: Actual Windows CMD without external root launcher
+        shell: pwsh
+        run: |
+          python tools/r74_integrated/probe.py dist/FXM1_R74_FULL_FOLDER_START.zip --out evidence *> evidence/NATIVE.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/NATIVE.log -Tail 30
+          exit $rc
+      - name: Preserve exact artifact and source identities
+        shell: pwsh
+        run: |
+          Copy-Item dist/BUILD_RESULT.json evidence/BUILD_RESULT.json
+          git rev-parse HEAD > evidence/SOURCE_SHA.txt
+          git archive --format=zip --output=evidence/PACKAGING_SOURCE.zip HEAD
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-INTEGRATED-FULL
+          path: dist/FXM1_R74_FULL_FOLDER_START.zip
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: R74-INTEGRATED-START-RED
+          name: R74-INTEGRATED-CHECKS
           path: evidence/
           if-no-files-found: error
