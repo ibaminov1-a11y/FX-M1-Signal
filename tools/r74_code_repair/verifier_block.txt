@@ -1,0 +1,139 @@
+PROGRAM_RESERVE_SHA256 = '@RESERVE_SHA@'
+
+
+def _package_path(root, name):
+    # Package data is never allowed to select an external path or user state.
+    if not isinstance(name, str) or not name or '\\' in name or ':' in name:
+        raise RuntimeError('PACKAGE_PATH_INVALID')
+    parts = name.split('/')
+    if any(part in ('', '.', '..') for part in parts):
+        raise RuntimeError('PACKAGE_PATH_INVALID')
+    p = root
+    for part in parts:
+        p = p / part
+        if p.is_symlink() or getattr(p, 'is_junction', lambda: False)():
+            raise RuntimeError('LINK_NOT_ALLOWED: ' + name)
+    return p
+
+
+def _program_source(name):
+    return name.endswith('.py') and (name.startswith('mt5_bridge/') or
+                                    name.startswith('Runtime/Lib/site-packages/'))
+
+
+def _atomic_package_write(path, data):
+    import tempfile
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.r74-write-', delete=False) as stream:
+            tmp = Path(stream.name)
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if hashlib.sha256(tmp.read_bytes()).digest() != hashlib.sha256(data).digest():
+            raise RuntimeError('PACKAGE_WRITE_FAILED: ' + str(path.name))
+        os.replace(tmp, path)
+    finally:
+        if tmp is not None and tmp.exists():
+            tmp.unlink()
+
+
+def verify_package(root):
+    """Restore only pinned Python sources, then enforce the complete manifest.
+
+    Native binaries, the verifier itself and user data are never repaired by
+    this function. Prior modified sources are preserved locally as .before.
+    No module from the Bridge or third-party libraries is imported here.
+    """
+    import base64
+    root = Path(root).resolve()
+    reserve_path = _package_path(root, 'Runtime/program_recovery.json')
+    if not reserve_path.is_file():
+        raise RuntimeError('RESERVE_MISSING: Runtime/program_recovery.json')
+    reserve_bytes = reserve_path.read_bytes()
+    if hashlib.sha256(reserve_bytes).hexdigest() != PROGRAM_RESERVE_SHA256:
+        raise RuntimeError('RESERVE_CHECKSUM: Runtime/program_recovery.json')
+    reserve = json.loads(reserve_bytes)
+    if reserve.get('format') != 'R74_ORIGINAL_PYTHON_SOURCES_V1':
+        raise RuntimeError('RESERVE_FORMAT_INVALID')
+    manifest = json.loads(_package_path(root, 'PROGRAM_MANIFEST.json').read_text(encoding='utf-8'))
+    files = manifest.get('files', {})
+    if not isinstance(files, dict) or not files:
+        raise RuntimeError('Пустой список файлов комплекта.')
+    expected_names = {n for n in files if _program_source(n)}
+    if set(reserve['files']) != expected_names:
+        raise RuntimeError('RESERVE_SOURCE_SET_MISMATCH')
+    originals = {}
+    for name, entry in reserve['files'].items():
+        _package_path(root, name)
+        data = base64.b64decode(entry['data'], validate=True)
+        if len(data) != entry['size'] or hashlib.sha256(data).hexdigest() != files[name]:
+            raise RuntimeError('RESERVE_SOURCE_CHECKSUM: ' + name)
+        originals[name] = data
+    report = dict(format='R74_PACKAGE_CHECK_V1', product='R7.4',
+                  user_state_changed=False, broker_calls=0, ok=False,
+                  repairs=[], unrepairable=[], checked_files=len(files))
+    changes = []
+    for name, expected in files.items():
+        p = _package_path(root, name)
+        try:
+            before = p.read_bytes()
+            actual = hashlib.sha256(before).hexdigest()
+            if actual == expected:
+                continue
+            reason = 'HASH_MISMATCH'
+        except FileNotFoundError:
+            before = None
+            actual = None
+            reason = 'MISSING'
+        except OSError as exc:
+            report['unrepairable'].append(dict(path=name, reason=type(exc).__name__,
+                                               expected_sha256=expected, before_sha256=None))
+            continue
+        row = dict(path=name, reason=reason, expected_sha256=expected, before_sha256=actual,
+                   before_size=None if before is None else len(before))
+        if name not in originals:
+            report['unrepairable'].append(row)
+        else:
+            changes.append((name, p, before, row))
+    report_path = _package_path(root, 'PACKAGE_CHECK.json')
+    if report['unrepairable']:
+        report['pending_repairs'] = [row for _, _, _, row in changes]
+        _atomic_package_write(report_path, json.dumps(report, ensure_ascii=False, indent=2).encode('utf-8'))
+        names = '; '.join(row['path'] for row in report['unrepairable'][:8])
+        raise RuntimeError('UNREPAIRABLE: ' + names + '. Полный список: PACKAGE_CHECK.json. '
+                           'Состояние не изменено; защиту Windows не отключайте.')
+    batch = time.strftime('%Y%m%d-%H%M%S', time.gmtime()) + '-' + secrets.token_hex(5)
+    try:
+        for name, target, before, row in changes:
+            _package_path(root, name)
+            # Native code and personal databases are excluded by the pinned source set.
+            if before is not None:
+                backup_name = 'Runtime/repair_backups/' + batch + '/' + name + '.before'
+                backup = _package_path(root, backup_name)
+                _atomic_package_write(backup, before)
+                row['backup'] = backup_name
+            _atomic_package_write(target, originals[name])
+            if hashlib.sha256(target.read_bytes()).hexdigest() != files[name]:
+                raise RuntimeError('SOURCE_REPAIR_VERIFY_FAILED: ' + name)
+            row['after_sha256'] = files[name]
+            report['repairs'].append(row)
+            if len(report['repairs']) <= 6:
+                print('Восстановлен код R7.4: ' + name + ' [' + row['reason'] + ']', flush=True)
+        # All checks remain strict, including executables, DLLs and distribution metadata.
+        for name, expected in files.items():
+            p = _package_path(root, name)
+            if not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest() != expected:
+                raise RuntimeError('PACKAGE_CHANGED_DURING_START: ' + name)
+        report['ok'] = True
+        report['restored_files'] = len(report['repairs'])
+    except Exception as exc:
+        report['error'] = type(exc).__name__ + ': ' + str(exc)
+        raise
+    finally:
+        _atomic_package_write(report_path, json.dumps(report, ensure_ascii=False, indent=2).encode('utf-8'))
+        if report['repairs']:
+            saved_report = _package_path(root, 'Runtime/repair_backups/' + batch + '/repair.json')
+            _atomic_package_write(saved_report, json.dumps(report, ensure_ascii=False, indent=2).encode('utf-8'))
+    print('PACKAGE_CODE_RESTORED ' + str(len(report['repairs'])) + ' | PACKAGE CHECK OK', flush=True)
