@@ -1,0 +1,48 @@
+name: F1 exact source import
+on:
+  push:
+    branches: [fix/r74-forecast-view-20261013]
+    paths: [.ci/f1-pending.json]
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate patch and paths without executing product code
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python - <<'PY'
+          import base64,bz2,hashlib,json,subprocess
+          from pathlib import Path
+          m=json.loads(Path('.ci/f1-pending.json').read_text())
+          assert m['parts']==['.ci/f1-part-0.txt','.ci/f1-part-1.txt']
+          encoded=''.join(Path(p).read_text().strip() for p in m['parts'])
+          decoder=bz2.BZ2Decompressor();data=decoder.decompress(base64.b64decode(encoded,validate=True),max_length=262145)
+          assert len(data)<=262144 and decoder.eof and not decoder.unused_data
+          assert hashlib.sha256(data).hexdigest()==m['sha256']
+          patch=Path('evidence/FORECAST.patch');patch.write_bytes(data)
+          subprocess.run(['git','apply','--check',str(patch)],check=True)
+          subprocess.run(['git','apply','--index',str(patch)],check=True)
+          paths=subprocess.check_output(['git','diff','--cached','--name-only'],text=True).splitlines()
+          for p in paths:
+              assert p in ('app/build.gradle','tools/run_f1_native.sh') or (p.startswith(('app/src/main/java/com/openai/fxm1/','app/src/androidTest/java/com/openai/fxm1/')) and p.endswith('.java'))
+              assert '..' not in Path(p).parts
+          PY
+          git diff --cached --check
+          git rm .ci/f1-pending.json .ci/f1-part-0.txt .ci/f1-part-1.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix(android): immutable read-only forecast view, history and factual candle overlay'
+          test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:"$GITHUB_REF"
+          git rev-parse HEAD > evidence/SOURCE_SHA.txt
+          git archive --format=zip HEAD > evidence/SOURCE.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: F1-IMPORTED-SOURCE
+          path: evidence/
