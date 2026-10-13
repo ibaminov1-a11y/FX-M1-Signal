@@ -262,7 +262,20 @@ public final class ScenarioUi {
         button(a,row,"ПОДРОБНО",()->new AlertDialog.Builder(a).setTitle("Разметка · не разрешение на сделку").setMessage(chart.patternDetails()).setPositiveButton("ЗАКРЫТЬ",null).show());
         Button branches=button(a,row,"ВЕТКИ",()->choose(a,chart));branches.setTag("scenario_branches");
         if(!archive){Button history=button(a,row,"ЕЩЁ ИСТОРИЯ",()->older(a,chart));history.setTag("scenario_history");Button archiveButton=button(a,row,"АРХИВ ВХОДА",()->archiveList(a,null));archiveButton.setTag("scenario_archive");}
-        return pinned;
+        LinearLayout all=new LinearLayout(a);all.setOrientation(LinearLayout.VERTICAL);all.addView(pinned);
+        LinearLayout forecasts=new LinearLayout(a);forecasts.setOrientation(LinearLayout.HORIZONTAL);
+        button(a,forecasts,"НОВЫЙ",()->{if(!chart.newestForecast())Toast.makeText(a,"Нового пригодного расчёта пока нет",Toast.LENGTH_LONG).show();});
+        button(a,forecasts,"ИСТОРИЯ ПРОГНОЗОВ",()->chooseForecast(a,chart));
+        all.addView(forecasts);chart.setForecastUiChanged(()->forecasts.setVisibility(chart.isPriceForecastMode()&&!archive?View.VISIBLE:View.GONE));
+        forecasts.setVisibility(chart.isPriceForecastMode()&&!archive?View.VISIBLE:View.GONE);
+        return all;
+    }
+    private static void chooseForecast(Activity a,SparklineView chart){
+        JSONArray rows=chart.forecastChoices();if(rows.length()==0){new AlertDialog.Builder(a).setTitle("Ценовой прогноз").setMessage(chart.forecastDetails()).setPositiveButton("ЗАКРЫТЬ",null).show();return;}
+        String[] labels=new String[rows.length()];for(int i=0;i<labels.length;i++){JSONObject p=rows.optJSONObject(i);
+            labels[i]=ForecastChartRenderer.stamp(p.optDouble("issued_at"))+" UTC · "+p.optString("timeframe")+" · "+p.optString("snapshot_id").substring(0,Math.min(8,p.optString("snapshot_id").length()));}
+        new AlertDialog.Builder(a).setTitle("Полученные расчёты · точки закреплены").setItems(labels,(dialog,index)->chart.selectForecast(rows.optJSONObject(index).optString("snapshot_id")))
+            .setNegativeButton("ЗАКРЫТЬ",null).show();
     }
     private static void choosePattern(Activity a,SparklineView chart){
         JSONArray choices=chart.patternChoices();if(choices.length()==0){Toast.makeText(a,"Подходящие фигуры пока не найдены",Toast.LENGTH_LONG).show();return;}

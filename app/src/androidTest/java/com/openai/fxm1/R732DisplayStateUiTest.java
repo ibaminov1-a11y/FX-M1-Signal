@@ -53,9 +53,10 @@ public class R732DisplayStateUiTest {
             assertEquals("CANDLES",c.displayedForecast().optString("chart_display_mode"));
             assertFalse(c.displayedForecast().optBoolean("show_price_forecast",true));assertEquals(before,f.toString());});
     }
-    @Test public void explicitForecastButtonCannotEnableAnalogue()throws Exception{
+    @Test public void explicitForecastButtonSelectsDedicatedReadOnlyMode()throws Exception{
         SparklineView c=chart(scope());ui(()->{c.showPriceForecast(true);
-            assertFalse("Old forecast control must now select structural routes",c.displayedForecast().optBoolean("show_price_forecast",true));});
+            assertTrue("Explicit forecast control selects the read-only forecast canvas",c.displayedForecast().optBoolean("show_price_forecast",false));
+            assertEquals("FORECAST",c.displayedForecast().optString("chart_display_mode"));});
     }
     @Test public void recreationRestoresMode()throws Exception{
         String key=scope();MainActivity old=rule.getActivity();

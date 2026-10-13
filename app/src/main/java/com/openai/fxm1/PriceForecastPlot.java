@@ -14,10 +14,18 @@ final class PriceForecastPlot {
     private PriceForecastPlot(){}
 
     static JSONObject visible(JSONObject f){
-        if(f==null||f.has("chart_display_mode")||!f.optBoolean("available",true)||f.optBoolean("history_only")||f.optBoolean("chart_read_only")
+        if(f==null||f.optBoolean("history_only")||f.optBoolean("chart_read_only")||f.optBoolean("chart_forecast_rejected")
             ||!f.optBoolean("show_price_forecast",true))return null;
-        JSONObject price=f.optJSONObject("price_forecast");
-        if(price==null||!price.optBoolean("available"))return null;
+        boolean dedicated=ChartDisplayState.FORECAST.equals(f.optString("chart_display_mode"));
+        if(f.has("chart_display_mode")&&!dedicated)return null;
+        if(!f.optBoolean("available",true)&&!(dedicated&&f.optBoolean("forecast_snapshot_saved")))return null;
+        JSONObject price=validated(f);if(price==null)return null;
+        JSONArray points=price.optJSONArray("projection");double end=points.optJSONObject(points.length()-1).optDouble("time");
+        return !dedicated&&f.optDouble("data_asof",price.optDouble("issued_at"))>=end?null:price;
+    }
+    static JSONObject validated(JSONObject f){
+        if(f==null||f.optBoolean("chart_read_only")||f.optBoolean("chart_forecast_rejected"))return null;
+        JSONObject price=f.optJSONObject("price_forecast");if(!validPoints(price))return null;
         if(!f.optString("timeframe").equals(price.optString("timeframe")))return null;
         if(f.has("chart_timeframe")&&!f.optString("chart_timeframe").equals(price.optString("timeframe")))return null;
         if(f.has("chart_symbol")&&!symbol(f.optString("chart_symbol")).equals(symbol(price.optString("symbol"))))return null;
@@ -26,23 +34,29 @@ final class PriceForecastPlot {
                 +"|"+price.optString("timeframe")+"|"+price.optString("model");
             if(!expected.equals(price.optString("scope")))return null;
         }
+        double asof=f.optDouble("data_asof",price.optDouble("issued_at"));
+        if(!Double.isFinite(asof)||price.optDouble("issued_at")>asof+1)return null;
+        return price;
+    }
+    static boolean validPoints(JSONObject price){
+        if(price==null||!price.optBoolean("available"))return false;
         double issued=price.optDouble("issued_at",Double.NaN),origin=price.optDouble("origin",Double.NaN);
         JSONArray points=price.optJSONArray("projection");
-        if(!Double.isFinite(issued)||issued<=0||!Double.isFinite(origin)||origin<=0||points==null||points.length()==0)return null;
+        if(!Double.isFinite(issued)||issued<=0||!Double.isFinite(origin)||origin<=0||points==null||points.length()==0||points.length()>64)return false;
         double previous=issued;
         for(int i=0;i<points.length();i++){
-            JSONObject point=points.optJSONObject(i);if(point==null)return null;
+            JSONObject point=points.optJSONObject(i);if(point==null)return false;
             double t=point.optDouble("time",Double.NaN),lo=point.optDouble("low",Double.NaN),
                 hi=point.optDouble("high",Double.NaN),v=point.optDouble("center",Double.NaN);
             if(!Double.isFinite(t)||t<=previous||!Double.isFinite(lo)||!Double.isFinite(hi)
-                ||!Double.isFinite(v)||lo<=0||lo>v||v>hi)return null;
+                ||!Double.isFinite(v)||lo<=0||lo>v||v>hi)return false;
             previous=t;
         }
-        double asof=f.optDouble("data_asof",issued);
-        return asof>=previous?null:price;
+        return true;
     }
 
     static String description(JSONObject f){
+        if(f!=null&&ChartDisplayState.FORECAST.equals(f.optString("chart_display_mode")))return ForecastChartRenderer.description(f);
         if(f!=null&&!f.optBoolean("show_price_forecast",true))return "";
         JSONObject price=visible(f);
         if(price==null){
