@@ -51,11 +51,14 @@ try {
         if ($bytes.Length -ne $entry.size -or (Hash-Bytes $bytes) -ne $entry.sha256) { throw ('RESERVE_FILE_CHECKSUM_MISMATCH: ' + $relative) }
         [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target)) | Out-Null
         $temporary = $target + '.r74-repair-' + [Guid]::NewGuid().ToString('N')
+        $oldCopy = $temporary + '.previous'
         try {
             [IO.File]::WriteAllBytes($temporary,$bytes)
             if ((Hash-File $temporary) -ne $entry.sha256) { throw ('RUNTIME_WRITE_CHECK_FAILED: ' + $relative) }
             try {
-                if ([IO.File]::Exists($target)) { [IO.File]::Replace($temporary,$target,$null) }
+                # PS 5.1 can coerce $null to an empty string for .NET string arguments.
+                # A unique same-directory backup gives File.Replace an unambiguous path.
+                if ([IO.File]::Exists($target)) { [IO.File]::Replace($temporary,$target,$oldCopy) }
                 else { [IO.File]::Move($temporary,$target) }
             } catch {
                 # A concurrent starter may have just restored the identical bytes.
@@ -66,6 +69,7 @@ try {
             if ($restored -le 3) { Write-Output ('Восстановлена библиотека: ' + $relative) }
         } finally {
             if ([IO.File]::Exists($temporary)) { [IO.File]::Delete($temporary) }
+            if ([IO.File]::Exists($oldCopy)) { [IO.File]::Delete($oldCopy) }
         }
     }
     Write-Output ('RUNTIME_LIBRARY_RESTORED ' + $restored + ' | LIBRARY CHECK OK')
