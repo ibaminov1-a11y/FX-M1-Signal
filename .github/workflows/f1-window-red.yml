@@ -1,0 +1,54 @@
+name: F1 comparison window RED
+on:
+  push:
+    branches: [fix/r74-forecast-view-20261013]
+    paths: [.github/workflows/f1-window-red.yml]
+permissions:
+  contents: read
+jobs:
+  native-red:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: mkdir -p evidence; sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: |
+            set +e; gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openai.fxm1.R74ForecastWindowTest > evidence/red.log 2>&1; echo $? > evidence/EXIT.txt
+      - name: Require both actual behavioural failures
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as E,json
+          from pathlib import Path
+          cases=[]
+          for p in Path('app/build/outputs/androidTest-results').rglob('*.xml'):cases.extend(E.parse(p).getroot().iter('testcase'))
+          assert len(cases)==2
+          failed=[t for t in cases if t.find('failure') is not None]
+          assert len(failed)==2
+          text='\n'.join(t.find('failure').text or '' for t in failed)
+          for marker in ['COMPARISON_CANDLES_LOST_BY_ROLLING_WINDOW','EXPLICIT_FORECAST_SELECTION_STILL_HIDDEN']:assert marker in text,text
+          Path('evidence/RED.json').write_text(json.dumps(dict(tests=2,expected_failures=2)))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: F1-WINDOW-RED
+          path: |
+            evidence/
+            app/build/outputs/androidTest-results/
