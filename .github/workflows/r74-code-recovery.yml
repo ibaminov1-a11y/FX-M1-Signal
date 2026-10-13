@@ -1,0 +1,93 @@
+name: R74 code and library recovery
+on:
+  push:
+    branches: [repair/r74-code-recovery-20261013]
+    paths: ['tools/r74_code_repair/**', '.github/workflows/r74-code-recovery.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      R7_NO_PAUSE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-FULL-PROJECT-LIBRARY-FIX
+          run-id: 38376559371
+          github-token: ${{ github.token }}
+          path: original
+      - name: Reproduce screenshot on original complete package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          python tools/r74_code_repair/verify_windows.py red original/FXM1_R74_COMPLETE_PROJECT_FIXED.zip *> evidence/RED.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/RED.log -Tail 12
+          exit $rc
+      - name: Assemble original project and exact recovery sources
+        shell: pwsh
+        run: |
+          python tools/r74_code_repair/build.py original/FXM1_R74_COMPLETE_PROJECT_FIXED.zip dist *> evidence/BUILD.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/BUILD.log -Tail 12
+          exit $rc
+      - name: Test real CMD, combined 1122 missing source files, stale sources and safety
+        shell: pwsh
+        run: |
+          python tools/r74_code_repair/verify_windows.py green dist/FXM1_R74_FULL_PROJECT_RECOVER.zip *> evidence/NATIVE.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/NATIVE.log -Tail 25
+          exit $rc
+      - name: Save exact source and package identity
+        shell: pwsh
+        run: |
+          git archive --format=zip --output=evidence/PACKAGING_SOURCE.zip HEAD
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          Copy-Item dist/BUILD_RESULT.json evidence/BUILD_RESULT.json
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-CODE-RECOVERY-FULL
+          path: dist/FXM1_R74_FULL_PROJECT_RECOVER.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-CODE-RECOVERY-CHECKS
+          path: evidence/
+          if-no-files-found: error
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire existing R7.4 Python suite
+        run: |
+          mkdir -p evidence
+          set -o pipefail
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/PYTHON.log 2>&1
+          tail -15 evidence/PYTHON.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-CODE-RECOVERY-PYTHON
+          path: evidence/
+          if-no-files-found: error
