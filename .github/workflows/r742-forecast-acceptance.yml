@@ -10,7 +10,7 @@ concurrency:
   group: r742-complete-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 env:
-  R742_SOURCE_SHA: e5acd795fc460264c500620cf54aa8d985eb0021
+  R742_SOURCE_SHA: ee2e24b0475cdb50c99b4c1f8f902140074dd802
 jobs:
   build:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
