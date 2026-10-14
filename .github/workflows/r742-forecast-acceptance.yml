@@ -6,31 +6,104 @@ on:
 permissions:
   contents: read
   actions: read
+concurrency:
+  group: r742-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+env:
+  R742_SOURCE_SHA: aaf328efb731d0f694921e60cb1bfe408c1869de
 jobs:
-  signing:
+  python:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 12
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R742_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Require unchanged Bridge and full original regression
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git fetch --no-tags origin 5f6f47f303c337bfd57acec9958cb5ed910d375f
+          git diff --exit-code 5f6f47f303c337bfd57acec9958cb5ed910d375f HEAD -- mt5_bridge > evidence/BRIDGE_UNCHANGED.diff
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/python.log 2>&1
+          tail -12 evidence/python.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-PYTHON-${{ env.R742_SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: error
+  android:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R742_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
       - uses: actions/cache/restore@v4
         with:
           path: ~/.fxm1-signing/ec1-demo.jks
           key: fxm1-ec1-demo-explicit-signing-v1
           fail-on-cache-miss: true
-      - name: Verify public certificate only
+      - name: Require original signature without private-key export
         run: |
           set -euo pipefail
           mkdir -p evidence
           keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/cert.der"
           fingerprint=$(sha256sum "$RUNNER_TEMP/cert.der" | cut -d' ' -f1)
           test "$fingerprint" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
-          printf '{"certificate_sha256":"%s","private_key_exported":false,"release":false}\n' "$fingerprint" > evidence/SIGNING.json
-      - uses: actions/upload-artifact@v4
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - uses: actions/download-artifact@v4
         with:
-          name: R742-SIGNING-PREFLIGHT
-          path: evidence/SIGNING.json
+          name: R74-SIGNED-NATIVE-5f6f47f303c337bfd57acec9958cb5ed910d375f
+          run-id: 37433783603
+          github-token: ${{ github.token }}
+          path: previous-release
+      - name: Verify actual previous APK identity
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,os
+          found=list(Path('previous-release').rglob('FXM1_R7_4.apk'))
+          assert len(found)==1,found
+          p=found[0].resolve()
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='9cb2b370b8bc1a13c49b2c7b4da87aaf39a84e96da1231ff7b1f2cfcf8a0381d'
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('R742_OLD_APK='+str(p)+'\n')
+          PY
+      - name: Original failure, upgrade and full actual Android UI acceptance
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash tools/run_r742_native.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-SIGNED-NATIVE-${{ env.R742_SOURCE_SHA }}
+          path: evidence/
           if-no-files-found: error
