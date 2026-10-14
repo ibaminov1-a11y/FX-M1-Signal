@@ -1,0 +1,70 @@
+name: R742 forecast targeted diagnostics
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/r742-forecast-smoke.yml]
+permissions:
+  contents: read
+jobs:
+  new-forecast-tests:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: aaf328efb731d0f694921e60cb1bfe408c1869de
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - run: |
+          mkdir -p evidence
+          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+      - name: Compile exact APK and all instrumentation sources before emulator
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          PYTHONPATH=mt5_bridge:tests/event_core timeout 45s python tests/event_core/export_r732_chart_fixtures.py > evidence/fixtures.log 2>&1
+          timeout 180s gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest > evidence/build.log 2>&1
+          cp app/build/outputs/apk/debug/app-debug.apk evidence/CANDIDATE.apk
+      - name: Only fourteen newly added tests with bounded instrumentation
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: |
+            PYTHONPATH=mt5_bridge:tests/event_core python tests/event_core/ui_fixture.py > evidence/fixture.log 2>&1 &
+            sleep 2
+            adb reverse tcp:8765 tcp:8765
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            set +e; timeout 180s adb shell am instrument -w -r -e class com.openai.fxm1.R742ForecastContractTest,com.openai.fxm1.R742ForecastViewTest,com.openai.fxm1.R742ForecastActivityTest com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner > evidence/tests.log 2>&1; echo $? > evidence/instrument-exit.txt
+            adb pull /sdcard/Android/data/com.openai.fxm1.ec1/files evidence/ui || true
+            adb logcat -d > evidence/logcat.txt
+            grep -q 'OK (14 tests)' evidence/tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-TARGETED-DIAGNOSTICS
+          path: evidence/
+          if-no-files-found: error
