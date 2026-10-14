@@ -20,6 +20,9 @@ public class SparklineView extends View {
     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
     private boolean customSelection=false,archive=false,panning=false;
     private SharedPreferences chartPrefs;
+    private ForecastSnapshots priceSnapshots;
+    private final ForecastComparisonPlot pricePlot=new ForecastComparisonPlot();
+    private boolean priceMode=false;
     private ChartDisplayState transientDisplay=new ChartDisplayState();
     private float downX,downY,lastX;
     private ScaleGestureDetector scale;
@@ -29,8 +32,9 @@ public class SparklineView extends View {
     public SparklineView(Context c,AttributeSet a,int s){super(c,a,s);init(c);}
     private void init(Context c){
         chartPrefs=c.getApplicationContext().getSharedPreferences("fxm1_chart_v1",Context.MODE_PRIVATE);
+        priceSnapshots=new ForecastSnapshots(c.getApplicationContext().getSharedPreferences("fxm1_forecast_view_v1",Context.MODE_PRIVATE));
         setClickable(true);scale=new ScaleGestureDetector(c,new ScaleGestureDetector.SimpleOnScaleGestureListener(){
-            public boolean onScale(ScaleGestureDetector d){viewport.zoom(d.getScaleFactor());saveViewport();invalidate();return true;}
+            public boolean onScale(ScaleGestureDetector d){viewport.zoom(d.getScaleFactor());saveViewport();updateDescription();invalidate();return true;}
         });
     }
     public void setSignal(String ignored){}
@@ -41,7 +45,7 @@ public class SparklineView extends View {
         // both surfaces; ordinary frame switches/recreation still restore it.
         boolean domainTransition=!identity.isEmpty()&&identity.contains("|CHART|")!=key.contains("|CHART|");
         if(domainTransition)resetDomainViewport();
-        identity=key;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
+        identity=key;priceMode=false;viewport.clear();viewportPreference="";selected.clear();customSelection=false;restoreViewport();
         if(domainTransition)resetDomainViewport();
     }}
     private void resetDomainViewport(){
@@ -55,15 +59,22 @@ public class SparklineView extends View {
     public boolean isFollowingLive(){return viewport.live();}
     public boolean isUnverifiedMarket(){return forecast.optBoolean("chart_read_only");}
     public void goLive(){viewport.follow();saveViewport();updateDescription();invalidate();}
-    public void zoomHistory(double factor){viewport.zoom(factor);saveViewport();invalidate();}
-    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);invalidate();}
+    public void zoomHistory(double factor){viewport.zoom(factor);saveViewport();updateDescription();invalidate();}
+    public void prependHistory(JSONArray older){if(isUnverifiedMarket())return;viewport.merge(older);updateDescription();invalidate();}
     public void setArchive(boolean value){if(archive!=value){archive=value;viewportPreference="";restoreViewport();}updateDescription();invalidate();}
-    public void showPriceForecast(boolean ignored){setChartMode(ChartDisplayState.PATTERNS);}
+    public void showPriceForecast(boolean show){
+        priceSnapshots.scope(displayScope());
+        if(show){priceSnapshots.observe(forecast);priceSnapshots.selectFirst(forecast);}
+        setChartMode(show?ChartDisplayState.FORECAST:ChartDisplayState.PATTERNS);
+    }
+    public JSONArray priceSnapshotChoices(){priceSnapshots.scope(displayScope());return priceSnapshots.choices(forecast);}
+    public boolean selectPriceSnapshot(String id){priceSnapshots.scope(displayScope());boolean ok=priceSnapshots.select(id,forecast);if(ok)setChartMode(ChartDisplayState.FORECAST);return ok;}
+    public boolean selectLatestPriceForecast(){priceSnapshots.scope(displayScope());boolean ok=priceSnapshots.latest(forecast);if(ok){viewport.follow();saveViewport();setChartMode(ChartDisplayState.FORECAST);}return ok;}
     private String displayScope(){return archive?"archive|"+identity:identity;}
     private ChartDisplayState displayState(){return identity.isEmpty()?transientDisplay:ChartDisplayState.load(chartPrefs,displayScope());}
     private void saveDisplay(ChartDisplayState state){if(identity.isEmpty())transientDisplay=state;else state.save(chartPrefs,displayScope());}
     public void setChartMode(String value){
-        if(!ChartDisplayState.PATTERNS.equals(value)&&!ChartDisplayState.CANDLES.equals(value))return;
+        if(!ChartDisplayState.PATTERNS.equals(value)&&!ChartDisplayState.CANDLES.equals(value)&&!ChartDisplayState.FORECAST.equals(value))return;
         ChartDisplayState state=displayState();state.mode=value;saveDisplay(state);updateDescription();invalidate();
     }
     private void saveViewport(){
@@ -91,7 +102,7 @@ public class SparklineView extends View {
         viewport.fitRange(p.optLong("start_at"),Math.max(p.optLong("end_at"),latest));
         saveViewport();updateDescription();invalidate();return complete;
     }
-    public String patternDetails(){JSONObject f=displayedForecast();PatternChartModel m=PatternChartModel.fromForecast(f);
+    public String patternDetails(){JSONObject f=displayedForecast();if(ChartDisplayState.FORECAST.equals(f.optString("chart_display_mode")))return ForecastSnapshots.description(f);PatternChartModel m=PatternChartModel.fromForecast(f);
         String id=f.optString("selected_pattern_id");StringBuilder text=new StringBuilder(m.description(id));
         JSONObject p=m.selected(id);if(p!=null){JSONArray b=m.routes(p.optString("view_id"));
             for(int i=0;i<b.length();i++){JSONObject v=b.optJSONObject(i);text.append("\n\n").append(v.optString("title")).append(" · ").append(ScenarioUi.stage(v.optString("stage")))
@@ -114,6 +125,12 @@ public class SparklineView extends View {
             selected.clear();selected.addAll(state.selectedScenarioIds);customSelection=!selected.isEmpty();
             JSONObject f=new JSONObject(forecast.toString());
             f.put("history_only",!viewport.live()).put("archive",archive).put("show_price_forecast",false).put("chart_display_mode",state.mode);
+            if(ChartDisplayState.FORECAST.equals(state.mode)){
+                priceSnapshots.scope(displayScope());JSONObject saved=priceSnapshots.selected(forecast);
+                f.put("forecast_snapshot_selected",saved!=null).put("scenarios",new JSONArray());
+                if(saved!=null)f.put("price_forecast",saved);
+                return f;
+            }
             String chosen=state.selectedPatternId.isEmpty()?f.optString("selected_pattern_id"):state.selectedPatternId;
             f.put("selected_pattern_id",chosen);
             PatternChartModel model=PatternChartModel.fromForecast(f);JSONObject pattern=model.selected(chosen);
@@ -133,7 +150,10 @@ public class SparklineView extends View {
             return f;
         }catch(Exception e){return new JSONObject();}
     }
-    private void updateDescription(){setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(displayedForecast()));}
+    private void updateDescription(){
+        JSONObject displayed=displayedForecast();priceMode=ChartDisplayState.FORECAST.equals(displayed.optString("chart_display_mode"));
+        if(priceMode){pricePlot.prepare(displayed,viewport.window(),viewport.live()?liveBar:null,positions);setContentDescription(ForecastSnapshots.description(displayed));return;}
+        setContentDescription((archive?"Архивный снимок. ":!viewport.live()?"Просмотр истории. ":"")+mapDescription(displayedForecast()));}
     public void setMarket(JSONArray b,JSONArray l,JSONArray p){
         JSONObject s=EventClient.state(),d=s.optJSONObject("decision");
         setMarket(b,l,p,d==null?null:d.optJSONArray("structure"),"SCENARIO_V2",s.optJSONObject("live_bar"),s.optJSONArray("live_structure"),s.optJSONObject("forecast"));
@@ -143,7 +163,10 @@ public class SparklineView extends View {
     public void setMarket(JSONArray b,JSONArray l,JSONArray p,JSONArray s,String path,JSONObject lb,JSONArray ls,JSONObject f){
         if(f!=null&&f.optBoolean("chart_read_only")&&(b==null||b.length()==0))viewport.clear();
         viewport.merge(b);restoreViewport();positions=p==null?new JSONArray():p;structure=s==null?new JSONArray():s;
-        liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;updateDescription();invalidate();
+        liveBar=lb;liveStructure=ls==null?new JSONArray():ls;forecast=f==null?new JSONObject():f;
+        priceSnapshots.scope(displayScope());if(!archive)priceSnapshots.observe(forecast);
+        if(ChartDisplayState.FORECAST.equals(displayState().mode))priceSnapshots.selectFirst(forecast);
+        updateDescription();invalidate();
     }
     @Override public boolean onTouchEvent(MotionEvent e){
         scale.onTouchEvent(e);
@@ -165,7 +188,7 @@ public class SparklineView extends View {
     }
     @Override public boolean performClick(){super.performClick();return true;}
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);JSONObject f=displayedForecast();JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
+        super.onDraw(c);if(priceMode){pricePlot.draw(c,getWidth(),getHeight(),getResources().getDisplayMetrics().density);return;}JSONObject f=displayedForecast();JSONArray bars=viewport.window();JSONObject forming=viewport.live()?liveBar:null;
         if(!ChartViewport.validBar(forming)||(bars.length()>0&&forming.optLong("time")<=bars.optJSONObject(bars.length()-1).optLong("time")))forming=null;
         if(bars.length()==0&&forming!=null){bars=new JSONArray().put(forming);forming=null;}
         if(bars.length()==0&&!isUnverifiedMarket()){Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setTextSize(14*getResources().getDisplayMetrics().density);p.setColor(0xffb0aac7);c.drawText("Ожидаем реальные свечи MT5",12,50,p);return;}
@@ -176,6 +199,7 @@ public class SparklineView extends View {
     static int priceDigits(JSONObject f){int digits=f==null?5:f.optInt("chart_digits",5);return digits>=0&&digits<=12?digits:5;}
     static String priceText(JSONObject f,double value){return Double.isFinite(value)&&value>0?String.format(Locale.US,"%."+priceDigits(f)+"f",value):"—";}
     public static String mapDescription(JSONObject f){
+        if(f!=null&&ChartDisplayState.FORECAST.equals(f.optString("chart_display_mode")))return ForecastSnapshots.description(f);
         if(f!=null&&f.optBoolean("chart_forecast_rejected"))return f.optString("chart_reason")
             +(f.optBoolean("client_offline")?" КЭШ · нет связи с Bridge.":"");
         if(f!=null&&f.optBoolean("chart_read_only"))return ScenarioUi.rawChartLabel(f)+". "+f.optString("chart_reason")

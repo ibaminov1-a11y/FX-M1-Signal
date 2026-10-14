@@ -9,7 +9,7 @@ import org.json.JSONObject;
 
 /** UI preferences only. No trading config, tokens, orders or account mutations. */
 final class ChartDisplayState {
-    static final String PATTERNS="PATTERNS", CANDLES="CANDLES";
+    static final String PATTERNS="PATTERNS", CANDLES="CANDLES", FORECAST="FORECAST";
     String mode=PATTERNS, selectedPatternId="";
     final LinkedHashSet<String> selectedScenarioIds=new LinkedHashSet<>();
     boolean manualViewport=false, followingLive=true;
@@ -29,7 +29,7 @@ final class ChartDisplayState {
         if(scopeKey==null||scopeKey.isEmpty())return state;
         try {
             JSONObject data=new JSONObject(prefs.getString(key(scopeKey),"{}"));
-            state.mode=CANDLES.equals(data.optString("mode"))?CANDLES:PATTERNS;
+            state.mode=FORECAST.equals(data.optString("mode"))?FORECAST:CANDLES.equals(data.optString("mode"))?CANDLES:PATTERNS;
             state.selectedPatternId=data.optString("selectedPatternId","");
             JSONArray ids=data.optJSONArray("selectedScenarioIds");
             if(ids!=null)for(int i=0;i<Math.min(2,ids.length());i++){
@@ -45,7 +45,7 @@ final class ChartDisplayState {
     void save(SharedPreferences prefs,String scopeKey){
         if(scopeKey==null||scopeKey.isEmpty())return;
         try {
-            JSONObject data=new JSONObject().put("mode",CANDLES.equals(mode)?CANDLES:PATTERNS)
+            JSONObject data=new JSONObject().put("mode",FORECAST.equals(mode)?FORECAST:CANDLES.equals(mode)?CANDLES:PATTERNS)
                 .put("selectedPatternId",selectedPatternId).put("selectedScenarioIds",new JSONArray(selectedScenarioIds))
                 .put("manualViewport",manualViewport).put("followingLive",followingLive)
                 .put("visibleBars",visibleBars).put("rightEdgeTime",rightEdgeTime);
