@@ -1,0 +1,44 @@
+name: R742 bounded display source import
+on:
+  push:
+    branches: [repair/r742-forecast-display-20261014]
+    paths: [.ci/r742-ready.json]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check exact patch and path allowlist before committing
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib,subprocess
+          cfg=json.loads(Path('.ci/r742-ready.json').read_text())
+          p=Path('.ci/r742-ui.patch');data=p.read_bytes()
+          assert hashlib.sha256(data).hexdigest()==cfg['sha256']
+          subprocess.run(['git','apply','--check',str(p)],check=True)
+          subprocess.run(['git','apply','--index',str(p)],check=True)
+          names=set(subprocess.check_output(['git','diff','--cached','--name-only'],text=True).splitlines())
+          assert names=={'app/build.gradle','app/src/main/java/com/openai/fxm1/ChartDisplayState.java','app/src/main/java/com/openai/fxm1/ScenarioUi.java','app/src/main/java/com/openai/fxm1/SparklineView.java'},names
+          Path('evidence/APPLIED.patch').write_bytes(data)
+          PY
+          git diff --cached --check
+          git rm .ci/r742-ready.json .ci/r742-ui.patch
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix(chart): independent fixed price forecast view, retain patterns and execution'
+          test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:"$GITHUB_REF"
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+          git archive --format=zip --output=evidence/SOURCE.zip HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-EXACT-SOURCE
+          path: evidence/
+          if-no-files-found: error
