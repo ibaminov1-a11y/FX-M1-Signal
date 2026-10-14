@@ -1,0 +1,63 @@
+name: R742 final source corrections
+on:
+  push:
+    branches: [repair/r742-forecast-display-20261014]
+    paths: [.github/workflows/r742-finish-source.yml]
+permissions:
+  contents: write
+jobs:
+  correct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact corrections after native failures in run 38532009779
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('app/src/main/java/com/openai/fxm1/MainActivity.java')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='61a272f05bf0cb7e1aacdbd5021dae2deb4deb70fc4138fa537cc3165f736431'
+          s=p.read_text()
+          old='statusText.setText(selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));'
+          new='statusText.setText(selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(!offline&&p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new))
+          p=Path('app/src/androidTest/java/com/openai/fxm1/R56TimeframesUiTest.java')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='27ab2789c42753c6c220806cd626e0903f6acec81e5084e686bf4ac6dba3b339'
+          s=p.read_text();start=s.index('    void shot(String name)');end=s.index('    void shotFrame(',start)
+          replacement='''    void shot(String name)throws Exception {
+                  // A live chart need not make the entire Looper idle. Keep every
+                  // functional assertion, but bound the capture and require real pixels.
+                  java.util.concurrent.ExecutorService capture=java.util.concurrent.Executors.newSingleThreadExecutor();
+                  android.graphics.Bitmap bitmap=null;
+                  try {
+                      bitmap=capture.submit(()->InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot())
+                          .get(10,java.util.concurrent.TimeUnit.SECONDS);
+                      assertNotNull("Native screenshot must exist",bitmap);
+                      assertTrue(bitmap.getWidth()>0&&bitmap.getHeight()>0);
+                      try(FileOutputStream out=new FileOutputStream(new File(context.getExternalFilesDir(null),name+".png"))){
+                          assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out));
+                      }
+                  } finally {if(bitmap!=null)bitmap.recycle();capture.shutdownNow();}
+              }
+          '''
+          p.write_text(s[:start]+replacement+s[end:])
+          PY
+          git diff --check
+          test "$(git diff --name-only | wc -l)" -eq 2
+          git add app/src/main/java/com/openai/fxm1/MainActivity.java app/src/androidTest/java/com/openai/fxm1/R56TimeframesUiTest.java
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix(chart): correct offline pending header and bound native screenshot capture'
+          test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:"$GITHUB_REF"
+          mkdir -p evidence
+          git diff HEAD~1 HEAD > evidence/CORRECTIONS.patch
+          git rev-parse HEAD > evidence/SOURCE_COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-FINAL-CORRECTIONS
+          path: evidence/
