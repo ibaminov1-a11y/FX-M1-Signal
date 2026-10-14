@@ -7,8 +7,8 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: r742-${{ github.event.pull_request.head.sha }}
-  cancel-in-progress: false
+  group: r742-complete-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 env:
   R742_SOURCE_SHA: aaf328efb731d0f694921e60cb1bfe408c1869de
 jobs:
@@ -42,7 +42,7 @@ jobs:
   android:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,6 +91,22 @@ jobs:
           assert hashlib.sha256(p.read_bytes()).hexdigest()=='9cb2b370b8bc1a13c49b2c7b4da87aaf39a84e96da1231ff7b1f2cfcf8a0381d'
           with open(os.environ['GITHUB_ENV'],'a') as f:f.write('R742_OLD_APK='+str(p)+'\n')
           PY
+      - name: Build before emulator and bound native diagnostics without modifying product
+        run: |
+          set -euo pipefail
+          PYTHONPATH=mt5_bridge:tests/event_core timeout 60s python tests/event_core/export_r732_chart_fixtures.py > evidence/fixtures.log 2>&1
+          timeout 240s gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest > evidence/prebuild.log 2>&1
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('tools/run_r742_native.sh').read_text()
+          s=s.replace('set -euo pipefail','set -euxo pipefail',1)
+          s=s.replace('curl -fsS','curl --max-time 3 -fsS')
+          s=s.replace('adb shell am instrument','timeout 60s adb shell am instrument')
+          s=s.replace('adb install -r','timeout 45s adb install -r')
+          s=s.replace('gradle --no-daemon :app:assemble','timeout 180s gradle --no-daemon :app:assemble')
+          s=s.replace('gradle --no-daemon :app:connectedDebugAndroidTest','timeout 1080s gradle --no-daemon :app:connectedDebugAndroidTest')
+          Path('evidence/BOUNDED_NATIVE.sh').write_text(s)
+          PY
       - name: Original failure, upgrade and full actual Android UI acceptance
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -100,7 +116,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
-          script: bash tools/run_r742_native.sh
+          script: bash evidence/BOUNDED_NATIVE.sh > evidence/stages.log 2>&1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
