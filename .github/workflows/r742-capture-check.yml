@@ -1,0 +1,101 @@
+name: R742 bounded fullscreen capture
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/r742-capture-check.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  capture:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONPATH: mt5_bridge:tests/event_core
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: aaf328efb731d0f694921e60cb1bfe408c1869de
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.fxm1-signing/ec1-demo.jks
+          key: fxm1-ec1-demo-explicit-signing-v1
+          fail-on-cache-miss: true
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Bound screenshot wait after demonstrated Instrumentation Idler timeout
+        run: |
+          mkdir -p evidence/ui
+          python - <<'PY'
+          from pathlib import Path
+          import difflib,re,json
+          p=Path('app/src/androidTest/java/com/openai/fxm1/R56TimeframesUiTest.java');old=p.read_text()
+          anchor='void shot(String name)throws Exception{InstrumentationRegistry.getInstrumentation().waitForIdleSync();Thread.sleep(250);'
+          replace='void shot(String name)throws Exception{java.util.concurrent.CountDownLatch frame=new java.util.concurrent.CountDownLatch(1);ui(()->chart().postOnAnimation(()->chart().postOnAnimation(frame::countDown)));assertTrue("Screenshot frame did not arrive",frame.await(5,java.util.concurrent.TimeUnit.SECONDS));Thread.sleep(250);'
+          assert old.count(anchor)==1
+          new=old.replace(anchor,replace);p.write_text(new)
+          tests=re.findall(r'@Test\s+public void (\w+)\(',old)
+          assert tests==re.findall(r'@Test\s+public void (\w+)\(',new) and len(tests)==12
+          # No test body or assertion is removed. One helper acquires a bounded frame instead of global idle.
+          Path('evidence/SCREENSHOT_HELPER.diff').write_text(''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile='before',tofile='after')))
+          Path('evidence/R56TimeframesUiTest.java').write_text(new)
+          Path('evidence/EXPECTED.json').write_text(json.dumps(tests))
+          PY
+          export EC1_KEYSTORE="$HOME/.fxm1-signing/ec1-demo.jks"
+          python tests/event_core/export_r732_chart_fixtures.py > evidence/fixtures.log
+          gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest > evidence/build.log 2>&1
+          printf '6019d29047a1d05a62a1a9bf21dea0552020e17a334f1e53075fc3c5bc7fec07  app/build/outputs/apk/debug/app-debug.apk\n' | sha256sum -c -
+          sudo chmod 666 /dev/kvm
+          cat > check.py <<'PY'
+          import subprocess,json,time
+          from pathlib import Path
+          out=Path('evidence');results=[]
+          for method in json.loads((out/'EXPECTED.json').read_text()):
+              subprocess.run(['adb','shell','am','force-stop','com.openai.fxm1.ec1'],check=True)
+              subprocess.run(['adb','shell','pm','clear','com.openai.fxm1.ec1'],check=True)
+              started=time.monotonic()
+              try:
+                  p=subprocess.run(['adb','shell','am','instrument','-w','-r','-e','timeout_msec','90000','-e','class','com.openai.fxm1.R56TimeframesUiTest#'+method,'com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner'],timeout=130,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                  text=p.stdout;ok=p.returncode==0 and 'OK (1 test)' in text and 'FAILURES!!!' not in text
+              except subprocess.TimeoutExpired as e:text=str(e);ok=False
+              (out/(method+'.log')).write_text(text)
+              results.append(dict(name='com.openai.fxm1.R56TimeframesUiTest.'+method,ok=ok,seconds=time.monotonic()-started));(out/'RESULT.json').write_text(json.dumps(dict(tests=results,apk_sha256='6019d29047a1d05a62a1a9bf21dea0552020e17a334f1e53075fc3c5bc7fec07',source='aaf328efb731d0f694921e60cb1bfe408c1869de',test_helper_only=True),indent=2));print(method,ok,flush=True)
+          subprocess.run(['adb','pull','/sdcard/Download/ec1-qa',str(out/'ui')],timeout=30)
+          assert len(results)==12 and all(r['ok'] for r in results)
+          PY
+          cat > run.sh <<'SH'
+          set -euo pipefail
+          python tests/event_core/ui_fixture.py > evidence/fixture.log 2>&1 &
+          f=$!;trap 'kill "$f" 2>/dev/null || true' EXIT
+          for i in $(seq 1 20); do curl --max-time 2 -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null && break || sleep 1; done
+          adb reverse tcp:8765 tcp:8765
+          adb install -r app/build/outputs/apk/debug/app-debug.apk
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          python check.py
+          SH
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
+          script: bash run.sh > evidence/stages.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-BOUNDED-CAPTURE
+          path: evidence/
+          if-no-files-found: error
