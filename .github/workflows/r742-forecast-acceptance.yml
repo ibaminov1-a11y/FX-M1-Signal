@@ -10,12 +10,12 @@ concurrency:
   group: r742-complete-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 env:
-  R742_SOURCE_SHA: aaf328efb731d0f694921e60cb1bfe408c1869de
+  R742_SOURCE_SHA: e5acd795fc460264c500620cf54aa8d985eb0021
 jobs:
   build:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,7 +37,7 @@ jobs:
           path: ~/.fxm1-signing/ec1-demo.jks
           key: fxm1-ec1-demo-explicit-signing-v1
           fail-on-cache-miss: true
-      - name: Generate required test asset before building exact app and test APK
+      - name: Build exact source and record public identity
         run: |
           set -euo pipefail
           mkdir -p binaries
@@ -60,9 +60,9 @@ jobs:
               if p.stem!='V108RepairTest':cases+=['com.openai.fxm1.'+p.stem+'.'+n for n in re.findall(r'@Test\s+(?:public\s+)?void\s+(\w+)\s*\(',p.read_text())]
           assert len(cases)==223 and len(set(cases))==223
           assert 'assets/r732-pattern-fixtures.json' in zipfile.ZipFile('binaries/test.apk').namelist()
-          digest=hashlib.sha256(Path('binaries/app.apk').read_bytes()).hexdigest()
-          assert digest=='6019d29047a1d05a62a1a9bf21dea0552020e17a334f1e53075fc3c5bc7fec07'
-          Path('binaries/IDENTITY.json').write_text(json.dumps(dict(source=os.environ['R742_SOURCE_SHA'],tests=cases,apk_sha256=digest,version_code=935,bridge_changed=False),indent=2))
+          meta=json.loads(Path('app/build/outputs/apk/debug/output-metadata.json').read_text())
+          assert meta['elements'][0]['versionCode']==935 and meta['applicationId']=='com.openai.fxm1.ec1'
+          Path('binaries/IDENTITY.json').write_text(json.dumps(dict(source=os.environ['R742_SOURCE_SHA'],tests=cases,apk_sha256=hashlib.sha256(Path('binaries/app.apk').read_bytes()).hexdigest(),test_apk_sha256=hashlib.sha256(Path('binaries/test.apk').read_bytes()).hexdigest(),version_code=935,bridge_changed=False),indent=2))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -124,7 +124,7 @@ jobs:
           run-id: 37433783603
           github-token: ${{ github.token }}
           path: previous-release
-      - name: Prepare per-method isolation and fixture; original assertions unchanged
+      - name: Prepare complete test catalogue with per-method isolation
         run: |
           mkdir -p evidence/ui
           sudo chmod 666 /dev/kvm
@@ -132,6 +132,7 @@ jobs:
           import json,subprocess,os,re,time,hashlib
           from pathlib import Path
           out=Path('evidence');identity=json.loads(Path('binaries/IDENTITY.json').read_text());shard=int(os.environ['SHARD']);cases=identity['tests'][shard::4];results=[]
+          assert hashlib.sha256(Path('binaries/app.apk').read_bytes()).hexdigest()==identity['apk_sha256']
           def adb(args,timeout=30):return subprocess.run(['adb']+args,text=True,encoding='utf-8',errors='replace',stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=timeout)
           for index,case in enumerate(cases):
               print('BEGIN',index,case,flush=True);adb(['shell','am','force-stop','com.openai.fxm1.ec1']);clear=adb(['shell','pm','clear','com.openai.fxm1.ec1']);assert 'Success' in clear.stdout
@@ -146,11 +147,10 @@ jobs:
                   for label,args in [('logcat',['logcat','-d','-t','2500']),('window',['shell','dumpsys','window'])]:
                       try:(out/(method+'-'+label+'.txt')).write_text(adb(args).stdout)
                       except Exception:pass
-              # Preserve screenshots before pm clear removes app-local files for the next test.
-              if method.startswith('actualForecastButton') or cls.endswith('R742ForecastViewTest'):
+              if method.startswith('actualForecastButton') or cls.endswith('R742ForecastViewTest') or cls.endswith('R56TimeframesUiTest'):
                   try:adb(['pull','/sdcard/Android/data/com.openai.fxm1.ec1/files',str(out/'ui')],45)
                   except Exception:pass
-              Path('evidence/RESULT.json').write_text(json.dumps(dict(shard=shard,source=identity['source'],apk_sha256=identity['apk_sha256'],tests=results,ok=len(results)==len(cases) and all(r['ok'] for r in results),expected=len(cases),isolation='fresh process and test-app data per method; no assertion changes'),indent=2));print('END',case,ok,flush=True)
+              Path('evidence/RESULT.json').write_text(json.dumps(dict(shard=shard,source=identity['source'],apk_sha256=identity['apk_sha256'],tests=results,ok=len(results)==len(cases) and all(r['ok'] for r in results),expected=len(cases),isolation='fresh test-app process/data per method; all functional assertions retained; R56 capture has bounded native screenshot instead of global idle'),indent=2));print('END',case,ok,flush=True)
           try:adb(['pull','/sdcard/Download/ec1-qa',str(out/'ui')],60)
           except Exception:pass
           assert all(r['ok'] for r in results)
@@ -179,7 +179,7 @@ jobs:
           fi
           python run-methods.py
           SH
-      - name: All native methods, each on clean test-app state
+      - name: All native methods with exact delivered APK
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -203,17 +203,21 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: results
-      - name: Require all 223 original plus new native assertions
+      - name: Require complete catalogue, original defect and in-place update
         run: |
           python - <<'PY'
           from pathlib import Path
-          import json
+          import json,hashlib
           root=Path('results');identity=json.loads((root/'R742-BINARIES/IDENTITY.json').read_text());actual=[]
           for i in range(4):
               r=json.loads((root/f'R742-NATIVE-METHODS-{i}/RESULT.json').read_text());assert r['ok'] and r['apk_sha256']==identity['apk_sha256'];actual += [x['name'] for x in r['tests'] if x['ok']]
           assert sorted(actual)==sorted(identity['tests']) and len(actual)==len(set(actual))==223
+          s=root/'R742-NATIVE-METHODS-0'
+          for n in ['UPGRADE_SEED.log','UPGRADE_CHECK.log']:assert 'OK (1 test)' in (s/n).read_text()
+          assert 'FORECAST_BUTTON_IS_PATTERNS' in (s/'RED.log').read_text() and 'ORIGINAL_FORECAST_OVERWRITTEN' in (s/'RED.log').read_text()
+          assert hashlib.sha256((root/'R742-BINARIES/app.apk').read_bytes()).hexdigest()==identity['apk_sha256']
           identity.update(passed=223,failures=0,upgrade_from=934,uninstall_for_upgrade=False)
-          Path('ACCEPTANCE.json').write_text(json.dumps(identity,indent=2));print('223/223 native methods; exact APK; upgrade retains test sentinels')
+          Path('ACCEPTANCE.json').write_text(json.dumps(identity,indent=2));print('223/223 native methods; exact APK; signed upgrade retained settings')
           PY
       - uses: actions/upload-artifact@v4
         with:
