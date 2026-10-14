@@ -1471,7 +1471,7 @@ public class MainActivity extends Activity {
 
         boolean deferredProfile=currentState.optJSONObject("campaign")!=null||currentState.optJSONObject("pending_config")!=null;
         if (!deferredProfile&&(!symbol.replace("/", "").trim().equalsIgnoreCase(selectedSymbol.replace("/", "").trim()) || !tf.equals(selectedTf))) {
-            statusText.setText(selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));
+            statusText.setText(selectedSymbol+" · "+selectedTf+" · ОЖИДАНИЕ ДАННЫХ"+(!offline&&p.getBoolean("server_verified",false)?"":" · НЕТ СВЯЗИ"));
             // A cached chart belongs to its recorded instrument. Clear it while the
             // selected profile awaits data, including during phone disconnection.
             sparklineView.setMarketIdentity("pending:"+selectedSymbol+"|"+selectedTf);

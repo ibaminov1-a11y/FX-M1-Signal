@@ -33,7 +33,21 @@ public class R56TimeframesUiTest {
         UiObject2 item=device.wait(Until.findObject(By.text(tf)),4000);assertNotNull("Selectable chart frame "+tf,item);item.click();
     }
     int commands()throws Exception{return EventClient.http("GET",EventClient.base()+"/test/r53-command-audit",null).getJSONArray("commands").length();}
-    void shot(String name)throws Exception{InstrumentationRegistry.getInstrumentation().waitForIdleSync();Thread.sleep(250);for(String cmd:new String[]{"mkdir -p /sdcard/Download/ec1-qa","screencap -p /sdcard/Download/ec1-qa/"+name+".png"})try(ParcelFileDescriptor fd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(cmd);InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] b=new byte[4096];while(in.read(b)!=-1){}}}
+    void shot(String name)throws Exception {
+        // A live chart need not make the entire Looper idle. Keep every
+        // functional assertion, but bound the capture and require real pixels.
+        java.util.concurrent.ExecutorService capture=java.util.concurrent.Executors.newSingleThreadExecutor();
+        android.graphics.Bitmap bitmap=null;
+        try {
+            bitmap=capture.submit(()->InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot())
+                .get(10,java.util.concurrent.TimeUnit.SECONDS);
+            assertNotNull("Native screenshot must exist",bitmap);
+            assertTrue(bitmap.getWidth()>0&&bitmap.getHeight()>0);
+            try(FileOutputStream out=new FileOutputStream(new File(context.getExternalFilesDir(null),name+".png"))){
+                assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out));
+            }
+        } finally {if(bitmap!=null)bitmap.recycle();capture.shutdownNow();}
+    }
     void shotFrame(String timeframe)throws Exception{
         ui(()->{ScrollView root=rule.getActivity().findViewById(R.id.rootLayout);Rect bounds=new Rect();chart().getDrawingRect(bounds);
             root.offsetDescendantRectToMyCoords(chart(),bounds);
