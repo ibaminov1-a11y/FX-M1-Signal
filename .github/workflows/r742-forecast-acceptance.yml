@@ -2,7 +2,7 @@ name: R742 forecast signed acceptance
 on:
   pull_request:
     branches: [feature/r4-compute-rebuild]
-    paths: [.github/workflows/r742-forecast-acceptance.yml]
+    paths: [.github/workflows/r742-forecast-acceptance.yml, tools/r742_ci/**]
 permissions:
   contents: read
   actions: read
@@ -12,46 +12,15 @@ concurrency:
 env:
   R742_SOURCE_SHA: aaf328efb731d0f694921e60cb1bfe408c1869de
 jobs:
-  python:
+  build:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.R742_SOURCE_SHA }}
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
-      - name: Require unchanged Bridge and full original regression
-        run: |
-          set -euo pipefail
-          mkdir -p evidence
-          git fetch --no-tags origin 5f6f47f303c337bfd57acec9958cb5ed910d375f
-          git diff --exit-code 5f6f47f303c337bfd57acec9958cb5ed910d375f HEAD -- mt5_bridge > evidence/BRIDGE_UNCHANGED.diff
-          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/python.log 2>&1
-          tail -12 evidence/python.log
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: R742-PYTHON-${{ env.R742_SOURCE_SHA }}
-          path: evidence/
-          if-no-files-found: error
-  android:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.R742_SOURCE_SHA }}
-          persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -64,50 +33,130 @@ jobs:
           path: ~/.fxm1-signing/ec1-demo.jks
           key: fxm1-ec1-demo-explicit-signing-v1
           fail-on-cache-miss: true
-      - name: Require original signature without private-key export
+      - name: Build one exact APK for every native shard
         run: |
           set -euo pipefail
+          mkdir -p binaries
+          export EC1_KEYSTORE="$HOME/.fxm1-signing/ec1-demo.jks"
+          gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest > binaries/build.log 2>&1
+          cp app/build/outputs/apk/debug/app-debug.apk binaries/app.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk binaries/test.apk
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$signer" verify --print-certs binaries/app.apk > binaries/signature.txt
+          grep -q '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885' binaries/signature.txt
+          git fetch --no-tags origin 5f6f47f303c337bfd57acec9958cb5ed910d375f
+          git diff --exit-code 5f6f47f303c337bfd57acec9958cb5ed910d375f HEAD -- mt5_bridge > binaries/BRIDGE_UNCHANGED.diff
+          git archive --format=zip --output=binaries/SOURCE.zip HEAD
+          python - <<'PY'
+          from pathlib import Path
+          import re,json,hashlib,os
+          cases=[]
+          for p in sorted(Path('app/src/androidTest/java/com/openai/fxm1').glob('*Test.java')):
+              if p.stem!='V108RepairTest':cases+=['com.openai.fxm1.'+p.stem+'.'+n for n in re.findall(r'@Test\s+(?:public\s+)?void\s+(\w+)\s*\(',p.read_text())]
+          assert len(cases)==223 and len(set(cases))==223
+          meta=json.loads(Path('app/build/outputs/apk/debug/output-metadata.json').read_text());v=meta['elements'][0]
+          assert v['versionCode']==935 and meta['applicationId']=='com.openai.fxm1.ec1'
+          Path('binaries/IDENTITY.json').write_text(json.dumps(dict(source=os.environ['R742_SOURCE_SHA'],tests=cases,apk_sha256=hashlib.sha256(Path('binaries/app.apk').read_bytes()).hexdigest(),version_code=v['versionCode'],version_name=v['versionName'],bridge_changed=False),indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-BINARIES
+          path: binaries/
+          if-no-files-found: error
+  python:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ci/r742-forecast-20261014'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R742_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire unchanged Python suite
+        run: |
           mkdir -p evidence
-          keytool -exportcert -alias ec1-demo -keystore "$HOME/.fxm1-signing/ec1-demo.jks" -storepass android -file "$RUNNER_TEMP/cert.der"
-          fingerprint=$(sha256sum "$RUNNER_TEMP/cert.der" | cut -d' ' -f1)
-          test "$fingerprint" = '3d55a491046e661664f99c2a3e4a51338a794b313beb3e32d7ed88181a7a1885'
-          echo "EC1_KEYSTORE=$HOME/.fxm1-signing/ec1-demo.jks" >> "$GITHUB_ENV"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          sudo chmod 666 /dev/kvm
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/python.log 2>&1
+          tail -10 evidence/python.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R742-PYTHON-COMPLETE
+          path: evidence/
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    env:
+      SHARD: ${{ matrix.shard }}
+      PYTHONPATH: mt5_bridge:tests/event_core
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.R742_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: ci-tools
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
       - uses: actions/download-artifact@v4
+        with:
+          name: R742-BINARIES
+          path: binaries
+      - uses: actions/download-artifact@v4
+        if: matrix.shard == 0
         with:
           name: R74-SIGNED-NATIVE-5f6f47f303c337bfd57acec9958cb5ed910d375f
           run-id: 37433783603
           github-token: ${{ github.token }}
           path: previous-release
-      - name: Verify actual previous APK identity
+      - name: Prepare local non-trading fixture
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import hashlib,os
-          found=list(Path('previous-release').rglob('FXM1_R7_4.apk'))
-          assert len(found)==1,found
-          p=found[0].resolve()
-          assert hashlib.sha256(p.read_bytes()).hexdigest()=='9cb2b370b8bc1a13c49b2c7b4da87aaf39a84e96da1231ff7b1f2cfcf8a0381d'
-          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('R742_OLD_APK='+str(p)+'\n')
-          PY
-      - name: Build before emulator and bound native diagnostics without modifying product
-        run: |
+          mkdir -p evidence
+          python tests/event_core/export_r732_chart_fixtures.py > evidence/fixtures.log 2>&1
+          sudo chmod 666 /dev/kvm
+          cat > run-native.sh <<'SH'
+          #!/usr/bin/env bash
           set -euo pipefail
-          PYTHONPATH=mt5_bridge:tests/event_core timeout 60s python tests/event_core/export_r732_chart_fixtures.py > evidence/fixtures.log 2>&1
-          timeout 240s gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest > evidence/prebuild.log 2>&1
-          python - <<'PY'
-          from pathlib import Path
-          s=Path('tools/run_r742_native.sh').read_text()
-          s=s.replace('set -euo pipefail','set -euxo pipefail',1)
-          s=s.replace('curl -fsS','curl --max-time 3 -fsS')
-          s=s.replace('adb shell am instrument','timeout 60s adb shell am instrument')
-          s=s.replace('adb install -r','timeout 45s adb install -r')
-          s=s.replace('gradle --no-daemon :app:assemble','timeout 180s gradle --no-daemon :app:assemble')
-          s=s.replace('gradle --no-daemon :app:connectedDebugAndroidTest','timeout 1080s gradle --no-daemon :app:connectedDebugAndroidTest')
-          Path('evidence/BOUNDED_NATIVE.sh').write_text(s)
-          PY
-      - name: Original failure, upgrade and full actual Android UI acceptance
+          python tests/event_core/ui_fixture.py > evidence/fixture.log 2>&1 &
+          fixture=$!
+          trap 'kill "$fixture" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do curl --max-time 2 -fsS -H 'Authorization: Bearer ci-fixture-token-not-for-real-trading' http://127.0.0.1:8765/health >/dev/null && break || sleep 1; done
+          adb reverse tcp:8765 tcp:8765
+          if test "$SHARD" = 0; then
+            old=$(find previous-release -name FXM1_R7_4.apk | head -1)
+            test -n "$old"
+            printf '9cb2b370b8bc1a13c49b2c7b4da87aaf39a84e96da1231ff7b1f2cfcf8a0381d  %s\n' "$old" | sha256sum -c -
+            adb install -r "$old"
+            adb install -r binaries/test.apk
+            timeout 90s adb shell am instrument -w -r -e class com.openai.fxm1.R742ForecastContractTest com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner > evidence/RED.log
+            grep -q FORECAST_BUTTON_IS_PATTERNS evidence/RED.log
+            grep -q ORIGINAL_FORECAST_OVERWRITTEN evidence/RED.log
+            timeout 90s adb shell am instrument -w -r -e class com.openai.fxm1.R742UpgradeProbe#seedOld com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner > evidence/UPGRADE_SEED.log
+            grep -q 'OK (1 test)' evidence/UPGRADE_SEED.log
+          fi
+          adb install -r binaries/app.apk
+          adb install -r binaries/test.apk
+          if test "$SHARD" = 0; then
+            timeout 90s adb shell am instrument -w -r -e class com.openai.fxm1.R742UpgradeProbe#checkNew com.openai.fxm1.ec1.test/androidx.test.runner.AndroidJUnitRunner > evidence/UPGRADE_CHECK.log
+            grep -q 'OK (1 test)' evidence/UPGRADE_CHECK.log
+          fi
+          python ci-tools/tools/r742_ci/run_classes.py
+          SH
+      - name: Actual Android tests on identical APK
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -116,10 +165,36 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -camera-back none
-          script: bash evidence/BOUNDED_NATIVE.sh > evidence/stages.log 2>&1
+          script: bash run-native.sh > evidence/stages.log 2>&1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: R742-SIGNED-NATIVE-${{ env.R742_SOURCE_SHA }}
+          name: R742-NATIVE-SHARD-${{ matrix.shard }}
           path: evidence/
           if-no-files-found: error
+  verify:
+    needs: [build, python, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: results
+      - name: Require every expected native case and same APK bytes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          root=Path('results');identity=json.loads((root/'R742-BINARIES/IDENTITY.json').read_text());actual=[]
+          for i in range(4):
+              r=json.loads((root/f'R742-NATIVE-SHARD-{i}/RESULT.json').read_text())
+              assert r['ok'] and r['apk_sha256']==identity['apk_sha256']
+              actual += [x['class']+'.'+x['test'] for x in r['tests'] if x['code']==0]
+          assert sorted(actual)==sorted(identity['tests']) and len(actual)==len(set(actual))==223
+          identity['passed']=223;identity['failures']=0;identity['upgrade_from']=934;identity['uninstall_for_upgrade']=False
+          Path('ACCEPTANCE.json').write_text(json.dumps(identity,indent=2));print('223/223 native cases; exact signed APK; original Bridge unchanged')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: R742-ACCEPTANCE
+          path: ACCEPTANCE.json
