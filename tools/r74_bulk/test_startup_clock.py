@@ -1,6 +1,6 @@
 """Clock setup is a startup concern; all MT5 calls below are read-only fixtures."""
 from __future__ import annotations
-import importlib.util, json, sqlite3, tempfile, unittest
+import contextlib, importlib.util, json, sqlite3, tempfile, unittest
 from pathlib import Path
 from types import SimpleNamespace as NS
 
@@ -88,12 +88,14 @@ class ClockTests(ClockFixture,unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'CLOCK_MT5_UNCONFIRMED'):self.run_setup()
         self.assertFalse((self.state/'broker-clock.json').exists());self.unchanged()
     def test_saved_campaign_prevents_clock_change(self):
-        with sqlite3.connect(self.state/'campaign.sqlite3') as db:db.execute('INSERT INTO state VALUES (?,?)',('profile:fixture:engine',json.dumps({'campaign':{'id':'active'}})))
+        with contextlib.closing(sqlite3.connect(self.state/'campaign.sqlite3')) as db:
+            db.execute('INSERT INTO state VALUES (?,?)',('profile:fixture:engine',json.dumps({'campaign':{'id':'active'}})));db.commit()
         self.original['campaign.sqlite3']=(self.state/'campaign.sqlite3').read_bytes()
         with self.assertRaisesRegex(RuntimeError,'CLOCK_SAVED_EXPOSURE'):self.run_setup()
         self.assertFalse((self.state/'broker-clock.json').exists());self.unchanged()
     def test_unknown_intent_prevents_clock_change(self):
-        with sqlite3.connect(self.state/'campaign.sqlite3') as db:db.execute('INSERT INTO intents VALUES (?,?,?)',('intent','UNKNOWN','{}'))
+        with contextlib.closing(sqlite3.connect(self.state/'campaign.sqlite3')) as db:
+            db.execute('INSERT INTO intents VALUES (?,?,?)',('intent','UNKNOWN','{}'));db.commit()
         self.original['campaign.sqlite3']=(self.state/'campaign.sqlite3').read_bytes()
         with self.assertRaisesRegex(RuntimeError,'CLOCK_UNKNOWN_EXECUTION'):self.run_setup()
         self.assertFalse((self.state/'broker-clock.json').exists());self.unchanged()
