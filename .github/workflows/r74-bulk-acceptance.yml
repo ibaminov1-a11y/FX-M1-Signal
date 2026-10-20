@@ -7,7 +7,7 @@ permissions:
   contents: read
   actions: read
 env:
-  SOURCE_SHA: dd10b4352aae3a575cd250a62dfac8703207463b
+  SOURCE_SHA: 7a9df0e1637a66046ca64970ff67aad828aad69d
 jobs:
   windows:
     if: github.event.pull_request.head.ref == 'ci/r74-bulk-clock-20261020'
