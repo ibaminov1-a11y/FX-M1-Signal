@@ -1,0 +1,80 @@
+name: R74 read-only clock report
+on:
+  push:
+    branches: [diagnostics/r74-clock-20261020]
+    paths: [.github/workflows/r74-time-report.yml]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 6
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Require the actual R51 client header before invoking cached state
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          @'
+          from pathlib import Path
+          p=Path('tools/r74_time_check/test_time_report.py');s=p.read_text()
+          s=s.replace("self.assertIn('/ec/state',text)","self.assertIn('/ec/state',text)\n        self.assertIn(\"$request.Headers['X-FXM1-Client'] = 'R51'\",text)")
+          s=s.replace("if self.headers.get('Authorization')!='Bearer '+TOKEN:","if self.headers.get('Authorization')!='Bearer '+TOKEN or self.headers.get('X-FXM1-Client')!='R51':")
+          p.write_text(s)
+          '@ | python -
+          python tools/r74_time_check/test_time_report.py Contract *> evidence/RED.log
+          if ($LASTEXITCODE -ne 1) {throw 'Expected missing protocol header assertion'}
+          exit 0
+      - name: Generate final helper with mandatory client header and Windows line endings
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          p=Path('tools/r74_time_check/CHECK_TIME.cmd');s=p.read_text()
+          old="$request.Headers['Authorization'] = 'Bearer ' + $token"
+          assert s.count(old)==1
+          s=s.replace(old,old+"\n        $request.Headers['X-FXM1-Client'] = 'R51'")
+          p.write_bytes(s.replace('\r\n','\n').replace('\n','\r\n').encode('utf-8'))
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
+          python tools/r74_time_check/test_time_report.py *> evidence/NATIVE.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/NATIVE.log -Tail 35
+          exit $rc
+      - name: Reproduce future-tick block and existing explicit-clock handling without broker orders
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH='mt5_bridge;tests/event_core'
+          python -m unittest test_quote_clock_skew test_mt5_market_clock test_r55_clock_setup test_r55_history_clock -v *> evidence/CLOCK_TESTS.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/CLOCK_TESTS.log -Tail 12
+          exit $rc
+      - name: Record helper identity and explicitly unchanged product
+        shell: pwsh
+        run: |
+          @'
+          import hashlib,json
+          from pathlib import Path
+          p=Path('tools/r74_time_check/CHECK_TIME.cmd')
+          Path('evidence/IDENTITY.json').write_text(json.dumps({'helper_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'native_tests':4,'clock_tests':20,'product_code_changed':False,'clock_settings_changed':False,'note':'Read-only diagnostic, NOT a trading or forecast fix'},indent=2))
+          '@ | python -
+          git diff --exit-code -- mt5_bridge app
+          git diff > evidence/SOURCE_PATCH.diff
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-TIME-REPORT
+          path: tools/r74_time_check/CHECK_TIME.cmd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-TIME-REPORT-CHECKS
+          path: evidence/
