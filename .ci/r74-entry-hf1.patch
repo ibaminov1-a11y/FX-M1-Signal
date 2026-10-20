@@ -1,0 +1,83 @@
+--- a/mt5_bridge/event_core/mt5_adapter.py
++++ b/mt5_bridge/event_core/mt5_adapter.py
+@@ -137,9 +137,9 @@
+         self._verify_clock_account()
+         timeframe=getattr(self.mt5,'TIMEFRAME_'+tf,None)
+         if timeframe is None: raise Blocked('Таймфрейм MT5 не поддерживается')
+-        # Request the live bar as well and decide closure from timestamps ourselves.
+-        # Some terminals/brokers can expose a forming bar while history is synchronising;
+-        # one such row must never make us discard all already closed history.
++        # MT5 index zero remains the current candle until a successor is published.
++        # Exclude that row even at the wall-clock boundary: a one-second grace
++        # period must not promote the live candle into confirmed history.
+         start_pos=1 if tf=='MN1' else 0
+         request_count=count if tf=='MN1' else count+2
+         rows=self.mt5.copy_rates_from_pos(symbol,timeframe,start_pos,request_count)
+@@ -151,8 +151,10 @@
+         # Keep native opening timestamps; only certainly closed bars enter strategy data.
+         values=list({b.time:b for b in values}.values())
+         values.sort(key=lambda b:b.time)
++        if start_pos==0:
++            values=values[:-1]
+         now=time.time()
+-        values=[b for b in values if bar_close_time(b.time,tf,b.clock_offset_seconds)<=now+1.0]
++        values=[b for b in values if bar_close_time(b.time,tf,b.clock_offset_seconds)<=now]
+         if not values:
+             raise Blocked('MT5 не вернул ни одной закрытой свечи '+tf+': '+str(self.mt5.last_error()))
+         return values[-count:]
+--- a/mt5_bridge/event_core/engine.py
++++ b/mt5_bridge/event_core/engine.py
+@@ -436,7 +436,12 @@
+                         self.store.save_bars(self.market_scope(),tf,values,now)
+                         self._history_fingerprint[history_key]=fingerprint
+                     if self.config.engine_mode=='SCENARIO_V2':
+-                        values=[Bar(**row) for row in self.store.read_bars(self.market_scope(),tf,limit=1200)]
++                        # A prior build could cache bar zero around the boundary.
++                        # Cache cannot outrank the latest closed row just verified
++                        # from MT5. Keep user data, but do not analyse its live tail.
++                        latest_closed=values[-1].time
++                        values=[Bar(**row) for row in self.store.read_bars(self.market_scope(),tf,limit=1200)
++                                if row['time']<=latest_closed]
+                     validate_bar_history(values,tf,now)
+                     setattr(self,attr,values)
+                     loaded[tf]=values
+--- a/mt5_bridge/event_core/scenarios/stable_plans.py
++++ b/mt5_bridge/event_core/scenarios/stable_plans.py
+@@ -99,6 +99,11 @@
+                 continue
+             if campaign or duplicate:continue
+             if s['stage']=='WATCHING':
++                if prev and s.get('reason','').startswith('Наблюдение прервано'):
++                    # Fresh data resumed, not the old permission. A new touch and
++                    # return are still mandatory after a real interruption.
++                    s['reason']=(f"Данные восстановлены; ждём новую проверку зоны {s['zone']:.5f}, "
++                                 f"затем возврат через {s['trigger']:.5f}")
+                 if prev and (q.bid-s['zone'])*side<=.08*fixed_a and (q.bid-prev.bid)*side<0:
+                     self._event(s,'TOUCH_SEEN',q,now,'Зона проверена; ждём возврат за фиксированный уровень')
+                 continue
+--- a/mt5_bridge/event_core/scenarios/continuation.py
++++ b/mt5_bridge/event_core/scenarios/continuation.py
+@@ -48,7 +48,10 @@
+             if (q.bid-self.trough)*side<0:self.trough=q.bid
+             if (q.bid-previous.bid)*side>0:
+                 self.stage='MICRO';self.reason=f'Добавление: ждём новый микропробой {self.peak:.5f}'
+-            return None
++            else:
++                return None
++            # This fresh resumption tick may itself cross the pre-pullback peak.
++            # Run the same crossing/no-chase/target guards now, not one tick late.
+         # Frozen extreme predates the pullback and resumption; never infer crossing retroactively.
+         if (previous.bid-self.peak)*side<=0<(q.bid-self.peak)*side:
+             if (q.bid-self.peak)*side>.25*a:
+--- a/tests/event_core/test_r55_history_clock.py
++++ b/tests/event_core/test_r55_history_clock.py
+@@ -123,7 +123,8 @@
+             live = broker.current_bar('EURUSD', 'M5')
+             chart = broker.chart_snapshot('EURUSD', 'M5', 3)
+         self.assertEqual(live.time, int(NOW)-300)
+-        self.assertEqual(bars[-1].time, int(NOW)-300)
++        # Index zero is still current at this boundary; it is never closed history.
++        self.assertEqual(bars[-1].time, int(NOW)-600)
+         self.assertEqual(chart['live_bar'].time, live.time)
+         self.assertEqual(broker.history(NOW)[-1]['time_msc'], int((NOW-100)*1000))
+         self.assertEqual(broker.history_position(102)[-1]['raw_time_msc'], int((NOW+10700)*1000))
