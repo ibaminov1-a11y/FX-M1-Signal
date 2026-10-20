@@ -1,0 +1,88 @@
+name: R74 explicit clock policy acceptance
+on:
+  push:
+    branches: [repair/r74-explicit-clock-20261020]
+    paths: [.github/workflows/r74-clock-apply.yml]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 6
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reproduce missing-helper failure then exercise real Windows CMD
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence | Out-Null
+          @'
+          from pathlib import Path
+          p=Path('tools/r74_clock_apply/APPLY_CLOCK.template.cmd')
+          p.write_bytes(p.read_bytes().replace(b'\r\n',b'\n').replace(b'\n',b'\r\n'))
+          p.rename(p.with_suffix('.hold'))
+          '@ | python -
+          python tools/r74_clock_apply/test_apply.py Contract *> evidence/RED.log
+          $red=$LASTEXITCODE
+          Move-Item tools/r74_clock_apply/APPLY_CLOCK.template.hold tools/r74_clock_apply/APPLY_CLOCK.template.cmd
+          if ($red -ne 1) {throw 'Expected missing helper failure'}
+          python tools/r74_clock_apply/test_apply.py *> evidence/NATIVE.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/NATIVE.log -Tail 50
+          exit $rc
+      - name: Original clock normalization, history and forecast integration tests
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH='mt5_bridge;tests/event_core'
+          python -m unittest test_quote_clock_skew test_mt5_market_clock test_r55_clock_setup test_r55_history_clock -v *> evidence/CLOCK_TESTS.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/CLOCK_TESTS.log -Tail 12
+          exit $rc
+      - name: Record template identity, no account or key in public source
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          import hashlib,json
+          p=Path('tools/r74_clock_apply/APPLY_CLOCK.template.cmd')
+          Path('evidence/IDENTITY.json').write_text(json.dumps(dict(template_sha256=hashlib.sha256(p.read_bytes()).hexdigest(),native_tests=7,clock_tests=20,trade_code_changed=False,auto_enabled=False,personalized_field_only='__PINNED_ACCOUNT__'),indent=2))
+          '@ | python -
+          git diff --exit-code -- mt5_bridge app
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-CLOCK-APPLY-TEMPLATE
+          path: tools/r74_clock_apply/APPLY_CLOCK.template.cmd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-CLOCK-APPLY-CHECKS
+          path: evidence/
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire unchanged R7.4 Python suite
+        run: |
+          mkdir -p evidence
+          PYTHONPATH=mt5_bridge:tests/event_core TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/PYTHON.log 2>&1
+          tail -10 evidence/PYTHON.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-CLOCK-APPLY-REGRESSION
+          path: evidence/
