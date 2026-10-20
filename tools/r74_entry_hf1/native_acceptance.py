@@ -22,6 +22,7 @@ def main(original,delta,out):
         with sqlite3.connect(state/'campaign.sqlite3') as c:
             for table in ('state','intents','commands','campaigns'):c.execute('CREATE TABLE '+table+'(key text,value text)')
             c.execute("INSERT INTO state VALUES('sentinel','do not change')")
+        c.close()  # The SQLite context manager commits but does not close the handle.
         (state/'bridge-token.txt').write_text('fake-local-token-preservation-01234567890123456789',encoding='utf-8')
         (state/'broker-clock.json').write_text('{"account":"123@DEMO","offset_minutes":180,"confirmed":true}',encoding='utf-8')
         state_before={p.name:p.read_bytes() for p in state.iterdir()}
@@ -36,12 +37,10 @@ def main(original,delta,out):
         cmd(root/'START.cmd',env,out/'START_AFTER_OVERLAY.log')
         report=json.loads((root/'PACKAGE_CHECK.json').read_text(encoding='utf-8'))
         assert report['ok'] and report['restored_files']==0,report
-        # Test actual patched files using the exact distributed Windows runtime.
         driver='import sys,runpy;sys.path[:0]='+repr([str(root/'mt5_bridge'),str(root/'tests/event_core')])+';runpy.run_path('+repr(str(root/'tests/event_core/test_r743_entry_hf1.py'))+',run_name="__main__")'
         r=subprocess.run([str(root/'Runtime/python.exe'),'-I','-B','-X','utf8','-c',driver],env=env,cwd=root,capture_output=True,timeout=60)
         text=(r.stdout+r.stderr).decode('utf-8','replace');(out/'BUNDLED_ENTRY_TESTS.log').write_text(text,encoding='utf-8')
         assert r.returncode==0 and 'Ran 8 tests' in text,text
-        # Recovery must restore NEW modules rather than silently roll the fix back.
         expected={n:digest((root/n).read_bytes()) for n in PRODUCT}
         (root/PRODUCT[1]).write_bytes(b'# damaged fixture\n')
         (root/PRODUCT[3]).unlink()
