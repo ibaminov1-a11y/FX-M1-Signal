@@ -1,0 +1,95 @@
+name: R74 one Bridge folder acceptance
+on:
+  push:
+    branches: [repair/r74-bridge-folder-20261020]
+    paths: [.github/workflows/r74-bridge-folder.yml, 'tools/r74_folder/**']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-BULK-CLOCK-FULL
+          run-id: 39379492320
+          github-token: ${{ github.token }}
+          path: base
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-ENTRY-HF1-PATCH
+          run-id: 39392409130
+          github-token: ${{ github.token }}
+          path: delta
+      - name: Reproduce rollback caused by naive Bridge-only replacement
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force evidence,out | Out-Null
+          python tools/r74_folder/test_folder.py base/FXM1_COMPLETE_GENERIC.zip delta/FXM1_R74_ENTRY_HF1_PATCH.zip unused evidence --red *> evidence/RED.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/RED.log -Tail 12
+          exit $rc
+      - name: Build full Bridge folder without interpreter or APK replacement
+        shell: pwsh
+        run: |
+          python tools/r74_folder/build_folder.py base/FXM1_COMPLETE_GENERIC.zip delta/FXM1_R74_ENTRY_HF1_PATCH.zip out/BRIDGE_HF1_FOLDER_GENERIC.zip *> evidence/BUILD.log
+          exit $LASTEXITCODE
+      - name: Actual BAT startup, idempotence, no rollback to old code, state and version guards
+        shell: pwsh
+        run: |
+          python tools/r74_folder/test_folder.py base/FXM1_COMPLETE_GENERIC.zip delta/FXM1_R74_ENTRY_HF1_PATCH.zip out/BRIDGE_HF1_FOLDER_GENERIC.zip evidence *> evidence/NATIVE.log
+          $rc=$LASTEXITCODE
+          Get-Content evidence/NATIVE.log -Tail 60
+          exit $rc
+      - name: Source identity
+        shell: pwsh
+        run: |
+          git rev-parse HEAD > evidence/SOURCE_SHA.txt
+          Copy-Item out/BRIDGE_HF1_FOLDER_GENERIC.json evidence/BUILD_IDENTITY.json
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-BRIDGE-FOLDER
+          path: out/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-BRIDGE-FOLDER-CHECKS
+          path: evidence/
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Unchanged HF1 full regression
+        env:
+          PYTHONPATH: mt5_bridge:tests/event_core
+          TERM: xterm
+        run: |
+          mkdir -p evidence
+          git apply --check .ci/r74-entry-hf1.patch
+          git apply .ci/r74-entry-hf1.patch
+          python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/FULL.log 2>&1
+          tail -10 evidence/FULL.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-BRIDGE-FOLDER-REGRESSION
+          path: evidence/
