@@ -47,7 +47,8 @@ class Native(unittest.TestCase):
         env=dict(os.environ,LOCALAPPDATA=str(self.local),R7_NO_PAUSE='1')
         path=self.root/'mt5_bridge/START_BRIDGE_V10_0.bat'
         cmd='"'+str(path)+'" '+ ' '.join(args)
-        r=subprocess.run([os.environ.get('COMSPEC','cmd.exe'),'/d','/s','/c','"'+cmd+'"'],env=env,cwd=self.work,
+        command='"'+os.environ.get('COMSPEC','cmd.exe')+'" /d /s /c "'+cmd+'"'
+        r=subprocess.run(command,env=env,cwd=self.work,
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=90)
         text=r.stdout.decode('utf-8','replace')
         (OUT/(self._testMethodName+'.log')).write_text(text,encoding='utf-8')
