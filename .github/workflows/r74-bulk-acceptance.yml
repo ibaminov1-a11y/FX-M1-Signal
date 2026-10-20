@@ -1,0 +1,114 @@
+name: R74 bulk pinned acceptance
+on:
+  pull_request:
+    branches: [feature/r4-compute-rebuild]
+    paths: [.github/workflows/r74-bulk-acceptance.yml]
+permissions:
+  contents: read
+  actions: read
+env:
+  SOURCE_SHA: 7a9df0e1637a66046ca64970ff67aad828aad69d
+jobs:
+  windows:
+    if: github.event.pull_request.head.ref == 'ci/r74-bulk-clock-20261020'
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-INTEGRATED-FULL
+          run-id: 38391689537
+          github-token: ${{ github.token }}
+          path: baseline
+      - uses: actions/download-artifact@v4
+        with:
+          name: R742-BINARIES
+          run-id: 38545355062
+          github-token: ${{ github.token }}
+          path: android
+      - uses: actions/download-artifact@v4
+        with:
+          name: R74-CLOCK-APPLY-TEMPLATE
+          run-id: 39373754073
+          github-token: ${{ github.token }}
+          path: old_helper
+      - name: Assemble verified unchanged components and embedded startup
+        shell: python
+        run: |
+          import hashlib,zipfile,subprocess,sys
+          from pathlib import Path
+          Path('evidence').mkdir()
+          assert hashlib.sha256(Path('baseline/FXM1_R74_FULL_FOLDER_START.zip').read_bytes()).hexdigest()=='2f1d0754badd8b836bc34ec1a74e546d0fa046450762e49a360a9fa3fe9f38d3'
+          assert hashlib.sha256(Path('android/app.apk').read_bytes()).hexdigest()=='84fa3b2675b81991a5497f77f49dde8188b303c25e7aa5bfbbf3f400cda09230'
+          with zipfile.ZipFile('android-input.zip','w') as z:
+              for p in Path('android').rglob('*'):
+                  if p.is_file():z.write(p,p.relative_to('android').as_posix())
+          with open('evidence/BUILD.log','w',encoding='utf-8') as log:
+              subprocess.run([sys.executable,'tools/r74_bulk/build_bundle.py','baseline/FXM1_R74_FULL_FOLDER_START.zip','android-input.zip','evidence/FXM1_COMPLETE_GENERIC.zip','123@DEMO'],stdout=log,stderr=subprocess.STDOUT,check=True)
+      - name: Actual CMD and packaged Python, repeated ticks, preserved state, HTTP forecast
+        shell: python
+        run: |
+          import subprocess,sys
+          with open('evidence/NATIVE.log','w',encoding='utf-8') as log:
+              result=subprocess.run([sys.executable,'tools/r74_bulk/native_acceptance.py','evidence/FXM1_COMPLETE_GENERIC.zip','old_helper/APPLY_CLOCK.template.cmd','evidence/native'],stdout=log,stderr=subprocess.STDOUT)
+          print(open('evidence/NATIVE.log',encoding='utf-8').read()[-5000:])
+          sys.exit(result.returncode)
+      - name: Exact source identities
+        shell: bash
+        run: |
+          git fetch --no-tags origin 5f6f47f303c337bfd57acec9958cb5ed910d375f
+          git diff --exit-code 5f6f47f303c337bfd57acec9958cb5ed910d375f HEAD -- mt5_bridge > evidence/BRIDGE_UNCHANGED.diff
+          git rev-parse HEAD > evidence/SOURCE_SHA.txt
+          git archive --format=zip --output=evidence/SOURCE_TESTED.zip HEAD
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: R74-BULK-CLOCK-FULL
+          path: evidence/FXM1_COMPLETE_GENERIC.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-BULK-CLOCK-CHECKS
+          path: |
+            evidence/*.log
+            evidence/*.json
+            evidence/*.txt
+            evidence/*.diff
+            evidence/SOURCE_TESTED.zip
+            evidence/native/
+  regression:
+    if: github.event.pull_request.head.ref == 'ci/r74-bulk-clock-20261020'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Flask==3.1.2 colorama==0.4.6
+      - name: Entire unchanged Bridge suite plus new integration
+        run: |
+          mkdir -p evidence
+          export PYTHONPATH=mt5_bridge:tests/event_core
+          TERM=xterm python -m unittest discover -s tests/event_core -p 'test_*.py' -v > evidence/REGRESSION.log 2>&1
+          python tools/r74_bulk/test_startup_clock.py > evidence/ADDED.log 2>&1
+          tail -8 evidence/REGRESSION.log
+          tail -8 evidence/ADDED.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: R74-BULK-CLOCK-REGRESSION
+          path: evidence/
