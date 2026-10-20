@@ -2,7 +2,7 @@ name: R74 entry HF1 delta acceptance
 on:
   push:
     branches: [repair/r74-entry-hf1-20261020]
-    paths: [.github/workflows/r74-entry-hf1.yml]
+    paths: [.github/workflows/r74-entry-hf1.yml, 'tools/r74_entry_hf1/**', .ci/r74-entry-hf1.patch, tests/event_core/test_r743_entry_hf1.py]
 permissions:
   contents: read
   actions: read
