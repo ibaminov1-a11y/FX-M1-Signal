@@ -1343,6 +1343,12 @@ def signal():
             if same_symbol and not bool(data.get("allow_same_symbol_multiple", False)):
                 return jsonify(accepted=False, message=f"Position for {symbol} already exists"), 409
         else:
+            # Basket mode must obey the account-wide position limit too.
+            # Previously only positions in this symbol/side were counted,
+            # allowing NORMAL pyramiding to exceed max_positions globally.
+            if len(current_positions) >= max_positions:
+                return jsonify(accepted=False, message=f"Global max positions reached: {len(current_positions)}/{max_positions}",
+                               reason_code="GLOBAL_POSITION_LIMIT"), 409
             basket, basket_volume, basket_avg, basket_risk_money, basket_risk_pct_used, latest_time = basket_snapshot(
                 current_positions, symbol, side, float(account.equity))
             opposite_type = mt5.POSITION_TYPE_SELL if side == "BUY" else mt5.POSITION_TYPE_BUY
